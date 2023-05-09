@@ -383,7 +383,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             SftpClient.Attributes attrs = sftp.stat(escapePath);
             fail("Unexpected escape success for path=" + escapePath + ": " + attrs);
         } catch (SftpException e) {
-            int expected = OsUtils.isWin32() || (!useAbsolutePath)
+            int expected = OsUtils.isWin32() && useAbsolutePath
                     ? SftpConstants.SSH_FX_INVALID_FILENAME
                     : SftpConstants.SSH_FX_NO_SUCH_FILE;
             assertEquals("Mismatched status for " + escapePath,
@@ -711,10 +711,11 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 @Override
                 public DirectoryStream<Path> openDirectory(
-                        SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle)
+                        SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle,
+                        LinkOption... linkOptions)
                         throws IOException {
                     dirHolder.set(dir);
-                    return SftpFileSystemAccessor.super.openDirectory(subsystem, dirHandle, dir, handle);
+                    return SftpFileSystemAccessor.super.openDirectory(subsystem, dirHandle, dir, handle, linkOptions);
                 }
 
                 @Override

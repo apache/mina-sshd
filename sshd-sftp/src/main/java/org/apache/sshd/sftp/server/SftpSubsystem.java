@@ -687,7 +687,7 @@ public class SftpSubsystem
             // the upstream server decide.
             if (!(file instanceof SftpPath)) {
                 LinkOption[] options = getPathResolutionLinkOption(SftpConstants.SSH_FXP_READDIR, "", file);
-                Boolean status = IoUtils.checkFileExists(file, options);
+                Boolean status = IoUtils.checkFileExistsAnySymlinks(file, !IoUtils.followLinks(options));
                 if (status == null) {
                     throw new AccessDeniedException(file.toString(), file.toString(), "Cannot determine existence of read-dir");
                 }
@@ -748,7 +748,7 @@ public class SftpSubsystem
     @Override
     protected String doOpenDir(int id, String path, Path dir, LinkOption... options) throws IOException {
         SftpPathImpl.withAttributeCache(dir, p -> {
-            Boolean status = IoUtils.checkFileExists(p, options);
+            Boolean status = IoUtils.checkFileExistsAnySymlinks(p, !IoUtils.followLinks(options));
             if (status == null) {
                 throw signalOpenFailure(id, path, p, true,
                         new AccessDeniedException(p.toString(), p.toString(), "Cannot determine open-dir existence"));
@@ -808,7 +808,9 @@ public class SftpSubsystem
         Path file = fileHandle.getFile();
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
                 this, file, SftpConstants.SSH_FXP_FSTAT, "", true);
-        return resolveFileAttributes(file, flags, options);
+
+        boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_FSTAT, handle, file);
+        return resolveFileAttributes(file, flags, followLinks, options);
     }
 
     @Override

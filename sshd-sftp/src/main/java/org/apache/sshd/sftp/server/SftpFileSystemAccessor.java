@@ -19,20 +19,14 @@
 
 package org.apache.sshd.sftp.server;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.file.CopyOption;
-import java.nio.file.DirectoryStream;
-import java.nio.file.FileSystem;
-import java.nio.file.Files;
-import java.nio.file.InvalidPathException;
-import java.nio.file.LinkOption;
-import java.nio.file.OpenOption;
-import java.nio.file.Path;
+import java.nio.file.*;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.nio.file.attribute.FileAttribute;
@@ -44,8 +38,10 @@ import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.nio.file.attribute.UserPrincipalNotFoundException;
 import java.security.Principal;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
@@ -214,7 +210,11 @@ public interface SftpFileSystemAccessor {
             attrs = IoUtils.EMPTY_FILE_ATTRIBUTES;
         }
 
-        return FileChannel.open(file, options, attrs);
+        // Don't use Set contains as this can fail with TreeSet
+        if (!Arrays.asList(options.toArray(new OpenOption[0])).contains(LinkOption.NOFOLLOW_LINKS)) {
+            return FileChannel.open(file, options, attrs);
+        }
+        return seekableByteChannelNoLinkFollow(file, options, attrs);
     }
 
     /**
@@ -317,9 +317,12 @@ public interface SftpFileSystemAccessor {
      * @throws IOException If failed to open
      */
     default DirectoryStream<Path> openDirectory(
-            SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle)
+            SftpSubsystemProxy subsystem, DirectoryHandle dirHandle, Path dir, String handle, LinkOption... linkOptions)
             throws IOException {
-        return Files.newDirectoryStream(dir);
+        if (IoUtils.followLinks(linkOptions)) {
+            return Files.newDirectoryStream(dir);
+        }
+        return secureResolveDirectoryStream(dir);
     }
 
     /**
@@ -523,15 +526,84 @@ public interface SftpFileSystemAccessor {
     default void copyFile(
             SftpSubsystemProxy subsystem, Path src, Path dst, Collection<CopyOption> opts)
             throws IOException {
+
+        if (noFollow(opts)) {
+            try (SeekableByteChannel srcFile
+                    = seekableByteChannelNoLinkFollow(src, Collections.singleton(StandardOpenOption.READ))) {
+                if (!(srcFile instanceof FileChannel)) {
+                    throw new UnsupportedOperationException("Host file system must return a file channel");
+                }
+
+                try (SeekableByteChannel dstFile = seekableByteChannelNoLinkFollow(src, new HashSet<>(Arrays
+                        .asList(StandardOpenOption.WRITE, StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE)))) {
+                    ((FileChannel) srcFile).transferTo(0, srcFile.size(), dstFile);
+                }
+            }
+            return;
+        }
         Files.copy(src, dst,
                 GenericUtils.isEmpty(opts)
                         ? IoUtils.EMPTY_COPY_OPTIONS
                         : opts.toArray(new CopyOption[opts.size()]));
     }
 
+    static SeekableByteChannel seekableByteChannelNoLinkFollow(
+            Path src, Set<? extends OpenOption> opts, FileAttribute<?>... fileAttributes)
+            throws IOException {
+        if (src.getNameCount() < 1) {
+            // opening root directory isn't supported.
+            throw new IllegalArgumentException();
+        }
+        Path toResolve = src.isAbsolute() ? src : src.getFileSystem().getPath(src.toString());
+
+        if (!Files.isDirectory(src.getParent(), LinkOption.NOFOLLOW_LINKS)) {
+            throw new FileNotFoundException(src.getParent().toString());
+        }
+
+        toResolve = toResolve.normalize();
+        try (SecureDirectoryStream<Path> ds = secureResolveDirectoryStream(toResolve.getParent())) {
+            Set<OpenOption> newOpts = new HashSet<>(opts);
+            newOpts.add(LinkOption.NOFOLLOW_LINKS);
+            return ds.newByteChannel(toResolve.getName(toResolve.getNameCount() - 1), newOpts, fileAttributes);
+        }
+    }
+
+    static SecureDirectoryStream<Path> secureResolveDirectoryStream(Path toResolve) throws IOException {
+        toResolve = IoUtils.removeCdUpAboveRoot(toResolve);
+        DirectoryStream<Path> ds = Files.newDirectoryStream(toResolve.getRoot());
+        for (int i = 0; i < toResolve.getNameCount(); i++) {
+            DirectoryStream<Path> dsOld = ds;
+            try {
+                ds = secure(ds).newDirectoryStream(toResolve.getName(i), LinkOption.NOFOLLOW_LINKS);
+                dsOld.close();
+            } catch (IOException ex) {
+                ds.close();
+                throw ex;
+            }
+        }
+        return secure(ds);
+    }
+
+    static SecureDirectoryStream<Path> secure(DirectoryStream<Path> ds) {
+        if (ds instanceof SecureDirectoryStream) {
+            return (SecureDirectoryStream<Path>) ds;
+        }
+        // do we want to bomb? do we want a different fallback option?
+        throw new UnsupportedOperationException("FS Does not support secure directory streams.");
+    }
+
     default void removeFile(
             SftpSubsystemProxy subsystem, Path path, boolean isDirectory)
             throws IOException {
         Files.delete(path);
+    }
+
+    default boolean noFollow(Collection<?> opts) {
+        for (Object opt : opts) {
+            if (LinkOption.NOFOLLOW_LINKS.equals(opt)) {
+                return true;
+            }
+        }
+        return false;
     }
 }
