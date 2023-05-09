@@ -495,11 +495,11 @@ public final class CommonTestSupportUtils {
      * @throws IOException If failed to access/remove some file(s)
      */
     public static Path deleteRecursive(Path path, LinkOption... options) throws IOException {
-        if ((path == null) || (!Files.exists(path))) {
+        if ((path == null) || (!Files.exists(path, options))) {
             return path;
         }
 
-        if (Files.isDirectory(path)) {
+        if (Files.isDirectory(path, options)) {
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(path)) {
                 for (Path child : ds) {
                     deleteRecursive(child, options);

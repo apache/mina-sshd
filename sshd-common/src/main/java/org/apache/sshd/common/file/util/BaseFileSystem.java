@@ -34,6 +34,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,7 +80,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
     public T getPath(String first, String... more) {
         StringBuilder sb = new StringBuilder();
         if (!GenericUtils.isEmpty(first)) {
-            appendDedupSep(sb, first.replace('\\', '/')); // in case we are running on Windows
+            appendDedupSep(sb, handleWindowsSeparator(first));
         }
 
         if (GenericUtils.length(more) > 0) {
@@ -87,8 +88,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                 if ((sb.length() > 0) && (sb.charAt(sb.length() - 1) != '/')) {
                     sb.append('/');
                 }
-                // in case we are running on Windows
-                appendDedupSep(sb, segment.replace('\\', '/'));
+                appendDedupSep(sb, handleWindowsSeparator(segment));
             }
         }
 
@@ -119,6 +119,23 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
                 sb.append(ch);
             }
         }
+    }
+
+    /**
+     * In case we are running on Windows, accept "\\" as a file separator. Ignore in *nix as "\\" is a valid filename
+     * 
+     * @param  name the name to fix the separator for if running on Windows
+     * @return      the fixed name
+     */
+    protected String handleWindowsSeparator(String name) {
+        if (hostFsHasWindowsSeparator()) {
+            return name.replace('\\', '/');
+        }
+        return name;
+    }
+
+    protected boolean hostFsHasWindowsSeparator() {
+        return OsUtils.isWin32();
     }
 
     @Override
