@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>2.10.0-SNAPSHOT</version>
+        <version>2.10.0</version>
     </parent>
 
     <artifactId>sshd-osgi</artifactId>
@@ -46,7 +46,7 @@
           Arguably this is a shortcoming of the BouncyCastleSecurityRegistrar. For the EdDSASecurityProviderRegistrar, this problem does not exist
           since the security provider is in a package that is also referenced elsewhere.
         -->
-        <bnd.extraImports>org.bouncycastle.jce.provider;version="$$&lt;range;[==,+);${bouncycastle.version}>";resolution:=optional,</bnd.extraImports>
+        <bnd.extraImports>org.bouncycastle.jce.provider;version="$$&lt;range;[==,+);${bouncycastle.version}&gt;";resolution:=optional,</bnd.extraImports>
     </properties>
 
     <dependencies>
