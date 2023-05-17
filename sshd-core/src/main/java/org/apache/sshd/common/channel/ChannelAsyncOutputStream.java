@@ -21,6 +21,7 @@ package org.apache.sshd.common.channel;
 import java.io.EOFException;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
@@ -35,6 +36,12 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 
 public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOutputStream, ChannelHolder {
+
+    /**
+     * The future describing the last executed *buffer* write {@link ChannelAsyncOutputStream#writeBuffer(Buffer)}. Used
+     * for graceful closing.
+     */
+    protected final AtomicReference<IoWriteFuture> lastWrite = new AtomicReference<>();
 
     /**
      * Encapsulates the state of the current write operation. Access is always under lock (on writeState's monitor), the
@@ -89,13 +96,13 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     @Override
     public IoWriteFuture writeBuffer(Buffer buffer) throws IOException {
         if (isClosing()) {
-            throw new EOFException("Closing: " + writeState);
+            throw new EOFException("Closing: " + this);
         }
 
         IoWriteFutureImpl future = new IoWriteFutureImpl(packetWriteId, buffer);
         synchronized (writeState) {
             if (!State.Opened.equals(writeState.openState)) { // Double check.
-                throw new EOFException("Closing: " + writeState);
+                throw new EOFException("Closing: " + this);
             }
             if (writeState.writeInProgress) {
                 throw new WritePendingException(
@@ -103,10 +110,11 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             }
             writeState.totalLength = buffer.available();
             writeState.toSend = writeState.totalLength;
-            writeState.lastWrite = future;
             writeState.pendingWrite = future;
             writeState.writeInProgress = true;
         }
+        lastWrite.set(future);
+        future.addListener(f -> lastWrite.compareAndSet(f, null));
         doWriteIfPossible(false);
         return future;
     }
@@ -149,9 +157,11 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             writeState.openState = State.Closed;
             current = writeState.pendingWrite;
             writeState.pendingWrite = null;
+            writeState.writeInProgress = false;
             total = writeState.totalLength;
             notSent = writeState.toSend;
         }
+        lastWrite.set(null);
         if (current != null) {
             terminateFuture(current);
         }
@@ -172,10 +182,9 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     @Override
     protected CloseFuture doCloseGracefully() {
-        IoWriteFuture last;
+        IoWriteFuture last = lastWrite.get();
         IoWriteFutureImpl current;
         synchronized (writeState) {
-            last = writeState.lastWrite;
             current = writeState.pendingWrite;
         }
         if (last == null) {
@@ -422,12 +431,6 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
      * Collects state variables; access is always synchronized on the single instance per stream.
      */
     protected static class WriteState {
-
-        /**
-         * The future describing the last executed *buffer* write {@link ChannelAsyncOutputStream#writeBuffer(Buffer)}.
-         * Used for graceful closing.
-         */
-        protected IoWriteFuture lastWrite;
 
         /**
          * The future describing the current packet write; if {@code null}, there is nothing to write or

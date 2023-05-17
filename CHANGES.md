@@ -24,3 +24,6 @@
 
 # Planned for next version
 
+## Bug Fixes
+
+* [SSHD-1327](https://issues.apache.org/jira/browse/SSHD-1327) `ChannelAsyncOutputStream`: remove write future when done.
