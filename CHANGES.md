@@ -26,4 +26,7 @@
 
 ## Bug Fixes
 
+* [GH-370](https://github.com/apache/mina-sshd/issues/370) Also compare file keys in `ModifiableFileWatcher`.
+
+
 * [SSHD-1327](https://issues.apache.org/jira/browse/SSHD-1327) `ChannelAsyncOutputStream`: remove write future when done.

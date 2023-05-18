@@ -24,8 +24,10 @@ import java.io.Writer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -85,6 +87,7 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
                     w.append(l).append(IoUtils.EOL);
                 }
             }
+            Files.setLastModifiedTime(file, FileTime.from(Instant.now().minusSeconds(4)));
 
             List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
             assertEquals("Mismatched number of loaded entries", keyLines.size(), entries.size());

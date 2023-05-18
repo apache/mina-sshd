@@ -26,8 +26,10 @@ import java.nio.file.Files;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileTime;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.time.Instant;
 import java.util.Collections;
 import java.util.Date;
 import java.util.Objects;
@@ -95,18 +97,18 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
 
         testIdentityReload("Non-existing", reloadCount, idProvider, null, 0);
 
-        touchIdentityFile(idFile);
+        touchIdentityFile(idFile, Instant.now().minusSeconds(6));
         for (int index = 1; index < Byte.SIZE; index++) {
             testIdentityReload("Created iteration " + 1, reloadCount, idProvider, identity, 1);
         }
 
-        touchIdentityFile(idFile);
+        touchIdentityFile(idFile, Instant.now().minusSeconds(4));
         for (int index = 1; index < Byte.SIZE; index++) {
             testIdentityReload("Modified iteration " + 1, reloadCount, idProvider, identity, 2);
         }
     }
 
-    private static void touchIdentityFile(Path idFile) throws IOException {
+    private static void touchIdentityFile(Path idFile, Instant fileTime) throws IOException {
         OpenOption[] options = IoUtils.EMPTY_OPEN_OPTIONS;
         if (Files.exists(idFile, IoUtils.EMPTY_LINK_OPTIONS)) {
             options = new OpenOption[] { StandardOpenOption.WRITE, StandardOpenOption.APPEND };
@@ -116,6 +118,7 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
             out.write(new Date(System.currentTimeMillis()).toString().getBytes(StandardCharsets.UTF_8));
             out.write('\n');
         }
+        Files.setLastModifiedTime(idFile, FileTime.from(fileTime));
     }
 
     private static void testIdentityReload(

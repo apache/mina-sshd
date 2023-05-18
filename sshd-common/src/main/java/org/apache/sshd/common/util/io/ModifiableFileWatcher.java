@@ -34,8 +34,7 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -60,9 +59,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
     protected final LinkOption[] options;
 
     private final Path file;
-    private final AtomicBoolean lastExisted = new AtomicBoolean(false);
-    private final AtomicLong lastSize = new AtomicLong(Long.MIN_VALUE);
-    private final AtomicLong lastModified = new AtomicLong(-1L);
+    private final AtomicReference<FileSnapshot> metadata = new AtomicReference<>();
 
     public ModifiableFileWatcher(Path file) {
         this(file, IoUtils.getLinkOptions(true));
@@ -107,40 +104,14 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      * @throws IOException If failed to query file data
      */
     public boolean checkReloadRequired() throws IOException {
-        boolean exists = exists();
-        // if existence state changed from last time
-        if (exists != lastExisted.getAndSet(exists)) {
+        FileSnapshot old = metadata.get();
+        if (old == null) {
+            metadata.set(FileSnapshot.save(file, options));
             return true;
         }
-
-        if (!exists) {
-            // file did not exist and still does not exist
-            resetReloadAttributes();
-            return false;
-        }
-
-        long size = size();
-        if (size < 0L) {
-            // means file no longer exists
-            resetReloadAttributes();
-            return true;
-        }
-
-        // if size changed then obviously need reload
-        if (size != lastSize.getAndSet(size)) {
-            return true;
-        }
-
-        FileTime modifiedTime = lastModified();
-        if (modifiedTime == null) {
-            // means file no longer exists
-            resetReloadAttributes();
-            return true;
-        }
-
-        long timestamp = modifiedTime.toMillis();
-        return timestamp != lastModified.getAndSet(timestamp);
-
+        FileSnapshot current = old.reload(file, options);
+        metadata.set(current);
+        return old != current;
     }
 
     /**
@@ -148,9 +119,7 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      * exist and no known size of modify time
      */
     public void resetReloadAttributes() {
-        lastExisted.set(false);
-        lastSize.set(Long.MIN_VALUE);
-        lastModified.set(-1L);
+        metadata.set(FileSnapshot.NO_FILE);
     }
 
     /**
@@ -163,18 +132,10 @@ public class ModifiableFileWatcher extends AbstractLoggingBean {
      */
     public void updateReloadAttributes() throws IOException {
         if (exists()) {
-            long size = size();
-            FileTime modifiedTime = lastModified();
-
-            if ((size >= 0L) && (modifiedTime != null)) {
-                lastExisted.set(true);
-                lastSize.set(size);
-                lastModified.set(modifiedTime.toMillis());
-                return;
-            }
+            metadata.compareAndSet(null, FileSnapshot.save(file, options));
+        } else {
+            resetReloadAttributes();
         }
-
-        resetReloadAttributes();
     }
 
     public PathResource toPathResource() {

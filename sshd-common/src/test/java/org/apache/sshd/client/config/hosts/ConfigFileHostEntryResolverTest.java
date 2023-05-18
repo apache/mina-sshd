@@ -22,6 +22,8 @@ package org.apache.sshd.client.config.hosts;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -111,6 +113,7 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
             }
         } else {
             HostConfigEntry.writeHostConfigEntries(path, entries, IoUtils.EMPTY_OPEN_OPTIONS);
+            Files.setLastModifiedTime(path, FileTime.from(Instant.now().minusSeconds(4)));
         }
 
         reloadCount.set(0);
