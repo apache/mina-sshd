@@ -62,6 +62,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
@@ -76,6 +78,7 @@ import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.AbstractSftpClientTestSupport;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
+import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.server.SftpEventListener;
@@ -800,6 +803,61 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
             testFileSystem(fs, expectedVersion);
         }
+    }
+
+    @Test
+    public void testSessionNotClosed() throws Exception {
+        try (ClientSession session = createAuthenticatedClientSession()) {
+            List<Channel> channels = new ArrayList<>();
+            session.addChannelListener(new ChannelListener() {
+
+                @Override
+                public void channelOpenSuccess(Channel channel) {
+                    channels.add(channel);
+                }
+
+                @Override
+                public void channelClosed(Channel channel, Throwable reason) {
+                    channels.remove(channel);
+                }
+            });
+            SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session);
+            try {
+                testFileSystem(fs, fs.getVersion());
+            } finally {
+                fs.close();
+            }
+            assertFalse("File system should not be open", fs.isOpen());
+            assertEquals("No open channels expected", "[]", channels.toString());
+            assertTrue("Non-owned session should still be open", session.isOpen());
+        }
+    }
+
+    @Test
+    public void testSessionClosed() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Files.createDirectories(lclSftp);
+
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")")
+                .getBytes(StandardCharsets.UTF_8);
+        ClientSession session;
+        FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap());
+        try {
+            assertTrue("Should be an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path remotePath = fs.getPath(CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), lclFile));
+            Files.write(remotePath, expected);
+            session = ((SftpFileSystem) fs).getClientSession();
+        } finally {
+            fs.close();
+        }
+        byte[] actual = Files.readAllBytes(lclFile);
+        assertArrayEquals("Mismatched persisted data", expected, actual);
+        assertFalse("File system should not be open", fs.isOpen());
+        assertFalse("Owned session should not be open", session.isOpen());
     }
 
     @Test

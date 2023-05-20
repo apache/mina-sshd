@@ -275,6 +275,8 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
                 initializer.authenticateClientSession(this, context, session);
 
+                session.setAttribute(SftpFileSystem.OWNED_SESSION, Boolean.TRUE);
+
                 fileSystem = initializer.createSftpFileSystem(
                         this, context, session, selector, errorHandler);
                 fileSystems.put(id, fileSystem);

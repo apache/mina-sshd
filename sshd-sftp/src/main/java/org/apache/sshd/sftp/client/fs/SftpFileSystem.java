@@ -29,23 +29,28 @@ import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.NavigableMap;
 import java.util.NavigableSet;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
+import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.file.util.BaseFileSystem;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.sftp.SftpModuleProperties;
@@ -65,12 +70,19 @@ public class SftpFileSystem
     public static final NavigableSet<String> UNIVERSAL_SUPPORTED_VIEWS = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, "basic", "posix", "owner"));
 
+    /**
+     * An {@link AttributeKey} that can be set to {@link Boolean#TRUE} on the {@link ClientSession} to tell the
+     * {@link SftpFileSystem} that it owns that session and should close it when the {@link SftpFileSeystem} itself is
+     * closed.
+     */
+    public static final AttributeKey<Boolean> OWNED_SESSION = new AttributeKey<>();
+
     private final String id;
     private final ClientSession clientSession;
     private final SftpClientFactory factory;
     private final SftpVersionSelector selector;
     private final SftpErrorDataHandler errorDataHandler;
-    private final Queue<SftpClient> pool;
+    private final BlockingQueue<SftpClient> pool;
     private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
     private final int version;
     private final Set<String> supportedViews;
@@ -78,6 +90,7 @@ public class SftpFileSystem
     private int readBufferSize;
     private int writeBufferSize;
     private final List<FileStore> stores;
+    private final AtomicBoolean open = new AtomicBoolean();
 
     public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session,
                           SftpClientFactory factory, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
@@ -85,6 +98,20 @@ public class SftpFileSystem
         super(provider);
         this.id = id;
         this.clientSession = Objects.requireNonNull(session, "No client session");
+        clientSession.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionClosed(Session session) {
+                if (clientSession == session) {
+                    try {
+                        close();
+                    } catch (IOException e) {
+                        log.warn("sessionClosed({}) [{}] could not close file system properly: {}", session, SftpFileSystem.this,
+                                e.toString(), e);
+                    }
+                }
+            }
+        });
         this.factory = factory != null ? factory : SftpClientFactory.instance();
         this.selector = selector;
         this.errorDataHandler = errorDataHandler;
@@ -103,6 +130,7 @@ public class SftpFileSystem
         } else {
             supportedViews = UNIVERSAL_SUPPORTED_VIEWS;
         }
+        open.set(true);
     }
 
     public final SftpVersionSelector getSftpVersionSelector() {
@@ -198,23 +226,36 @@ public class SftpFileSystem
 
     @Override
     public void close() throws IOException {
-        if (isOpen()) {
+        if (open.getAndSet(false)) {
+            closePool();
             SftpFileSystemProvider provider = provider();
             String fsId = getId();
             SftpFileSystem fs = provider.removeFileSystem(fsId);
             ClientSession session = getClientSession();
-            session.close(true);
-
+            if (Boolean.TRUE.equals(session.getAttribute(OWNED_SESSION))) {
+                session.close(true);
+            }
             if ((fs != null) && (fs != this)) {
                 throw new FileSystemException(fsId, fsId, "Mismatched FS instance for id=" + fsId);
             }
         }
     }
 
+    private void closePool() {
+        List<SftpClient> clients = new ArrayList<>();
+        pool.drainTo(clients);
+        clients.forEach(client -> {
+            try {
+                client.close();
+            } catch (IOException e) {
+                log.warn("closePool({}) [{}] Could not close SftpClient properly: {}", this, client, e.toString());
+            }
+        });
+    }
+
     @Override
     public boolean isOpen() {
-        ClientSession session = getClientSession();
-        return session.isOpen();
+        return open.get();
     }
 
     @Override
