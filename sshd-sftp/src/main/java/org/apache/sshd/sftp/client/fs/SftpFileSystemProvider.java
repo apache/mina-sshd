@@ -71,6 +71,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
@@ -82,11 +83,14 @@ import org.apache.sshd.common.auth.BasicCredentialsImpl;
 import org.apache.sshd.common.auth.BasicCredentialsProvider;
 import org.apache.sshd.common.auth.MutableBasicCredentials;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.io.functors.IOFunction;
 import org.apache.sshd.common.util.logging.LoggingUtils;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -246,48 +250,24 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         Charset decodingCharset = SftpModuleProperties.NAME_DECODER_CHARSET.getRequired(resolver);
 
         SftpFileSystemClientSessionInitializer initializer = getSftpFileSystemClientSessionInitializer();
-        SftpFileSystem fileSystem;
+        SftpFileSystem fileSystem = null;
         synchronized (fileSystems) {
             if (fileSystems.containsKey(id)) {
                 throw new FileSystemAlreadyExistsException(id);
             }
 
-            // TODO try and find a way to avoid doing this while locking the file systems cache
-            ClientSession session = null;
+            SessionProvider sessionProvider = new SessionProvider(context, params, decodingCharset);
             try {
-                session = initializer.createClientSession(this, context);
-
-                // Make any extra configuration parameters available to the session
-                if (MapEntryUtils.size(params) > 0) {
-                    // Cannot use forEach because the session is not effectively final
-                    for (Map.Entry<String, ?> pe : params.entrySet()) {
-                        String key = pe.getKey();
-                        Object value = pe.getValue();
-                        if (VERSION_PARAM.equalsIgnoreCase(key)) {
-                            continue;
-                        }
-
-                        PropertyResolverUtils.updateProperty(session, key, value);
-                    }
-
-                    SftpModuleProperties.NAME_DECODING_CHARSET.set(session, decodingCharset);
-                }
-
-                initializer.authenticateClientSession(this, context, session);
-
-                session.setAttribute(SftpFileSystem.OWNED_SESSION, Boolean.TRUE);
-
-                fileSystem = initializer.createSftpFileSystem(
-                        this, context, session, selector, errorHandler);
+                fileSystem = initializer.createSftpFileSystem(this, context, sessionProvider, selector, errorHandler);
                 fileSystems.put(id, fileSystem);
             } catch (Exception e) {
-                if (session != null) {
+                if (fileSystem != null) {
                     try {
-                        session.close();
+                        fileSystem.close();
                     } catch (IOException t) {
                         e.addSuppressed(t);
                         LoggingUtils.debug(log,
-                                "Failed ({}) to close session for new file system on {}}:{} due to {}[{}]: {}",
+                                "Failed ({}) to close new failed file system on {}}:{} due to {}[{}]: {}",
                                 t.getClass().getSimpleName(), host, port, e.getClass().getSimpleName(), e.getMessage(),
                                 t.getMessage(),
                                 t);
@@ -316,6 +296,97 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             log.debug("newFileSystem({}): {}", uri.toASCIIString(), fileSystem);
         }
         return fileSystem;
+    }
+
+    /**
+     * A session provider that automatically creates a new session if the current one is no longer open (or if there
+     * isn't one yet). It returns fully authenticated sessions.
+     */
+    private class SessionProvider implements IOFunction<Boolean, ClientSession> {
+
+        private final SftpFileSystemInitializationContext context;
+
+        private final Map<String, ?> params;
+
+        private final Charset decodingCharset;
+
+        private AtomicReference<ClientSession> currentSession = new AtomicReference<>();
+
+        SessionProvider(SftpFileSystemInitializationContext context, Map<String, ?> params, Charset decodingCharset) {
+            this.context = Objects.requireNonNull(context);
+            this.params = Objects.requireNonNull(params);
+            this.decodingCharset = Objects.requireNonNull(decodingCharset);
+        }
+
+        /**
+         * Retrieves the current {@link ClientSession} and optionally creates a new one if there is no current session
+         * yet, or if it is not open.
+         *
+         * @param create {@link Boolean#TRUE} to create a new session if needed, otherwise just query the current
+         *               session.
+         */
+        @Override
+        public ClientSession apply(Boolean create) throws IOException {
+            synchronized (this) {
+                ClientSession session = currentSession.get();
+                if ((session == null || !session.isOpen()) && Boolean.TRUE.equals(create)) {
+                    session = create();
+                    currentSession.set(session);
+                }
+                return session;
+            }
+        }
+
+        private ClientSession create() throws IOException {
+            SftpFileSystemClientSessionInitializer initializer = getSftpFileSystemClientSessionInitializer();
+            ClientSession session = null;
+            try {
+                session = initializer.createClientSession(SftpFileSystemProvider.this, context);
+                ClientSession mySelf = session;
+
+                // Make any extra configuration parameters available to the session
+                params.forEach((key, value) -> {
+                    if (!VERSION_PARAM.equalsIgnoreCase(key)) {
+                        PropertyResolverUtils.updateProperty(mySelf, key, value);
+                    }
+                });
+                SftpModuleProperties.NAME_DECODING_CHARSET.set(session, decodingCharset);
+
+                initializer.authenticateClientSession(SftpFileSystemProvider.this, context, session);
+
+                session.setAttribute(SftpFileSystem.OWNED_SESSION, Boolean.TRUE);
+                session.addSessionListener(new SessionListener() {
+
+                    @Override
+                    public void sessionClosed(Session s) {
+                        if (mySelf == s) {
+                            currentSession.compareAndSet(mySelf, null);
+                        }
+                    }
+                });
+                return session;
+            } catch (Exception e) {
+                if (session != null) {
+                    try {
+                        session.close();
+                    } catch (IOException t) {
+                        e.addSuppressed(t);
+                        LoggingUtils.debug(log, "Failed ({}) to close session for new file system on {}}:{} due to {}[{}]: {}",
+                                t.getClass().getSimpleName(), context.getHost(), context.getPort(),
+                                e.getClass().getSimpleName(), e.getMessage(), t.getMessage(), t);
+                    }
+                }
+
+                if (e instanceof IOException) {
+                    throw (IOException) e;
+                } else if (e instanceof RuntimeException) {
+                    throw (RuntimeException) e;
+                } else {
+                    throw new IOException(e);
+                }
+            }
+        }
+
     }
 
     protected SftpVersionSelector resolveSftpVersionSelector(

@@ -17,15 +17,16 @@ There are two ways to create an `SftpFileSystem`:
    off that session using `SftpClientFactory.instance().createSftpFileSystem()`.
    The file system remains valid until it is closed, or until the session is
    closed. When the file system is closed, the session will *not* be closed.
+   When the session closes, so will the file system.
    
 2. You can create an `SftpFileSystem` with a `sftp://` URI using the standard
    Java factory `java.nio.file.FileSystems.newFileSystem()`. This will automatically
    create an `SshClient` with default settings, and the file system will open
    an SSH session itself. This session has heartbeats enabled to keep it open
    for as long as the file system is open. The file system remains valid until
-   closed, at which point it will close the session it had created.
-
-In either case, the file system will be closed if the session closes.
+   closed, at which point it will close the session it had created. If the
+   session closes while the file system is not closed, the next operation on
+   such a file system will open a new session.
 
 # SSH Resource Management
 

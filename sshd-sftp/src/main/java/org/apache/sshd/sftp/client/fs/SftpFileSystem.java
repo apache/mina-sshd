@@ -86,53 +86,68 @@ public class SftpFileSystem
     public static final AttributeKey<Boolean> OWNED_SESSION = new AttributeKey<>();
 
     private final String id;
-    private final ClientSession clientSession;
     private final SftpClientFactory factory;
     private final SftpVersionSelector selector;
     private final SftpErrorDataHandler errorDataHandler;
-    private final SftpClientPool pool;
-    private final int version;
-    private final Set<String> supportedViews;
+    private SftpClientPool pool;
+    private int version;
+    private Set<String> supportedViews;
     private SftpPath defaultDir;
     private int readBufferSize;
     private int writeBufferSize;
     private final List<FileStore> stores;
     private final AtomicBoolean open = new AtomicBoolean();
 
+    private AtomicReference<ClientSession> clientSession = new AtomicReference<>();
+
     public SftpFileSystem(SftpFileSystemProvider provider, String id, ClientSession session,
                           SftpClientFactory factory, SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
             throws IOException {
-        super(provider);
-        this.id = id;
-        this.clientSession = Objects.requireNonNull(session, "No client session");
-        clientSession.addSessionListener(new SessionListener() {
+        this(provider, id, factory, selector, errorDataHandler);
+        clientSession.set(Objects.requireNonNull(session, "No client session"));
+        if (!Boolean.TRUE.equals(session.getAttribute(OWNED_SESSION))) {
+            session.addSessionListener(new SessionListener() {
 
-            @Override
-            public void sessionClosed(Session session) {
-                if (clientSession == session) {
-                    try {
-                        close();
-                    } catch (IOException e) {
-                        log.warn("sessionClosed({}) [{}] could not close file system properly: {}", session,
-                                SftpFileSystem.this, e.toString(), e);
+                @Override
+                public void sessionClosed(Session session) {
+                    if (clientSession.get() == session) {
+                        try {
+                            close();
+                        } catch (IOException e) {
+                            log.warn("sessionClosed({}) [{}] could not close file system properly: {}", session,
+                                    SftpFileSystem.this, e.toString(), e);
+                        }
                     }
                 }
-            }
-        });
+            });
+        }
+        init();
+    }
+
+    protected SftpFileSystem(SftpFileSystemProvider provider, String id, SftpClientFactory factory,
+                             SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler) {
+        super(provider);
+        this.id = id;
         this.factory = factory != null ? factory : SftpClientFactory.instance();
         this.selector = selector;
         this.errorDataHandler = errorDataHandler;
-        this.stores = Collections.unmodifiableList(Collections.<FileStore> singletonList(new SftpFileStore(id, this)));
-        this.pool = new SftpClientPool(SftpModuleProperties.POOL_SIZE.getRequired(session),
-                SftpModuleProperties.POOL_LIFE_TIME.getRequired(session),
-                SftpModuleProperties.POOL_CORE_SIZE.getRequired(session));
+        this.stores = Collections.singletonList(new SftpFileStore(id, this));
+    }
+
+    protected void init() throws IOException {
         open.set(true);
         try (SftpClient client = getClient()) {
+            ClientSession session = client.getClientSession();
+            pool = new SftpClientPool(SftpModuleProperties.POOL_SIZE.getRequired(session),
+                    SftpModuleProperties.POOL_LIFE_TIME.getRequired(session),
+                    SftpModuleProperties.POOL_CORE_SIZE.getRequired(session));
             version = client.getVersion();
             defaultDir = getPath(client.canonicalPath("."));
         } catch (RuntimeException | IOException e) {
             open.set(false);
-            pool.close();
+            if (pool != null) {
+                pool.close();
+            }
             throw e;
         }
 
@@ -205,11 +220,19 @@ public class SftpFileSystem
 
     @Override
     public ClientSession getClientSession() {
-        return clientSession;
+        return clientSession.get();
     }
 
     @Override
     public ClientSession getSession() {
+        return getClientSession();
+    }
+
+    protected void setClientSession(ClientSession newSession) {
+        clientSession.set(newSession);
+    }
+
+    protected ClientSession sessionForSftpClient() throws IOException {
         return getClientSession();
     }
 
@@ -220,9 +243,9 @@ public class SftpFileSystem
             if (!isOpen()) {
                 throw new IOException("SftpFileSystem is closed" + this);
             }
-            SftpClient client = pool.poll();
+            SftpClient client = pool != null ? pool.poll() : null;
             if (client == null) {
-                ClientSession session = getClientSession();
+                ClientSession session = sessionForSftpClient();
                 client = factory.createSftpClient(session, getSftpVersionSelector(), getSftpErrorDataHandler());
             }
             if (!client.isClosing()) {
@@ -235,7 +258,9 @@ public class SftpFileSystem
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
-            pool.close();
+            if (pool != null) {
+                pool.close();
+            }
             SftpFileSystemProvider provider = provider();
             String fsId = getId();
             SftpFileSystem fs = provider.removeFileSystem(fsId);

@@ -861,6 +861,42 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
     }
 
     @Test
+    public void testSessionRecreate() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Files.createDirectories(lclSftp);
+
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        byte[] expected = (getClass().getName() + "#" + getCurrentTestName() + "(" + new Date() + ")")
+                .getBytes(StandardCharsets.UTF_8);
+        ClientSession session;
+        FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap());
+        try {
+            assertTrue("Should be an SftpFileSystem", fs instanceof SftpFileSystem);
+            Path remotePath = fs.getPath(CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), lclFile));
+            Files.write(remotePath, "foo".getBytes(StandardCharsets.US_ASCII));
+            session = ((SftpFileSystem) fs).getClientSession();
+            session.close();
+            Files.write(remotePath, expected);
+            ClientSession session2 = ((SftpFileSystem) fs).getClientSession();
+            assertNotNull("Expected a session", session2);
+            assertNotSame("Expected different sessions", session, session2);
+            session = session2;
+            assertTrue("Second session should still be open", session.isOpen());
+            assertTrue("Recreated session should be owned by the file system",
+                    session.getAttribute(SftpFileSystem.OWNED_SESSION));
+        } finally {
+            fs.close();
+        }
+        byte[] actual = Files.readAllBytes(lclFile);
+        assertArrayEquals("Mismatched persisted data", expected, actual);
+        assertFalse("File system should not be open", fs.isOpen());
+        assertFalse("Owned session should not be open", session.isOpen());
+    }
+
+    @Test
     public void testFileSystemProviderServiceEntry() throws IOException {
         Path configFile = CommonTestSupportUtils.resolve(detectSourcesFolder(),
                 MAIN_SUBFOLDER, "filtered-resources", "META-INF", "services", FileSystemProvider.class.getName());
