@@ -19,6 +19,7 @@
 
 package org.apache.sshd.sftp.client.fs;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
@@ -37,7 +38,7 @@ import org.apache.sshd.sftp.client.impl.SftpPathImpl;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpPathIterator implements Iterator<Path> {
-    protected final Iterator<? extends SftpClient.DirEntry> it;
+    protected Iterator<? extends SftpClient.DirEntry> it;
     protected boolean dotIgnored;
     protected boolean dotdotIgnored;
     protected SftpPath curEntry;
@@ -79,6 +80,14 @@ public class SftpPathIterator implements Iterator<Path> {
      */
     public final Filter<? super Path> getFilter() {
         return filter;
+    }
+
+    public final void close() throws IOException {
+        Iterator<? extends SftpClient.DirEntry> curr = it;
+        it = null;
+        if (curr instanceof Closeable) {
+            ((Closeable) curr).close();
+        }
     }
 
     @Override

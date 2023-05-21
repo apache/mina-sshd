@@ -27,7 +27,27 @@
 ## Bug Fixes
 
 * [GH-370](https://github.com/apache/mina-sshd/issues/370) Also compare file keys in `ModifiableFileWatcher`.
+* [GH-371](https://github.com/apache/mina-sshd/issues/371) Fix channel pool in `SftpFileSystem`.
 
 
 * [SSHD-1310](https://issues.apache.org/jira/browse/SSHD-1310) `SftpFileSystem`: do not close user session.
 * [SSHD-1327](https://issues.apache.org/jira/browse/SSHD-1327) `ChannelAsyncOutputStream`: remove write future when done.
+
+## New Features
+
+* [GH-356](https://github.com/apache/mina-sshd/issues/356) Publish snapshot maven artifacts to the [Apache Snapshots](https://repository.apache.org/content/repositories/snapshots) maven repository.
+
+
+## Major Code Re-factoring
+
+As part of the fix for [GH-371](https://github.com/apache/mina-sshd/issues/371)
+the channel pool in `SftpFileSystem` was rewritten completely. Previous code also
+used `ThreadLocal`s to store `SftpClient`s, which could cause memory leaks.
+
+These `ThreadLocal`s have been removed, and the channel pool has been rewritten
+to function similar to a Java `ThreadPool`: the pool has a maximum size; it has
+an expiration duration after which an idle channel is removed and closed, and
+it has a "core size" of channels to keep even if they are idle. If a channel is
+closed for any reason it is evicted from the pool.
+
+Properties to configure these pool parameters have been added to `SftpModuleProperties`.

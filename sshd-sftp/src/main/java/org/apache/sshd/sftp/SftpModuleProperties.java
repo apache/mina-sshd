@@ -60,10 +60,37 @@ public final class SftpModuleProperties {
             = Property.duration("sftp-channel-open-timeout", Duration.ofSeconds(15L));
 
     /**
-     * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystem}.
+     * The maximum size of the channel pool used by an {@link org.apache.sshd.sftp.client.fs.SftpFileSystem}; by default
+     * 8. The value must be &gt; zero.
+     *
+     * @see org.apache.sshd.sftp.client.fs.SftpFileSystem
      */
     public static final Property<Integer> POOL_SIZE
             = Property.integer("sftp-fs-pool-size", 8);
+
+    /**
+     * A timeout after which idle channels in the pool of an {@link org.apache.sshd.sftp.client.fs.SftpFileSystem} are
+     * removed from the pool and closed; by default 10 seconds. If set to zero, channels in the pool will not expire and
+     * will be closed only then the file system is closed, or if the server closes them.
+     * <p>
+     * The duration should not be shorter than 1 millisecond. If it is, 1 millisecond will be assumed.
+     * </p>
+     *
+     * @see org.apache.sshd.sftp.client.fs.SftpFileSystem
+     */
+    public static final Property<Duration> POOL_LIFE_TIME
+            = Property.duration("sftp-fs-pool-life-time", Duration.ofSeconds(10));
+
+    /**
+     * If &gt;= 0, that many channels may be kept open in the channel pool of an
+     * {@link org.apache.sshd.sftp.client.fs.SftpFileSystem} even if they are idle; by default 1. If &gt;=
+     * {@link #POOL_SIZE}, channels will not expire and will be closed only then the file system is closed, or if the
+     * server closes them.
+     *
+     * @see org.apache.sshd.sftp.client.fs.SftpFileSystem
+     */
+    public static final Property<Integer> POOL_CORE_SIZE
+            = Property.integer("sftp-fs-pool-core-size", 1);
 
     /**
      * See {@link org.apache.sshd.sftp.client.fs.SftpFileSystemProvider}.

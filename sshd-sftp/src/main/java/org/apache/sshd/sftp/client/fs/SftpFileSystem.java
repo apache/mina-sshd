@@ -39,19 +39,27 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionHolder;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
+import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionHolder;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.RawSftpClient;
@@ -82,8 +90,7 @@ public class SftpFileSystem
     private final SftpClientFactory factory;
     private final SftpVersionSelector selector;
     private final SftpErrorDataHandler errorDataHandler;
-    private final BlockingQueue<SftpClient> pool;
-    private final ThreadLocal<Wrapper> wrappers = new ThreadLocal<>();
+    private final SftpClientPool pool;
     private final int version;
     private final Set<String> supportedViews;
     private SftpPath defaultDir;
@@ -106,8 +113,8 @@ public class SftpFileSystem
                     try {
                         close();
                     } catch (IOException e) {
-                        log.warn("sessionClosed({}) [{}] could not close file system properly: {}", session, SftpFileSystem.this,
-                                e.toString(), e);
+                        log.warn("sessionClosed({}) [{}] could not close file system properly: {}", session,
+                                SftpFileSystem.this, e.toString(), e);
                     }
                 }
             }
@@ -116,10 +123,17 @@ public class SftpFileSystem
         this.selector = selector;
         this.errorDataHandler = errorDataHandler;
         this.stores = Collections.unmodifiableList(Collections.<FileStore> singletonList(new SftpFileStore(id, this)));
-        this.pool = new LinkedBlockingQueue<>(SftpModuleProperties.POOL_SIZE.getRequired(session));
+        this.pool = new SftpClientPool(SftpModuleProperties.POOL_SIZE.getRequired(session),
+                SftpModuleProperties.POOL_LIFE_TIME.getRequired(session),
+                SftpModuleProperties.POOL_CORE_SIZE.getRequired(session));
+        open.set(true);
         try (SftpClient client = getClient()) {
             version = client.getVersion();
             defaultDir = getPath(client.canonicalPath("."));
+        } catch (RuntimeException | IOException e) {
+            open.set(false);
+            pool.close();
+            throw e;
         }
 
         if (version >= SftpConstants.SFTP_V4) {
@@ -130,7 +144,6 @@ public class SftpFileSystem
         } else {
             supportedViews = UNIVERSAL_SUPPORTED_VIEWS;
         }
-        open.set(true);
     }
 
     public final SftpVersionSelector getSftpVersionSelector() {
@@ -202,32 +215,27 @@ public class SftpFileSystem
 
     @SuppressWarnings("synthetic-access")
     public SftpClient getClient() throws IOException {
-        Wrapper wrapper = wrappers.get();
-        if (wrapper == null) {
-            while (wrapper == null) {
-                SftpClient client = pool.poll();
-                if (client == null) {
-                    ClientSession session = getClientSession();
-                    client = factory.createSftpClient(
-                            session, getSftpVersionSelector(), getSftpErrorDataHandler());
-                }
-                if (!client.isClosing()) {
-                    wrapper = new Wrapper(
-                            client,
-                            getSftpErrorDataHandler(), getReadBufferSize(), getWriteBufferSize());
-                }
+        Wrapper wrapper = null;
+        do {
+            if (!isOpen()) {
+                throw new IOException("SftpFileSystem is closed" + this);
             }
-            wrappers.set(wrapper);
-        } else {
-            wrapper.increment();
-        }
+            SftpClient client = pool.poll();
+            if (client == null) {
+                ClientSession session = getClientSession();
+                client = factory.createSftpClient(session, getSftpVersionSelector(), getSftpErrorDataHandler());
+            }
+            if (!client.isClosing()) {
+                wrapper = new Wrapper(client, getSftpErrorDataHandler(), getReadBufferSize(), getWriteBufferSize());
+            }
+        } while (wrapper == null);
         return wrapper;
     }
 
     @Override
     public void close() throws IOException {
         if (open.getAndSet(false)) {
-            closePool();
+            pool.close();
             SftpFileSystemProvider provider = provider();
             String fsId = getId();
             SftpFileSystem fs = provider.removeFileSystem(fsId);
@@ -239,18 +247,6 @@ public class SftpFileSystem
                 throw new FileSystemException(fsId, fsId, "Mismatched FS instance for id=" + fsId);
             }
         }
-    }
-
-    private void closePool() {
-        List<SftpClient> clients = new ArrayList<>();
-        pool.drainTo(clients);
-        clients.forEach(client -> {
-            try {
-                client.close();
-            } catch (IOException e) {
-                log.warn("closePool({}) [{}] Could not close SftpClient properly: {}", this, client, e.toString());
-            }
-        });
     }
 
     @Override
@@ -280,9 +276,10 @@ public class SftpFileSystem
 
     private final class Wrapper extends AbstractSftpClient {
         private final SftpClient delegate;
-        private final AtomicInteger count = new AtomicInteger(1);
         private final int readSize;
         private final int writeSize;
+
+        private final AtomicBoolean open = new AtomicBoolean();
 
         private Wrapper(SftpClient delegate, SftpErrorDataHandler errorHandler, int readSize, int writeSize) {
             super(errorHandler);
@@ -290,6 +287,7 @@ public class SftpFileSystem
             this.delegate = delegate;
             this.readSize = readSize;
             this.writeSize = writeSize;
+            open.set(delegate.isOpen());
         }
 
         @Override
@@ -324,27 +322,29 @@ public class SftpFileSystem
 
         @Override
         public boolean isClosing() {
+            if (!open.get()) {
+                return true;
+            }
+            if (!delegate.isOpen()) {
+                open.set(false);
+                return true;
+            }
             return false;
         }
 
         @Override
         public boolean isOpen() {
-            return count.get() > 0;
+            return open.get() && delegate.isOpen();
         }
 
         @SuppressWarnings("synthetic-access")
         @Override
         public void close() throws IOException {
-            if (count.decrementAndGet() <= 0) {
-                if (!pool.offer(delegate)) {
+            if (open.getAndSet(false)) {
+                if (delegate.isOpen() && !pool.offer(delegate)) {
                     delegate.close();
                 }
-                wrappers.remove();
             }
-        }
-
-        public void increment() {
-            count.incrementAndGet();
         }
 
         @Override
@@ -502,11 +502,11 @@ public class SftpFileSystem
         }
 
         @Override
-        public Iterable<DirEntry> readDir(String path) throws IOException {
+        public List<DirEntry> readDir(Handle handle, AtomicReference<Boolean> eolIndicator) throws IOException {
             if (!isOpen()) {
-                throw new IOException("readDir(" + path + ") client is closed");
+                throw new IOException("readDir(" + handle + ") client is closed");
             }
-            return delegate.readDir(path);
+            return delegate.readDir(handle, eolIndicator);
         }
 
         @Override
@@ -525,14 +525,6 @@ public class SftpFileSystem
         }
 
         @Override
-        public InputStream read(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
-            if (!isOpen()) {
-                throw new IOException("read(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
-            }
-            return delegate.read(path, bufferSize, mode);
-        }
-
-        @Override
         public OutputStream write(String path) throws IOException {
             return write(path, writeSize);
         }
@@ -545,14 +537,6 @@ public class SftpFileSystem
         @Override
         public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
             return write(path, writeSize, mode);
-        }
-
-        @Override
-        public OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
-            if (!isOpen()) {
-                throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
-            }
-            return delegate.write(path, bufferSize, mode);
         }
 
         @Override
@@ -698,5 +682,148 @@ public class SftpFileSystem
         public DefaultGroupPrincipal(String name) {
             super(name);
         }
+    }
+
+    /**
+     * A pool of {@link SftpClient}s. The pool has a maximum size and an optional minimum size, and can optionally
+     * expire idle channels from the pool.
+     */
+    protected class SftpClientPool {
+
+        private final ScheduledExecutorService timeouts;
+
+        private final BlockingQueue<SftpClientHandle> pool;
+
+        private final long idleLifeTime;
+
+        private final int coreSize;
+
+        public SftpClientPool(int maxSize, Duration idleLifeTime, int coreSize) {
+            ValidateUtils.checkState(idleLifeTime == null || !idleLifeTime.isNegative(), "idleLifeTime must not be negative");
+            long timeout = idleLifeTime == null ? 0 : idleLifeTime.toMillis();
+            if (timeout == 0 && idleLifeTime != null && !idleLifeTime.isZero()) {
+                // Duration shorter than 1 millisecond.
+                timeout = 1;
+            }
+            if (timeout > 0) {
+                ValidateUtils.checkState(coreSize >= 0, "coreSize must not be neagtive");
+                if (coreSize > maxSize) {
+                    // Don't warn if equal, might be what the user wanted.
+                    log.warn("SftpClientPool {}: pool core size > pool maximum size, channels will not expire",
+                            SftpFileSystem.this);
+                }
+                if (coreSize >= maxSize) {
+                    // Switch off channel expiration.
+                    timeout = 0;
+                }
+            }
+            this.pool = new LinkedBlockingQueue<>(maxSize);
+            this.coreSize = coreSize;
+            this.idleLifeTime = timeout;
+            this.timeouts = timeout > 0 ? Executors.newScheduledThreadPool(1) : null;
+        }
+
+        public void close() {
+            if (timeouts != null && !timeouts.isShutdown()) {
+                timeouts.shutdownNow();
+            }
+            List<SftpClientHandle> handles = new ArrayList<>(pool.size());
+            pool.drainTo(handles);
+            handles.forEach(this::closeSilently);
+        }
+
+        public SftpClient poll() {
+            SftpClient client = null;
+            while (client == null) {
+                SftpClientHandle handle = open.get() ? pool.poll() : null;
+                if (handle == null) {
+                    return null;
+                }
+                client = handle.getClient();
+                if (!client.isOpen()) {
+                    client = null;
+                }
+            }
+            return client;
+        }
+
+        public boolean offer(SftpClient client) {
+            SftpClientHandle handle = new SftpClientHandle(pool, client);
+            boolean wasAdded = open.get() && pool.offer(handle);
+            if (wasAdded && timeouts != null) {
+                try {
+                    handle.setExpiration(timeouts.schedule(() -> {
+                        if (pool.size() > coreSize && pool.remove(handle)) {
+                            closeSilently(handle);
+                        }
+                    }, idleLifeTime, TimeUnit.MILLISECONDS));
+                } catch (RejectedExecutionException e) {
+                    log.warn("SftpClientPool {} [{}]: cannot schedule idle closure: {}", SftpFileSystem.this, client,
+                            e.toString());
+                }
+            } else if (!wasAdded) {
+                handle.destroy();
+            }
+            return wasAdded;
+        }
+
+        private void closeSilently(SftpClientHandle handle) {
+            SftpClient client = handle.getClient();
+            try {
+                client.close();
+            } catch (IOException e) {
+                log.warn("SftpClientPool {} [{}]: cannot close SftpClient properly: {}", SftpFileSystem.this, client,
+                        e.toString());
+            }
+        }
+    }
+
+    /**
+     * The {@link SftpClientPool} stores {@link SftpClient)s not directly but via handles in its channel pool. HAndles
+     * remove themselves from the pool
+     */
+    protected static class SftpClientHandle implements ChannelListener {
+
+        private final SftpClient client;
+
+        private final BlockingQueue<? extends SftpClientHandle> pool;
+
+        private Future<?> expiration;
+
+        public SftpClientHandle(BlockingQueue<? extends SftpClientHandle> pool, SftpClient client) {
+            this.pool = Objects.requireNonNull(pool);
+            this.client = Objects.requireNonNull(client);
+            Channel channel = client.getChannel();
+            if (channel != null) {
+                channel.addChannelListener(this);
+            }
+        }
+
+        public void destroy() {
+            if (expiration != null) {
+                expiration.cancel(true);
+            }
+            Channel channel = client.getChannel();
+            if (channel != null) {
+                channel.removeChannelListener(this);
+            }
+        }
+
+        public SftpClient getClient() {
+            destroy();
+            return client;
+        }
+
+        public void setExpiration(Future<?> future) {
+            expiration = future;
+        }
+
+        @Override
+        public void channelClosed(Channel channel, Throwable reason) {
+            if (pool.remove(this)) {
+                channel.removeChannelListener(this);
+            }
+        }
+
     }
 }

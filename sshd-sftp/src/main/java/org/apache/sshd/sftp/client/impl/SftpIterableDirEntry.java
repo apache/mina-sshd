@@ -19,6 +19,7 @@
 package org.apache.sshd.sftp.client.impl;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.ValidateUtils;
@@ -63,7 +64,8 @@ public class SftpIterableDirEntry implements SftpClientHolder, Iterable<DirEntry
         try {
             return new SftpDirEntryIterator(getClient(), getPath());
         } catch (IOException e) {
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
+
 }

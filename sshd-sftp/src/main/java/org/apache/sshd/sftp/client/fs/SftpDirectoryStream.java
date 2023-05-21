@@ -34,6 +34,7 @@ import org.apache.sshd.sftp.client.SftpClientHolder;
  */
 public class SftpDirectoryStream implements SftpClientHolder, DirectoryStream<Path> {
     protected SftpPathIterator pathIterator;
+    protected boolean pathIteratorConsumed;
 
     private final SftpPath path;
     private final Filter<? super Path> filter;
@@ -93,17 +94,19 @@ public class SftpDirectoryStream implements SftpClientHolder, DirectoryStream<Pa
         /*
          * According to documentation this method can be called only once
          */
-        if (pathIterator == null) {
+        if (pathIteratorConsumed) {
             throw new IllegalStateException("Iterator has already been consumed");
         }
 
-        Iterator<Path> iter = pathIterator;
-        pathIterator = null;
-        return iter;
+        pathIteratorConsumed = true;
+        return pathIterator;
     }
 
     @Override
     public void close() throws IOException {
+        if (pathIterator != null) {
+            pathIterator.close();
+        }
         sftp.close();
     }
 }

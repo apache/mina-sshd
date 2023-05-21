@@ -30,7 +30,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.io.DirectoryScanner;
@@ -162,6 +164,42 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
                 for (Path p : ds) {
                     fail("Unexpected iterated path: " + p);
                 }
+            }
+        }
+    }
+
+    @Test
+    public void testDirectoryStreamClosedEarly() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path rootDir = CommonTestSupportUtils.resolve(targetPath, TEMP_SUBFOLDER_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(rootDir);
+        Files.createDirectories(rootDir);
+
+        for (int i = 1; i <= 2000; i++) {
+            Path file = rootDir.resolve("file" + i + ".txt");
+            Files.write(file, file.toString().getBytes(StandardCharsets.UTF_8));
+        }
+
+        Path parentPath = targetPath.getParent();
+        String remFilePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, rootDir);
+
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path dir = fs.getPath(remFilePath);
+            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+                int n = 0;
+                Iterator<Path> entries = ds.iterator();
+                while (entries.hasNext()) {
+                    assertNotNull(entries.next());
+                    if (n == 0) {
+                        ds.close();
+                    }
+                    n++;
+                }
+
+                assertTrue("Expected some read-ahead", n > 1);
+                assertTrue("Expected early stream end", n < 2000);
+                assertThrows(NoSuchElementException.class, () -> entries.next());
             }
         }
     }
