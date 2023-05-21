@@ -123,13 +123,18 @@
                                 </copy>
 
                                 <echo file="${project.build.directory}/osgi-sources/META-INF/maven/${project.groupId}/${project.artifactId}/pom.properties">
-#Created by Apache Maven ${maven.version}
+#Created by Apache Maven with Maven Antrun Plugin
 version=${project.version}
 groupId=${project.groupId}
 artifactId=${project.artifactId}
                                 </echo>
+                                <echo file="${project.build.directory}/osgi-sources/META-INF/MANIFEST.MF">
+Manifest-Version: 1.0
+Created-By: Maven Antrun Plugin
+                                </echo>
 
-                                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar">
+                                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar"
+                                     manifest="${project.build.directory}/osgi-sources/META-INF/MANIFEST.MF">
                                     <fileset dir="${project.basedir}/../sshd-common/src/main/java" includes="**/*" />
                                     <fileset dir="${project.basedir}/../sshd-common/src/main/resources" includes="**/*" erroronmissingdir="false" />
                                     <fileset dir="${project.basedir}/../sshd-core/src/main/java" includes="**/*" />
