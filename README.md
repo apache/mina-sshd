@@ -11,9 +11,17 @@ The library can leverage several I/O back-ends:
 * [Apache MINA](https://mina.apache.org), a scalable and high performance asynchronous I/O library, can be used instead, or
 * the [Netty](https://netty.io) asynchronous event-driven network framework is also supported.
 
-# [Supported standards](./docs/standards.md)
+# Releases
 
-# [Release notes](./CHANGES.md)
+Releases of Apache MINA sshd are available at [Maven Central](https://mvnrepository.com/artifact/org.apache.sshd). `tar.gz` and
+ZIP source and binary distributions are available at the [Apache MINA sshd](https://mina.apache.org/sshd-project/downloads.html)
+web site.
+
+*Snapshot* releases from the main branch are published on each push or merge on the main branch, if the tests pass successfully.
+These snapshot releases are available at the [Apache Snapshot](https://repository.apache.org/content/repositories/snapshots)
+maven repository.
+
+## [Release notes](./CHANGES.md)
 
 # Issue reporting
 
@@ -21,6 +29,8 @@ Bug reports and improvement or feature requests can be filed at the [GitHub issu
 or at the [Apache issue tracker](https://issues.apache.org/jira/projects/SSHD).
 
 Sensitive issues such as security vulnerabilities must be reported through [private channels](./SECURITY.md), not via either issue tracker.
+
+# [Supported standards](./docs/standards.md)
 
 # Core requirements
 
