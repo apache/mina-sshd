@@ -49,7 +49,7 @@ jobs:
             ${{ matrix.os }}-maven-
 
       - name: Build with maven
-        run: mvn --errors --activate-profiles ci --no-transfer-progress package -DskipTests
+        run: mvn -B --errors --activate-profiles ci --no-transfer-progress package -DskipTests
 
   test:
     needs: compile
@@ -74,8 +74,11 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-maven-
 
-      - name: Build with maven
-        run: mvn --errors --activate-profiles ci --no-transfer-progress package
+      - name: Build and test with maven
+        # Skip all static checks, they were already done in the compile jobs
+        run: |
+          mvn -B --errors --activate-profiles ci --no-transfer-progress package \
+            -Dcheckstyle.skip -Dpmd.skip -Dcpd.skip -Dfindbugs.skip -Dspotbugs.skip
 
       - name: Archive test results and logs
         # if: success() || failure() to also get the test results on successful runs.
@@ -84,3 +87,80 @@ jobs:
         with:
           name: test-results-${{ matrix.java }}-${{ matrix.os }}
           path: sshd-*/target/surefire-*
+
+  deploy-snapshot:
+    # Run only on pushes or PR merges to the master branch, but not on PRs themselves.
+    # Also skip any commit from creating releases. The first snapshot after a new release
+    # will thus be published on the first real change on the new snapshot version, but
+    # there will be no snapshot release for just bumping the version.
+    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message ,'[maven-release-plugin]')
+    needs: test
+    # Serialize these jobs from different workflow runs. We do not want concurrent
+    # deployments. We don't cancel already running jobs because we do not want their
+    # workflows to report a failure. Github does not guarantee order between jobs
+    # that queue within 5 minutes, see https://docs.github.com/en/actions/using-jobs/using-concurrency .
+    # We do check below that the job is operating on the latest origin/master, and
+    # we skip deployment if not.
+    concurrency: mina-sshd-snapshot-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: '8'
+          # Create a ~/.m2/settings.xml referencing these environment variable names
+          server-id: 'apache.snapshots.https'
+          server-username: NEXUS_USERNAME
+          server-password: NEXUS_PASSWORD
+
+      - uses: actions/cache@v3
+        with:
+          path: ~/.m2/repository
+          key: ubuntu-latest-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ubuntu-latest-maven-
+
+      - name: Check version (SNAPSHOT)
+        # Only deploy SNAPSHOT versions. We do not use "exit 1" because we still want the workflow
+        # to report success, we just want this job to do nothing.
+        #
+        # All subsequent steps are conditional.
+        run: |
+          export PROJECT_VERSION=$(mvn -B -q -DforceStdout -Dexpression=project.version help:evaluate)
+          echo "Project version: $PROJECT_VERSION"
+          [[ "$PROJECT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$ ]] || {
+            echo "**** Skipping deployment because not a snapshot version: $PROJECT_VERSION" 1>&2
+            echo "SKIP_DEPLOYMENT=true" >> "$GITHUB_ENV"
+          }
+
+      - name: Check HEAD is current
+        if: ! env.SKIP_DEPLOYMENT
+        # Do not deploy if refs/heads/master has advanced in the meantime
+        run : |
+          export CURR_HEAD=$(git rev-parse -q origin/master)
+          echo "Local: github.sha=${{ github.sha }} refs/heads/master=$(git rev-parse -q refs/heads/master)"
+          echo "Origin: origin/master=$CURR_HEAD"
+          [[ "${{ github.sha }}" == "$CURR_HEAD" ]] || {
+            echo "**** Skipping deployment because master branch advanced: ${{ github.sha }} != origin/master $CURR_HEAD" 1>&2
+            echo "SKIP_DEPLOYMENT=true" >> "$GITHUB_ENV"
+          }
+
+      - name: Build and deploy with maven
+        if: ! env.SKIP_DEPLOYMENT
+        # Skip tests and all static checks -- this was done already in previous jobs
+        # NEXUS_USERNAME and NEXUS_PASSWORD are used in ~/.m2/settings.xml created by
+        # the setup-java action. The two secrets are organization-wide secrets that
+        # were enabled by Apache Infra for our repository.
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USER }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PW }}
+        # Our root POM overwrites the release repository with an invalid value to prevent
+        # accidental release deployments as an additional safety measure. The snapshot
+        # repo from the Apache parent POM is not overridden.
+        run: |
+          mvn -B --errors --activate-profiles ci --no-transfer-progress clean deploy \
+            -DdeployAtEnd \
+            -DskipTests -Dcheckstyle.skip -Dpmd.skip -Dcpd.skip -Dfindbugs.skip -Dspotbugs.skip
