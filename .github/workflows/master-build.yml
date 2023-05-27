@@ -76,9 +76,7 @@ jobs:
 
       - name: Build and test with maven
         # Skip all static checks, they were already done in the compile jobs
-        run: |
-          mvn -B --errors --activate-profiles ci --no-transfer-progress package \
-            -Dcheckstyle.skip -Dpmd.skip -Dcpd.skip -Dfindbugs.skip -Dspotbugs.skip
+        run: mvn -B --errors --activate-profiles ci --no-transfer-progress package
 
       - name: Archive test results and logs
         # if: success() || failure() to also get the test results on successful runs.
@@ -152,7 +150,6 @@ jobs:
       - name: Build and deploy with maven
         # Must be quoted, ! is special in yaml
         if: "! env.SKIP_DEPLOYMENT"
-        # Skip tests and all static checks -- this was done already in previous jobs
         # NEXUS_USERNAME and NEXUS_PASSWORD are used in ~/.m2/settings.xml created by
         # the setup-java action. The two secrets are organization-wide secrets that
         # were enabled by Apache Infra for our repository.
@@ -162,7 +159,4 @@ jobs:
         # Our root POM overwrites the release repository with an invalid value to prevent
         # accidental release deployments as an additional safety measure. The snapshot
         # repo from the Apache parent POM is not overridden.
-        run: |
-          mvn -B --errors --activate-profiles ci --no-transfer-progress clean deploy \
-            -DdeployAtEnd \
-            -DskipTests -Dcheckstyle.skip -Dpmd.skip -Dcpd.skip -Dfindbugs.skip -Dspotbugs.skip
+        run: mvn -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd
