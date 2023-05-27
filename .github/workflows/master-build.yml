@@ -15,84 +15,23 @@
 # limitations under the License.
 #
 
-name: build
+name: master-build
 
 on:
   push:
     branches:
       - master
-  pull_request:
-    branches:
-      - master
 
 jobs:
-  compile:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        java: [ '8' ]
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ matrix.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ matrix.os }}-maven-
-
-      - name: Build with maven
-        run: mvn -B --errors --activate-profiles ci --no-transfer-progress package -DskipTests
-
-  test:
-    needs: compile
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        java: [ '8', '11', '17' ]
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up JDK ${{ matrix.java }}
-        uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: ${{ matrix.java }}
-
-      - uses: actions/cache@v3
-        with:
-          path: ~/.m2/repository
-          key: ${{ matrix.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ matrix.os }}-maven-
-
-      - name: Build and test with maven
-        # Skip all static checks, they were already done in the compile jobs
-        run: mvn -B --errors --activate-profiles ci --no-transfer-progress package
-
-      - name: Archive test results and logs
-        # if: success() || failure() to also get the test results on successful runs.
-        if: failure()
-        uses: actions/upload-artifact@v3
-        with:
-          name: test-results-${{ matrix.java }}-${{ matrix.os }}
-          path: sshd-*/target/surefire-*
+  build:
+    uses: ./.github/workflows/build.yml
 
   deploy-snapshot:
-    # Run only on pushes or PR merges to the master branch, but not on PRs themselves.
-    # Also skip any commit from creating releases. The first snapshot after a new release
+    # Skip any commit from creating releases. The first snapshot after a new release
     # will thus be published on the first real change on the new snapshot version, but
     # there will be no snapshot release for just bumping the version.
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message ,'[maven-release-plugin]')"
-    needs: test
+    if: "!startsWith(github.event.head_commit.message ,'[maven-release-plugin]')"
+    needs: build
     # Serialize these jobs from different workflow runs. We do not want concurrent
     # deployments. We don't cancel already running jobs because we do not want their
     # workflows to report a failure. Github does not guarantee order between jobs
