@@ -93,7 +93,7 @@ jobs:
     # Also skip any commit from creating releases. The first snapshot after a new release
     # will thus be published on the first real change on the new snapshot version, but
     # there will be no snapshot release for just bumping the version.
-    if: github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message ,'[maven-release-plugin]')
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message ,'[maven-release-plugin]')"
     needs: test
     # Serialize these jobs from different workflow runs. We do not want concurrent
     # deployments. We don't cancel already running jobs because we do not want their
@@ -137,7 +137,8 @@ jobs:
           }
 
       - name: Check HEAD is current
-        if: ! env.SKIP_DEPLOYMENT
+        # Must be quoted, ! is special in yaml
+        if: "! env.SKIP_DEPLOYMENT"
         # Do not deploy if refs/heads/master has advanced in the meantime
         run : |
           export CURR_HEAD=$(git rev-parse -q origin/master)
@@ -149,7 +150,8 @@ jobs:
           }
 
       - name: Build and deploy with maven
-        if: ! env.SKIP_DEPLOYMENT
+        # Must be quoted, ! is special in yaml
+        if: "! env.SKIP_DEPLOYMENT"
         # Skip tests and all static checks -- this was done already in previous jobs
         # NEXUS_USERNAME and NEXUS_PASSWORD are used in ~/.m2/settings.xml created by
         # the setup-java action. The two secrets are organization-wide secrets that
