@@ -35,8 +35,8 @@ public interface ModifiedServerKeyAcceptor {
      *
      * @param  clientSession The {@link ClientSession}
      * @param  remoteAddress The remote host address
-     * @param  entry         The original {@link KnownHostEntry} whose key did not match
-     * @param  expected      The expected server {@link PublicKey}
+     * @param  entry         Any original {@link KnownHostEntry} whose key did not match
+     * @param  expected      Any expected server {@link PublicKey}
      * @param  actual        The presented server {@link PublicKey}
      * @return               {@code true} if accept the server key anyway
      * @throws Exception     if cannot process the request - equivalent to {@code false} return value

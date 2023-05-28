@@ -36,6 +36,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
@@ -290,27 +291,25 @@ public class KnownHostsServerKeyVerifier
             return true;
         }
 
-        List<HostEntryPair> acceptedHostMatches = hostMatches.stream()
+        Optional<HostEntryPair> anyNonRevokedMatch = hostMatches.stream()
                 .filter(k -> acceptKnownHostEntry(clientSession, remoteAddress, serverKey, k.getHostEntry()))
-                .collect(Collectors.toList());
+                .findAny();
 
-        if (acceptedHostMatches.isEmpty()) {
+        if (!anyNonRevokedMatch.isPresent()) {
             return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
         }
 
-        for (HostEntryPair match : acceptedHostMatches) {
-            KnownHostEntry entry = match.getHostEntry();
-            PublicKey expected = match.getServerKey();
+        KnownHostEntry entry = anyNonRevokedMatch.get().getHostEntry();
+        PublicKey expected = anyNonRevokedMatch.get().getServerKey();
 
-            try {
-                if (acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, serverKey)) {
-                    updateModifiedServerKey(clientSession, remoteAddress, serverKey, knownHosts, match);
-                    return true;
-                }
-            } catch (Throwable t) {
-                warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
-                        clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage(), t);
+        try {
+            if (acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, serverKey)) {
+                updateModifiedServerKey(clientSession, remoteAddress, serverKey, knownHosts, anyNonRevokedMatch.get());
+                return true;
             }
+        } catch (Throwable t) {
+            warn("acceptKnownHostEntries({})[{}] failed ({}) to accept modified server key: {}",
+                    clientSession, remoteAddress, t.getClass().getSimpleName(), t.getMessage(), t);
         }
 
         return false;
