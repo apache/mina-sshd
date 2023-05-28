@@ -21,6 +21,8 @@ package org.apache.sshd.sftp.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileLock;
+import java.nio.channels.NonReadableChannelException;
+import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -57,6 +59,11 @@ public class FileHandle extends Handle {
         super(subsystem, file, handle);
 
         Set<StandardOpenOption> options = getOpenOptions(flags, access);
+        // We are going to open a channel. If neither APPEND nor WRITE are explicitly specified, the default will be
+        // READ.
+        if (!options.contains(StandardOpenOption.WRITE) && !options.contains(StandardOpenOption.APPEND)) {
+            options.add(StandardOpenOption.READ);
+        }
         // Java cannot do READ | WRITE | APPEND; it throws an IllegalArgumentException "READ+APPEND not allowed". So
         // just open READ | WRITE, and use the ACE4_APPEND_DATA access flag to indicate that we need to handle "append"
         // mode ourselves. ACE4_APPEND_DATA should only have an effect if the file is indeed opened for APPEND mode.
@@ -164,20 +171,55 @@ public class FileHandle extends Handle {
     }
 
     public void lock(long offset, long length, int mask) throws IOException {
+        // We map delete locks to write locks, and we ignore the advisory bit.
+        boolean writeLock = (mask & (SftpConstants.SSH_FXF_WRITE_LOCK | SftpConstants.SSH_FXF_DELETE_LOCK)) != 0;
+        if (!writeLock) {
+            // If read and write are requested, it's a write lock.
+            boolean readLock = (mask & SftpConstants.SSH_FXF_READ_LOCK) != 0;
+            // Draft RFC is silent on what to do if no flags at all are set:
+            // https://www.ietf.org/archive/id/draft-ietf-secsh-filexfer-13.txt
+            // If the handle was opened for reading, use a read lock, otherwise a write lock.
+            if (!readLock && canWrite()) {
+                writeLock = true;
+            }
+        }
+        if (writeLock && !canWrite()) {
+            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
+                    "Write lock requested, but handle opened for reading only");
+        } else if (!writeLock && !canRead()) {
+            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
+                    "Read lock requested, but handle opened for writing only");
+        }
         SeekableByteChannel channel = getFileChannel();
         long size = (length == 0L) ? channel.size() - offset : length;
         SftpSubsystem subsystem = getSubsystem();
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
-        FileLock lock = accessor.tryLock(
-                subsystem, this, getFile(), getFileHandle(), channel, offset, size, false);
-        if (lock == null) {
-            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
-                    "Overlapping lock held by another program on range [" + offset + "-" + (offset + length));
+        FileLock lock = null;
+        try {
+            lock = accessor.tryLock(subsystem, this, getFile(), getFileHandle(), channel, offset, size, !writeLock);
+        } catch (NonReadableChannelException | NonWritableChannelException e) {
+            SftpException error = new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_REFUSED,
+                    "Could not acquire channel lock; write=" + writeLock + ": " + e.toString());
+            error.initCause(e);
+            throw error;
         }
 
+        if (lock == null) {
+            throw new SftpException(SftpConstants.SSH_FX_BYTE_RANGE_LOCK_CONFLICT,
+                    "Overlapping lock held by another program on range [" + offset + "-" + (offset + length) + "]");
+        }
         synchronized (locks) {
             locks.add(lock);
         }
+    }
+
+    private boolean canRead() {
+        return getOpenOptions().contains(StandardOpenOption.READ);
+    }
+
+    private boolean canWrite() {
+        Set<StandardOpenOption> options = getOpenOptions();
+        return options.contains(StandardOpenOption.WRITE) || options.contains(StandardOpenOption.APPEND);
     }
 
     public void unlock(long offset, long length) throws IOException {

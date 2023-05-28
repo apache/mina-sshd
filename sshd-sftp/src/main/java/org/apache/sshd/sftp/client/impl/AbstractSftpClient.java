@@ -1091,7 +1091,7 @@ public abstract class AbstractSftpClient
         Buffer buffer = new ByteArrayBuffer(linkPath.length() + targetPath.length() + Long.SIZE /* some extra fields */, false);
         if (version < SftpConstants.SFTP_V6) {
             if (!symbolic) {
-                throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version);
+                throw new UnsupportedOperationException("Hard links are not supported in sftp v" + version + ", need SFTPv6");
             }
             buffer = putReferencedName(cmd, buffer, targetPath, 0);
             buffer = putReferencedName(cmd, buffer, linkPath, 1);
@@ -1110,7 +1110,10 @@ public abstract class AbstractSftpClient
                     "lock(" + handle + ")[offset=" + offset + ", length=" + length + ", mask=0x" + Integer.toHexString(mask)
                                   + "] client is closed");
         }
-
+        int version = getVersion();
+        if (version < SftpConstants.SFTP_V6) {
+            throw new UnsupportedOperationException("File locks are not supported in sftp v" + version + ", need SFTPv6");
+        }
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();
         Buffer buffer = new ByteArrayBuffer(id.length + Long.SIZE /* a bit extra */, false);
         buffer.putBytes(id);
@@ -1128,6 +1131,10 @@ public abstract class AbstractSftpClient
     public void unlock(Handle handle, long offset, long length) throws IOException {
         if (!isOpen()) {
             throw new IOException("unlock" + handle + ")[offset=" + offset + ", length=" + length + "] client is closed");
+        }
+        int version = getVersion();
+        if (version < SftpConstants.SFTP_V6) {
+            throw new UnsupportedOperationException("File locks are not supported in sftp v" + version + ", need SFTPv6");
         }
 
         byte[] id = Objects.requireNonNull(handle, "No handle").getIdentifier();

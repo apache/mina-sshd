@@ -27,6 +27,8 @@ import java.nio.channels.AsynchronousCloseException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.NonReadableChannelException;
+import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritableByteChannel;
@@ -41,7 +43,6 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient;
@@ -78,10 +79,13 @@ public class SftpRemotePathChannel extends FileChannel {
             throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
         this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote file path specified");
-        this.modes = Objects.requireNonNull(modes, "No channel modes specified");
+        this.modes = Collections.unmodifiableSet(EnumSet.copyOf(modes));
+        if (this.modes.isEmpty()) {
+            throw new IllegalArgumentException("At least one OpenMode is required for a SftpRemotePathChannel");
+        }
         this.sftp = Objects.requireNonNull(sftp, "No SFTP client instance");
         this.closeOnExit = closeOnExit;
-        this.handle = sftp.open(path, modes);
+        this.handle = sftp.open(path, this.modes);
     }
 
     public String getRemotePath() {
@@ -119,7 +123,10 @@ public class SftpRemotePathChannel extends FileChannel {
     }
 
     protected long doRead(Collection<? extends ByteBuffer> buffers, long position) throws IOException {
-        ensureOpen(READ_MODES);
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
+        ensureMode(false);
 
         ClientSession clientSession = sftp.getClientSession();
         int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
@@ -223,7 +230,10 @@ public class SftpRemotePathChannel extends FileChannel {
     }
 
     protected long doWrite(Collection<? extends ByteBuffer> buffers, long position) throws IOException {
-        ensureOpen(WRITE_MODES);
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
+        ensureMode(true);
 
         ClientSession clientSession = sftp.getClientSession();
         int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
@@ -282,7 +292,9 @@ public class SftpRemotePathChannel extends FileChannel {
 
     @Override
     public long position() throws IOException {
-        ensureOpen(Collections.emptySet());
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
         return posTracker.get();
     }
 
@@ -293,28 +305,37 @@ public class SftpRemotePathChannel extends FileChannel {
                                                + " illegal file channel position: " + newPosition);
         }
 
-        ensureOpen(Collections.emptySet());
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
         posTracker.set(newPosition);
         return this;
     }
 
     @Override
     public long size() throws IOException {
-        ensureOpen(Collections.emptySet());
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
         Attributes stat = sftp.stat(handle);
         return stat.getSize();
     }
 
     @Override
     public FileChannel truncate(long size) throws IOException {
-        ensureOpen(Collections.emptySet());
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
+        ensureMode(true);
         sftp.setStat(handle, new SftpClient.Attributes().size(size));
         return this;
     }
 
     @Override
     public void force(boolean metaData) throws IOException {
-        ensureOpen(Collections.emptySet());
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
     }
 
     @Override
@@ -323,7 +344,10 @@ public class SftpRemotePathChannel extends FileChannel {
             throw new IllegalArgumentException("transferTo(" + getRemotePath() + ")"
                                                + " illegal position (" + position + ") or count (" + count + ")");
         }
-        ensureOpen(READ_MODES);
+        if (!isOpen() || !target.isOpen()) {
+            throw new ClosedChannelException();
+        }
+        ensureMode(false);
 
         ClientSession clientSession = sftp.getClientSession();
         int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
@@ -359,7 +383,10 @@ public class SftpRemotePathChannel extends FileChannel {
                     this, position, count, copySize, totalRead, eof, target);
         }
 
-        return (totalRead > 0L) ? totalRead : eof ? -1L : 0L;
+        if (totalRead > 0) {
+            return totalRead;
+        }
+        return eof ? -1 : 0;
     }
 
     @Override
@@ -368,7 +395,10 @@ public class SftpRemotePathChannel extends FileChannel {
             throw new IllegalArgumentException("transferFrom(" + getRemotePath() + ")"
                                                + " illegal position (" + position + ") or count (" + count + ")");
         }
-        ensureOpen(WRITE_MODES);
+        if (!isOpen() || !src.isOpen()) {
+            throw new ClosedChannelException();
+        }
+        ensureMode(true);
 
         ClientSession clientSession = sftp.getClientSession();
         int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
@@ -431,10 +461,14 @@ public class SftpRemotePathChannel extends FileChannel {
 
     @Override
     public FileLock tryLock(long position, long size, boolean shared) throws IOException {
-        ensureOpen(Collections.emptySet());
+        if (!isOpen()) {
+            throw new ClosedChannelException();
+        }
+        ensureMode(!shared);
 
+        int lockFlags = shared ? SftpConstants.SSH_FXF_READ_LOCK : SftpConstants.SSH_FXF_WRITE_LOCK;
         try {
-            sftp.lock(handle, position, size, 0);
+            sftp.lock(handle, position, size, lockFlags);
         } catch (SftpException e) {
             if (e.getStatus() == SftpConstants.SSH_FX_LOCK_CONFLICT) {
                 throw new OverlappingFileLockException();
@@ -452,7 +486,7 @@ public class SftpRemotePathChannel extends FileChannel {
 
             @Override
             public void release() throws IOException {
-                if (valid.compareAndSet(true, false)) {
+                if (valid.getAndSet(false)) {
                     sftp.unlock(handle, position, size);
                 }
             }
@@ -500,27 +534,15 @@ public class SftpRemotePathChannel extends FileChannel {
         end(completed);
     }
 
-    /**
-     * Checks that the channel is open and that its current mode contains at least one of the required ones
-     *
-     * @param  reqModes    The required modes - ignored if {@code null}/empty
-     * @throws IOException If channel not open or the required modes are not satisfied
-     */
-    private void ensureOpen(Collection<OpenMode> reqModes) throws IOException {
-        if (!isOpen()) {
-            throw new ClosedChannelException();
-        }
-
-        if (GenericUtils.size(reqModes) > 0) {
-            for (OpenMode m : reqModes) {
-                if (this.modes.contains(m)) {
-                    return;
-                }
+    private void ensureMode(boolean forWriting) {
+        if (!forWriting && !modes.contains(OpenMode.Read)) {
+            throw new NonReadableChannelException();
+        } else if (forWriting) {
+            EnumSet<OpenMode> myModes = EnumSet.copyOf(modes);
+            myModes.retainAll(WRITE_MODES);
+            if (myModes.isEmpty()) {
+                throw new NonWritableChannelException();
             }
-
-            throw new IOException("ensureOpen(" + getRemotePath() + ")"
-                                  + " current channel modes (" + this.modes + ")"
-                                  + " do contain any of the required ones: " + reqModes);
         }
     }
 

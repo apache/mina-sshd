@@ -25,6 +25,8 @@ import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
+import java.nio.channels.NonReadableChannelException;
+import java.nio.channels.NonWritableChannelException;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.DirectoryStream;
@@ -160,7 +162,11 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
         outputDebugMessage("%s no-follow attributes: %s", file1, attrs);
         assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1), StandardCharsets.UTF_8));
 
-        testFileChannelLock(file1);
+        if (version == SftpConstants.SFTP_V6) {
+            testFileChannelLock(file1);
+        } else {
+            assertThrows(UnsupportedOperationException.class, () -> testFileChannelLock(file1));
+        }
 
         Files.delete(file1);
     }
@@ -240,6 +246,17 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
     }
 
     protected static void testFileChannelLock(Path file) throws IOException {
+        testFileChannelLockOverlap(file);
+        testFileChannelLockWriteRead(file);
+        testFileChannelLockWriteWrite(file);
+        testFileChannelLockAppendRead(file);
+        testFileChannelLockAppendWrite(file);
+        testFileChannelLockReadWrite(file);
+        testFileChannelLockReadRead(file);
+        testFileChannelLockBoth(file);
+    }
+
+    protected static void testFileChannelLockOverlap(Path file) throws IOException {
         try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
             try (FileLock lock = channel.lock()) {
                 outputDebugMessage("Lock %s: %s", file, lock);
@@ -251,6 +268,64 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
                         // expected
                     }
                 }
+            }
+        }
+    }
+
+    protected static void testFileChannelLockWriteRead(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+            assertThrows(NonReadableChannelException.class, () -> channel.lock(0, Long.MAX_VALUE, true));
+        }
+    }
+
+    protected static void testFileChannelLockWriteWrite(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
+            try (FileLock lock = channel.lock()) {
+                outputDebugMessage("Lock %s: %s", file, lock);
+            }
+        }
+    }
+
+    protected static void testFileChannelLockAppendRead(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.APPEND)) {
+            assertThrows(NonReadableChannelException.class, () -> channel.lock(0, Long.MAX_VALUE, true));
+        }
+    }
+
+    protected static void testFileChannelLockAppendWrite(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.APPEND)) {
+            try (FileLock lock = channel.lock()) {
+                outputDebugMessage("Lock %s: %s", file, lock);
+            }
+        }
+    }
+
+    protected static void testFileChannelLockReadWrite(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file)) {
+            assertThrows(NonWritableChannelException.class, () -> channel.lock(0, Long.MAX_VALUE, false));
+        }
+    }
+
+    protected static void testFileChannelLockReadRead(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.READ)) {
+            try (FileLock lock = channel.lock(0, Long.MAX_VALUE, true)) {
+                outputDebugMessage("Lock %s: %s", file, lock);
+            }
+        }
+        try (FileChannel channel = FileChannel.open(file)) { // READ is default
+            try (FileLock lock = channel.lock(0, Long.MAX_VALUE, true)) {
+                outputDebugMessage("Lock %s: %s", file, lock);
+            }
+        }
+    }
+
+    protected static void testFileChannelLockBoth(Path file) throws IOException {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.READ, StandardOpenOption.WRITE)) {
+            try (FileLock lock = channel.lock(0, Long.MAX_VALUE, false)) {
+                outputDebugMessage("Lock %s: %s", file, lock);
+            }
+            try (FileLock lock = channel.lock(0, Long.MAX_VALUE, true)) {
+                outputDebugMessage("Lock %s: %s", file, lock);
             }
         }
     }

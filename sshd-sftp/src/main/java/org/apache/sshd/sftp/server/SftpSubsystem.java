@@ -534,6 +534,10 @@ public class SftpSubsystem
 
     @Override
     protected void doBlock(int id, String handle, long offset, long length, int mask) throws IOException {
+        int vers = getVersion();
+        if (vers < SftpConstants.SFTP_V6) {
+            throw new UnsupportedOperationException("File locks are not supported in sftp v" + vers + ", need SFTPv6");
+        }
         Handle p = handles.get(handle);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
@@ -555,6 +559,10 @@ public class SftpSubsystem
 
     @Override
     protected void doUnblock(int id, String handle, long offset, long length) throws IOException {
+        int vers = getVersion();
+        if (vers < SftpConstants.SFTP_V6) {
+            throw new UnsupportedOperationException("File locks are not supported in sftp v" + vers + ", need SFTPv6");
+        }
         Handle p = handles.get(handle);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
