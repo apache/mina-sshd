@@ -330,8 +330,6 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     }
                 };
 
-        ClientSession session = Mockito.mock(ClientSession.class);
-
         int validationCount = 0;
         int validUnknownCount = 0;
         // Cannot use forEach because the validation count variable is not effectively final
@@ -342,12 +340,12 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 assertFalse("Unexpected to verification success for " + entry,
                         invokeVerifier(verifier, hostIdentity, modifiedKey));
                 long acceptedCount = ke.getValue().stream()
-                        .filter(k -> verifier.acceptKnownHostEntry(session, hostIdentity, modifiedKey, k))
+                        .filter(k -> !"revoked".equals(k.getMarker()))
                         .count();
                 if (acceptedCount == 0) {
                     validUnknownCount++;
                 } else {
-                    validationCount += acceptedCount;
+                    validationCount++;
                 }
                 assertEquals("Mismatched invocation count (acceptModifiedServerKey) for host=" + entry, validationCount,
                         acceptCount.get());

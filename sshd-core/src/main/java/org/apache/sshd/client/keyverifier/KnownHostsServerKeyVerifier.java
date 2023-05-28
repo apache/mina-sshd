@@ -283,7 +283,9 @@ public class KnownHostsServerKeyVerifier
                 .collect(Collectors.toList());
 
         if (keyMatches.stream()
-                .anyMatch(k -> !acceptKnownHostEntry(clientSession, remoteAddress, serverKey, k.getHostEntry()))) {
+                .anyMatch(k -> "revoked".equals(k.getHostEntry().getMarker()))) {
+            log.debug("acceptKnownHostEntry({})[{}] key={}-{} marked as revoked",
+                    clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
             return false;
         }
 
@@ -292,7 +294,7 @@ public class KnownHostsServerKeyVerifier
         }
 
         Optional<HostEntryPair> anyNonRevokedMatch = hostMatches.stream()
-                .filter(k -> acceptKnownHostEntry(clientSession, remoteAddress, serverKey, k.getHostEntry()))
+                .filter(k -> !"revoked".equals(k.getHostEntry().getMarker()))
                 .findAny();
 
         if (!anyNonRevokedMatch.isPresent()) {
@@ -485,37 +487,6 @@ public class KnownHostsServerKeyVerifier
         // NOTE !!! this may mean the file is corrupted, but it can be recovered from the known hosts
         warn("acceptKnownHostEntries({})[{}] failed ({}) to update modified server key of {}: {}",
                 clientSession, remoteAddress, reason.getClass().getSimpleName(), match, reason.getMessage(), reason);
-    }
-
-    /**
-     * Invoked <U>after</U> known host entry located and keys match - by default checks that entry has not been revoked
-     *
-     * @param  clientSession The {@link ClientSession}
-     * @param  remoteAddress The remote host address
-     * @param  serverKey     The presented server {@link PublicKey}
-     * @param  entry         The {@link KnownHostEntry} value - if {@code null} then no known matching host entry was
-     *                       found - default will call
-     *                       {@link #acceptUnknownHostKey(ClientSession, SocketAddress, PublicKey)}
-     * @return               {@code true} if OK to accept the server
-     */
-    protected boolean acceptKnownHostEntry(
-            ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey, KnownHostEntry entry) {
-        if (entry == null) { // not really expected, but manage it
-            return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
-        }
-
-        if ("revoked".equals(entry.getMarker())) {
-            log.debug("acceptKnownHostEntry({})[{}] key={}-{} marked as {}",
-                    clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey),
-                    entry.getMarker());
-            return false;
-        }
-
-        if (log.isDebugEnabled()) {
-            log.debug("acceptKnownHostEntry({})[{}] matched key={}-{}",
-                    clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
-        }
-        return true;
     }
 
     protected List<HostEntryPair> findKnownHostEntries(
