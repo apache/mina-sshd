@@ -30,6 +30,7 @@
 * [GH-371](https://github.com/apache/mina-sshd/issues/371) Fix channel pool in `SftpFileSystem`.
 
 
+* [SSHD-1259](https://issues.apache.org/jira/browse/SSHD-1259) Consider all applicable host keys from the known_hosts files.
 * [SSHD-1310](https://issues.apache.org/jira/browse/SSHD-1310) `SftpFileSystem`: do not close user session.
 * [SSHD-1327](https://issues.apache.org/jira/browse/SSHD-1327) `ChannelAsyncOutputStream`: remove write future when done.
 
