@@ -21,6 +21,8 @@ package org.apache.sshd.client.session;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collections;
@@ -380,13 +382,27 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ChannelExec createExecChannel(String command, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
+    public ChannelExec createExecChannel(
+            String command, Charset charset, PtyChannelConfigurationHolder ptyConfig,
+            Map<String, ?> env) throws IOException {
+        ChannelExec channel = new ChannelExec(command, charset, ptyConfig, env);
+        ConnectionService service = getConnectionService();
+        long id = service.registerChannel(channel);
+        if (log.isDebugEnabled()) {
+            log.debug("createExecChannel({})[{}] created id={} - PTY={}", this, command, id, ptyConfig);
+        }
+        return channel;
+    }
+
+    @Override
+    public ChannelExec createExecChannel(byte[] command, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
             throws IOException {
         ChannelExec channel = new ChannelExec(command, ptyConfig, env);
         ConnectionService service = getConnectionService();
         long id = service.registerChannel(channel);
         if (log.isDebugEnabled()) {
-            log.debug("createExecChannel({})[{}] created id={} - PTY={}", this, command, id, ptyConfig);
+            log.debug("createExecChannel({})[{}] created id={} - PTY={}", this, new String(command, StandardCharsets.UTF_8), id,
+                    ptyConfig);
         }
         return channel;
     }

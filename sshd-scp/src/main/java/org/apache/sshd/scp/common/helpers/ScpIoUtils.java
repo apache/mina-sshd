@@ -114,7 +114,8 @@ public final class ScpIoUtils {
 
     public static ChannelExec openCommandChannel(ClientSession session, String cmd, Logger log) throws IOException {
         Duration waitTimeout = ScpModuleProperties.SCP_EXEC_CHANNEL_OPEN_TIMEOUT.getRequired(session);
-        ChannelExec channel = session.createExecChannel(cmd);
+        ChannelExec channel = session.createExecChannel(cmd, ScpModuleProperties.SCP_OUTGOING_ENCODING.getRequired(session),
+                null, Collections.emptyMap());
 
         long startTime = System.nanoTime();
         try {

@@ -193,8 +193,37 @@ public interface ClientSession
      * @return             The created {@link ChannelExec}
      * @throws IOException If failed to create the requested channel
      */
-    ChannelExec createExecChannel(
+    default ChannelExec createExecChannel(
             String command, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
+            throws IOException {
+        return createExecChannel(command, StandardCharsets.UTF_8, ptyConfig, env);
+    }
+
+    /**
+     * Create a channel to execute a command using specific PTY settings and/or environment.
+     *
+     * @param  command     The command to execute
+     * @param  charset     The {@link Charset} to use for sending the command string
+     * @param  ptyConfig   The PTY configuration to use - if {@code null} then internal defaults are used
+     * @param  env         Extra environment configuration to be transmitted to the server - ignored if
+     *                     {@code null}/empty.
+     * @return             The created {@link ChannelExec}
+     * @throws IOException If failed to create the requested channel
+     */
+    ChannelExec createExecChannel(String command, Charset charset, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
+            throws IOException;
+
+    /**
+     * Create a channel to execute a command using specific PTY settings and/or environment.
+     *
+     * @param  command     The command to execute
+     * @param  ptyConfig   The PTY configuration to use - if {@code null} then internal defaults are used
+     * @param  env         Extra environment configuration to be transmitted to the server - ignored if
+     *                     {@code null}/empty.
+     * @return             The created {@link ChannelExec}
+     * @throws IOException If failed to create the requested channel
+     */
+    ChannelExec createExecChannel(byte[] command, PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
             throws IOException;
 
     /**

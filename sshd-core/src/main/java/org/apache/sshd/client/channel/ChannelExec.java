@@ -19,6 +19,8 @@
 package org.apache.sshd.client.channel;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
 
@@ -39,9 +41,24 @@ public class ChannelExec extends PtyCapableChannelSession {
 
     private final String command;
 
+    private final byte[] cmdBytes;
+
     public ChannelExec(String command, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+        this(command, StandardCharsets.UTF_8, configHolder, env);
+    }
+
+    public ChannelExec(String command, Charset charset, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         super(false, configHolder, env);
         this.command = ValidateUtils.checkNotNullAndNotEmpty(command, "Command may not be null/empty");
+        this.cmdBytes = this.command.getBytes(charset);
+    }
+
+    public ChannelExec(byte[] command, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
+        super(false, configHolder, env);
+        this.cmdBytes = ValidateUtils.checkNotNullAndNotEmpty(command, "Command may not be null/empty");
+        // UTF-8 is likely to be incorrect; if someone uses this constructor, it is likely that the command contains
+        // some mixed encoding using different character sets. But the value is used only for logging.
+        this.command = new String(command, StandardCharsets.UTF_8);
     }
 
     @Override
@@ -54,11 +71,11 @@ public class ChannelExec extends PtyCapableChannelSession {
 
         Session session = getSession();
         boolean wantReply = CoreModuleProperties.REQUEST_EXEC_REPLY.getRequired(this);
-        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, command.length() + Integer.SIZE);
+        Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST, cmdBytes.length + Integer.SIZE);
         buffer.putUInt(getRecipient());
         buffer.putString(Channel.CHANNEL_EXEC);
         buffer.putBoolean(wantReply);
-        buffer.putString(command);
+        buffer.putBytes(cmdBytes);
         addPendingRequest(Channel.CHANNEL_EXEC, wantReply);
         writePacket(buffer);
 
@@ -81,4 +98,5 @@ public class ChannelExec extends PtyCapableChannelSession {
             close(true);
         }
     }
+
 }
