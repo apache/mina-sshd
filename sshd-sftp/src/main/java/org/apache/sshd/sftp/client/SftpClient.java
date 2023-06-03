@@ -84,13 +84,13 @@ public interface SftpClient extends SubsystemClient {
          * Converts {@link StandardOpenOption}-s into {@link OpenMode}-s
          *
          * @param  options                  The original options - ignored if {@code null}/empty
-         * @return                          A {@link Set} of the equivalent modes
+         * @return                          A modifiable {@link Set} of the equivalent modes
          * @throws IllegalArgumentException If an unsupported option is requested
          * @see                             #SUPPORTED_OPTIONS
          */
         public static Set<OpenMode> fromOpenOptions(Collection<? extends OpenOption> options) {
             if (GenericUtils.isEmpty(options)) {
-                return Collections.emptySet();
+                return EnumSet.noneOf(OpenMode.class);
             }
 
             Set<OpenMode> modes = EnumSet.noneOf(OpenMode.class);

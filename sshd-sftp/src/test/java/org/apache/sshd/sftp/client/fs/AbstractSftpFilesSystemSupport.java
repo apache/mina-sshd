@@ -20,7 +20,9 @@
 package org.apache.sshd.sftp.client.fs;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -36,7 +38,9 @@ import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -80,9 +84,39 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
         String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
         assertEquals("Mismatched read test data", expected, buf);
 
+        try (OutputStream out = file1.getFileSystem().provider().newOutputStream(file1, StandardOpenOption.APPEND)) {
+            out.write("xyz".getBytes(StandardCharsets.US_ASCII));
+        }
+        expected += "xyz";
+        buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
+        assertEquals("Mismatched read test data", expected, buf);
+
+        // Neither WRITE nor APPEND given: READ is default, and CREATE_NEW or TRUNCATE_EXISTING should be ignored.
+        assertEquals("Mismatched read test data", expected,
+                readFromChannel(file1, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING));
+
+        IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
+                () -> readFromChannel(file1, StandardOpenOption.APPEND, StandardOpenOption.TRUNCATE_EXISTING));
+        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("APPEND"));
+        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("TRUNCATE_EXISTING"));
+
+        ex = assertThrows(IllegalArgumentException.class,
+                () -> readFromChannel(file1, StandardOpenOption.APPEND, StandardOpenOption.READ));
+        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("APPEND"));
+        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("READ"));
+
+        assertEquals("Mismatched read test data", expected,
+                readFromChannel(file1, StandardOpenOption.READ, StandardOpenOption.WRITE));
+
         if (version >= SftpConstants.SFTP_V4) {
             testAclFileAttributeView(file1);
         }
+
+        assertEquals("Mismatched read test data", "", readFromChannel(file1, StandardOpenOption.READ, StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING));
+
+        // Restore file contents, other tests need it.
+        Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
 
         String remFile2Path = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder.resolve("file-2.txt"));
         Path file2 = fs.getPath(remFile2Path);
@@ -129,6 +163,22 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
         testFileChannelLock(file1);
 
         Files.delete(file1);
+    }
+
+    protected static String readFromChannel(Path path, StandardOpenOption... options) throws IOException {
+        try (FileChannel ch = path.getFileSystem().provider().newFileChannel(path, EnumSet.copyOf(Arrays.asList(options)))) {
+            byte[] data = new byte[500];
+            ByteBuffer buffer = ByteBuffer.wrap(data);
+            int length = 0;
+            for (;;) {
+                int n = ch.read(buffer);
+                if (n < 0) {
+                    break;
+                }
+                length += n;
+            }
+            return new String(data, 0, length, StandardCharsets.UTF_8);
+        }
     }
 
     protected static Iterable<Path> testRootDirs(FileSystem fs) throws IOException {

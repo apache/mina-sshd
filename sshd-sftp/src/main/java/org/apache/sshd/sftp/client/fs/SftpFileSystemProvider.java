@@ -577,9 +577,28 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     @Override
     public FileChannel newFileChannel(Path path, Set<? extends OpenOption> options, FileAttribute<?>... attrs)
             throws IOException {
-        Collection<OpenMode> modes = OpenMode.fromOpenOptions(options);
-        if (modes.isEmpty()) {
-            modes = EnumSet.of(OpenMode.Read);
+        Set<OpenMode> modes = OpenMode.fromOpenOptions(options);
+        boolean readable = modes.contains(OpenMode.Read);
+        boolean writable = modes.contains(OpenMode.Write) || modes.contains(OpenMode.Append);
+        if (!readable && !writable) {
+            // As per {@link FileChannel#open(Path,Set,FileAttribute[])}: Read is default unless Write or Append are
+            // given. Other flags do imply write access, but Java does not supply write access by default for them.
+            modes.add(OpenMode.Read);
+        } else if (modes.contains(OpenMode.Append)) {
+            // As per {@link FileChannel#open(Path,Set,FileAttribute[])}: Append + Truncate or Append + Read are not
+            // allowed.
+            if (modes.contains(OpenMode.Truncate)) {
+                throw new IllegalArgumentException("APPEND + TRUNCATE_EXISTING not allowed");
+            } else if (modes.contains(OpenMode.Read)) {
+                throw new IllegalArgumentException("APPEND + READ not allowed");
+            }
+        }
+        if (!writable) {
+            // As per {@link FileChannel#open(Path,Set,FileAttribute[])}: Truncate, Create, and Create_New are ignored
+            // if opening read-only.
+            modes.remove(OpenMode.Truncate);
+            modes.remove(OpenMode.Create);
+            modes.remove(OpenMode.Exclusive);
         }
         // TODO: process file attributes
         SftpPath p = toSftpPath(path);
@@ -588,10 +607,13 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     @Override
     public InputStream newInputStream(Path path, OpenOption... options) throws IOException {
-        Collection<OpenMode> modes = OpenMode.fromOpenOptions(Arrays.asList(options));
-        if (modes.isEmpty()) {
-            modes = EnumSet.of(OpenMode.Read);
+        Set<OpenMode> modes = OpenMode.fromOpenOptions(Arrays.asList(options));
+        if (modes.contains(OpenMode.Write) || modes.contains(OpenMode.Append)) {
+            throw new IllegalArgumentException("WRITE or APPEND not allowed");
         }
+        // As per {@link FileChannel#open(Path,Set,FileAttribute[])}: Truncate, Create, and Create_New are ignored
+        // if opening read-only. Which leaves only Read.
+        modes = EnumSet.of(OpenMode.Read);
         SftpPath p = toSftpPath(path);
         SftpClient client = p.getFileSystem().getClient();
         return new FilterInputStream(client.read(p.toString(), modes)) {
@@ -615,7 +637,14 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         if (modes.isEmpty()) {
             modes = EnumSet.of(OpenMode.Create, OpenMode.Truncate, OpenMode.Write);
         } else {
-            modes.add(OpenMode.Write);
+            // As per {@link FileChannel#open(Path,Set,FileAttribute[])}: Append + Truncate is not allowed.
+            if (modes.contains(OpenMode.Append)) {
+                if (modes.contains(OpenMode.Truncate)) {
+                    throw new IllegalArgumentException("APPEND + TRUNCATE_EXISTING not allowed");
+                }
+            } else {
+                modes.add(OpenMode.Write);
+            }
         }
         SftpPath p = toSftpPath(path);
         SftpClient client = p.getFileSystem().getClient();
