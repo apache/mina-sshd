@@ -33,6 +33,7 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.AclFileAttributeView;
 import java.util.Collections;
@@ -189,11 +190,11 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
     }
 
     protected static void testFileChannelLock(Path file) throws IOException {
-        try (FileChannel channel = FileChannel.open(file)) {
+        try (FileChannel channel = FileChannel.open(file, StandardOpenOption.WRITE)) {
             try (FileLock lock = channel.lock()) {
                 outputDebugMessage("Lock %s: %s", file, lock);
 
-                try (FileChannel channel2 = FileChannel.open(file)) {
+                try (FileChannel channel2 = FileChannel.open(file, StandardOpenOption.WRITE)) {
                     try (FileLock lock2 = channel2.lock()) {
                         fail("Unexpected success in re-locking " + file + ": " + lock2);
                     } catch (OverlappingFileLockException e) {

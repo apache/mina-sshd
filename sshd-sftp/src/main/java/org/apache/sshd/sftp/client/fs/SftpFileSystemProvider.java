@@ -579,7 +579,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
             throws IOException {
         Collection<OpenMode> modes = OpenMode.fromOpenOptions(options);
         if (modes.isEmpty()) {
-            modes = EnumSet.of(OpenMode.Read, OpenMode.Write);
+            modes = EnumSet.of(OpenMode.Read);
         }
         // TODO: process file attributes
         SftpPath p = toSftpPath(path);
