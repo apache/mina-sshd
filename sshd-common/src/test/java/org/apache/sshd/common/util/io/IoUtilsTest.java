@@ -26,10 +26,12 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -71,6 +73,7 @@ public class IoUtilsTest extends JUnitTestSupport {
      */
     @Test
     public void testCheckExists() throws IOException {
+        Assume.assumeFalse("Not relevant for Windows", OsUtils.isWin32());
         testCheckExists(Paths.get("target/IoUtilsTest").toAbsolutePath());
     }
 
