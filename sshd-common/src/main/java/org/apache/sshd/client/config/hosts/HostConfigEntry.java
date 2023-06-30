@@ -300,10 +300,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
 
     public void setIdentities(Collection<String> identities) {
         this.identities.clear();
+        properties.remove(IDENTITY_FILE_CONFIG_PROP);
         if (identities != null) {
             identities.forEach(this::addIdentity);
-        } else {
-            properties.remove(IDENTITY_FILE_CONFIG_PROP);
         }
     }
 
@@ -655,6 +654,27 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                     entry.setPort(SshConstants.DEFAULT_PORT);
                 }
 
+                // Resolve file names
+                Collection<String> identities = entry.getIdentities();
+                if (!GenericUtils.isEmpty(identities)) {
+                    identities = new ArrayList<>(identities);
+                    entry.setIdentities(Collections.emptyList());
+                    for (String id : identities) {
+                        entry.addIdentity(
+                                resolveIdentityFilePath(id, entry.getHostName(), entry.getPort(), entry.getUsername()));
+                    }
+                }
+                // Same for CertificateFile
+                String certificateFiles = entry.getProperty(CERTIFICATE_FILE_CONFIG_PROP);
+                if (!GenericUtils.isEmpty(certificateFiles)) {
+                    entry.removeProperty(CERTIFICATE_FILE_CONFIG_PROP);
+                    String[] split = certificateFiles.split(",");
+                    List<String> resolved = new ArrayList<>(split.length);
+                    for (String raw : split) {
+                        resolved.add(resolveIdentityFilePath(raw, entry.getHostName(), entry.getPort(), entry.getUsername()));
+                    }
+                    entry.processProperty(CERTIFICATE_FILE_CONFIG_PROP, resolved);
+                }
                 return entry;
             };
         }

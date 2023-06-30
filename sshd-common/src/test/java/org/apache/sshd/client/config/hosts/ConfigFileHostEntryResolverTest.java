@@ -19,7 +19,10 @@
 
 package org.apache.sshd.client.config.hosts;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.FileTime;
@@ -46,6 +49,38 @@ import org.junit.runners.MethodSorters;
 public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
     public ConfigFileHostEntryResolverTest() {
         super();
+    }
+
+    @Test
+    public void testIdentityFilePaths() throws IOException {
+        final String config = "IdentityFile ~/.ssh/%r.key0\n" //
+                              + "Host foo\n" //
+                              + "IdentityFile ~/.ssh/%r.key1\n" //
+                              + "IdentityFile ~/.ssh/%r.key2\n" //
+                              + "Host *\n" //
+                              + "IdentityFile ~/.ssh/%r.key3";
+        try (InputStream in = new ByteArrayInputStream(config.getBytes(StandardCharsets.US_ASCII))) {
+            List<HostConfigEntry> entries = HostConfigEntry.readHostConfigEntries(in, true);
+            HostConfigEntryResolver resolver = HostConfigEntry.toHostConfigEntryResolver(entries);
+            HostConfigEntry resolved = resolver.resolveEffectiveHost("foo", -1, null, "testuser", null, null);
+            assertEquals("foo", resolved.getHostName());
+            assertEquals(22, resolved.getPort());
+            assertEquals("testuser", resolved.getUsername());
+            String prop = resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
+            assertNotNull(prop);
+            assertFalse(prop.contains("~"));
+            String[] split = prop.split(",");
+            assertEquals(4, split.length);
+            Collection<String> identities = resolved.getIdentities();
+            assertEquals(4, identities.size());
+            int i = 0;
+            for (String id : identities) {
+                assertFalse(id.contains("~"));
+                assertTrue(id.endsWith("testuser.key" + i));
+                assertEquals(split[i], id);
+                i++;
+            }
+        }
     }
 
     @Test
