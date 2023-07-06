@@ -76,8 +76,8 @@ public class MultiKeyIdentityIterator implements Iterator<KeyPair>, SessionConte
             try {
                 keys = (p == null) ? null : p.loadKeys(session);
             } catch (IOException | GeneralSecurityException e) {
-                throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                                           + " keys loading exception: " + e.getMessage(),
+                throw new IllegalArgumentException("Unexpected " + e.getClass().getSimpleName() + ")"
+                                                   + " keys loading exception: " + e.getMessage(),
                         e);
             }
             currentProvider = (keys == null) ? null : keys.iterator();

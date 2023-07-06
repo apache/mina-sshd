@@ -1077,7 +1077,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             } else if (err instanceof Error) {
                 throw (Error) err;
             } else {
-                throw new RuntimeException(err);
+                throw new IllegalArgumentException(err);
             }
         }
     }
@@ -1104,7 +1104,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             } else if (err instanceof Error) {
                 throw (Error) err;
             } else {
-                throw new RuntimeException(err);
+                throw new IllegalArgumentException(err);
             }
         }
     }
@@ -1133,7 +1133,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             } else if (err instanceof Error) {
                 throw (Error) err;
             } else {
-                throw new RuntimeException(err);
+                throw new IllegalArgumentException(err);
             }
         }
     }

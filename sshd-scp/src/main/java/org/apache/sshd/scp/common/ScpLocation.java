@@ -176,7 +176,7 @@ public class ScpLocation implements MutableUserHolder, Serializable, Cloneable {
         try {
             return getClass().cast(super.clone());
         } catch (CloneNotSupportedException e) { // unexpected
-            throw new RuntimeException("Failed to clone " + toString(), e);
+            throw new UnsupportedOperationException("Failed to clone " + toString(), e);
         }
     }
 

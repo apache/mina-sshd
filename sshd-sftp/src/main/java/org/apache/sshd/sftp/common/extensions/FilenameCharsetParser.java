@@ -64,7 +64,7 @@ public class FilenameCharsetParser extends AbstractParser<FilenameCharset> {
             try {
                 return getClass().cast(super.clone());
             } catch (CloneNotSupportedException e) {
-                throw new RuntimeException("Failed to clone " + toString() + ": " + e.getMessage(), e);
+                throw new UnsupportedOperationException("Failed to clone " + toString() + ": " + e.getMessage(), e);
             }
         }
 

@@ -20,6 +20,7 @@ package org.apache.sshd.sftp.client.impl;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.channels.Channel;
 import java.util.Iterator;
 import java.util.List;
@@ -177,7 +178,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements SftpCli
                 debug("{} while close handle={} due to {} [{}]: {}",
                         t.getClass().getSimpleName(), handle, e.getClass().getSimpleName(), e.getMessage(), t);
             }
-            throw new RuntimeException(e);
+            throw new UncheckedIOException(e);
         }
     }
 

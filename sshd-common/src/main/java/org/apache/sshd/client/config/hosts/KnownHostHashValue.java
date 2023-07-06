@@ -20,6 +20,7 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Base64;
@@ -142,9 +143,10 @@ public class KnownHostHashValue {
         try {
             return appendHostPattern(new StringBuilder(host.length() + 8 /* port if necessary */), host, port).toString();
         } catch (IOException e) {
-            throw new RuntimeException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
-                                       + " to generate host pattern of " + host + ":"
-                                       + port + ": " + e.getMessage(),
+            // StringBuilder does not throw IOException so this can't happen
+            throw new UncheckedIOException("Unexpected (" + e.getClass().getSimpleName() + ") failure"
+                                           + " to generate host pattern of " + host + ":"
+                                           + port + ": " + e.getMessage(),
                     e);
         }
     }

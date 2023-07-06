@@ -89,7 +89,7 @@ public class SpaceAvailableExtensionInfo implements Cloneable {
         try {
             return getClass().cast(super.clone());
         } catch (CloneNotSupportedException e) {
-            throw new RuntimeException("Failed to close " + toString() + ": " + e.getMessage());
+            throw new UnsupportedOperationException("Failed to close " + toString() + ": " + e.getMessage());
         }
     }
 

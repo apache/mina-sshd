@@ -105,9 +105,8 @@ public abstract class AbstractChannelExitRequestHandler<V> extends AbstractChann
                     channel, request, e.getClass().getSimpleName(), event, e.getMessage(), e);
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
-            } else {
-                throw new RuntimeException(e);
             }
+            throw new IllegalArgumentException(e);
         }
     }
 

@@ -20,6 +20,7 @@
 package org.apache.sshd.agent.common;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -97,7 +98,8 @@ public class DefaultAgentForwardSupport extends AbstractCloseable implements Age
         try {
             close();
         } catch (IOException e) {
-            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
+            throw new UncheckedIOException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(),
+                    e);
         }
         super.doCloseImmediately();
     }

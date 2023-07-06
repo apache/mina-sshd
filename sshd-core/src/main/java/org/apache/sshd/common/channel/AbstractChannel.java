@@ -411,7 +411,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         } catch (Error | RuntimeException err) {
             throw err;
         } catch (Throwable err) {
-            throw new RuntimeException(err);
+            throw new IllegalStateException(err);
         }
     }
 

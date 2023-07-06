@@ -439,7 +439,7 @@ public final class SecurityUtils {
                         } else if (e instanceof Error) {
                             throw (Error) e;
                         } else {
-                            throw new RuntimeException(e);
+                            throw new IllegalStateException(e);
                         }
                     }
 
@@ -489,7 +489,7 @@ public final class SecurityUtils {
                 Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
                 logger.error("Failed {} to register {} as a JCE provider: {}",
                         t.getClass().getSimpleName(), name, t.getMessage());
-                throw new RuntimeException("Failed to register " + name + " as a JCE provider", t);
+                throw new IllegalArgumentException("Failed to register " + name + " as a JCE provider", t);
             }
         }
 
@@ -737,7 +737,7 @@ public final class SecurityUtils {
             } else if (e instanceof Error) {
                 throw (Error) e;
             } else {
-                throw new RuntimeException(e);
+                throw new IllegalArgumentException(e);
             }
         }
     }

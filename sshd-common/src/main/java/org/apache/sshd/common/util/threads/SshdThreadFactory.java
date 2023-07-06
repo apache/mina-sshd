@@ -58,9 +58,8 @@ public class SshdThreadFactory extends AbstractLoggingBean implements ThreadFact
             Exception err = e.getException();
             if (err instanceof RuntimeException) {
                 throw (RuntimeException) err;
-            } else {
-                throw new RuntimeException(err);
             }
+            throw new IllegalStateException(err);
         }
 
         if (!t.isDaemon()) {

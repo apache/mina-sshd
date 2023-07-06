@@ -169,7 +169,7 @@ public interface PasswordIdentityProvider {
                             try {
                                 return p.loadPasswords(session);
                             } catch (IOException | GeneralSecurityException e) {
-                                throw new RuntimeException(e);
+                                throw new IllegalArgumentException(e);
                             }
                         });
         return GenericUtils.multiIterableSuppliers(passwordSuppliers);

@@ -20,6 +20,7 @@ package org.apache.sshd.client.auth.pubkey;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -494,7 +495,8 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         try {
             releaseKeys();
         } catch (IOException e) {
-            throw new RuntimeException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(), e);
+            throw new UncheckedIOException("Failed (" + e.getClass().getSimpleName() + ") to close agent: " + e.getMessage(),
+                    e);
         }
 
         super.destroy(); // for logging

@@ -73,7 +73,7 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
             try {
                 return (Class) Class.forName(factoryClassName, true, Thread.currentThread().getContextClassLoader());
             } catch (ClassNotFoundException e1) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
         }
     }
@@ -91,7 +91,7 @@ public enum BuiltinIoServiceFactoryFactories implements NamedFactory<IoServiceFa
         } catch (RuntimeException | Error e) {
             throw e;
         } catch (Throwable e) {
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 

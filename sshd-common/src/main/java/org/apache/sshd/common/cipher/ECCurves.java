@@ -23,6 +23,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
+import java.io.UncheckedIOException;
 import java.math.BigInteger;
 import java.security.interfaces.ECKey;
 import java.security.spec.ECField;
@@ -538,9 +539,9 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
                 writeECPoint(baos, curveName, p);
                 return baos.toByteArray();
             } catch (IOException e) {
-                throw new RuntimeException("ecPointToOctetString(" + curveName + ")"
-                                           + " failed (" + e.getClass().getSimpleName() + ")"
-                                           + " to write data: " + e.getMessage(),
+                throw new UncheckedIOException("ecPointToOctetString(" + curveName + ")"
+                                               + " failed (" + e.getClass().getSimpleName() + ")"
+                                               + " to write data: " + e.getMessage(),
                         e);
             }
         }

@@ -289,7 +289,7 @@ public class ScpCommandFactory
             other.listenerProxy = EventListenerUtils.proxyWrapper(ScpTransferEventListener.class, other.listeners);
             return other;
         } catch (CloneNotSupportedException e) {
-            throw new RuntimeException(e); // un-expected...
+            throw new UnsupportedOperationException(e); // un-expected...
         }
     }
 }

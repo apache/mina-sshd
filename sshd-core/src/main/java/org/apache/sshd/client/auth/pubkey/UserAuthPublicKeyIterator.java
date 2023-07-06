@@ -98,8 +98,8 @@ public class UserAuthPublicKeyIterator extends AbstractKeyPairIterator<PublicKey
                         KeyIdentityProvider sessionKeysProvider = ClientSession.providerOf(session);
                         keysHolder.set(sessionKeysProvider.loadKeys(session));
                     } catch (IOException | GeneralSecurityException e) {
-                        throw new RuntimeException("Unexpected " + e.getClass().getSimpleName() + ")"
-                                                   + " keys loading exception: " + e.getMessage(),
+                        throw new IllegalArgumentException("Unexpected " + e.getClass().getSimpleName() + ")"
+                                                           + " keys loading exception: " + e.getMessage(),
                                 e);
                     }
                 }

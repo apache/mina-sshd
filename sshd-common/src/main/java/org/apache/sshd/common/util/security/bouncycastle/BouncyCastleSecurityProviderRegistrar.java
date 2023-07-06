@@ -67,7 +67,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
                 throw (RuntimeException) e;
             }
 
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 

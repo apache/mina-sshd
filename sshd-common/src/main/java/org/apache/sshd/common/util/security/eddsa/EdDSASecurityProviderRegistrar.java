@@ -64,7 +64,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
                 throw (RuntimeException) e;
             }
 
-            throw new RuntimeException(e);
+            throw new IllegalStateException(e);
         }
     }
 

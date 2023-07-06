@@ -163,11 +163,10 @@ public class ProcessShell extends AbstractLoggingBean implements InvertedShell {
             try {
                 return process.waitFor();
             } catch (InterruptedException e) {
-                throw new RuntimeException(e);
+                throw new IllegalStateException(e);
             }
-        } else {
-            return process.exitValue();
         }
+        return process.exitValue();
     }
 
     @Override

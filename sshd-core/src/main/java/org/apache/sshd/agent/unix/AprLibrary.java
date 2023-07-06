@@ -59,7 +59,7 @@ public final class AprLibrary {
         } catch (RuntimeException e) {
             throw e;
         } catch (Throwable e) {
-            throw new RuntimeException("Error loading Apache Portable Runtime (APR).", e);
+            throw new IllegalStateException("Error loading Apache Portable Runtime (APR).", e);
         }
         pool = Pool.create(0);
     }

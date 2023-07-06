@@ -321,7 +321,7 @@ public class ASN1Object implements Serializable, Cloneable {
             }
             return cpy;
         } catch (CloneNotSupportedException e) {
-            throw new IllegalStateException("Unexpected clone failure: " + e.getMessage(), e);
+            throw new UnsupportedOperationException("Unexpected clone failure: " + e.getMessage(), e);
         }
     }
 

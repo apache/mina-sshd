@@ -695,10 +695,8 @@ public class BCrypt {
                   }
               }
           }
-      } catch (DigestException e) {
-          throw new RuntimeException(e);
-      } catch (NoSuchAlgorithmException e) {
-          throw new RuntimeException(e);
+      } catch (DigestException | NoSuchAlgorithmException e) {
+          throw new IllegalArgumentException(e);
       }
   }
 

@@ -88,7 +88,7 @@ public abstract class AbstractOpenSSHExtensionParser extends AbstractParser<Open
             try {
                 return getClass().cast(super.clone());
             } catch (CloneNotSupportedException e) {
-                throw new RuntimeException("Unexpected clone exception " + toString() + ": " + e.getMessage());
+                throw new UnsupportedOperationException("Unexpected clone exception " + toString() + ": " + e.getMessage());
             }
         }
 

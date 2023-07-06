@@ -208,7 +208,7 @@ public class PrivateKeyEncryptionContext implements MutablePassword, Cloneable {
             }
             return copy;
         } catch (CloneNotSupportedException e) { // unexpected
-            throw new RuntimeException("Failed to clone: " + toString());
+            throw new UnsupportedOperationException("Failed to clone: " + toString());
         }
     }
 
