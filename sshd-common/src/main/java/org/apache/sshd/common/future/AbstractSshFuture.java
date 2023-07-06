@@ -103,7 +103,7 @@ public abstract class AbstractSshFuture<T extends SshFuture<T>> extends Abstract
      * @param  <R>          The generic result type
      * @param  expectedType The expected result type
      * @param  timeout      The timeout (millis) to wait for a result
-     * @param  options      Optional #verify(long, CancelOption[]) defining the behavior on time-out or interrupt.
+     * @param  options      Optional {@link CancelOption}s defining the behavior on time-out or interrupt.
      * @return              The (never {@code null}) result
      * @throws IOException  If failed to retrieve the expected result on time
      */
@@ -158,7 +158,7 @@ public abstract class AbstractSshFuture<T extends SshFuture<T>> extends Abstract
      * @param  timeoutMillis          The delay we will wait for the Future to be ready
      * @param  interruptable          Tells if the wait can be interrupted or not. If {@code true} and the thread is
      *                                interrupted then an {@link InterruptedIOException} is thrown.
-     * @param  options                Optional #verify(long, CancelOption[]) defining the behavior on time-out or interrupt.
+     * @param  options                Optional {@link CancelOption} defining the behavior on time-out or interrupt.
      * @return                        The non-{@code null} result object if the Future is ready, {@code null} if the
      *                                timeout expired and no result was received
      * @throws InterruptedIOException If the thread has been interrupted when it's not allowed.
