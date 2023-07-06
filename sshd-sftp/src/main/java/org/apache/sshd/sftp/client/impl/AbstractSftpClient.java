@@ -212,14 +212,14 @@ public abstract class AbstractSftpClient
     }
 
     /**
-     * Sends the specified command, waits for the response and then invokes {@link #checkResponseStatus(int, Buffer)}
+     * Sends the specified command, waits for the response and then invokes {@link #checkResponseStatus(SftpResponse)}
      *
      * @param  cmd         The command to send
      * @param  request     The request {@link Buffer}
      * @throws IOException If failed to send, receive or check the returned status
      * @see                #send(int, Buffer)
      * @see                #receive(int)
-     * @see                #checkResponseStatus(int, Buffer)
+     * @see                #checkResponseStatus(SftpResponse)
      */
     protected void checkCommandStatus(int cmd, Buffer request) throws IOException {
         checkResponseStatus(rpc(cmd, request));
@@ -231,7 +231,7 @@ public abstract class AbstractSftpClient
      *
      * @param  response    The received {@link SftpResponse}
      * @throws IOException If response does not carry a status or carries a bad status code
-     * @see                #checkResponseStatus(int, int, int, String, String)
+     * @see                #checkResponseStatus(int, int, SftpStatus)
      */
     protected void checkResponseStatus(SftpResponse response) throws IOException {
         if (response.getType() == SftpConstants.SSH_FXP_STATUS) {
@@ -276,7 +276,7 @@ public abstract class AbstractSftpClient
      * @throws IOException If failed to send/receive or process the response
      * @see                #send(int, Buffer)
      * @see                #receive(int)
-     * @see                #checkHandleResponse(int, Buffer)
+     * @see                #checkHandleResponse(SftpResponse)
      */
     protected byte[] checkHandle(int cmd, Buffer request) throws IOException {
         return checkHandleResponse(rpc(cmd, request));
@@ -311,7 +311,7 @@ public abstract class AbstractSftpClient
      * @throws IOException If failed to send/receive or process the response
      * @see                #send(int, Buffer)
      * @see                #receive(int)
-     * @see                #checkAttributesResponse(int, Buffer)
+     * @see                #checkAttributesResponse(SftpResponse)
      */
     protected Attributes checkAttributes(int cmd, Buffer request) throws IOException {
         return checkAttributesResponse(rpc(cmd, request));
@@ -345,7 +345,7 @@ public abstract class AbstractSftpClient
      * @throws IOException If failed to send/receive or process the response
      * @see                #send(int, Buffer)
      * @see                #receive(int)
-     * @see                #checkOneNameResponse(int, Buffer)
+     * @see                #checkOneNameResponse(SftpResponse)
      */
     protected String checkOneName(int cmd, Buffer request) throws IOException {
         return checkOneNameResponse(rpc(cmd, request));

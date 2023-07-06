@@ -313,6 +313,7 @@ public interface SftpFileSystemAccessor {
      * @param  dir         The requested <U>local</U> directory {@link Path} - same one returned by
      *                     {@link #resolveLocalFilePath(SftpSubsystemProxy, Path, String) resolveLocalFilePath}
      * @param  handle      The assigned directory handle through which the remote peer references this directory
+     * @param  linkOptions The {@link LinkOption}s - OK if {@code null}/empty.
      * @return             The opened {@link DirectoryStream}
      * @throws IOException If failed to open
      */

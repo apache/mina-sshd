@@ -86,7 +86,6 @@ public class FileSnapshot {
      * @param  lastModified the "last modified" {@link FileTime}
      * @param  size         the file size
      * @param  fileKey      the file key
-     * @return              the {@link FileSnapshot}, never {@code null}
      */
     protected FileSnapshot(Instant snapTime, FileTime lastModified, long size, Object fileKey) {
         this.snapTime = Objects.requireNonNull(snapTime);
@@ -137,6 +136,7 @@ public class FileSnapshot {
      * @param  file    to take the snapshot of
      * @param  options {@link LinkOption}s to use
      * @return         the {@link FileSnapshot}, never {@code null}
+     * @throws  IOException if an I/O error occurs
      */
     public static FileSnapshot save(Path file, LinkOption... options) throws IOException {
         BasicFileAttributes attributes = null;
@@ -159,6 +159,7 @@ public class FileSnapshot {
      * @param  options {@link LinkOption}s to use
      * @return         a {@link FileSnapshot}, never {@code null}; if {@code == this}, the file may be assumed
      *                 unmodified
+     * @throws  IOException if an I/O error occurs
      */
     public FileSnapshot reload(Path file, LinkOption... options) throws IOException {
         FileSnapshot newSnapshot = save(file, options);

@@ -80,7 +80,7 @@ public class SftpFileSystem
 
     /**
      * An {@link AttributeKey} that can be set to {@link Boolean#TRUE} on the {@link ClientSession} to tell the
-     * {@link SftpFileSystem} that it owns that session and should close it when the {@link SftpFileSeystem} itself is
+     * {@link SftpFileSystem} that it owns that session and should close it when the {@link SftpFileSystem} itself is
      * closed.
      */
     public static final AttributeKey<Boolean> OWNED_SESSION = new AttributeKey<>();
@@ -804,7 +804,7 @@ public class SftpFileSystem
     }
 
     /**
-     * The {@link SftpClientPool} stores {@link SftpClient)s not directly but via handles in its channel pool. HAndles
+     * The {@link SftpClientPool} stores {@link SftpClient}s not directly but via handles in its channel pool. HAndles
      * remove themselves from the pool
      */
     protected static class SftpClientHandle implements ChannelListener {

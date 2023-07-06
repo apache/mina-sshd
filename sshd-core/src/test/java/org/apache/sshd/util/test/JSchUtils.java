@@ -68,7 +68,7 @@ public final class JSchUtils {
     }
 
     /**
-     * Wraps {@link Session#setPortForwardingR(String, int, String, int) to avoid that JSch's abuse of
+     * Wraps {@link Session#setPortForwardingR(String, int, String, int)} to avoid that JSch's abuse of
      * {@link Thread#interrupt()} leaks into client code.
      *
      * @param  session    JSch {@link Session} to request the port forwarding on
@@ -82,7 +82,7 @@ public final class JSchUtils {
     }
 
     /**
-     * Wraps {@link Session#setPortForwardingR(int, String, int) to avoid that JSch's abuse of
+     * Wraps {@link Session#setPortForwardingR(int, String, int)} to avoid that JSch's abuse of
      * {@link Thread#interrupt()} leaks into client code.
      *
      * @param  session     JSch {@link Session} to request the port forwarding on

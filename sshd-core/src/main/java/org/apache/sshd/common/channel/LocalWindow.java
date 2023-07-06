@@ -56,8 +56,6 @@ public class LocalWindow extends Window {
     /**
      * Initializes the {@link LocalWindow} with the packet and window sizes from the {@code resolver}.
      *
-     * @param size       the initial window size
-     * @param packetSize the peer's advertised maximum packet size
      * @param resolver   {@PropertyResolver} to access properties
      */
     public void init(PropertyResolver resolver) {

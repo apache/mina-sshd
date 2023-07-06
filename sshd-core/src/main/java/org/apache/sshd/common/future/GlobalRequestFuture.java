@@ -27,7 +27,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * A {@link DefaultSshFuture} that can be used to wait for the reply of an SSH_MSG_GLOBAL_REQUEST sent with
  * {@code want-reply = true}.
  *
- * @see {@link org.apache.sshd.common.session.Session#request(Buffer, String, ReplyHandler)}
+ * @see org.apache.sshd.common.session.Session#request(Buffer, String, ReplyHandler)
  */
 public class GlobalRequestFuture extends DefaultSshFuture<GlobalRequestFuture>
         implements SshFutureListener<IoWriteFuture> {
@@ -35,7 +35,7 @@ public class GlobalRequestFuture extends DefaultSshFuture<GlobalRequestFuture>
     /**
      * A {@code ReplyHandler} is invoked asynchronously when the reply for a request with {@code want-reply = true} is
      * received. It is <em>not</em> invoked if the request could not be sent; to catch such cases
-     * {@link DefaultSshFuture#await()} the {@link GlobalRequestFuture} and check
+     * {@link DefaultSshFuture#await(CancelOption[])} the {@link GlobalRequestFuture} and check
      * {@link GlobalRequestFuture#getException()}.
      */
     @FunctionalInterface

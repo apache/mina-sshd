@@ -81,7 +81,7 @@ public class KeyExchangeMessageHandler {
     /**
      * An {@link ExecutorService} used to flush the queue asynchronously.
      *
-     * @see {@link #flushQueue(DefaultKeyExchangeFuture)}
+     * @see #flushQueue(DefaultKeyExchangeFuture)
      */
     protected final ExecutorService flushRunner = Executors.newSingleThreadExecutor();
 

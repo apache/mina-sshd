@@ -164,6 +164,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     /**
      * Merges that into this via underride. That is, any value present in this entry takes precedence over the given
      * entry. Only this object is modified. The given entry remains unchanged.
+     *
+     * @param that The HostConfigEntry to merge.
      */
     public void collate(HostConfigEntry that) {
         if (hostName == null || hostName.isEmpty()) {
