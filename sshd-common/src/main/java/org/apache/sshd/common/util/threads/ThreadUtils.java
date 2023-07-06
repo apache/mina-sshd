@@ -57,7 +57,7 @@ public final class ThreadUtils {
      * @param  code      code to run
      * @return           the result of {@code code}
      * @throws Exception propagated from {@code code.call()}
-     * @see              {@link #isInternal()}
+     * @see              #isInternalThread()
      */
     public static <V> V runAsInternal(Callable<V> code) throws Exception {
         if (isInternalThread()) {
@@ -81,8 +81,8 @@ public final class ThreadUtils {
      * @param  param     parameter for the function
      * @param  code      function to run
      * @return           the result of {@code code}
-     * @throws Exception propagated from {@code code.apply()}
-     * @see              {@link #isInternal()}
+     * @throws IOException propagated from {@code code.apply()}
+     * @see              #isInternalThread()
      */
     public static <T, V> V runAsInternal(T param, IOFunction<? super T, V> code) throws IOException {
         if (isInternalThread()) {
