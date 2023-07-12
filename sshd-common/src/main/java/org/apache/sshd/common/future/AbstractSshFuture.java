@@ -64,7 +64,7 @@ public abstract class AbstractSshFuture<T extends SshFuture<T>> extends Abstract
             return await0(timeoutMillis, false, options) != null;
         } catch (InterruptedIOException e) {
             throw formatExceptionMessage(
-                    msg -> new InternalError(msg, e),
+                    msg -> new IllegalStateException(msg, e),
                     "Unexpected interrupted exception wile awaitUninterruptibly %d msec: %s",
                     timeoutMillis, e.getMessage());
         }
