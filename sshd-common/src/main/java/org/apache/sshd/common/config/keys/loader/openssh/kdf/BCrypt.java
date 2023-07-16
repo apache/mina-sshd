@@ -21,6 +21,7 @@ package org.apache.sshd.common.config.keys.loader.openssh.kdf;
 // It's available on maven as artifact org.connectbot.jbcrypt:jbcrypt:1.0.0. pbkdf method added 2016 by Kenny Root.
 // Modifications for Apache MINA sshd: this comment, plus changed the package from org.mindrot.jbcrypt to avoid conflicts.
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -862,13 +863,9 @@ public class BCrypt {
   public static boolean checkpw(String plaintext, String hashed) {
       byte hashed_bytes[];
       byte try_bytes[];
-      try {
-          String try_pw = hashpw(plaintext, hashed);
-          hashed_bytes = hashed.getBytes("UTF-8");
-          try_bytes = try_pw.getBytes("UTF-8");
-      } catch (UnsupportedEncodingException uee) {
-          return false;
-      }
+      String try_pw = hashpw(plaintext, hashed);
+      hashed_bytes = hashed.getBytes(StandardCharsets.UTF_8);
+      try_bytes = try_pw.getBytes(StandardCharsets.UTF_8);
       if (hashed_bytes.length != try_bytes.length)
           return false;
       byte ret = 0;

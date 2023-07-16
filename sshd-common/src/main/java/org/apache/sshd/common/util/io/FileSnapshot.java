@@ -82,10 +82,10 @@ public class FileSnapshot {
     /**
      * Creates a new {@link FileSnapshot} instance.
      *
-     * @param  snapTime     the {@link Instant} the snapshot was taken
-     * @param  lastModified the "last modified" {@link FileTime}
-     * @param  size         the file size
-     * @param  fileKey      the file key
+     * @param snapTime     the {@link Instant} the snapshot was taken
+     * @param lastModified the "last modified" {@link FileTime}
+     * @param size         the file size
+     * @param fileKey      the file key
      */
     protected FileSnapshot(Instant snapTime, FileTime lastModified, long size, Object fileKey) {
         this.snapTime = Objects.requireNonNull(snapTime);
@@ -133,10 +133,10 @@ public class FileSnapshot {
     /**
      * Creates a new {@link FileSnapshot} for the given path.
      *
-     * @param  file    to take the snapshot of
-     * @param  options {@link LinkOption}s to use
-     * @return         the {@link FileSnapshot}, never {@code null}
-     * @throws  IOException if an I/O error occurs
+     * @param  file        to take the snapshot of
+     * @param  options     {@link LinkOption}s to use
+     * @return             the {@link FileSnapshot}, never {@code null}
+     * @throws IOException if an I/O error occurs
      */
     public static FileSnapshot save(Path file, LinkOption... options) throws IOException {
         BasicFileAttributes attributes = null;
@@ -155,11 +155,11 @@ public class FileSnapshot {
     /**
      * Reload the {@link FileSnapshot} for the given file.
      *
-     * @param  file    to take the snapshot of
-     * @param  options {@link LinkOption}s to use
-     * @return         a {@link FileSnapshot}, never {@code null}; if {@code == this}, the file may be assumed
-     *                 unmodified
-     * @throws  IOException if an I/O error occurs
+     * @param  file        to take the snapshot of
+     * @param  options     {@link LinkOption}s to use
+     * @return             a {@link FileSnapshot}, never {@code null}; if {@code == this}, the file may be assumed
+     *                     unmodified
+     * @throws IOException if an I/O error occurs
      */
     public FileSnapshot reload(Path file, LinkOption... options) throws IOException {
         FileSnapshot newSnapshot = save(file, options);

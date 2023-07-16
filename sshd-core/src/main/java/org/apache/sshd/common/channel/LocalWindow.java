@@ -56,7 +56,7 @@ public class LocalWindow extends Window {
     /**
      * Initializes the {@link LocalWindow} with the packet and window sizes from the {@code resolver}.
      *
-     * @param resolver   {@PropertyResolver} to access properties
+     * @param resolver {@PropertyResolver} to access properties
      */
     public void init(PropertyResolver resolver) {
         init(CoreModuleProperties.WINDOW_SIZE.getRequired(resolver),
