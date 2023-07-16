@@ -62,13 +62,12 @@ public final class ThreadUtils {
     public static <V> V runAsInternal(Callable<V> code) throws Exception {
         if (isInternalThread()) {
             return code.call();
-        } else {
-            try {
-                IS_INTERNAL_THREAD.set(Boolean.TRUE);
-                return code.call();
-            } finally {
-                IS_INTERNAL_THREAD.remove();
-            }
+        }
+        try {
+            IS_INTERNAL_THREAD.set(Boolean.TRUE);
+            return code.call();
+        } finally {
+            IS_INTERNAL_THREAD.remove();
         }
     }
 
@@ -87,13 +86,12 @@ public final class ThreadUtils {
     public static <T, V> V runAsInternal(T param, IOFunction<? super T, V> code) throws IOException {
         if (isInternalThread()) {
             return code.apply(param);
-        } else {
-            try {
-                IS_INTERNAL_THREAD.set(Boolean.TRUE);
-                return code.apply(param);
-            } finally {
-                IS_INTERNAL_THREAD.remove();
-            }
+        }
+        try {
+            IS_INTERNAL_THREAD.set(Boolean.TRUE);
+            return code.apply(param);
+        } finally {
+            IS_INTERNAL_THREAD.remove();
         }
     }
 
@@ -122,9 +120,8 @@ public final class ThreadUtils {
             CloseableExecutorService executorService, boolean shutdownOnExit) {
         if (executorService == null || shutdownOnExit || executorService instanceof NoCloseExecutor) {
             return executorService;
-        } else {
-            return new NoCloseExecutor(executorService);
         }
+        return new NoCloseExecutor(executorService);
     }
 
     public static CloseableExecutorService noClose(CloseableExecutorService executorService) {
