@@ -136,7 +136,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             int l = buf.available();
             buf.getRawBytes(b, offset.getAndAdd(l), l);
         });
-        if (res == 0 && eofIndicator) {
+        if (res == 0 && eofIndicator && hasNoData()) {
             res = -1;
         }
         return res;

@@ -284,6 +284,51 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
+    @Test // see SSHD-1287
+    public void testZeroRead() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.bin");
+        byte[] expected = new byte[4000];
+
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expected);
+        Files.write(testFile, expected);
+
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            byte[] actual = new byte[expected.length];
+            try (InputStream in = sftp.read(file)) {
+                int off = 0;
+                int n = 0;
+                while (off < actual.length) {
+                    n = in.read(actual, off, 100);
+                    if (n < 0) {
+                        break;
+                    }
+                    off += n;
+                    if (in.read(actual, off, 0) < 0) {
+                        break;
+                    }
+                }
+                assertEquals("Short read", actual.length, off);
+                if (n >= 0) {
+                    n = in.read();
+                    assertTrue("Stream not at eof", n < 0);
+                }
+            }
+            for (int index = 0; index < actual.length; index++) {
+                byte expByte = expected[index];
+                byte actByte = actual[index];
+                assertEquals("Mismatched values at index=" + index, Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF));
+            }
+        }
+    }
+
     @Test // see SSHD-1288
     public void testReadWriteDownload() throws Exception {
         Assume.assumeTrue("Not sure appending to a file opened for reading works on Windows",
