@@ -287,8 +287,8 @@ public abstract class Buffer implements Readable {
     public short getShort() {
         ensureAvailable(Short.BYTES);
         getRawBytes(workBuf, 0, Short.BYTES);
-        short v = (short) ((workBuf[1] << Byte.SIZE) & 0xFF00);
-        v |= (short) (workBuf[0] & 0xF);
+        short v = (short) ((workBuf[0] << Byte.SIZE) & 0xFF00);
+        v |= (short) (workBuf[1] & 0xFF);
         return v;
     }
 

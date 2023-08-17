@@ -110,4 +110,18 @@ public class BufferTest extends JUnitTestSupport {
         assertFalse(e instanceof OutOfMemoryError);
         assertEquals(8, buffer.array().length);
     }
+
+    @Test
+    public void testShortPositive() {
+        ByteArrayBuffer buffer = new ByteArrayBuffer(2);
+        buffer.putShort(261);
+        assertEquals(261, buffer.getShort());
+    }
+
+    @Test
+    public void testShortNegative() {
+        ByteArrayBuffer buffer = new ByteArrayBuffer(2);
+        buffer.putShort(-2);
+        assertEquals(-2, buffer.getShort());
+    }
 }
