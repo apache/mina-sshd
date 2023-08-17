@@ -203,7 +203,7 @@ public final class SftpModuleProperties {
 
     /**
      * Properties key for the maximum of available open handles per session. By default we impose virtually no limit and
-     * relay on the O/S.
+     * rely on the O/S.
      */
     public static final Property<Integer> MAX_OPEN_HANDLES_PER_SESSION
             = Property.integer("max-open-handles-per-session", Integer.MAX_VALUE - 1);

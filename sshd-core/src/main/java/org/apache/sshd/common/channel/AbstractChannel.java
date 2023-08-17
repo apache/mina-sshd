@@ -41,6 +41,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.channel.exception.SshChannelInvalidPacketException;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.future.CloseFuture;
@@ -77,6 +78,15 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
      */
     public static final IntUnaryOperator RESPONSE_BUFFER_GROWTH_FACTOR = Int2IntFunction.add(Byte.SIZE);
 
+    /**
+     * A default {@link PacketValidator} that enforces that the packet size is not greater than the maximum packet size
+     * of the channel's local window.
+     */
+    // Plus 4 because there seems to be some confusion about whether or not the maximum packet size for a channel
+    // includes the packet length field itself.
+    public static final PacketValidator DEFAULT_PACKET_VALIDATOR = (
+            packetSize, maxPacketSize, extendedData) -> packetSize <= maxPacketSize + 4;
+
     protected enum GracefulState {
         Opened,
         CloseSent,
@@ -85,6 +95,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     }
 
     protected ConnectionService service;
+
     protected final AtomicBoolean initialized = new AtomicBoolean(false);
     protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
     protected final AtomicBoolean eofSent = new AtomicBoolean(false);
@@ -110,6 +121,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     private final LocalWindow localWindow;
     private final RemoteWindow remoteWindow;
     private ChannelStreamWriterResolver channelStreamPacketWriterResolver;
+
+    private PacketValidator packetValidator = DEFAULT_PACKET_VALIDATOR;
 
     /**
      * A {@link Map} of sent requests - key = request name, value = timestamp when request was sent.
@@ -849,18 +862,38 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         LocalWindow wLocal = getLocalWindow();
         long maxLocalSize = wLocal.getPacketSize();
 
-        /*
-         * The reason for the +4 is that there seems to be some confusion
-         * whether the max. packet size includes the length field or not
-         */
-        if (len > (maxLocalSize + 4L)) {
-            throw new IllegalStateException("Bad length (" + len + ") " + " for cmd="
-                                            + SshConstants.getCommandMessageName(cmd) + " - max. allowed=" + maxLocalSize);
+        PacketValidator validator = getPacketValidator();
+        if (!validator.isValid(len, maxLocalSize, cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA)) {
+            throw new SshChannelInvalidPacketException(getChannelId(), "Bad length (" + len + ") " + " for cmd="
+                                                                       + SshConstants.getCommandMessageName(cmd)
+                                                                       + " - max. allowed=" + maxLocalSize);
         }
 
         wLocal.consume(len);
 
         return len;
+    }
+
+    /**
+     * Retrieves the currently set {@link PacketValidator}.
+     *
+     * @return the validator, never {@code null}
+     */
+    public PacketValidator getPacketValidator() {
+        return packetValidator;
+    }
+
+    /**
+     * Sets a {@link PacketValidator}.
+     *
+     * @param the validator to set, if {@code null} the {@link #DEFAULT_PACKET_VALIDATOR} is set
+     */
+    public void setPacketValidator(PacketValidator validator) {
+        if (validator == null) {
+            packetValidator = DEFAULT_PACKET_VALIDATOR;
+        } else {
+            packetValidator = validator;
+        }
     }
 
     @Override
@@ -1019,5 +1052,24 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     public String toString() {
         return getClass().getSimpleName() + "[id=" + getChannelId() + ", recipient=" + getRecipient() + "]" + "-"
                + getSession();
+    }
+
+    /**
+     * A {@link PacketValidator} can validate packet lengths. Used for {@link SshConstants#SSH_MSG_CHANNEL_DATA} and
+     * {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA} messages.
+     */
+    @FunctionalInterface
+    public interface PacketValidator {
+
+        /**
+         * Tells whether a packet received of {@code len} bytes is valid given a channel's {@code maximumPacketSize}.
+         *
+         * @param  packetSize        as read from the SSH packet
+         * @param  maximumPacketSize from the channel's local window
+         * @param  extendedData      whether it's a {@link SshConstants#SSH_MSG_CHANNEL_EXTENDED_DATA} packet
+         * @return                   {@code true} if the packet is to be considered valid.
+         */
+        boolean isValid(long packetSize, long maximumPacketSize, boolean extendedData);
+
     }
 }

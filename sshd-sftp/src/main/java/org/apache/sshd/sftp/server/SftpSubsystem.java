@@ -48,6 +48,8 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
+import org.apache.sshd.common.channel.AbstractChannel;
+import org.apache.sshd.common.channel.AbstractChannel.PacketValidator;
 import org.apache.sshd.common.channel.BufferedIoOutputStream;
 import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.digest.BuiltinDigests;
@@ -191,6 +193,23 @@ public class SftpSubsystem
         this.fileHandleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(channel);
         this.maxFileHandleRounds = SftpModuleProperties.MAX_FILE_HANDLE_RAND_ROUNDS.getRequired(channel);
 
+        if (this.fileHandleSize > 4) {
+            // WS_FTP <= 12.9 has a bug concerning SFTP file handle sizes. If the handle size is > 4, it sends (handle
+            // size - 4) bytes too many in the SSH_MSG_CHANNEL_DATA packets. To work around this client-side bug,
+            // install a more lenient {@link PacketValidator} on the channel.
+            PacketValidator validator = (packetSize, maximumPacketSize, extendedData) -> {
+                if (AbstractChannel.DEFAULT_PACKET_VALIDATOR.isValid(packetSize, maximumPacketSize, extendedData)) {
+                    return true;
+                }
+                // Packet size is larger. Accept only if it's a SSH_MSG_CHANNEL_DATA packet exactly the file handle size
+                // difference larger.
+                if (!extendedData && packetSize == maximumPacketSize + fileHandleSize * 2 - 4) {
+                    return true;
+                }
+                return false;
+            };
+            channel.setPacketValidator(validator);
+        }
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
         }
