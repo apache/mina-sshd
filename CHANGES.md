@@ -43,8 +43,44 @@
 
 * [GH-356](https://github.com/apache/mina-sshd/issues/356) Publish snapshot maven artifacts to the [Apache Snapshots](https://repository.apache.org/content/repositories/snapshots) maven repository.
 
+# Behavioral changes and enhancements
 
-## Major Code Re-factoring
+### SFTP file handle size
+
+Previous versions of Apache MINA sshd used SFTP file handles that were twice
+as long a configured via `SftpModuleProperties.FILE_HANDLE_SIZE`. The reason for
+this was that the file handle bytes were stringified, representing each byte
+as two hex characters. This stringified file handle was then send over the wire.
+If `SftpModuleProperties.FILE_HANDLE_SIZE` was configured as 16, the actual file
+handle size was thus 32 bytes.
+
+This has been fixed in this version.
+
+## Potential compatibility issues
+
+### Server-side SFTP file handle encoding
+
+The aforementioned fix for the size of SFTP file handles has the potential to
+have undesired effects on existing server-side code that assumed that such SFTP
+file handles contained only printable bytes. This is no longer the case. For
+historical reasons, Apache MINA sshd stores these SFTP file handles as Java
+`String`s, and it's not possible to change this without a great many APIs.
+So this was kept, but the strings are now encoded as ISO-8859-1 and may
+contain arbitrary characters in the range from 0 to 255. This change
+*should* be transparent as SFTP file handles are supposed to be opaque, but
+there is one caveat:
+
+If you have implemented your own server and have subclassed `SftpSubsystem` or
+if you install an `SftpEventListener` that stores or logs raw SFTP file handles,
+your code may need to be adapted. There is a new method
+`String Handle.safe(String rawHandle)` that can be used to convert an SFTP file
+handle to a printable string.
+
+Otherwise the change is transparent to server implementors and to SFTP clients.
+(On the client side, Apache MINA sshd already used `byte[]` to represent SFTP
+file handles.) 
+
+### Major Code Re-factoring
 
 As part of the fix for [GH-371](https://github.com/apache/mina-sshd/issues/371)
 the channel pool in `SftpFileSystem` was rewritten completely. Previous code also

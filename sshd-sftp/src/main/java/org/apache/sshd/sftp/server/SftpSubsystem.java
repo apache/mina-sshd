@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.net.UnknownServiceException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystemLoopException;
@@ -106,6 +107,7 @@ public class SftpSubsystem
     protected IoOutputStream out;
     protected Environment env;
     protected Random randomizer;
+    protected int maxHandleCount = Integer.MAX_VALUE - 1;
     protected int fileHandleSize = SftpModuleProperties.DEFAULT_FILE_HANDLE_SIZE;
     protected int maxFileHandleRounds = SftpModuleProperties.DEFAULT_FILE_HANDLE_ROUNDS;
     protected Future<?> pendingFuture;
@@ -190,6 +192,7 @@ public class SftpSubsystem
         Factory<? extends Random> factory = manager.getRandomFactory();
         this.randomizer = factory.create();
 
+        this.maxHandleCount = SftpModuleProperties.MAX_OPEN_HANDLES_PER_SESSION.getRequired(session);
         this.fileHandleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(channel);
         this.maxFileHandleRounds = SftpModuleProperties.MAX_FILE_HANDLE_RAND_ROUNDS.getRequired(channel);
 
@@ -203,7 +206,7 @@ public class SftpSubsystem
                 }
                 // Packet size is larger. Accept only if it's a SSH_MSG_CHANNEL_DATA packet exactly the file handle size
                 // difference larger.
-                if (!extendedData && packetSize == maximumPacketSize + fileHandleSize * 2 - 4) {
+                if (!extendedData && packetSize == maximumPacketSize + fileHandleSize - 4) {
                     return true;
                 }
                 return false;
@@ -378,7 +381,7 @@ public class SftpSubsystem
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doTextSeek({})[id={}] SSH_FXP_EXTENDED(text-seek) (handle={}[{}], line={})",
-                    getServerSession(), id, handle, h, line);
+                    getServerSession(), id, Handle.safe(handle), h, line);
         }
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
@@ -389,7 +392,7 @@ public class SftpSubsystem
     protected void doOpenSSHFsync(int id, String handle) throws IOException {
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
-            log.debug("doOpenSSHFsync({})[id={}] {}[{}]", getServerSession(), id, handle, h);
+            log.debug("doOpenSSHFsync({})[id={}] {}[{}]", getServerSession(), id, Handle.safe(handle), h);
         }
 
         FileHandle fileHandle = validateHandle(handle, h, FileHandle.class);
@@ -561,7 +564,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doBlock({})[id={}] SSH_FXP_BLOCK (handle={}[{}], offset={}, length={}, mask=0x{})",
-                    session, id, handle, p, offset, length, Integer.toHexString(mask));
+                    session, id, Handle.safe(handle), p, offset, length, Integer.toHexString(mask));
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
@@ -586,7 +589,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doUnblock({})[id={}] SSH_FXP_UNBLOCK (handle={}[{}], offset={}, length={})",
-                    session, id, handle, p, offset, length);
+                    session, id, Handle.safe(handle), p, offset, length);
         }
 
         FileHandle fileHandle = validateHandle(handle, p, FileHandle.class);
@@ -613,8 +616,8 @@ public class SftpSubsystem
             log.debug("doCopyData({})[id={}] SSH_FXP_EXTENDED[{}] read={}[{}]"
                       + ", read-offset={}, read-length={}, write={}[{}], write-offset={})",
                     getServerSession(), id, SftpConstants.EXT_COPY_DATA,
-                    readHandle, rh, readOffset, readLength,
-                    writeHandle, wh, writeOffset);
+                    Handle.safe(readHandle), rh, readOffset, readLength,
+                    Handle.safe(writeHandle), wh, writeOffset);
         }
 
         FileHandle srcHandle = validateHandle(readHandle, rh, FileHandle.class);
@@ -681,12 +684,12 @@ public class SftpSubsystem
 
     @Override
     protected void doReadDir(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         Handle h = handles.get(handle);
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])", session, id, handle, h);
+            log.debug("doReadDir({})[id={}] SSH_FXP_READDIR (handle={}[{}])", session, id, Handle.safe(handle), h);
         }
 
         Buffer reply = null;
@@ -753,8 +756,8 @@ public class SftpSubsystem
                 int sftpVersion = getVersion();
                 Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, sftpVersion, session, dh.isDone());
                 if (debugEnabled) {
-                    log.debug("doReadDir({})({})[{}] - sending {} entries - eol={} (SFTP version {})", session, handle, h,
-                            count, indicator, sftpVersion);
+                    log.debug("doReadDir({})({})[{}] - sending {} entries - eol={} (SFTP version {})", session,
+                            Handle.safe(handle), h, count, indicator, sftpVersion);
                 }
             } else {
                 // empty directory
@@ -765,7 +768,7 @@ public class SftpSubsystem
 
             Objects.requireNonNull(reply, "No reply buffer created");
         } catch (IOException | RuntimeException | Error e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READDIR, handle);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READDIR, Handle.safe(handle));
             return;
         }
 
@@ -812,7 +815,7 @@ public class SftpSubsystem
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doFsetStat({})[id={}] SSH_FXP_FSETSTAT (handle={}[{}], attrs={})",
-                    getServerSession(), id, handle, h, attrs);
+                    getServerSession(), id, Handle.safe(handle), h, attrs);
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
@@ -827,7 +830,7 @@ public class SftpSubsystem
         Handle h = handles.get(handle);
         if (log.isDebugEnabled()) {
             log.debug("doFStat({})[id={}] SSH_FXP_FSTAT (handle={}[{}], flags=0x{})",
-                    getServerSession(), id, handle, h, Integer.toHexString(flags));
+                    getServerSession(), id, Handle.safe(handle), h, Integer.toHexString(flags));
         }
 
         Handle fileHandle = validateHandle(handle, h, Handle.class);
@@ -849,7 +852,7 @@ public class SftpSubsystem
         int maxAllowed = SftpModuleProperties.MAX_WRITEDATA_PACKET_LENGTH.getRequired(session);
         if (log.isTraceEnabled()) {
             log.trace("doWrite({})[id={}] SSH_FXP_WRITE (handle={}[{}], offset={}, length={}, maxAllowed={})",
-                    session, id, handle, h, offset, length, maxAllowed);
+                    session, id, Handle.safe(handle), h, offset, length, maxAllowed);
         }
 
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
@@ -889,7 +892,7 @@ public class SftpSubsystem
         ServerSession session = getServerSession();
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}] SSH_FXP_READ (handle={}[{}], offset={}, length={})",
-                    session, id, handle, h, offset, length);
+                    session, id, Handle.safe(handle), h, offset, length);
         }
 
         ValidateUtils.checkTrue(length > 0L, "Invalid read length: %d", length);
@@ -912,7 +915,7 @@ public class SftpSubsystem
         Handle h = handles.remove(handle);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
-            log.debug("doClose({})[id={}] SSH_FXP_CLOSE (handle={}[{}])", session, id, handle, h);
+            log.debug("doClose({})[id={}] SSH_FXP_CLOSE (handle={}[{}])", session, id, Handle.safe(handle), h);
         }
 
         Handle nodeHandle = validateHandle(handle, h, Handle.class);
@@ -940,49 +943,58 @@ public class SftpSubsystem
         }
 
         Path file = resolveFile(path);
-        int curHandleCount = handles.size();
-        int maxHandleCount = SftpModuleProperties.MAX_OPEN_HANDLES_PER_SESSION.getRequired(session);
-        if (curHandleCount > maxHandleCount) {
-            throw signalOpenFailure(id, path, file, false,
-                    new SftpException(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
-                            "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount));
-        }
 
-        String handle;
         try {
             synchronized (handles) {
-                handle = generateFileHandle(file);
+                String handle = generateFileHandle(file);
                 FileHandle fileHandle = new FileHandle(this, file, handle, pflags, access, attrs);
                 handles.put(handle, fileHandle);
+                return handle;
             }
         } catch (IOException e) {
             throw signalOpenFailure(id, path, file, false, e);
         }
-
-        return handle;
     }
 
-    // we stringify our handles and treat them as such on decoding as well as it is easier to use as a map key
-    // NOTE: assume handles map is locked
+    /**
+     * Generates a file handle, which is used as key in a {@link Map} to record open file handles across requests. For
+     * historical reasons, the handle is returned as a {@link String}, and other APIs also use {@link String} for
+     * handles, so we're kind of stuck with that.
+     * <p>
+     * As of version 2.10.1, the result <b>must</b> be encoded using {@link StandardCharsets#ISO_8859_1}, and it must
+     * not have more than 256 IOS-8859-1 characters (i.e., bytes).
+     * </p>
+     * <p>
+     * This method is called with the monitor on the {@link #handles} {@link Map} held.
+     * </p>
+     *
+     * @param  file        to generate a handle for
+     * @return             the file handle
+     * @throws IOException if no handle could be generated
+     */
     protected String generateFileHandle(Path file) throws IOException {
+        int curHandleCount = handles.size();
+        if (curHandleCount >= maxHandleCount) {
+            throw new SftpException(SftpConstants.SSH_FX_NO_SPACE_ON_FILESYSTEM,
+                    "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
+        }
+        boolean traceEnabled = log.isTraceEnabled();
         // use several rounds in case the file handle size is relatively small so we might get conflicts
         ServerSession session = getServerSession();
-        boolean traceEnabled = log.isTraceEnabled();
         for (int index = 0; index < maxFileHandleRounds; index++) {
             randomizer.fill(workBuf, 0, fileHandleSize);
-            String handle = BufferUtils.toHex(
-                    workBuf, 0, fileHandleSize, BufferUtils.EMPTY_HEX_SEPARATOR);
+            String handle = new String(workBuf, 0, fileHandleSize, StandardCharsets.ISO_8859_1);
 
             if (handles.containsKey(handle)) {
                 if (traceEnabled) {
                     log.trace("generateFileHandle({})[{}] handle={} in use at round {}",
-                            session, file, handle, index);
+                            session, file, Handle.safe(handle), index);
                 }
                 continue;
             }
 
             if (traceEnabled) {
-                log.trace("generateFileHandle({})[{}] {}", session, file, handle);
+                log.trace("generateFileHandle({})[{}] {}", session, file, Handle.safe(handle));
             }
             return handle;
         }
@@ -1097,23 +1109,23 @@ public class SftpSubsystem
             Handle handle = fe.getValue();
             try {
                 if (debugEnabled) {
-                    log.debug("closeAllHandles({}) exiting pending handle {} [{}]", session, id, handle);
+                    log.debug("closeAllHandles({}) exiting pending handle {} [{}]", session, Handle.safe(id), handle);
                 }
 
                 listener.exiting(session, handle);
             } catch (IOException | RuntimeException e) {
                 log.warn("closeAllHandles({}) failed ({}) to inform listener of exit for handle={}[{}]: {}",
-                        session, e.getClass().getSimpleName(), id, handle, e.getMessage());
+                        session, e.getClass().getSimpleName(), Handle.safe(id), handle, e.getMessage());
             }
 
             try {
                 handle.close();
                 if (debugEnabled) {
-                    log.debug("closeAllHandles({}) closed pending handle {} [{}]", session, id, handle);
+                    log.debug("closeAllHandles({}) closed pending handle {} [{}]", session, Handle.safe(id), handle);
                 }
             } catch (IOException | RuntimeException e) {
                 log.warn("closeAllHandles({}) failed ({}) to close handle={}[{}]: {}",
-                        session, e.getClass().getSimpleName(), id, handle, e.getMessage());
+                        session, e.getClass().getSimpleName(), Handle.safe(id), handle, e.getMessage());
             } finally {
                 handle.clearAttributes();
             }

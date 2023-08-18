@@ -19,6 +19,7 @@
 package org.apache.sshd.sftp.server;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
@@ -32,6 +33,7 @@ import java.util.function.Function;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeStore;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -47,7 +49,7 @@ public abstract class Handle implements java.nio.channels.Channel, AttributeStor
     protected Handle(SftpSubsystem subsystem, Path file, String handle) {
         this.sftpSubsystem = Objects.requireNonNull(subsystem, "No subsystem instance provided");
         this.file = Objects.requireNonNull(file, "No local file path");
-        this.handle = ValidateUtils.checkNotNullAndNotEmpty(handle, "No assigned handle for %s", file);
+        this.handle = ValidateUtils.checkNotNull(handle, "No assigned handle for %s", file);
     }
 
     protected SftpSubsystem getSubsystem() {
@@ -72,6 +74,11 @@ public abstract class Handle implements java.nio.channels.Channel, AttributeStor
         return file;
     }
 
+    /**
+     * Retrieves the raw opaque file handle, which may contain characters not safe for printing.
+     *
+     * @return the raw file handle
+     */
     public String getFileHandle() {
         return handle;
     }
@@ -135,5 +142,22 @@ public abstract class Handle implements java.nio.channels.Channel, AttributeStor
     @Override
     public String toString() {
         return Objects.toString(getFile());
+    }
+
+    /**
+     * Converts a file handle, which may contain non-printable characters, to a hex representation of its bytes, which
+     * is safe to write to logs or exception messages.
+     * <p>
+     * For historical reasons, Apache MINA sshd represents file handles as strings internally.
+     * </p>
+     *
+     * @param  handle to convert
+     * @return        the printable handle string
+     */
+    protected static String safe(String handle) {
+        if (handle == null) {
+            return "null";
+        }
+        return BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, handle.getBytes(StandardCharsets.ISO_8859_1));
     }
 }

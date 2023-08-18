@@ -530,11 +530,11 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doClose(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         try {
             doClose(id, handle);
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_CLOSE, handle);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_CLOSE, Handle.safe(handle));
             return;
         }
 
@@ -544,7 +544,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected abstract void doClose(int id, String handle) throws IOException;
 
     protected void doRead(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         long offset = buffer.getLong();
         int requestedLength = buffer.getInt();
         ServerSession session = getServerSession();
@@ -552,7 +552,7 @@ public abstract class AbstractSftpSubsystemHelper
         int readLen = Math.min(requestedLength, maxAllowed);
         if (log.isTraceEnabled()) {
             log.trace("doRead({})[id={}]({})[offset={}] - req={}, max={}, effective={}",
-                    session, id, handle, offset, requestedLength, maxAllowed, readLen);
+                    session, id, Handle.safe(handle), offset, requestedLength, maxAllowed, readLen);
         }
 
         try {
@@ -571,7 +571,8 @@ public abstract class AbstractSftpSubsystemHelper
             int startPos = buffer.wpos();
             int len = doRead(id, handle, offset, readLen, buffer.array(), startPos, eofRef);
             if (len < 0) {
-                throw new EOFException("Unable to read " + readLen + " bytes from offset=" + offset + " of " + handle);
+                throw new EOFException(
+                        "Unable to read " + readLen + " bytes from offset=" + offset + " of " + Handle.safe(handle));
             }
             buffer.wpos(startPos + len);
             BufferUtils.updateLengthPlaceholder(buffer, lenPos, len);
@@ -585,7 +586,7 @@ public abstract class AbstractSftpSubsystemHelper
                 }
             }
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READ, handle, offset, requestedLength);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_READ, Handle.safe(handle), offset, requestedLength);
             return;
         }
 
@@ -597,13 +598,13 @@ public abstract class AbstractSftpSubsystemHelper
             throws IOException;
 
     protected void doWrite(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         long offset = buffer.getLong();
         int length = buffer.getInt();
         try {
             doWrite(id, handle, offset, length, buffer.array(), buffer.rpos(), buffer.available());
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_WRITE, handle, offset, length);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_WRITE, Handle.safe(handle), offset, length);
             return;
         }
 
@@ -683,7 +684,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doFStat(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         int flags = SftpConstants.SSH_FILEXFER_ATTR_ALL;
         int version = getVersion();
         if (version >= SftpConstants.SFTP_V4) {
@@ -694,7 +695,7 @@ public abstract class AbstractSftpSubsystemHelper
         try {
             attrs = doFStat(id, handle, flags);
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_FSTAT, handle, flags);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_FSTAT, Handle.safe(handle), flags);
             return;
         }
 
@@ -704,12 +705,12 @@ public abstract class AbstractSftpSubsystemHelper
     protected abstract Map<String, Object> doFStat(int id, String handle, int flags) throws IOException;
 
     protected void doFSetStat(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         Map<String, Object> attrs = readAttrs(buffer);
         try {
             doFSetStat(id, handle, attrs);
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_FSETSTAT, handle, attrs);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_FSETSTAT, Handle.safe(handle), attrs);
             return;
         }
 
@@ -871,14 +872,14 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doTextSeek(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         long line = buffer.getLong();
         try {
             // TODO : implement text-seek - see https://tools.ietf.org/html/draft-ietf-secsh-filexfer-03#section-6.3
             doTextSeek(id, handle, line);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
-                    SftpConstants.SSH_FXP_EXTENDED, SftpConstants.EXT_TEXT_SEEK, handle, line);
+                    SftpConstants.SSH_FXP_EXTENDED, SftpConstants.EXT_TEXT_SEEK, Handle.safe(handle), line);
             return;
         }
 
@@ -889,12 +890,12 @@ public abstract class AbstractSftpSubsystemHelper
 
     // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL section 10
     protected void doOpenSSHFsync(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         try {
             doOpenSSHFsync(id, handle);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
-                    SftpConstants.SSH_FXP_EXTENDED, FsyncExtensionParser.NAME, handle);
+                    SftpConstants.SSH_FXP_EXTENDED, FsyncExtensionParser.NAME, Handle.safe(handle));
             return;
         }
 
@@ -1340,7 +1341,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doBlock(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         long offset = buffer.getLong();
         long length = buffer.getLong();
         int mask = buffer.getInt();
@@ -1348,7 +1349,7 @@ public abstract class AbstractSftpSubsystemHelper
         try {
             doBlock(id, handle, offset, length, mask);
         } catch (IOException | RuntimeException e) {
-            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_BLOCK, handle, offset, length, mask);
+            sendStatus(prepareReply(buffer), id, e, SftpConstants.SSH_FXP_BLOCK, Handle.safe(handle), offset, length, mask);
             return;
         }
 
@@ -1360,14 +1361,14 @@ public abstract class AbstractSftpSubsystemHelper
             throws IOException;
 
     protected void doUnblock(Buffer buffer, int id) throws IOException {
-        String handle = buffer.getString();
+        String handle = buffer.getString(StandardCharsets.ISO_8859_1);
         long offset = buffer.getLong();
         long length = buffer.getLong();
         try {
             doUnblock(id, handle, offset, length);
         } catch (IOException | RuntimeException e) {
             sendStatus(prepareReply(buffer), id, e,
-                    SftpConstants.SSH_FXP_UNBLOCK, handle, offset, length);
+                    SftpConstants.SSH_FXP_UNBLOCK, Handle.safe(handle), offset, length);
             return;
         }
 
@@ -2157,7 +2158,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected void sendHandle(Buffer buffer, int id, String handle) throws IOException {
         buffer.putByte((byte) SftpConstants.SSH_FXP_HANDLE);
         buffer.putInt(id);
-        buffer.putString(handle);
+        buffer.putString(handle, StandardCharsets.ISO_8859_1);
         send(buffer);
     }
 
