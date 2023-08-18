@@ -34,8 +34,11 @@ import java.nio.file.LinkOption;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.NotDirectoryException;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.Deque;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
@@ -108,6 +111,7 @@ public class SftpSubsystem
     protected Environment env;
     protected Random randomizer;
     protected int maxHandleCount = Integer.MAX_VALUE - 1;
+    protected Deque<String> unusedHandles;
     protected int fileHandleSize = SftpModuleProperties.DEFAULT_FILE_HANDLE_SIZE;
     protected int maxFileHandleRounds = SftpModuleProperties.DEFAULT_FILE_HANDLE_ROUNDS;
     protected Future<?> pendingFuture;
@@ -212,6 +216,8 @@ public class SftpSubsystem
                 return false;
             };
             channel.setPacketValidator(validator);
+        } else {
+            this.unusedHandles = new LinkedList<>();
         }
         if (workBuf.length < this.fileHandleSize) {
             workBuf = new byte[this.fileHandleSize];
@@ -616,8 +622,7 @@ public class SftpSubsystem
             log.debug("doCopyData({})[id={}] SSH_FXP_EXTENDED[{}] read={}[{}]"
                       + ", read-offset={}, read-length={}, write={}[{}], write-offset={})",
                     getServerSession(), id, SftpConstants.EXT_COPY_DATA,
-                    Handle.safe(readHandle), rh, readOffset, readLength,
-                    Handle.safe(writeHandle), wh, writeOffset);
+                    Handle.safe(readHandle), rh, readOffset, readLength, Handle.safe(writeHandle), wh, writeOffset);
         }
 
         FileHandle srcHandle = validateHandle(readHandle, rh, FileHandle.class);
@@ -757,7 +762,8 @@ public class SftpSubsystem
                 Boolean indicator = SftpHelper.indicateEndOfNamesList(reply, sftpVersion, session, dh.isDone());
                 if (debugEnabled) {
                     log.debug("doReadDir({})({})[{}] - sending {} entries - eol={} (SFTP version {})", session,
-                            Handle.safe(handle), h, count, indicator, sftpVersion);
+                            Handle.safe(handle), h,
+                            count, indicator, sftpVersion);
                 }
             } else {
                 // empty directory
@@ -912,7 +918,19 @@ public class SftpSubsystem
 
     @Override
     protected void doClose(int id, String handle) throws IOException {
-        Handle h = handles.remove(handle);
+        Handle h;
+        synchronized (handles) {
+            h = handles.remove(handle);
+            if (fileHandleSize == Integer.BYTES) {
+                if (handles.isEmpty()) {
+                    // No currently used handles: we may forget about unused handles and start from scratch
+                    unusedHandles.clear();
+                } else if (h != null && handle != null) {
+                    // If h is null, the handle was invalid
+                    unusedHandles.push(handle);
+                }
+            }
+        }
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doClose({})[id={}] SSH_FXP_CLOSE (handle={}[{}])", session, id, Handle.safe(handle), h);
@@ -979,6 +997,21 @@ public class SftpSubsystem
                     "Too many open handles: current=" + curHandleCount + ", max.=" + maxHandleCount);
         }
         boolean traceEnabled = log.isTraceEnabled();
+        if (fileHandleSize == Integer.BYTES) {
+            String handle = unusedHandles.poll();
+            if (handle == null) {
+                // No usused previously created handle available: all handles are used and have values in the range of
+                // [0 .. curHandleCount). So we can simply use curHandleCount for the new handle and be sure it is
+                // unique.
+                Arrays.fill(workBuf, (byte) 0);
+                BufferUtils.putUInt(curHandleCount, workBuf);
+                handle = new String(workBuf, 0, Integer.BYTES, StandardCharsets.ISO_8859_1);
+            }
+            if (traceEnabled) {
+                log.trace("generateFileHandle({})[{}] {}", getServerSession(), file, Handle.safe(handle));
+            }
+            return handle;
+        }
         // use several rounds in case the file handle size is relatively small so we might get conflicts
         ServerSession session = getServerSession();
         for (int index = 0; index < maxFileHandleRounds; index++) {

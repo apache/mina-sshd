@@ -116,12 +116,15 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 import org.junit.runners.MethodSorters;
+import org.junit.runners.Parameterized;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@RunWith(Parameterized.class)
 @SuppressWarnings("checkstyle:MethodCount")
 public class SftpTest extends AbstractSftpClientTestSupport {
     private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS
@@ -129,8 +132,18 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private com.jcraft.jsch.Session session;
 
-    public SftpTest() throws IOException {
-        super();
+    private final int sftpHandleSize;
+
+    public SftpTest(int handleSize) throws IOException {
+        sftpHandleSize = handleSize;
+    }
+
+    @Parameterized.Parameters(name = "FILE_HANDLE_SIZE {0}")
+    public static List<Integer> getParameters() {
+        List<Integer> result = new ArrayList<>();
+        result.add(Integer.valueOf(4));
+        result.add(Integer.valueOf(16));
+        return result;
     }
 
     @Before
@@ -143,6 +156,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             outputDebugMessage("Removed forced version=%s", forced);
         }
 
+        SftpModuleProperties.FILE_HANDLE_SIZE.set(sshd, Integer.valueOf(sftpHandleSize));
         JSch sch = new JSch();
         session = sch.getSession("sshd", TEST_LOCALHOST, port);
         session.setUserInfo(new SimpleUserInfo("sshd"));
@@ -1116,56 +1130,91 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @Test
     public void testHandleSize() throws Exception {
+        List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
+        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+
+        SubsystemFactory f = factories.get(0);
+        assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
+
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) f;
+        Set<String> handles = new HashSet<>();
+        SftpEventListener listener = new AbstractSftpEventListenerAdapter() {
+
+            @Override
+            public void open(ServerSession session, String remoteHandle, Handle localHandle) throws IOException {
+                handles.add(remoteHandle);
+            }
+        };
+        factory.addSftpEventListener(listener);
         int handleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(sshd).intValue();
-        Path targetPath = detectTargetFolder();
-        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
-                getClass().getSimpleName(), getCurrentTestName());
-        CommonTestSupportUtils.deleteRecursive(lclSftp);
+        try {
+            Path targetPath = detectTargetFolder();
+            Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                    getClass().getSimpleName(), getCurrentTestName());
+            CommonTestSupportUtils.deleteRecursive(lclSftp);
 
-        Path parentPath = targetPath.getParent();
-        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = assertHierarchyTargetFolderExists(lclSftp).resolve("client");
 
-        String dir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
+            String dir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
 
-        try (SftpClient sftp = createSingleSessionClient()) {
-            sftp.mkdir(dir);
-            // Write some files
-            byte[] data = "something".getBytes(StandardCharsets.US_ASCII);
-            try (CloseableHandle handle = sftp.open(dir + "/first.bin", OpenMode.Write, OpenMode.Create)) {
-                assertEquals("Unexpected handle size", handleSize, handle.getIdentifier().length);
-                sftp.write(handle, 0, data, 0, data.length);
-            }
-            try (CloseableHandle handle1 = sftp.open(dir + "/second.bin", OpenMode.Write, OpenMode.Create);
-                 CloseableHandle handle2 = sftp.open(dir + "/third.bin", OpenMode.Write, OpenMode.Create)) {
-                assertEquals("Unexpected handle size", handleSize, handle1.getIdentifier().length);
-                assertEquals("Unexpected handle size", handleSize, handle2.getIdentifier().length);
-                sftp.write(handle1, 0, data, 0, data.length);
-                sftp.write(handle2, 0, data, 0, data.length);
-            }
-            try (CloseableHandle handle1 = sftp.open(dir + "/fourth.bin", OpenMode.Write, OpenMode.Create)) {
-                assertEquals("Unexpected handle size", handleSize, handle1.getIdentifier().length);
-                byte[] id2;
-                try (CloseableHandle handle2 = sftp.open(dir + "/fifth.bin", OpenMode.Write, OpenMode.Create)) {
-                    id2 = handle2.getIdentifier();
-                    assertEquals("Unexpected handle size", handleSize, id2.length);
+            try (SftpClient sftp = createSingleSessionClient()) {
+                sftp.mkdir(dir);
+                // Write some files
+                byte[] data = "something".getBytes(StandardCharsets.US_ASCII);
+                try (CloseableHandle handle = sftp.open(dir + "/first.bin", OpenMode.Write, OpenMode.Create)) {
+                    assertEquals("Unexpected handle size", handleSize, handle.getIdentifier().length);
+                    sftp.write(handle, 0, data, 0, data.length);
+                }
+                assertEquals("Unexpected number of handles", 1, handles.size());
+                try (CloseableHandle handle1 = sftp.open(dir + "/second.bin", OpenMode.Write, OpenMode.Create);
+                     CloseableHandle handle2 = sftp.open(dir + "/third.bin", OpenMode.Write, OpenMode.Create)) {
+                    assertEquals("Unexpected handle size", handleSize, handle1.getIdentifier().length);
+                    assertEquals("Unexpected handle size", handleSize, handle2.getIdentifier().length);
+                    sftp.write(handle1, 0, data, 0, data.length);
                     sftp.write(handle2, 0, data, 0, data.length);
                 }
-                byte[] id3;
-                try (CloseableHandle handle3 = sftp.open(dir + "/sixth.bin", OpenMode.Write, OpenMode.Create)) {
-                    id3 = handle3.getIdentifier();
-                    assertEquals("Unexpected handle size", handleSize, id3.length);
-                    sftp.write(handle3, 0, data, 0, data.length);
+                if (handleSize == Integer.BYTES) {
+                    assertEquals("Unexpected number of handles", 2, handles.size());
+                } else {
+                    assertTrue("Unexpected number of handles", handles.size() <= 3);
                 }
-                sftp.write(handle1, 0, data, 0, data.length);
+                try (CloseableHandle handle1 = sftp.open(dir + "/fourth.bin", OpenMode.Write, OpenMode.Create)) {
+                    assertEquals("Unexpected handle size", handleSize, handle1.getIdentifier().length);
+                    byte[] id2;
+                    try (CloseableHandle handle2 = sftp.open(dir + "/fifth.bin", OpenMode.Write, OpenMode.Create)) {
+                        id2 = handle2.getIdentifier();
+                        assertEquals("Unexpected handle size", handleSize, id2.length);
+                        sftp.write(handle2, 0, data, 0, data.length);
+                    }
+                    byte[] id3;
+                    try (CloseableHandle handle3 = sftp.open(dir + "/sixth.bin", OpenMode.Write, OpenMode.Create)) {
+                        id3 = handle3.getIdentifier();
+                        assertEquals("Unexpected handle size", handleSize, id3.length);
+                        if (handleSize == Integer.BYTES) {
+                            // Should have been re-used
+                            assertArrayEquals("Expected handles to be the same", id2, id3);
+                        }
+                        sftp.write(handle3, 0, data, 0, data.length);
+                    }
+                    sftp.write(handle1, 0, data, 0, data.length);
+                }
+                assertArrayEquals("Unexpected data in first.bin", data, Files.readAllBytes(clientFolder.resolve("first.bin")));
+                assertArrayEquals("Unexpected data in second.bin", data,
+                        Files.readAllBytes(clientFolder.resolve("second.bin")));
+                assertArrayEquals("Unexpected data in third.bin", data, Files.readAllBytes(clientFolder.resolve("third.bin")));
+                assertArrayEquals("Unexpected data in fourth.bin", data,
+                        Files.readAllBytes(clientFolder.resolve("fourth.bin")));
+                assertArrayEquals("Unexpected data in fifth.bin", data, Files.readAllBytes(clientFolder.resolve("fifth.bin")));
+                assertArrayEquals("Unexpected data in sixth.bin", data, Files.readAllBytes(clientFolder.resolve("sixth.bin")));
+                if (handleSize == Integer.BYTES) {
+                    assertEquals("Unexpected number of handles", 2, handles.size());
+                } else {
+                    assertTrue("Unexpected number of handles", handles.size() <= 6);
+                }
             }
-            assertArrayEquals("Unexpected data in first.bin", data, Files.readAllBytes(clientFolder.resolve("first.bin")));
-            assertArrayEquals("Unexpected data in second.bin", data,
-                    Files.readAllBytes(clientFolder.resolve("second.bin")));
-            assertArrayEquals("Unexpected data in third.bin", data, Files.readAllBytes(clientFolder.resolve("third.bin")));
-            assertArrayEquals("Unexpected data in fourth.bin", data,
-                    Files.readAllBytes(clientFolder.resolve("fourth.bin")));
-            assertArrayEquals("Unexpected data in fifth.bin", data, Files.readAllBytes(clientFolder.resolve("fifth.bin")));
-            assertArrayEquals("Unexpected data in sixth.bin", data, Files.readAllBytes(clientFolder.resolve("sixth.bin")));
+        } finally {
+            factory.removeSftpEventListener(listener);
         }
     }
 

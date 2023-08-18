@@ -56,6 +56,12 @@ handle size was thus 32 bytes.
 
 This has been fixed in this version.
 
+Additionally, the default setting for the size of file handles has been changed
+from 16 to 4 bytes. OpenSSH also uses 4-byte SFTP file handles. Using the same
+size not only means that there is a little more space left in SSH packets for
+actual data transfer. It also completely avoids the WS_FTP bug mentioned in
+[GH-403](https://github.com/apache/mina-sshd/issues/403).
+
 ## Potential compatibility issues
 
 ### Server-side SFTP file handle encoding

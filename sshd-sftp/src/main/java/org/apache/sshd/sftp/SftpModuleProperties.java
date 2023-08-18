@@ -208,8 +208,8 @@ public final class SftpModuleProperties {
     public static final Property<Integer> MAX_OPEN_HANDLES_PER_SESSION
             = Property.integer("max-open-handles-per-session", Integer.MAX_VALUE - 1);
 
-    public static final int MIN_FILE_HANDLE_SIZE = 4; // ~uint32
-    public static final int DEFAULT_FILE_HANDLE_SIZE = 16;
+    public static final int MIN_FILE_HANDLE_SIZE = Integer.BYTES; // ~uint32
+    public static final int DEFAULT_FILE_HANDLE_SIZE = MIN_FILE_HANDLE_SIZE;
     public static final int MAX_FILE_HANDLE_SIZE = 64; // ~sha512
 
     /**
