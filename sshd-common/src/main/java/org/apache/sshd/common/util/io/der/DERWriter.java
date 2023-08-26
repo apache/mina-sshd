@@ -135,6 +135,11 @@ public class DERWriter extends FilterOutputStream {
         write(data, 0, len);
     }
 
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        out.write(b, off, len);
+    }
+
     public void writeLength(int len) throws IOException {
         ValidateUtils.checkTrue(len >= 0, "Invalid length: %d", len);
 

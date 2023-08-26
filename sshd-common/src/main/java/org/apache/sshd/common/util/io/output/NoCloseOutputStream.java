@@ -37,6 +37,11 @@ public class NoCloseOutputStream extends FilterOutputStream {
         // ignored
     }
 
+    @Override
+    public void write(byte[] b, int off, int len) throws IOException {
+        out.write(b, off, len);
+    }
+
     public static OutputStream resolveOutputStream(OutputStream output, boolean okToClose) {
         if ((output == null) || okToClose) {
             return output;

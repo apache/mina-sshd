@@ -33,6 +33,7 @@
 * [GH-388](https://github.com/apache/mina-sshd/issues/388) `ScpClient`: support issuing commands to a server that uses a non-UTF-8 locale.
 * [GH-398](https://github.com/apache/mina-sshd/issues/398) `SftpInputStreamAsync`: fix reporting EOF on zero-length reads.
 * [GH-403](https://github.com/apache/mina-sshd/issues/403) Work-around a bug in WS_FTP <= 12.9 SFTP clients.
+* [GH-407](https://github.com/apache/mina-sshd/issues/407) (Regression in 2.10.0) SFTP performance fix: override `FilterOutputStream.write(byte[], int, int)`.
 
 * [SSHD-1259](https://issues.apache.org/jira/browse/SSHD-1259) Consider all applicable host keys from the known_hosts files.
 * [SSHD-1310](https://issues.apache.org/jira/browse/SSHD-1310) `SftpFileSystem`: do not close user session.
