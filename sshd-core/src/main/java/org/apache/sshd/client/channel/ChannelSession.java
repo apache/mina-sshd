@@ -36,6 +36,8 @@ import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.RequestHandler;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
@@ -67,15 +69,20 @@ public class ChannelSession extends AbstractClientChannel {
                 @SuppressWarnings("synthetic-access")
                 @Override
                 protected CloseFuture doCloseGracefully() {
-                    // First get the last packets out
-                    CloseFuture result = super.doCloseGracefully();
-                    result.addListener(f -> {
+                    DefaultCloseFuture result = new DefaultCloseFuture(getChannelId(), futureLock);
+                    CloseFuture packetsWritten = super.doCloseGracefully();
+                    packetsWritten.addListener(p -> {
                         try {
                             // The channel writes EOF directly through the SSH session
-                            sendEof();
-                        } catch (IOException e) {
+                            IoWriteFuture eofSent = sendEof();
+                            if (eofSent != null) {
+                                eofSent.addListener(f -> result.setClosed());
+                                return;
+                            }
+                        } catch (Exception e) {
                             getSession().exceptionCaught(e);
                         }
+                        result.setClosed();
                     });
                     return result;
                 }

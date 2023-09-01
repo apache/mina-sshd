@@ -47,6 +47,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
@@ -564,15 +565,20 @@ public class DefaultSftpClient extends AbstractSftpClient {
                 @SuppressWarnings("synthetic-access")
                 @Override
                 protected CloseFuture doCloseGracefully() {
-                    // First get the last packets out
-                    CloseFuture result = super.doCloseGracefully();
-                    result.addListener(f -> {
+                    DefaultCloseFuture result = new DefaultCloseFuture(getChannelId(), futureLock);
+                    CloseFuture packetsWritten = super.doCloseGracefully();
+                    packetsWritten.addListener(p -> {
                         try {
                             // The channel writes EOF directly through the SSH session
-                            sendEof();
-                        } catch (IOException e) {
-                            session.exceptionCaught(e);
+                            IoWriteFuture eofSent = sendEof();
+                            if (eofSent != null) {
+                                eofSent.addListener(f -> result.setClosed());
+                                return;
+                            }
+                        } catch (Exception e) {
+                            getSession().exceptionCaught(e);
                         }
+                        result.setClosed();
                     });
                     return result;
                 }

@@ -38,11 +38,13 @@ import org.apache.sshd.common.forward.ChannelToPortHandler;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwardingTunnelEndpointsProvider;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoConnector;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.Readable;
@@ -198,15 +200,20 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
             @Override
             @SuppressWarnings("synthetic-access")
             protected CloseFuture doCloseGracefully() {
-                // First get the last packets out
-                CloseFuture result = super.doCloseGracefully();
-                result.addListener(f -> {
+                DefaultCloseFuture result = new DefaultCloseFuture(getChannelId(), futureLock);
+                CloseFuture packetsWritten = super.doCloseGracefully();
+                packetsWritten.addListener(p -> {
                     try {
                         // The channel writes EOF directly through the SSH session
-                        sendEof();
-                    } catch (IOException e) {
-                        session.exceptionCaught(e);
+                        IoWriteFuture eofSent = sendEof();
+                        if (eofSent != null) {
+                            eofSent.addListener(f -> result.setClosed());
+                            return;
+                        }
+                    } catch (Exception e) {
+                        getSession().exceptionCaught(e);
                     }
+                    result.setClosed();
                 });
                 return result;
             }

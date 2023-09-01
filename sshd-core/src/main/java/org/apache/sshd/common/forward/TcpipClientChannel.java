@@ -37,7 +37,9 @@ import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.future.CloseFuture;
+import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -163,15 +165,20 @@ public class TcpipClientChannel extends AbstractClientChannel implements Forward
                 @SuppressWarnings("synthetic-access")
                 @Override
                 protected CloseFuture doCloseGracefully() {
-                    // First get the last packets out
-                    CloseFuture result = super.doCloseGracefully();
-                    result.addListener(f -> {
+                    DefaultCloseFuture result = new DefaultCloseFuture(getChannelId(), futureLock);
+                    CloseFuture packetsWritten = super.doCloseGracefully();
+                    packetsWritten.addListener(p -> {
                         try {
                             // The channel writes EOF directly through the SSH session
-                            sendEof();
-                        } catch (IOException e) {
+                            IoWriteFuture eofSent = sendEof();
+                            if (eofSent != null) {
+                                eofSent.addListener(f -> result.setClosed());
+                                return;
+                            }
+                        } catch (Exception e) {
                             getSession().exceptionCaught(e);
                         }
+                        result.setClosed();
                     });
                     return result;
                 }
