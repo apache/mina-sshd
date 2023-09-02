@@ -292,6 +292,10 @@ public abstract class Buffer implements Readable {
         return v;
     }
 
+    public int getUShort() {
+        return getShort() & 0xFFFF;
+    }
+
     public int getInt() {
         return (int) getUInt();
     }

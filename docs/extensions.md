@@ -57,6 +57,10 @@ methods that provide SFTP file information - including reading data - and those 
 * `ProxyProtocolAcceptor` - A working prototype to support the PROXY protocol as described in
 [HAProxy Documentation](http://www.haproxy.org/download/1.8/doc/proxy-protocol.txt)
 
+* `ProxyProtocolV2Acceptor` - A working prototype to support the PROXY protocol V1 and V2 as described in
+[HAProxy Documentation](http://www.haproxy.org/download/2.7/doc/proxy-protocol.txt). This acceptor extends
+the `ProxyProtocolAcceptor` for V1 Protocol.
+
 * `ThrottlingPacketWriter` - An example of a way to overcome big window sizes when sending data - as
 described in [SSHD-754](https://issues.apache.org/jira/browse/SSHD-754) and [SSHD-768](https://issues.apache.org/jira/browse/SSHD-768)
 
