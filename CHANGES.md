@@ -44,13 +44,14 @@
 ## New Features
 
 * [GH-356](https://github.com/apache/mina-sshd/issues/356) Publish snapshot maven artifacts to the [Apache Snapshots](https://repository.apache.org/content/repositories/snapshots) maven repository.
+* Bundle _sshd-contrib_ has support classes for the [HAProxy protocol V2](https://www.haproxy.org/download/2.7/doc/proxy-protocol.txt).
 
 # Behavioral changes and enhancements
 
 ### SFTP file handle size
 
 Previous versions of Apache MINA sshd used SFTP file handles that were twice
-as long a configured via `SftpModuleProperties.FILE_HANDLE_SIZE`. The reason for
+as large as configured via `SftpModuleProperties.FILE_HANDLE_SIZE`. The reason for
 this was that the file handle bytes were stringified, representing each byte
 as two hex characters. This stringified file handle was then send over the wire.
 If `SftpModuleProperties.FILE_HANDLE_SIZE` was configured as 16, the actual file
@@ -61,7 +62,7 @@ This has been fixed in this version.
 Additionally, the default setting for the size of file handles has been changed
 from 16 to 4 bytes. OpenSSH also uses 4-byte SFTP file handles. Using the same
 size not only means that there is a little more space left in SSH packets for
-actual data transfer. It also completely avoids the WS_FTP bug mentioned in
+actual data transfer, it also completely avoids the WS_FTP bug mentioned in
 [GH-403](https://github.com/apache/mina-sshd/issues/403).
 
 ## Potential compatibility issues
@@ -70,9 +71,9 @@ actual data transfer. It also completely avoids the WS_FTP bug mentioned in
 
 The aforementioned fix for the size of SFTP file handles has the potential to
 have undesired effects on existing server-side code that assumed that such SFTP
-file handles contained only printable bytes. This is no longer the case. For
+file handles contained only printable characters. This is no longer the case. For
 historical reasons, Apache MINA sshd stores these SFTP file handles as Java
-`String`s, and it's not possible to change this without a great many APIs.
+`String`s, and it's not possible to change this without breaking a lot of APIs.
 So this was kept, but the strings are now encoded as ISO-8859-1 and may
 contain arbitrary characters in the range from 0 to 255. This change
 *should* be transparent as SFTP file handles are supposed to be opaque, but
