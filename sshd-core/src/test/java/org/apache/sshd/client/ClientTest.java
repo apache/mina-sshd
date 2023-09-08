@@ -150,6 +150,7 @@ public class ClientTest extends BaseTestSupport {
     private int port;
     private CountDownLatch authLatch;
     private CountDownLatch channelLatch;
+    private CountDownLatch sessionCloseLatch;
 
     private final AtomicReference<ClientSession> clientSessionHolder = new AtomicReference<>(null);
     @SuppressWarnings("synthetic-access")
@@ -182,6 +183,7 @@ public class ClientTest extends BaseTestSupport {
         public void sessionClosed(Session session) {
             assertObjectInstanceOf("Non client session closure notification", ClientSession.class, session);
             assertSame("Mismatched client session closure instance", clientSessionHolder.getAndSet(null), session);
+            sessionCloseLatch.countDown();
         }
     };
 
@@ -193,6 +195,7 @@ public class ClientTest extends BaseTestSupport {
     public void setUp() throws Exception {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
+        sessionCloseLatch = new CountDownLatch(1);
 
         sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
@@ -621,6 +624,12 @@ public class ClientTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
+        // We close the SshClient before the session. This initiates client shutdown by shutting down the IoServices, so
+        // sessions get closed "bottom-up": the IO channel closes and notifies the SshSession about it, which then
+        // closes itself. This is an asynchronous process, so we can't just synchronously test
+        // clientSessionHolder.get()!
+        assertTrue("Asynchronous session closure took too long",
+                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
@@ -687,6 +696,8 @@ public class ClientTest extends BaseTestSupport {
             }
 
             assertNotEquals(0, baosErr.size());
+        } finally {
+            client.stop();
         }
     }
 
@@ -816,6 +827,8 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
 
+        assertTrue("Asynchronous session closure took too long",
+                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
@@ -881,6 +894,8 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
 
+        assertTrue("Asynchronous session closure took too long",
+                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
@@ -937,6 +952,8 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
 
+        assertTrue("Asynchronous session closure took too long",
+                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
         assertNull("Session closure not signalled", clientSessionHolder.get());
     }
 
