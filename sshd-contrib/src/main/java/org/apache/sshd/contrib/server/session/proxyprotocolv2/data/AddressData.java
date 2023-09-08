@@ -27,7 +27,6 @@ import org.apache.sshd.contrib.server.session.proxyprotocolv2.utils.ProxyUtils;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 
-
 /**
  * Address data structure.
  * <p>
@@ -81,7 +80,8 @@ public final class AddressData {
         this.dstPort = dstPort;
     }
 
-    public static AddressData extractAddressData(Logger logger,
+    public static AddressData extractAddressData(
+            Logger logger,
             ServerSession session,
             Buffer buffer,
             FamilyAndTransport familyAndTransport,
