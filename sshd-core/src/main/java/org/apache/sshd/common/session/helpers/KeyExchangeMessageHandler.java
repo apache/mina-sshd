@@ -30,12 +30,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.util.ExceptionUtils;
@@ -101,14 +104,15 @@ public class KeyExchangeMessageHandler {
     protected final Queue<PendingWriteFuture> pendingPackets = new ConcurrentLinkedQueue<>();
 
     /**
-     * Indicates that all pending packets have been flushed.
+     * Indicates that all pending packets have been flushed. Set to {@code true} by the flushing thread, or at the end
+     * of KEX if there are no packets to be flushed. Set to {@code false} when a new KEX starts. Initially {@code true}.
      */
-    protected volatile boolean kexFlushed = true;
+    protected final AtomicBoolean kexFlushed = new AtomicBoolean(true);
 
     /**
      * Indicates that the handler has been shut down.
      */
-    protected volatile boolean shutDown;
+    protected final AtomicBoolean shutDown = new AtomicBoolean();
 
     /**
      * Never {@code null}. Used to block some threads when writing packets while pending packets are still being flushed
@@ -116,7 +120,7 @@ public class KeyExchangeMessageHandler {
      * of a KEX a new future is installed, which is fulfilled at the end of the KEX once there are no more pending
      * packets to be flushed.
      */
-    protected volatile DefaultKeyExchangeFuture kexFlushedFuture;
+    protected final AtomicReference<DefaultKeyExchangeFuture> kexFlushedFuture = new AtomicReference<>();
 
     /**
      * Creates a new {@link KeyExchangeMessageHandler} for the given {@code session}, using the given {@code Logger}.
@@ -128,8 +132,9 @@ public class KeyExchangeMessageHandler {
         this.session = Objects.requireNonNull(session);
         this.log = Objects.requireNonNull(log);
         // Start with a fulfilled kexFlushed future.
-        kexFlushedFuture = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
-        kexFlushedFuture.setValue(Boolean.TRUE);
+        DefaultKeyExchangeFuture initialFuture = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
+        initialFuture.setValue(Boolean.TRUE);
+        kexFlushedFuture.set(initialFuture);
     }
 
     public void updateState(Runnable update) {
@@ -170,10 +175,8 @@ public class KeyExchangeMessageHandler {
      */
     public DefaultKeyExchangeFuture initNewKeyExchange() {
         return updateState(() -> {
-            kexFlushed = false;
-            DefaultKeyExchangeFuture oldFuture = kexFlushedFuture;
-            kexFlushedFuture = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
-            return oldFuture;
+            kexFlushed.set(false);
+            return kexFlushedFuture.getAndSet(new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock()));
         });
     }
 
@@ -188,9 +191,9 @@ public class KeyExchangeMessageHandler {
         return updateState(() -> {
             int numPending = pendingPackets.size();
             if (numPending == 0) {
-                kexFlushed = true;
+                kexFlushed.set(true);
             }
-            return new SimpleImmutableEntry<>(Integer.valueOf(numPending), kexFlushedFuture);
+            return new SimpleImmutableEntry<>(Integer.valueOf(numPending), kexFlushedFuture.get());
         });
     }
 
@@ -198,12 +201,12 @@ public class KeyExchangeMessageHandler {
      * Pretends all pending packets had been written. To be called when the {@link AbstractSession} closes.
      */
     public void shutdown() {
+        shutDown.set(true);
         SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> items = updateState(() -> {
-            kexFlushed = true;
-            shutDown = true;
+            kexFlushed.set(true);
             return new SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture>(
                     Integer.valueOf(pendingPackets.size()),
-                    kexFlushedFuture);
+                    kexFlushedFuture.get());
         });
         items.getValue().setValue(Boolean.valueOf(items.getKey().intValue() == 0));
         flushRunner.shutdownNow();
@@ -295,16 +298,16 @@ public class KeyExchangeMessageHandler {
             // Use the readLock here to give KEX state updates and the flushing thread priority.
             lock.readLock().lock();
             try {
-                if (shutDown) {
+                if (shutDown.get()) {
                     throw new SshException("Write attempt on closing session: " + SshConstants.getCommandMessageName(cmd));
                 }
                 KexState state = session.kexState.get();
                 boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
-                if (kexDone && kexFlushed) {
+                if (kexDone && kexFlushed.get()) {
                     // Not in KEX, no pending packets: out it goes.
                     return session.doWritePacket(buffer);
                 } else if (!holdsFutureLock && isBlockAllowed(cmd)) {
-                    // KEX done, but still flushing: block until flushing is done, if we may block.
+                    // Still in KEX or still flushing: block until flushing is done, if we may block.
                     //
                     // The future lock is a _very_ global lock used for synchronization in many futures, and in
                     // particular in the key exchange related futures; and it is accessible by client code. If we
@@ -323,7 +326,7 @@ public class KeyExchangeMessageHandler {
                     // thread and ensures that the flushing thread does indeed terminate.
                     //
                     // Note that we block only for channel data.
-                    block = kexFlushedFuture;
+                    block = kexFlushedFuture.get();
                 } else {
                     // Still in KEX or still flushing and we cannot block the thread. Enqueue the packet; it will
                     // get written by the flushing thread at the end of KEX. Note that theoretically threads may
@@ -420,20 +423,19 @@ public class KeyExchangeMessageHandler {
      *                  have been written
      */
     protected void flushQueue(DefaultKeyExchangeFuture flushDone) {
+        // kexFlushed must be set to true in all cases when this thread exits, **except** if a new KEX has started while
+        // flushing.
         flushRunner.submit(() -> {
             List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> pendingFutures = new ArrayList<>();
             boolean allFlushed = false;
             DefaultKeyExchangeFuture newFuture = null;
+            // A Throwable when doWritePacket fails, or Boolean.FALSE if the session closes while flushing.
+            Object error = null;
             try {
                 boolean warnedAboutChunkLimit = false;
                 int lastSize = -1;
                 int take = 2;
                 while (!allFlushed) {
-                    if (!session.isOpen()) {
-                        log.info("flushQueue({}): Session closed while flushing pending packets at end of KEX", session);
-                        flushDone.setValue(Boolean.FALSE);
-                        return;
-                    }
                     // Using the writeLock this thread gets priority over the readLock used by writePacket(). Note that
                     // the outer loop essentially is just a loop around the critical region, so typically only one
                     // reader (i.e., writePacket() call) gets the lock before we get it again, and thus the flush really
@@ -445,16 +447,29 @@ public class KeyExchangeMessageHandler {
                             if (log.isDebugEnabled()) {
                                 log.debug("flushQueue({}): All packets at end of KEX flushed", session);
                             }
-                            kexFlushed = true;
+                            kexFlushed.set(true);
                             allFlushed = true;
                             break;
                         }
-                        if (kexFlushedFuture != flushDone) {
+
+                        if (!session.isOpen()) {
+                            log.info("flushQueue({}): Session closed while flushing pending packets at end of KEX", session);
+                            AbstractIoWriteFuture aborted = new AbstractIoWriteFuture(session, null) {
+                            };
+                            aborted.setValue(new SshException("Session closed while flushing pending packets at end of KEX"));
+                            drainQueueTo(pendingFutures, aborted);
+                            kexFlushed.set(true);
+                            error = Boolean.FALSE;
+                            break;
+                        }
+
+                        DefaultKeyExchangeFuture currentFuture = kexFlushedFuture.get();
+                        if (currentFuture != flushDone) {
                             if (log.isDebugEnabled()) {
                                 log.debug("flushQueue({}): Stopping flushing pending packets", session);
                             }
                             // Another KEX was started. Exit and hook up the flushDone future with the new future.
-                            newFuture = kexFlushedFuture;
+                            newFuture = currentFuture;
                             break;
                         }
                         int newSize = pendingPackets.size();
@@ -486,26 +501,30 @@ public class KeyExchangeMessageHandler {
                                             pending.getId());
                                 }
                                 written = session.doWritePacket(pending.getBuffer());
-                                pendingFutures.add(new SimpleImmutableEntry<>(pending, written));
-                                if (log.isTraceEnabled()) {
-                                    log.trace("flushQueue({}): Flushed a packet at end of KEX for {}", session,
-                                            pending.getId());
-                                }
-                                session.resetIdleTimeout();
                             } catch (Throwable e) {
                                 log.error("flushQueue({}): Exception while flushing packet at end of KEX for {}", session,
                                         pending.getId(), e);
-                                pending.setException(e);
-                                flushDone.setValue(e);
-                                session.exceptionCaught(e);
+                                AbstractIoWriteFuture aborted = new AbstractIoWriteFuture(pending.getId(), null) {
+                                };
+                                aborted.setValue(e);
+                                pendingFutures.add(new SimpleImmutableEntry<>(pending, aborted));
+                                drainQueueTo(pendingFutures, aborted);
+                                kexFlushed.set(true);
+                                // Remember the error, but close the session outside of the lock critical region.
+                                error = e;
                                 return;
                             }
+                            pendingFutures.add(new SimpleImmutableEntry<>(pending, written));
+                            if (log.isTraceEnabled()) {
+                                log.trace("flushQueue({}): Flushed a packet at end of KEX for {}", session, pending.getId());
+                            }
+                            session.resetIdleTimeout();
                         }
                         if (pendingPackets.isEmpty()) {
                             if (log.isDebugEnabled()) {
                                 log.debug("flushQueue({}): All packets at end of KEX flushed", session);
                             }
-                            kexFlushed = true;
+                            kexFlushed.set(true);
                             allFlushed = true;
                             break;
                         }
@@ -516,14 +535,16 @@ public class KeyExchangeMessageHandler {
             } finally {
                 if (allFlushed) {
                     flushDone.setValue(Boolean.TRUE);
+                } else if (error != null) {
+                    // We'll close the session (or it is closing already). Pretend we had written everything.
+                    flushDone.setValue(error);
+                    if (error instanceof Throwable) {
+                        session.exceptionCaught((Throwable) error);
+                    }
                 } else if (newFuture != null) {
                     newFuture.addListener(f -> {
-                        Throwable error = f.getException();
-                        if (error != null) {
-                            flushDone.setValue(error);
-                        } else {
-                            flushDone.setValue(Boolean.TRUE);
-                        }
+                        Throwable failed = f.getException();
+                        flushDone.setValue(failed != null ? failed : Boolean.TRUE);
                     });
                 }
                 // Connect all futures of packets that we wrote. We do this at the end instead of one-by-one inside the
@@ -531,5 +552,15 @@ public class KeyExchangeMessageHandler {
                 pendingFutures.forEach(e -> e.getValue().addListener(e.getKey()));
             }
         });
+    }
+
+    private void drainQueueTo(
+            List<SimpleImmutableEntry<PendingWriteFuture, IoWriteFuture>> pendingAborted,
+            IoWriteFuture aborted) {
+        PendingWriteFuture pending = pendingPackets.poll();
+        while (pending != null) {
+            pendingAborted.add(new SimpleImmutableEntry<>(pending, aborted));
+            pending = pendingPackets.poll();
+        }
     }
 }

@@ -35,6 +35,7 @@
 * [GH-403](https://github.com/apache/mina-sshd/issues/403) Work-around a bug in WS_FTP <= 12.9 SFTP clients.
 * [GH-407](https://github.com/apache/mina-sshd/issues/407) (Regression in 2.10.0) SFTP performance fix: override `FilterOutputStream.write(byte[], int, int)`.
 * [GH-410](https://github.com/apache/mina-sshd/issues/410) Fix a race condition to ensure `SSH_MSG_CHANNEL_EOF` is always sent before `SSH_MSG_CHANNEL_CLOSE`.
+* [GH-414](https://github.com/apache/mina-sshd/issues/414) Fix error handling while flushing queued packets at end of KEX.
 
 * [SSHD-1259](https://issues.apache.org/jira/browse/SSHD-1259) Consider all applicable host keys from the known_hosts files.
 * [SSHD-1310](https://issues.apache.org/jira/browse/SSHD-1310) `SftpFileSystem`: do not close user session.
