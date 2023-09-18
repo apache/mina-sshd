@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.global;
+package org.apache.sshd.common.global;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.ConnectionService;

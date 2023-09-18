@@ -19,6 +19,7 @@
 
 package org.apache.sshd.client;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
@@ -39,6 +40,7 @@ import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
+import org.apache.sshd.common.global.KeepAliveHandler;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
@@ -67,7 +69,9 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     public static final List<ChannelFactory> DEFAULT_CHANNEL_FACTORIES
             = Collections.unmodifiableList(Collections.singletonList(ForwardedTcpipFactory.INSTANCE));
     public static final List<RequestHandler<ConnectionService>> DEFAULT_GLOBAL_REQUEST_HANDLERS
-            = Collections.unmodifiableList(Collections.singletonList(OpenSshHostKeysHandler.INSTANCE));
+            = Collections.unmodifiableList(
+                    Arrays.<RequestHandler<ConnectionService>> asList(OpenSshHostKeysHandler.INSTANCE,
+                            KeepAliveHandler.INSTANCE));
 
     public static final ServerKeyVerifier DEFAULT_SERVER_KEY_VERIFIER = AcceptAllServerKeyVerifier.INSTANCE;
     public static final HostConfigEntryResolver DEFAULT_HOST_CONFIG_ENTRY_RESOLVER
