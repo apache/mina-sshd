@@ -65,16 +65,19 @@ public class OsUtilsTest extends JUnitTestSupport {
             assertEquals("Mismatched detection value", false, OsUtils.isOSX());
             assertEquals("Mismatched detection value", false, OsUtils.isUNIX());
             assertEquals("Mismatched detection value", true, OsUtils.isWin32());
+            assertEquals("Mismatched detection value", false, OsUtils.isAndroid());
 
             OsUtils.setOS("mac os");
             assertEquals("Mismatched detection value", true, OsUtils.isOSX());
             assertEquals("Mismatched detection value", false, OsUtils.isUNIX());
             assertEquals("Mismatched detection value", false, OsUtils.isWin32());
+            assertEquals("Mismatched detection value", false, OsUtils.isAndroid());
 
             OsUtils.setOS("linux");
             assertEquals("Mismatched detection value", false, OsUtils.isOSX());
             assertEquals("Mismatched detection value", true, OsUtils.isUNIX());
             assertEquals("Mismatched detection value", false, OsUtils.isWin32());
+            assertEquals("Mismatched detection value", false, OsUtils.isAndroid());
         } finally {
             OsUtils.setOS(null); // force re-detection
         }

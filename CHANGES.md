@@ -37,6 +37,7 @@
 * [GH-410](https://github.com/apache/mina-sshd/issues/410) Fix a race condition to ensure `SSH_MSG_CHANNEL_EOF` is always sent before `SSH_MSG_CHANNEL_CLOSE`.
 * [GH-414](https://github.com/apache/mina-sshd/issues/414) Fix error handling while flushing queued packets at end of KEX.
 
+* [SSHD-789](https://issues.apache.org/jira/browse/SSHD-789) Fix detection of Android O/S from system properties.
 * [SSHD-1259](https://issues.apache.org/jira/browse/SSHD-1259) Consider all applicable host keys from the known_hosts files.
 * [SSHD-1310](https://issues.apache.org/jira/browse/SSHD-1310) `SftpFileSystem`: do not close user session.
 * [SSHD-1327](https://issues.apache.org/jira/browse/SSHD-1327) `ChannelAsyncOutputStream`: remove write future when done.

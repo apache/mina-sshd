@@ -224,7 +224,7 @@ public final class OsUtils {
             }
 
             for (String p : detectionProps) {
-                if (detector.test(propValue)) {
+                if (detector.test(p)) {
                     flagHolder.set(Boolean.TRUE);
                     return true;
                 }
