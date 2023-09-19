@@ -24,6 +24,7 @@ import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.attribute.FileTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -36,6 +37,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.subsystem.AbstractSubsystemClient;
+import org.apache.sshd.common.Property;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
@@ -61,6 +63,12 @@ public abstract class AbstractSftpClient
         extends AbstractSubsystemClient
         implements FullAccessSftpClient, SftpErrorDataHandler {
     public static final int INIT_COMMAND_SIZE = Byte.BYTES /* command */ + Integer.BYTES /* version */;
+    /**
+     * Property that can be used on the {@link org.apache.sshd.common.FactoryManager} to control the internal timeout
+     * used by the client to complete the buffer sending in {@link #send(int, Buffer)}.
+     */
+    public static final Property<Duration> SFTP_CLIENT_CMD_TIMEOUT
+            = Property.duration("sftp-client-cmd-timeout", Duration.ofSeconds(30L));
 
     protected final SftpErrorDataHandler errorDataHandler;
 

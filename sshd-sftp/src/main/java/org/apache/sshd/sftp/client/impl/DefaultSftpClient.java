@@ -298,7 +298,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         ClientChannel clientChannel = getClientChannel();
         IoOutputStream asyncIn = clientChannel.getAsyncIn();
         IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
-        writeFuture.verify();
+        Duration cmdTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
+        writeFuture.verify(cmdTimeout);
         return id;
     }
 
@@ -377,8 +378,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if (traceEnabled) {
             log.trace("init({}) send SSH_FXP_INIT - initial version={}", clientChannel, initialVersion);
         }
+
         IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
-        writeFuture.verify();
+        writeFuture.verify(initializationTimeout);
 
         if (traceEnabled) {
             log.trace("init({}) wait for SSH_FXP_INIT respose (timeout={})", clientChannel, initializationTimeout);

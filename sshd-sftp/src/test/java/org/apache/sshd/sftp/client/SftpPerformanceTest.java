@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.time.Duration;
 import java.util.Arrays;
 
 import eu.rekawek.toxiproxy.model.ToxicDirection;
@@ -38,6 +39,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
+import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +50,8 @@ import org.testcontainers.containers.ToxiproxyContainer.ContainerProxy;
 
 @Ignore("Special class used for development only - not really a test just useful to run as such")
 public class SftpPerformanceTest {
+    public static final Duration SFTP_CONNECT_TIMEOUT = CoreTestSupportUtils.getTimeout("sftp.connect", Duration.ofSeconds(30));
+    public static final Duration SFTP_AUTH_TIMEOUT = CoreTestSupportUtils.getTimeout("sftp.auth", Duration.ofSeconds(15));
 
     public static final String USERNAME = "foo";
     public static final String PASSWORD = "pass";
@@ -125,9 +129,11 @@ public class SftpPerformanceTest {
         final String ipAddressViaToxiproxy = proxy.getContainerIpAddress();
         final int portViaToxiproxy = proxy.getProxyPort();
 
-        ClientSession session = client.connect(USERNAME, ipAddressViaToxiproxy, portViaToxiproxy).verify().getClientSession();
+        ClientSession session = client.connect(USERNAME, ipAddressViaToxiproxy, portViaToxiproxy)
+                .verify(SFTP_CONNECT_TIMEOUT)
+                .getClientSession();
         session.addPasswordIdentity(PASSWORD);
-        session.auth().verify();
+        session.auth().verify(SFTP_AUTH_TIMEOUT);
         return session;
     }
 

@@ -26,6 +26,7 @@
 
 ## Bug Fixes
 
+* [GH-328](https://github.com/apache/mina-sshd/issues/328) Added configurable timeout(s) to `DefaultSftpClient`.
 * [GH-370](https://github.com/apache/mina-sshd/issues/370) Also compare file keys in `ModifiableFileWatcher`.
 * [GH-371](https://github.com/apache/mina-sshd/issues/371) Fix channel pool in `SftpFileSystem`.
 * [GH-383](https://github.com/apache/mina-sshd/issues/383) Use correct default `OpenOption`s in `SftpFileSystemProvider.newFileChannel()`.
