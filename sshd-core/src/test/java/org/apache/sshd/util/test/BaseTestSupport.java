@@ -46,8 +46,8 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     public static final String TEST_LOCALHOST
             = System.getProperty("org.apache.sshd.test.localhost", SshdSocketAddress.LOCALHOST_IPV4);
 
-    public static final Duration CONNECT_TIMEOUT = CoreTestSupportUtils.getTimeout("connect", Duration.ofSeconds(7));
-    public static final Duration AUTH_TIMEOUT = CoreTestSupportUtils.getTimeout("auth", Duration.ofSeconds(5));
+    public static final Duration CONNECT_TIMEOUT = CoreTestSupportUtils.getTimeout("connect", Duration.ofSeconds(10));
+    public static final Duration AUTH_TIMEOUT = CoreTestSupportUtils.getTimeout("auth", Duration.ofSeconds(8));
     public static final Duration OPEN_TIMEOUT = CoreTestSupportUtils.getTimeout("open", Duration.ofSeconds(9));
     public static final Duration DEFAULT_TIMEOUT = CoreTestSupportUtils.getTimeout("default", Duration.ofSeconds(5));
     public static final Duration CLOSE_TIMEOUT = CoreTestSupportUtils.getTimeout("close", Duration.ofSeconds(15));

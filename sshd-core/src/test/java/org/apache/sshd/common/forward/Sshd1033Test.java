@@ -106,9 +106,10 @@ public class Sshd1033Test extends BaseTestSupport {
             client.setServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
             client.start();
 
-            try (ClientSession session = client.connect("temp", "localhost", sshPort).verify().getClientSession()) {
+            try (ClientSession session
+                    = client.connect("temp", "localhost", sshPort).verify(CONNECT_TIMEOUT).getClientSession()) {
                 session.addPasswordIdentity("temp");
-                session.auth().verify();
+                session.auth().verify(AUTH_TIMEOUT);
 
                 if (testLocal) {
                     LOGGER.info("================== Local ==================");
