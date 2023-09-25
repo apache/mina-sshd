@@ -45,6 +45,7 @@
 
 ## New Features
 
+* [SSHD-1330](https://issues.apache.org/jira/browse/SSHD-1330) Use `KeepAliveHandler` global request instance in client as well
 * [GH-356](https://github.com/apache/mina-sshd/issues/356) Publish snapshot maven artifacts to the [Apache Snapshots](https://repository.apache.org/content/repositories/snapshots) maven repository.
 * Bundle _sshd-contrib_ has support classes for the [HAProxy protocol V2](https://www.haproxy.org/download/2.7/doc/proxy-protocol.txt).
 
@@ -68,6 +69,12 @@ actual data transfer, it also completely avoids the WS_FTP bug mentioned in
 [GH-403](https://github.com/apache/mina-sshd/issues/403).
 
 ## Potential compatibility issues
+
+### `KeepAliveHandler` global request handler moved from server to common global requests package
+
+Was previously only on server-side - now also for client (see [SSHD-1330](https://issues.apache.org/jira/browse/SSHD-1330)).
+This should be fully backward compatible since most servers do not send this request. However, if users have somehow added this
+handler to the client side independently, the code should be re-examined and the independent handler removed or make it replace the global one.
 
 ### Server-side SFTP file handle encoding
 
