@@ -224,9 +224,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                 .run(closeId, () -> {
                     try {
                         AsynchronousSocketChannel socket = getSocket();
-                        socket.shutdownOutput();
+                        if (socket.isOpen()) {
+                            socket.shutdownOutput();
+                        }
                     } catch (IOException e) {
-                        info("doCloseGracefully({}) {} while shutting down output: {}",
+                        log.trace("doCloseGracefully({}) {} while shutting down output: {}",
                                 this, e.getClass().getSimpleName(), e.getMessage(), e);
                     }
                 }).build()

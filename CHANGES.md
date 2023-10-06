@@ -37,6 +37,7 @@
 * [GH-407](https://github.com/apache/mina-sshd/issues/407) (Regression in 2.10.0) SFTP performance fix: override `FilterOutputStream.write(byte[], int, int)`.
 * [GH-410](https://github.com/apache/mina-sshd/issues/410) Fix a race condition to ensure `SSH_MSG_CHANNEL_EOF` is always sent before `SSH_MSG_CHANNEL_CLOSE`.
 * [GH-414](https://github.com/apache/mina-sshd/issues/414) Fix error handling while flushing queued packets at end of KEX.
+* [GH-420](https://github.com/apache/mina-sshd/issues/420) Fix wrong log level on closing an `Nio2Session`.
 
 * [SSHD-789](https://issues.apache.org/jira/browse/SSHD-789) Fix detection of Android O/S from system properties.
 * [SSHD-1259](https://issues.apache.org/jira/browse/SSHD-1259) Consider all applicable host keys from the known_hosts files.
