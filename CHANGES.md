@@ -20,6 +20,8 @@
 
 # [Version 2.9.1 to 2.9.2](./docs/changes/2.9.2.md)
 
+# [Version 2.9.2 to 2.9.3](./docs/changes/2.9.3.md)
+
 # Planned for next version
 
 ## Bug fixes
