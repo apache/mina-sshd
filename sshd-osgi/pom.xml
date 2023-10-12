@@ -24,7 +24,7 @@
     <parent>
         <groupId>org.apache.sshd</groupId>
         <artifactId>sshd</artifactId>
-        <version>2.9.3-SNAPSHOT</version>
+        <version>2.9.3</version>
     </parent>
 
     <artifactId>sshd-osgi</artifactId>
@@ -133,8 +133,7 @@ Manifest-Version: 1.0
 Created-By: Maven Antrun Plugin
                                 </echo>
 
-                                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar"
-                                     manifest="${project.build.directory}/osgi-sources/META-INF/MANIFEST.MF">
+                                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar" manifest="${project.build.directory}/osgi-sources/META-INF/MANIFEST.MF">
                                     <fileset dir="${project.basedir}/../sshd-common/src/main/java" includes="**/*" />
                                     <fileset dir="${project.basedir}/../sshd-common/src/main/resources" includes="**/*" erroronmissingdir="false" />
                                     <fileset dir="${project.basedir}/../sshd-core/src/main/java" includes="**/*" />
