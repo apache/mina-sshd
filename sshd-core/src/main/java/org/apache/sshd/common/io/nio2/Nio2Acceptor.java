@@ -50,11 +50,13 @@ import org.apache.sshd.core.CoreModuleProperties;
  */
 public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     protected final Map<SocketAddress, AsynchronousServerSocketChannel> channels = new ConcurrentHashMap<>();
+    private final Nio2ServiceFactory nio2ServiceFactory;
     private int backlog;
 
-    public Nio2Acceptor(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+    public Nio2Acceptor(Nio2ServiceFactory nio2ServiceFactory, PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
                         ExecutorService resumeTasks) {
         super(propertyResolver, handler, group, resumeTasks);
+        this.nio2ServiceFactory = nio2ServiceFactory;
         backlog = CoreModuleProperties.SOCKET_BACKLOG.getRequired(propertyResolver);
     }
 
@@ -354,7 +356,7 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
             if (log.isTraceEnabled()) {
                 log.trace("createNio2Session({}) address={}", acceptor, address);
             }
-            return new Nio2Session(acceptor, propertyResolver, handler, channel, address);
+            return nio2ServiceFactory.createSession(acceptor, handler, channel, address);
         }
 
         @Override

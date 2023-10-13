@@ -19,7 +19,9 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 import java.nio.channels.AsynchronousChannelGroup;
+import java.nio.channels.AsynchronousSocketChannel;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.FactoryManager;
@@ -56,12 +58,18 @@ public class Nio2ServiceFactory extends AbstractIoServiceFactory {
 
     @Override
     public IoConnector createConnector(IoHandler handler) {
-        return autowireCreatedService(new Nio2Connector(getFactoryManager(), handler, group, resuming));
+        return autowireCreatedService(new Nio2Connector(this, getFactoryManager(), handler, group, resuming));
     }
 
     @Override
     public IoAcceptor createAcceptor(IoHandler handler) {
-        return autowireCreatedService(new Nio2Acceptor(getFactoryManager(), handler, group, resuming));
+        return autowireCreatedService(new Nio2Acceptor(this, getFactoryManager(), handler, group, resuming));
+    }
+
+    public Nio2Session createSession(
+            Nio2Service service, IoHandler handler, AsynchronousSocketChannel socket, SocketAddress address)
+            throws Throwable {
+        return new Nio2Session(service, getFactoryManager(), handler, socket, address);
     }
 
     @Override
