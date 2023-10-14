@@ -49,9 +49,12 @@ import org.apache.sshd.core.CoreModuleProperties;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Nio2Connector extends Nio2Service implements IoConnector {
-    public Nio2Connector(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+    private final Nio2ServiceFactory nio2ServiceFactory;
+
+    public Nio2Connector(Nio2ServiceFactory nio2ServiceFactory, PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
                          ExecutorService resumeTasks) {
         super(propertyResolver, handler, group, resumeTasks);
+        this.nio2ServiceFactory = nio2ServiceFactory;
     }
 
     @Override
@@ -276,7 +279,6 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
     protected Nio2Session createSession(
             PropertyResolver propertyResolver, IoHandler handler, AsynchronousSocketChannel socket)
             throws Throwable {
-        return new Nio2Session(this, propertyResolver, handler, socket, null);
+        return nio2ServiceFactory.createSession(this, handler, socket, null);
     }
-
 }
