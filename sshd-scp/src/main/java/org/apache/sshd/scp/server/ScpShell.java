@@ -272,7 +272,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                     ls(argv);
                     break;
                 case "scp":
-                    scp(argv);
+                    scp(command, argv);
                     break;
                 case "groups":
                     variables.put(STATUS, 0);
@@ -414,7 +414,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         variables.put(STATUS, (varValue == null) ? 1 : 0);
     }
 
-    protected void scp(String[] argv) throws Exception {
+    protected void scp(String command, String[] argv) throws Exception {
         boolean optR = false;
         boolean optT = false;
         boolean optF = false;
@@ -471,11 +471,11 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
             return;
         }
 
-        doScp(path, optR, optT, optF, optD, optP);
+        doScp(command, path, optR, optT, optF, optD, optP);
     }
 
     protected void doScp(
-            String path, boolean optR, boolean optT, boolean optF, boolean optD, boolean optP)
+            String command, String path, boolean optR, boolean optT, boolean optF, boolean optD, boolean optP)
             throws Exception {
         try {
             ChannelSession channel = getServerChannelSession();
@@ -484,7 +484,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                     fileSystem, opener, listener);
             Path localPath = currentDir.resolve(path);
             if (optT) {
-                helper.receive(localPath, optR, optD, optP, receiveBufferSize);
+                helper.receive(command, localPath, optR, optD, optP, receiveBufferSize);
             } else {
                 helper.send(Collections.singletonList(localPath.toString()), optR, optP, sendBufferSize);
             }

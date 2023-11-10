@@ -97,6 +97,24 @@ public interface ScpTransferEventListener extends SshdEventListener {
     }
 
     /**
+     * Called after a receive related command has bee acknowledged by the peer
+     *
+     * @param  session     The client/server {@link Session} through which the transfer is being executed
+     * @param  command     The <U>raw</U> command that was attempted
+     * @param  ackInfo     The {@link ScpAckInfo} received after command execution - including if {@link ScpAckInfo#OK
+     *                     OK}. By default it throws an {@link ScpException} if {@link ScpAckInfo#ERROR ERROR} status
+     *                     code, but the user is free to override this behavior (see
+     *                     <A HREF="https://github.com/apache/mina-sshd/issues/428">ScpClient download fails silently
+     *                     when the remote files does not exist </A>) - including throwing an exception if OK status...
+     * @throws IOException If bad acknowledgment
+     */
+    default void handleReceiveCommandAckInfo(
+            Session session, String command, ScpAckInfo ackInfo)
+            throws IOException {
+        ackInfo.validateCommandStatusCode(command, "receive");
+    }
+
+    /**
      * @param  session     The client/server {@link Session} through which the transfer is being executed
      * @param  op          The {@link FileOperation}
      * @param  file        The <U>local</U> referenced folder {@link Path}

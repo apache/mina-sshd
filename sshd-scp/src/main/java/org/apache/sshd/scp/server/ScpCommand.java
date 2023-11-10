@@ -176,7 +176,7 @@ public class ScpCommand extends AbstractFileSystemCommand implements ServerChann
                 session, getInputStream(), getOutputStream(), fileSystem, opener, listener);
         try {
             if (optT) {
-                helper.receive(helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
+                helper.receive(command, helper.resolveLocalPath(path), optR, optD, optP, receiveBufferSize);
             } else if (optF) {
                 helper.send(Collections.singletonList(path), optR, optP, sendBufferSize);
             } else {
