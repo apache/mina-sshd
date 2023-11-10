@@ -28,9 +28,18 @@
 
 ## Bug Fixes
 
+* [GH-428/GH-392](https://github.com/apache/mina-sshd/issues/428) SCP client fails silently when error signalled due to missing file or lacking permissions
+
 ## New Features
 
 # Behavioral changes and enhancements
+
+## New `ScpTransferEventListener` callback method
+
+Following [GH-428/GH-392](https://github.com/apache/mina-sshd/issues/428) a new `handleReceiveCommandAckInfo` method has been added to enable users to inspect
+acknowledgements of a `receive` related command. The user is free to inspect the command that was attempted as well as the response code and decide how
+to handle it - including even throwing an exception if OK status (if this makes sense for whatever reason). The default implementation checks for ERROR code and throws
+an exception if so.
 
 ## Potential compatibility issues
 

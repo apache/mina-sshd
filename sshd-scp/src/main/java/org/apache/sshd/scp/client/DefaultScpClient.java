@@ -74,7 +74,7 @@ public class DefaultScpClient extends AbstractScpClient {
              OutputStream invIn = channel.getInvertedIn()) {
             // NOTE: we use a mock file system since we expect no invocations for it
             ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
-            helper.receiveFileStream(local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
+            helper.receiveFileStream(cmd, local, ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE);
             handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
@@ -89,7 +89,7 @@ public class DefaultScpClient extends AbstractScpClient {
         try (InputStream invOut = channel.getInvertedOut();
              OutputStream invIn = channel.getInvertedIn()) {
             ScpHelper helper = new ScpHelper(session, invOut, invIn, fs, opener, listener);
-            helper.receive(local,
+            helper.receive(cmd, local,
                     options.contains(Option.Recursive),
                     options.contains(Option.TargetIsDirectory),
                     options.contains(Option.PreserveAttributes),

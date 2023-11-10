@@ -38,6 +38,8 @@ public class ScpAckInfo {
     public static final int WARNING = 1;
     public static final int ERROR = 2;
 
+    public static final ScpAckInfo OK_ACK_INFO = new ScpAckInfo(OK, null);
+
     private final int statusCode;
     private final String line;
 
@@ -77,10 +79,12 @@ public class ScpAckInfo {
         int code = getStatusCode();
         String l = getLine();
         // OK code has no line
-        if ((code == OK) || GenericUtils.isEmpty(l)) {
+        if (code == OK) {
             return Integer.toString(code);
+        } else if ((code == WARNING) || (code == ERROR)) {
+            return GenericUtils.isEmpty(l) ? Integer.toString(code) : code + ": " + l;
         } else {
-            return code + ": " + l;
+            return l;
         }
     }
 
@@ -94,7 +98,7 @@ public class ScpAckInfo {
         }
 
         if (statusCode == OK) {
-            return new ScpAckInfo(statusCode);  // OK status has no extra data
+            return OK_ACK_INFO;  // OK status has no extra data
         }
 
         String line = ScpIoUtils.readLine(in, cs);

@@ -823,6 +823,29 @@ public class ScpTest extends AbstractScpTestSupport {
         }
     }
 
+    @Test // see GH-428
+    public void testMissingRemoteFile() throws Exception {
+        Path targetPath = detectTargetFolder();
+        Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
+                ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
+        Path localDir = assertHierarchyTargetFolderExists(scpRoot.resolve("local"));
+        Path remoteDir = assertHierarchyTargetFolderExists(scpRoot.resolve("remote"));
+        Path missingLocal = localDir.resolve("missing.txt");
+        Path missingRemote = remoteDir.resolve(missingLocal.getFileName());
+        Files.deleteIfExists(missingLocal);
+        Files.deleteIfExists(missingRemote);
+        assertFalse("Remote file not deleted", Files.exists(missingRemote));
+
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), missingRemote);
+        try (CloseableScpClient scp = createCloseableScpClient()) {
+            scp.download(remotePath, missingLocal.toString());
+            fail("Unexpected success to copy non-existent remote file");
+        } catch (ScpException e) {
+            assertEquals("Mismatched SCP failure code", ScpAckInfo.ERROR, e.getExitStatus().intValue());
+        }
+
+    }
+
     @Test
     public void testJschScp() throws Exception {
         com.jcraft.jsch.Session session = getJschSession();

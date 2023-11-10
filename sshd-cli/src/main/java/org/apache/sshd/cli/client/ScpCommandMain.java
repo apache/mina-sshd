@@ -322,7 +322,6 @@ public class ScpCommandMain extends SshClientCliSupport {
         } finally {
             session.close();
         }
-
     }
 
     /* -------------------------------------------------------------------------------- */
