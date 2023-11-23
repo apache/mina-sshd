@@ -51,7 +51,8 @@ import org.apache.sshd.core.CoreModuleProperties;
 public class Nio2Connector extends Nio2Service implements IoConnector {
     private final Nio2ServiceFactory nio2ServiceFactory;
 
-    public Nio2Connector(Nio2ServiceFactory nio2ServiceFactory, PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+    public Nio2Connector(Nio2ServiceFactory nio2ServiceFactory, PropertyResolver propertyResolver, IoHandler handler,
+                         AsynchronousChannelGroup group,
                          ExecutorService resumeTasks) {
         super(propertyResolver, handler, group, resumeTasks);
         this.nio2ServiceFactory = nio2ServiceFactory;

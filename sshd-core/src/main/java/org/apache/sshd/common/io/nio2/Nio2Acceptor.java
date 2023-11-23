@@ -53,7 +53,8 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
     private final Nio2ServiceFactory nio2ServiceFactory;
     private int backlog;
 
-    public Nio2Acceptor(Nio2ServiceFactory nio2ServiceFactory, PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
+    public Nio2Acceptor(Nio2ServiceFactory nio2ServiceFactory, PropertyResolver propertyResolver, IoHandler handler,
+                        AsynchronousChannelGroup group,
                         ExecutorService resumeTasks) {
         super(propertyResolver, handler, group, resumeTasks);
         this.nio2ServiceFactory = nio2ServiceFactory;
