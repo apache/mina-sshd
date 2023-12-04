@@ -21,6 +21,7 @@ package org.apache.sshd.git.transport;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
+import java.util.Optional;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -30,17 +31,15 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.git.GitModuleProperties;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.GitProtocolConstants;
 import org.eclipse.jgit.transport.RemoteSession;
 import org.eclipse.jgit.transport.URIish;
-import static org.eclipse.jgit.transport.GitProtocolConstants.*;
 import org.eclipse.jgit.util.FS;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitSshdSession extends AbstractLoggingBean implements RemoteSession {
-
-    private static final Map version2Env = Collections.singletonMap(PROTOCOL_ENVIRONMENT_VARIABLE, VERSION_2_REQUEST);
 
     private final SshClient client;
     private final ClientSession session;
@@ -133,7 +132,16 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
             log.trace("exec({}) session={}, timeout={} sec.", commandName, session, timeout);
         }
 
-        ChannelExec channel = session.createExecChannel(commandName, null, version2Env);
+        ChannelExec channel;
+        Optional<String> protocolVer = GitModuleProperties.GIT_PROTOCOL_VERSION.get(session);
+        if (protocolVer.isPresent()) {
+            Map<String, String> env = Collections.singletonMap(
+                    GitProtocolConstants.PROTOCOL_ENVIRONMENT_VARIABLE, protocolVer.get());
+            channel = session.createExecChannel(commandName, null, env);
+        } else {
+            channel = session.createExecChannel(commandName);
+        }
+
         if (traceEnabled) {
             log.trace("exec({}) session={} - open channel", commandName, session);
         }

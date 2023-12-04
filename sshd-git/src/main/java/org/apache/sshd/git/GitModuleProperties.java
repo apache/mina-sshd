@@ -50,6 +50,13 @@ public final class GitModuleProperties {
     public static final Property<Duration> CHANNEL_OPEN_TIMEOUT
             = Property.duration("git-ssh-channel-open-timeout", Duration.ofSeconds(7L));
 
+    /**
+     * Property used to configure the SSHD {@link org.apache.sshd.common.FactoryManager} with the {@code GIT_PROTOCOL}
+     * environment variable. The default is not specified and therefore original (v0) protocol is used.
+     */
+    public static final Property<String> GIT_PROTOCOL_VERSION
+            = Property.string("git-ssh-protocol-version");
+
     private GitModuleProperties() {
         // private
     }
