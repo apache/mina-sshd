@@ -27,7 +27,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.*;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
+import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
+import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -362,9 +371,10 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     /**
-     * Tests to make sure that the attempted break out of the chroot does not work with the specified filename
+     * Tests to make sure that the attempted break out of the {@code chroot} does not work with the specified filename
      *
-     * @param  fileName    the filename to attempt to break out of the chroot with
+     * @param  fileName    the filename to attempt to break out of the {@code chroot} with
+     * @param  expected    the expected attempt result
      * @throws IOException on test failure
      */
     private void testBreakOutOfChroot(String fileName, String expected) throws IOException {
@@ -535,7 +545,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
         public Path createFile(Path source) throws InvalidPathException, IOException {
             try (FileChannel fc = fileSystem.provider().newFileChannel(source,
-                    new TreeSet<OpenOption>(Arrays.asList(StandardOpenOption.CREATE, StandardOpenOption.WRITE)))) {
+                    new TreeSet<>(Arrays.asList(StandardOpenOption.CREATE, StandardOpenOption.WRITE)))) {
                 byte[] randomBytes = new byte[1000];
                 new Random().nextBytes(randomBytes);
                 fc.write(ByteBuffer.wrap(randomBytes));

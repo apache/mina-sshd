@@ -57,7 +57,7 @@ public class ChannelSessionTest extends BaseTestSupport {
         super();
     }
 
-    /**
+    /*
      * Testing a command closing output stream when it completes
      */
     @Test // see SSHD-1257

@@ -914,7 +914,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     /**
      * Sets a {@link PacketValidator}.
      *
-     * @param the validator to set, if {@code null} the {@link #DEFAULT_PACKET_VALIDATOR} is set
+     * @param validator the validator to set, if {@code null} the {@link #DEFAULT_PACKET_VALIDATOR} is set
      */
     public void setPacketValidator(PacketValidator validator) {
         if (validator == null) {
@@ -991,6 +991,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
 
         AbstractIoWriteFuture eofWritten = new AbstractIoWriteFuture(getChannelId(), futureLock) {
+            // Nothin extra
         };
         if (!eofFuture.compareAndSet(null, eofWritten)) {
             if (log.isDebugEnabled()) {

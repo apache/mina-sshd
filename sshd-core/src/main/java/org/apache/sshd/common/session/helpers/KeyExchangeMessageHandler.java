@@ -50,7 +50,7 @@ import org.slf4j.Logger;
 /**
  * Manages SSH message sending during a key exchange. RFC 4253 specifies that during a key exchange, no high-level
  * messages are to be sent, but a receiver must be able to deal with messages "in flight" until the peer's
- * {@link SshConstants#SSH_MSG_KEX_INIT} message is received.
+ * {@link SshConstants#SSH_MSG_KEXINIT} message is received.
  * <p>
  * Apache MINA sshd queues up high-level messages that threads try to send while a key exchange is ongoing, and sends
  * them once the key exchange is done. Sending queued messages may make the peer re-trigger a new key exchange, in which
@@ -165,11 +165,11 @@ public class KeyExchangeMessageHandler {
     }
 
     /**
-     * Initializes the state for a new key exchange. {@link #allPacketsFlushed()} will be {@code false}, and a new
-     * future to be fulfilled when all queued packets will be flushed once the key exchange is done is set. The
-     * currently set future from an earlier key exchange is returned. The returned future may or may not be fulfilled;
-     * if it isn't, there are still left-over pending packets to write from the previous key exchange, which will be
-     * written once the new key exchange flushes pending packets.
+     * Initializes the state for a new key exchange. {@code allPacketsFlushed} will be {@code false}, and a new future
+     * to be fulfilled when all queued packets will be flushed once the key exchange is done is set. The currently set
+     * future from an earlier key exchange is returned. The returned future may or may not be fulfilled; if it isn't,
+     * there are still left-over pending packets to write from the previous key exchange, which will be written once the
+     * new key exchange flushes pending packets.
      *
      * @return the previous {@link DefaultKeyExchangeFuture} indicating whether all pending packets were flushed.
      */
@@ -204,7 +204,7 @@ public class KeyExchangeMessageHandler {
         shutDown.set(true);
         SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> items = updateState(() -> {
             kexFlushed.set(true);
-            return new SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture>(
+            return new SimpleImmutableEntry<>(
                     Integer.valueOf(pendingPackets.size()),
                     kexFlushedFuture.get());
         });
@@ -419,7 +419,7 @@ public class KeyExchangeMessageHandler {
      * exchange, flushing is stopped and is to be resumed by another call to this method when the new key exchange is
      * done.
      *
-     * @param flushDone the future obtained from {@link #getFlushedFuture()}; will be fulfilled once all pending packets
+     * @param flushDone the future obtained from {@code getFlushedFuture}; will be fulfilled once all pending packets
      *                  have been written
      */
     protected void flushQueue(DefaultKeyExchangeFuture flushDone) {
@@ -455,6 +455,7 @@ public class KeyExchangeMessageHandler {
                         if (!session.isOpen()) {
                             log.info("flushQueue({}): Session closed while flushing pending packets at end of KEX", session);
                             AbstractIoWriteFuture aborted = new AbstractIoWriteFuture(session, null) {
+                                // Nothing extra
                             };
                             aborted.setValue(new SshException("Session closed while flushing pending packets at end of KEX"));
                             drainQueueTo(pendingFutures, aborted);
@@ -505,6 +506,7 @@ public class KeyExchangeMessageHandler {
                                 log.error("flushQueue({}): Exception while flushing packet at end of KEX for {}", session,
                                         pending.getId(), e);
                                 AbstractIoWriteFuture aborted = new AbstractIoWriteFuture(pending.getId(), null) {
+                                    // Nothing extra
                                 };
                                 aborted.setValue(e);
                                 pendingFutures.add(new SimpleImmutableEntry<>(pending, aborted));

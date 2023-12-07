@@ -64,10 +64,11 @@ public interface PublicKeyAuthenticationReporter {
     /**
      * A {@link KeyPair} is is present, but is not attempted because no signature factory for it could be found.
      *
-     * @param session  The {@link ClientSession}
-     * @param service  The requesting service name
-     * @param identity The {@link KeyPair} identity being skipped - <B>Note:</B> for agent based authentications the
-     *                 private key may be {@code null}
+     * @param  session   The {@link ClientSession}
+     * @param  service   The requesting service name
+     * @param  identity  The {@link KeyPair} identity being skipped - <B>Note:</B> for agent based authentications the
+     *                   private key may be {@code null}
+     * @throws Exception If failed to handle the callback - <B>Note:</B> may cause session close
      */
     default void signalIdentitySkipped(ClientSession session, String service, KeyPair identity) throws Exception {
         // ignored

@@ -241,6 +241,7 @@ public interface Session
      *                      appropriate
      * @param  request      the request name
      * @param  replyHandler {@link ReplyHandler} for handling the reply; may be {@code null}
+     * @return              Created {@link GlobalRequestFuture}
      * @throws IOException  if an error occurred while encoding or sending the packet
      */
     GlobalRequestFuture request(Buffer buffer, String request, ReplyHandler replyHandler)

@@ -67,6 +67,7 @@ public abstract class AbstractIoWriteFuture
 
     public static IoWriteFuture fulfilled(Object id, Object value) {
         AbstractIoWriteFuture result = new AbstractIoWriteFuture(id, null) {
+            // Nothing extra
         };
         result.setValue(Objects.requireNonNull(value));
         return result;

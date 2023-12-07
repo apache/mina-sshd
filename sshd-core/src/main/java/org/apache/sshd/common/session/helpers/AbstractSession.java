@@ -268,11 +268,11 @@ public abstract class AbstractSession extends SessionHelper {
      *
      * @see <a href="https://tools.ietf.org/html/rfc4254#section-4">RFC 4254: Global Requests</a>
      * @see <a href="https://tools.ietf.org/html/rfc4253#section-11.4">RFC 4254: Reserved Messages</a>
-     * @see {@link #request(Buffer, String, org.apache.sshd.common.future.GlobalRequestFuture.ReplyHandler)}
-     * @see {@link #requestSuccess(Buffer)}
-     * @see {@link #requestFailure(Buffer)}
-     * @see {@link #doInvokeUnimplementedMessageHandler(int, Buffer)}
-     * @see {@link #preClose()}
+     * @see #request(Buffer, String, org.apache.sshd.common.future.GlobalRequestFuture.ReplyHandler)
+     * @see #requestSuccess(Buffer)
+     * @see #requestFailure(Buffer)
+     * @see #doInvokeUnimplementedMessageHandler(int, Buffer)
+     * @see #preClose()
      */
     private final Deque<GlobalRequestFuture> pendingGlobalRequests = new ConcurrentLinkedDeque<>();
 

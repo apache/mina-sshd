@@ -64,11 +64,11 @@ public interface AuthFuture extends SshFuture<AuthFuture>, VerifiableFuture<Auth
     /**
      * Tells whether {@link #cancel()} was called on this {@link AuthFuture}.
      * <p>
-     * This is different from {@link #isCanceled()}. Cancelling an on-going authentication may not be possible;
+     * This is different from {@link #isCanceled()}. Canceling an on-going authentication may not be possible;
      * {@link #cancel()} is only a <em>request</em> to cancel the authentication. That request may not be honored and
      * the {@link org.apache.sshd.common.future.CancelFuture CancelFuture} may actually be
      * {@link org.apache.sshd.common.future.CancelFuture#isCanceled() isCanceled()} {@code == false}.
-     * {@link AuthFuture}.{@link isCanceled()} is then {@code false}, too.
+     * {@link AuthFuture}.{@link #isCanceled()} is then {@code false}, too.
      * </p>
      *
      * @return {@code true} if {@link #cancel()} was called, {@code false} otherwise
