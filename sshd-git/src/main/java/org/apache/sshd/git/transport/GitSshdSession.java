@@ -134,7 +134,8 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
 
         ChannelExec channel;
         Optional<String> protocolVer = GitModuleProperties.GIT_PROTOCOL_VERSION.get(session);
-        if (protocolVer.isPresent()) {
+        String protocol = protocolVer.orElse(null);
+        if (GenericUtils.isNotBlank(protocol)) {
             Map<String, String> env = Collections.singletonMap(
                     GitProtocolConstants.PROTOCOL_ENVIRONMENT_VARIABLE, protocolVer.get());
             channel = session.createExecChannel(commandName, null, env);

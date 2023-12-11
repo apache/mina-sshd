@@ -81,7 +81,7 @@ public class GitPackCommand extends AbstractGitCommand {
             if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
                 UploadPack uploadPack = new UploadPack(db);
                 String protocol = this.getEnvironment().getEnv().get(GitProtocolConstants.PROTOCOL_ENVIRONMENT_VARIABLE);
-                if (protocol != null) {
+                if (GenericUtils.isNotBlank(protocol)) {
                     uploadPack.setExtraParameters(Collections.singleton(protocol));
                 }
                 uploadPack.upload(getInputStream(), getOutputStream(), getErrorStream());
