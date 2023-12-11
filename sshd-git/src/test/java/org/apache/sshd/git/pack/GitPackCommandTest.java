@@ -24,8 +24,11 @@ import java.util.Collections;
 
 import com.jcraft.jsch.JSch;
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.GitLocationResolver;
+import org.apache.sshd.git.GitModuleProperties;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
@@ -36,6 +39,7 @@ import org.apache.sshd.util.test.JSchLogger;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.GitProtocolConstants;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.junit.Assume;
@@ -108,6 +112,15 @@ public class GitPackCommandTest extends BaseTestSupport {
 
                     git.pull().setRebase(true).call();
                     assertTrue("Client not started after rebase", client.isStarted());
+
+                    PropertyResolver useProtocolV2 = PropertyResolverUtils
+                            .toPropertyResolver(
+                                    Collections.singletonMap(GitModuleProperties.GIT_PROTOCOL_VERSION.getName(),
+                                            GitProtocolConstants.VERSION_2_REQUEST));
+                    client.setParentPropertyResolver(useProtocolV2);
+                    git.fetch().call();
+                    assertTrue("Client not started after fetch using GIT_PROTOCOL='version=2' env. variable",
+                            client.isStarted());
                 } finally {
                     client.stop();
                 }

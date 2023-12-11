@@ -19,6 +19,9 @@
 package org.apache.sshd.git.transport;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Optional;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelExec;
@@ -28,6 +31,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.git.GitModuleProperties;
 import org.eclipse.jgit.transport.CredentialItem;
 import org.eclipse.jgit.transport.CredentialsProvider;
+import org.eclipse.jgit.transport.GitProtocolConstants;
 import org.eclipse.jgit.transport.RemoteSession;
 import org.eclipse.jgit.transport.URIish;
 import org.eclipse.jgit.util.FS;
@@ -128,7 +132,17 @@ public class GitSshdSession extends AbstractLoggingBean implements RemoteSession
             log.trace("exec({}) session={}, timeout={} sec.", commandName, session, timeout);
         }
 
-        ChannelExec channel = session.createExecChannel(commandName);
+        ChannelExec channel;
+        Optional<String> protocolVer = GitModuleProperties.GIT_PROTOCOL_VERSION.get(session);
+        String protocol = protocolVer.orElse(null);
+        if (GenericUtils.isNotBlank(protocol)) {
+            Map<String, String> env = Collections.singletonMap(
+                    GitProtocolConstants.PROTOCOL_ENVIRONMENT_VARIABLE, protocol);
+            channel = session.createExecChannel(commandName, null, env);
+        } else {
+            channel = session.createExecChannel(commandName);
+        }
+
         if (traceEnabled) {
             log.trace("exec({}) session={} - open channel", commandName, session);
         }

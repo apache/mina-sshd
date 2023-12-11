@@ -32,9 +32,11 @@
 
 ## New Features
 
-# Behavioral changes and enhancements
+* [GH-429](https://github.com/apache/mina-sshd/issues/429) Support GIT protocol-v2
 
-## New `ScpTransferEventListener` callback method
+## Behavioral changes and enhancements
+
+### New `ScpTransferEventListener` callback method
 
 Following [GH-428/GH-392](https://github.com/apache/mina-sshd/issues/428) a new `handleReceiveCommandAckInfo` method has been added to enable users to inspect
 acknowledgements of a `receive` related command. The user is free to inspect the command that was attempted as well as the response code and decide how
@@ -43,7 +45,5 @@ an exception if so.
 
 ## Potential compatibility issues
 
-### Server-side SFTP file handle encoding
-
-### Major Code Re-factoring
+## Major Code Re-factoring
 
