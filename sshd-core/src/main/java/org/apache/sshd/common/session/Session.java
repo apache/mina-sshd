@@ -41,6 +41,8 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexFactoryManager;
 import org.apache.sshd.common.kex.KeyExchange;
+import org.apache.sshd.common.session.helpers.SessionCountersDetails;
+import org.apache.sshd.common.session.helpers.SessionKexDetails;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -64,6 +66,8 @@ public interface Session
         UnknownChannelReferenceHandlerManager,
         FactoryManagerHolder,
         PortForwardingInformationProvider {
+
+    SessionCountersDetails getSessionCountersDetails();
 
     /**
      * Create a new buffer for the specified SSH packet and reserve the needed space (5 bytes) for the packet header.
@@ -254,6 +258,11 @@ public interface Session
      * @param t the exception to process
      */
     void exceptionCaught(Throwable t);
+
+    /**
+     * @return Information about internal KEX related state values
+     */
+    SessionKexDetails getSessionKexDetails();
 
     /**
      * Initiate a new key exchange.

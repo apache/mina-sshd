@@ -127,6 +127,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      */
     protected SessionHelper(boolean serverSession, FactoryManager factoryManager, IoSession ioSession) {
         super(Objects.requireNonNull(factoryManager, "No factory manager provided"));
+
         this.serverSession = serverSession;
         this.ioSession = Objects.requireNonNull(ioSession, "No IoSession provided");
     }

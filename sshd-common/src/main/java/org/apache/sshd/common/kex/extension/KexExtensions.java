@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -58,6 +59,24 @@ public final class KexExtensions {
 
     public static final String CLIENT_KEX_EXTENSION = "ext-info-c";
     public static final String SERVER_KEX_EXTENSION = "ext-info-s";
+
+    /**
+     * Reminder:
+     *
+     * These pseudo-algorithms are only valid in the initial SSH2_MSG_KEXINIT and MUST be ignored if they are present in
+     * subsequent SSH2_MSG_KEXINIT packets.
+     *
+     * <B>Note:</B> these values are <U>appended</U> to the initial proposals and removed if received before proceeding
+     * with the standard KEX proposals negotiation.
+     *
+     * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH PROTOCOL - 1.9 transport:
+     *      strict key exchange extension</A>
+     */
+    public static final String STRICT_KEX_CLIENT_EXTENSION = "kex-strict-c-v00@openssh.com";
+    public static final String STRICT_KEX_SERVER_EXTENSION = "kex-strict-s-v00@openssh.com";
+    public static final List<String> STRICT_KEX_EXTENSIONS = Collections.unmodifiableList(
+            Arrays.asList(
+                    STRICT_KEX_CLIENT_EXTENSION, STRICT_KEX_SERVER_EXTENSION));
 
     @SuppressWarnings("checkstyle:Indentation")
     public static final Predicate<String> IS_KEX_EXTENSION_SIGNAL

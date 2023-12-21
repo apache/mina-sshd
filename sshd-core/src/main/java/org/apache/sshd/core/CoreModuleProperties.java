@@ -148,6 +148,13 @@ public final class CoreModuleProperties {
             = Property.durationSec("kex-proposal-setup-timeout", Duration.ofSeconds(42), Duration.ofSeconds(5));
 
     /**
+     * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH PROTOCOL - 1.9 transport:
+     *      strict key exchange extension</A>
+     */
+    public static final Property<Boolean> USE_STRICT_KEX
+            = Property.bool("use-strict-kex", false);
+
+    /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
     public static final Property<Duration> HEARTBEAT_INTERVAL

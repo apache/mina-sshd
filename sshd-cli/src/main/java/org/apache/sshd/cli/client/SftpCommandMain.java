@@ -32,7 +32,11 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Instant;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
@@ -57,6 +61,8 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.mac.MacFactory;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.helpers.SessionCountersDetails;
+import org.apache.sshd.common.session.helpers.SessionKexDetails;
 import org.apache.sshd.common.signature.SignatureFactory;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
@@ -112,7 +118,19 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         this.client = Objects.requireNonNull(client, "No client");
 
         Map<String, SftpCommandExecutor> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (SftpCommandExecutor e : Arrays.asList(
+        Collection<? extends SftpCommandExecutor> commands = obtainAvailableCommands();
+        for (SftpCommandExecutor e : commands) {
+            String name = e.getName();
+            ValidateUtils.checkTrue(map.put(name, e) == null, "Multiple commands named '%s'", name);
+        }
+        commandsMap = Collections.unmodifiableMap(map);
+
+        Path cwdPath = OsUtils.getCurrentWorkingDirectory();
+        cwdLocal = Objects.toString(cwdPath, null);
+    }
+
+    protected Collection<? extends SftpCommandExecutor> obtainAvailableCommands() {
+        return Arrays.asList(
                 new ExitCommandExecutor(),
                 new PwdCommandExecutor(),
                 new InfoCommandExecutor(),
@@ -135,14 +153,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
                 new PutCommandExecutor(),
                 new ProgressCommandExecutor(),
                 new LimitsCommandExecutor(),
-                new HelpCommandExecutor())) {
-            String name = e.getName();
-            ValidateUtils.checkTrue(map.put(name, e) == null, "Multiple commands named '%s'", name);
-        }
-        commandsMap = Collections.unmodifiableMap(map);
-
-        Path cwdPath = OsUtils.getCurrentWorkingDirectory();
-        cwdLocal = Objects.toString(cwdPath, null);
+                new RekeyCommandExecutor(),
+                new HelpCommandExecutor());
     }
 
     @Override
@@ -411,8 +423,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     //////////////////////////////////////////////////////////////////////////
 
-    private static class ExitCommandExecutor implements SftpCommandExecutor {
-        ExitCommandExecutor() {
+    protected static class ExitCommandExecutor implements SftpCommandExecutor {
+        protected ExitCommandExecutor() {
             super();
         }
 
@@ -433,7 +445,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class PwdCommandExecutor implements SftpCommandExecutor {
+    protected class PwdCommandExecutor implements SftpCommandExecutor {
         protected PwdCommandExecutor() {
             super();
         }
@@ -456,8 +468,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class SessionCommandExecutor implements SftpCommandExecutor {
-        SessionCommandExecutor() {
+    protected class SessionCommandExecutor implements SftpCommandExecutor {
+        protected SessionCommandExecutor() {
             super();
         }
 
@@ -482,14 +494,35 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
             appendInfoValue(stdout, "Client version", session.getClientVersion()).println();
             appendInfoValue(stdout, "Server version", session.getServerVersion()).println();
+
+            SessionCountersDetails details = session.getSessionCountersDetails();
+
+            stdout.println("Input counters:");
+            appendInfoValue(stdout, "inputBlocksCount", details.getInputBlocksCount()).println();
+            appendInfoValue(stdout, "inputBytesCount", details.getInputBytesCount()).println();
+            appendInfoValue(stdout, "inputPacketsCount", details.getInputPacketsCount()).println();
+            appendInfoValue(stdout, "inputPacketSequenceNumber", details.getInputPacketSequenceNumber()).println();
+            appendInfoValue(stdout, "totalIncomingBlocksCount", details.getTotalIncomingBlocksCount()).println();
+            appendInfoValue(stdout, "totalIncomingBytesCount", details.getTotalIncomingBytesCount()).println();
+            appendInfoValue(stdout, "totalIncomingPacketsCount", details.getTotalIncomingPacketsCount()).println();
+
+            stdout.println("Output counters:");
+            appendInfoValue(stdout, "outputBlocksCount", details.getOutputBlocksCount()).println();
+            appendInfoValue(stdout, "outputBytesCount", details.getOutputBytesCount()).println();
+            appendInfoValue(stdout, "outputPacketsCount", details.getOutputPacketsCount()).println();
+            appendInfoValue(stdout, "outputPacketSequenceNumber", details.getOutputPacketSequenceNumber()).println();
+            appendInfoValue(stdout, "totalOutgoingBlocksCount", details.getTotalOutgoingBlocksCount()).println();
+            appendInfoValue(stdout, "totalOutgoingBytesCount", details.getTotalOutgoingBytesCount()).println();
+            appendInfoValue(stdout, "totalOutgoingPacketsCount", details.getTotalOutgoingPacketsCount()).println();
+
             return false;
         }
     }
 
     /* -------------------------------------------------------------------- */
 
-    private class KexCommandExecutor implements SftpCommandExecutor {
-        KexCommandExecutor() {
+    protected class KexCommandExecutor implements SftpCommandExecutor {
+        protected KexCommandExecutor() {
             super();
         }
 
@@ -516,14 +549,29 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
                 appendInfoValue(stdout, description + "[negotiated]", negotiated.get(option)).println();
             }
 
+            SessionKexDetails details = session.getSessionKexDetails();
+            stdout.println("details:");
+            appendInfoValue(stdout, "initialKexDone", details.isInitialKexDone()).println();
+            appendInfoValue(stdout, "kexState", details.getKexState()).println();
+            appendInfoValue(stdout, "strictKexEnabled", details.isStrictKexEnabled()).println();
+            appendInfoValue(stdout, "strictKexSignalled", details.isStrictKexSignalled()).println();
+
+            Instant lastKeyTimeValue = details.getLastKeyTimeValue();
+            String lastKeyTimestamp = (lastKeyTimeValue == null)
+                    ? null
+                    : DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(lastKeyTimeValue.atZone(ZoneId.systemDefault()));
+            appendInfoValue(stdout, "lastKeyTimeValue", lastKeyTimestamp).println();
+            appendInfoValue(stdout, "newKeysSentCount", details.getNewKeysSentCount()).println();
+            appendInfoValue(stdout, "newKeysReceivedCount", details.getNewKeysReceivedCount()).println();
+
             return false;
         }
     }
 
     /* -------------------------------------------------------------------- */
 
-    private class ClientCommandExecutor implements SftpCommandExecutor {
-        ClientCommandExecutor() {
+    protected class ClientCommandExecutor implements SftpCommandExecutor {
+        protected ClientCommandExecutor() {
             super();
         }
 
@@ -562,8 +610,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class InfoCommandExecutor implements SftpCommandExecutor {
-        InfoCommandExecutor() {
+    protected class InfoCommandExecutor implements SftpCommandExecutor {
+        protected InfoCommandExecutor() {
             super();
         }
 
@@ -604,8 +652,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class VersionCommandExecutor implements SftpCommandExecutor {
-        VersionCommandExecutor() {
+    protected class VersionCommandExecutor implements SftpCommandExecutor {
+        protected VersionCommandExecutor() {
             super();
         }
 
@@ -627,8 +675,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class CdCommandExecutor extends PwdCommandExecutor {
-        CdCommandExecutor() {
+    protected class CdCommandExecutor extends PwdCommandExecutor {
+        protected CdCommandExecutor() {
             super();
         }
 
@@ -652,8 +700,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class LcdCommandExecutor extends PwdCommandExecutor {
-        LcdCommandExecutor() {
+    protected class LcdCommandExecutor extends PwdCommandExecutor {
+        protected LcdCommandExecutor() {
             super();
         }
 
@@ -681,8 +729,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class MkdirCommandExecutor implements SftpCommandExecutor {
-        MkdirCommandExecutor() {
+    protected class MkdirCommandExecutor implements SftpCommandExecutor {
+        protected MkdirCommandExecutor() {
             super();
         }
 
@@ -706,8 +754,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class LsCommandExecutor implements SftpCommandExecutor {
-        LsCommandExecutor() {
+    protected class LsCommandExecutor implements SftpCommandExecutor {
+        protected LsCommandExecutor() {
             super();
         }
 
@@ -750,8 +798,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class LlsCommandExecutor implements SftpCommandExecutor {
-        LlsCommandExecutor() {
+    protected class LlsCommandExecutor implements SftpCommandExecutor {
+        protected LlsCommandExecutor() {
             super();
         }
 
@@ -805,8 +853,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class RmCommandExecutor implements SftpCommandExecutor {
-        RmCommandExecutor() {
+    protected class RmCommandExecutor implements SftpCommandExecutor {
+        protected RmCommandExecutor() {
             super();
         }
 
@@ -863,7 +911,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
             return false;
         }
 
-        private void removeRecursive(
+        protected void removeRecursive(
                 SftpClient sftp, String path, Attributes attrs, PrintStream stdout, boolean verbose)
                 throws IOException {
             if (attrs.isDirectory()) {
@@ -894,8 +942,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class RmdirCommandExecutor implements SftpCommandExecutor {
-        RmdirCommandExecutor() {
+    protected class RmdirCommandExecutor implements SftpCommandExecutor {
+        protected RmdirCommandExecutor() {
             super();
         }
 
@@ -919,8 +967,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class RenameCommandExecutor implements SftpCommandExecutor {
-        RenameCommandExecutor() {
+    protected class RenameCommandExecutor implements SftpCommandExecutor {
+        protected RenameCommandExecutor() {
             super();
         }
 
@@ -946,8 +994,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class LimitsCommandExecutor implements SftpCommandExecutor {
-        LimitsCommandExecutor() {
+    protected class LimitsCommandExecutor implements SftpCommandExecutor {
+        protected LimitsCommandExecutor() {
             super();
         }
 
@@ -975,8 +1023,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class StatVfsCommandExecutor implements SftpCommandExecutor {
-        StatVfsCommandExecutor() {
+    protected class StatVfsCommandExecutor implements SftpCommandExecutor {
+        protected StatVfsCommandExecutor() {
             super();
         }
 
@@ -1007,8 +1055,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class LStatCommandExecutor implements SftpCommandExecutor {
-        LStatCommandExecutor() {
+    protected class LStatCommandExecutor implements SftpCommandExecutor {
+        protected LStatCommandExecutor() {
             super();
         }
 
@@ -1034,8 +1082,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class ReadLinkCommandExecutor implements SftpCommandExecutor {
-        ReadLinkCommandExecutor() {
+    protected class ReadLinkCommandExecutor implements SftpCommandExecutor {
+        protected ReadLinkCommandExecutor() {
             super();
         }
 
@@ -1060,8 +1108,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class HelpCommandExecutor implements SftpCommandExecutor {
-        HelpCommandExecutor() {
+    protected class HelpCommandExecutor implements SftpCommandExecutor {
+        protected HelpCommandExecutor() {
             super();
         }
 
@@ -1085,7 +1133,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private abstract class TransferCommandExecutor implements SftpCommandExecutor {
+    protected abstract class TransferCommandExecutor implements SftpCommandExecutor {
         protected TransferCommandExecutor() {
             super();
         }
@@ -1270,8 +1318,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class GetCommandExecutor extends TransferCommandExecutor {
-        GetCommandExecutor() {
+    protected class GetCommandExecutor extends TransferCommandExecutor {
+        protected GetCommandExecutor() {
             super();
         }
 
@@ -1291,8 +1339,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class PutCommandExecutor extends TransferCommandExecutor {
-        PutCommandExecutor() {
+    protected class PutCommandExecutor extends TransferCommandExecutor {
+        protected PutCommandExecutor() {
             super();
         }
 
@@ -1312,8 +1360,8 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
 
     /* -------------------------------------------------------------------- */
 
-    private class ProgressCommandExecutor implements SftpCommandExecutor {
-        ProgressCommandExecutor() {
+    protected class ProgressCommandExecutor implements SftpCommandExecutor {
+        protected ProgressCommandExecutor() {
             super();
         }
 
@@ -1343,6 +1391,30 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
                 }
             }
 
+            return false;
+        }
+    }
+
+    /* -------------------------------------------------------------------- */
+
+    protected class RekeyCommandExecutor implements SftpCommandExecutor {
+        protected RekeyCommandExecutor() {
+            super();
+        }
+
+        @Override
+        public String getName() {
+            return "rekey";
+        }
+
+        @Override
+        public boolean executeCommand(
+                String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
+                throws Exception {
+            SftpClient sftp = getClient();
+            ClientSession session = sftp.getSession();
+            session.reExchangeKeys();
+            stdout.println();
             return false;
         }
     }

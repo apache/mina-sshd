@@ -36,12 +36,25 @@
 
 ## Behavioral changes and enhancements
 
+### [GH-445 - Terrapin attack mitigation](https://github.com/apache/mina-sshd/issues/429)
+
+There is a **new** `CoreModuleProperties` property that controls the mitigation for the [Terrapin attach](https://terrapin-attack.com/) via what is known as
+"strict-KEX" (see [OpenSSH PROTOCOL - 1.9 transport: strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)).
+It is **disabled** by default due to its experimental nature and possible interoperability issues, so users who wish to use this feature must turn it on *explicitly*.
+
 ### New `ScpTransferEventListener` callback method
 
 Following [GH-428/GH-392](https://github.com/apache/mina-sshd/issues/428) a new `handleReceiveCommandAckInfo` method has been added to enable users to inspect
 acknowledgements of a `receive` related command. The user is free to inspect the command that was attempted as well as the response code and decide how
 to handle it - including even throwing an exception if OK status (if this makes sense for whatever reason). The default implementation checks for ERROR code and throws
 an exception if so.
+
+### Public `Session` methods to query internal session state values
+
+Provide (read-only) public access to internal session state values related to KEX, counters, etc..:
+
+* *getSessionKexDetails*
+* *getSessionCountersDetails*
 
 ## Potential compatibility issues
 

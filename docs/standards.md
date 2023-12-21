@@ -29,23 +29,31 @@
     above mentioned hooks for [RFC 8308](https://tools.ietf.org/html/rfc8308).
 * [RFC 8731 - Secure Shell (SSH) Key Exchange Method Using Curve25519 and Curve448](https://tools.ietf.org/html/rfc8731)
 * [Key Exchange (KEX) Method Updates and Recommendations for Secure Shell](https://tools.ietf.org/html/draft-ietf-curdle-ssh-kex-sha2-03)
+
+## *OpenSSH*
 * [OpenSSH support for U2F/FIDO security keys](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.u2f)
     * **Note:** the server side supports these keys by default. The client side requires specific initialization
 * [OpenSSH public-key certificate authentication system for use by SSH](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
+* [OpenSSH 1.9 transport: strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+
+## SFTP version 3-6 + extensions
+
+* `supported` - [DRAFT 05 - section 4.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-05#section-4.4)
+* `supported2` - [DRAFT 13 section 5.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-13#section-5.4)
+* `versions` - [DRAFT 09 Section 4.6](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.6)
+* `vendor-id` - [DRAFT 09 - section 4.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.4)
+* `acl-supported` - [DRAFT 11 - section 5.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-11#section-5.4)
+* `newline` - [DRAFT 09 Section 4.3](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.3)
+* `md5-hash`, `md5-hash-handle` - [DRAFT 09 - section 9.1.1](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.1)
+* `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.2)
+* `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](https://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
+* `space-available` - [DRAFT 09 - section 9.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.2)
+* `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
+* Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+	
+## Miscellaneous
+
 * [SSH proxy jumps](./internals.md#ssh-jumps)
-* SFTP version 3-6 + extensions
-    * `supported` - [DRAFT 05 - section 4.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-05#section-4.4)
-    * `supported2` - [DRAFT 13 section 5.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-13#section-5.4)
-    * `versions` - [DRAFT 09 Section 4.6](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.6)
-    * `vendor-id` - [DRAFT 09 - section 4.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.4)
-    * `acl-supported` - [DRAFT 11 - section 5.4](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-11#section-5.4)
-    * `newline` - [DRAFT 09 Section 4.3](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-4.3)
-    * `md5-hash`, `md5-hash-handle` - [DRAFT 09 - section 9.1.1](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.1)
-    * `check-file-handle`, `check-file-name` - [DRAFT 09 - section 9.1.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.1.2)
-    * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](https://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
-    * `space-available` - [DRAFT 09 - section 9.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.2)
-    * `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
-    * Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 * [Endless tarpit](https://nullprogram.com/blog/2019/03/22/) - see [HOWTO(s)](./howto.md) section.
 
 ## Implemented/available support

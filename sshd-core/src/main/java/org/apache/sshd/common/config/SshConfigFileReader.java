@@ -45,6 +45,7 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Reads and interprets some useful configurations from an OpenSSH configuration file.
@@ -256,6 +257,11 @@ public final class SshConfigFileReader {
             M manager, PropertyResolver props, boolean lenient,
             Function<? super DHFactory, ? extends KeyExchangeFactory> xformer, boolean ignoreUnsupported) {
         Objects.requireNonNull(props, "No properties to configure");
+        Boolean useStrictKex = props.getBoolean(ConfigFileReaderSupport.STRICT_KEX_CUSTOM_CONFIG_PROP);
+        if (useStrictKex != null) {
+            CoreModuleProperties.USE_STRICT_KEX.set(manager, useStrictKex);
+        }
+
         return configureKeyExchanges(manager,
                 props.getString(ConfigFileReaderSupport.KEX_ALGORITHMS_CONFIG_PROP),
                 lenient, xformer, ignoreUnsupported);

@@ -129,3 +129,11 @@ thread is not overrun by producers and actually can finish.
 Again, "client" and "server" could also be inverted. For instance, a client uploading
 files via SFTP might have an application thread pumping data through a channel, which
 might be blocked during KEX.
+
+## [OpenSSH 1.9 transport: strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+
+
+There is a **new** `CoreModuleProperties` property that controls the mitigation for the [Terrapin attack](https://terrapin-attack.com/) via what is known as "strict-KEX"
+It is **disabled** by default due to its experimental nature and possible interoperability issues, so users who wish to use this feature must turn it on *explicitly*.
+The pseudo KEX values are *appended* to the initial proposals sent to the peer and removed when received before proceeding with the standard KEX proposals negotiation so
+as not to interfere with it (other than marking that they were detected).

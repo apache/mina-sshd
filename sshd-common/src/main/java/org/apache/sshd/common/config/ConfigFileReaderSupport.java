@@ -89,6 +89,8 @@ public final class ConfigFileReaderSupport {
     public static final String MACS_CONFIG_PROP = "MACs";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
     public static final String KEX_ALGORITHMS_CONFIG_PROP = "KexAlgorithms";
+    // see https://github.com/openssh/openssh-portable/blob/master/PROTOCOL - section 1.9
+    public static final String STRICT_KEX_CUSTOM_CONFIG_PROP = "UseStrictKex";
     // see http://linux.die.net/man/5/ssh_config
     public static final String HOST_KEY_ALGORITHMS_CONFIG_PROP = "HostKeyAlgorithms";
     // see http://manpages.ubuntu.com/manpages/precise/en/man5/sshd_config.5.html
