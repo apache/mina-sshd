@@ -74,6 +74,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     public ClientSessionImpl(ClientFactoryManager client, IoSession ioSession) throws Exception {
         super(client, ioSession);
+
         if (log.isDebugEnabled()) {
             log.debug("Client session created: {}", ioSession);
         }

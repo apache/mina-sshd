@@ -49,6 +49,7 @@ import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.forward.Forwarder;
+import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
@@ -77,6 +78,7 @@ import org.apache.sshd.core.CoreModuleProperties;
 /**
  * Contains split code in order to make {@link AbstractSession} class smaller
  */
+@SuppressWarnings("checkstyle:MethodCount") // Number of methods exceeds max. allowed
 public abstract class SessionHelper extends AbstractKexFactoryManager implements Session {
 
     // Session timeout measurements
@@ -628,6 +630,31 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         listener.sessionPeerIdentificationSend(this, version, extraLines);
     }
 
+    protected void signalIdentificationSent(String version, List<String> extraLines, Throwable error) throws Exception {
+        try {
+            invokeSessionSignaller(l -> {
+                signalIdentificationSent(l, version, extraLines, error);
+                return null;
+            });
+        } catch (Throwable err) {
+            Throwable e = ExceptionUtils.peelException(err);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
+    }
+
+    protected void signalIdentificationSent(
+            SessionListener listener, String version, List<String> extraLines, Throwable err) throws Exception {
+        if (listener == null) {
+            return;
+        }
+
+        listener.sessionPeerIdentificationSent(this, version, extraLines, err);
+    }
+
     protected void signalReadPeerIdentificationLine(String line, List<String> extraLines) throws Exception {
         try {
             invokeSessionSignaller(l -> {
@@ -833,28 +860,45 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
         IoWriteFuture future = (handler == null) ? null : handler.sendIdentification(this, version, extraLines);
         boolean debugEnabled = log.isDebugEnabled();
-        if (future != null) {
+        if (future == null) {
+            String ident = version;
+            if (GenericUtils.size(extraLines) > 0) {
+                ident = GenericUtils.join(extraLines, "\r\n") + "\r\n" + version;
+            }
+
+            if (debugEnabled) {
+                log.debug("sendIdentification({}): {}",
+                        this, ident.replace('\r', '|').replace('\n', '|'));
+            }
+
+            IoSession networkSession = getIoSession();
+            byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
+            future = networkSession.writeBuffer(new ByteArrayBuffer(data));
+        } else {
             if (debugEnabled) {
                 log.debug("sendIdentification({})[{}] sent {} lines via reserved handler",
                         this, version, GenericUtils.size(extraLines));
             }
-
-            return future;
         }
 
-        String ident = version;
-        if (GenericUtils.size(extraLines) > 0) {
-            ident = GenericUtils.join(extraLines, "\r\n") + "\r\n" + version;
-        }
+        future.addListener(new SshFutureListener<IoWriteFuture>() {
+            @Override
+            public void operationComplete(IoWriteFuture future) {
+                try {
+                    signalIdentificationSent(version, extraLines, future.getException());
+                } catch (Throwable err) {
+                    Throwable e = ExceptionUtils.peelException(err);
+                    if (e instanceof RuntimeException) {
+                        throw (RuntimeException) e;
+                    } else {
+                        throw new RuntimeSshException(e);
+                    }
 
-        if (debugEnabled) {
-            log.debug("sendIdentification({}): {}",
-                    this, ident.replace('\r', '|').replace('\n', '|'));
-        }
+                }
+            }
+        });
 
-        IoSession networkSession = getIoSession();
-        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
-        return networkSession.writeBuffer(new ByteArrayBuffer(data));
+        return future;
     }
 
     /**

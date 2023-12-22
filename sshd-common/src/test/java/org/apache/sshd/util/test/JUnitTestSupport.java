@@ -703,7 +703,7 @@ public abstract class JUnitTestSupport extends Assert {
 
     public static void outputDebugMessage(String format, Object... args) {
         if (OUTPUT_DEBUG_MESSAGES) {
-            outputDebugMessage(String.format(format, args));
+            outputDebugMessage(GenericUtils.isEmpty(args) ? format : String.format(format, args));
         }
     }
 
@@ -711,6 +711,24 @@ public abstract class JUnitTestSupport extends Assert {
         if (OUTPUT_DEBUG_MESSAGES) {
             System.out.append("===[DEBUG]=== ").println(message);
         }
+    }
+
+    public static void failWithWrittenErrorMessage(String format, Object... args) {
+        failWithWrittenErrorMessage(GenericUtils.isEmpty(args) ? format : String.format(format, args));
+    }
+
+    public static void failWithWrittenErrorMessage(Object message) {
+        writeErrorMessage(message);
+        fail(Objects.toString(message));
+    }
+
+    public static void writeErrorMessage(String format, Object... args) {
+        writeErrorMessage(GenericUtils.isEmpty(args) ? format : String.format(format, args));
+    }
+
+    public static void writeErrorMessage(Object message) {
+        System.err.append("===[ERROR]=== ").println(message);
+        System.err.flush();
     }
 
     /* ---------------------------------------------------------------------------- */

@@ -59,6 +59,7 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.common.util.io.output.NullOutputStream;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * <P>
@@ -304,10 +305,12 @@ public interface ClientSession
              ClientChannel channel = createExecChannel(command)) {
             channel.setOut(channelOut);
             channel.setErr(channelErr);
-            channel.open().await(); // TODO use verify and a configurable timeout
 
-            // TODO use a configurable timeout
-            Collection<ClientChannelEvent> waitMask = channel.waitFor(REMOTE_COMMAND_WAIT_EVENTS, 0L);
+            Duration openTimeout = CoreModuleProperties.EXEC_CHANNEL_OPEN_TIMEOUT.getRequired(channel);
+            channel.open().verify(openTimeout);
+
+            Duration execTimeout = CoreModuleProperties.EXEC_CHANNEL_CMD_TIMEOUT.getRequired(channel);
+            Collection<ClientChannelEvent> waitMask = channel.waitFor(REMOTE_COMMAND_WAIT_EVENTS, execTimeout);
             if (waitMask.contains(ClientChannelEvent.TIMEOUT)) {
                 throw new SocketTimeoutException("Failed to retrieve command result in time: " + command);
             }

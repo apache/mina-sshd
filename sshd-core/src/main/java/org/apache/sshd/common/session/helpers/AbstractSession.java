@@ -113,7 +113,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@SuppressWarnings("checkstyle:MethodCount")
+@SuppressWarnings("checkstyle:MethodCount") // Number of methods exceeds max. allowed
 public abstract class AbstractSession extends SessionHelper {
     /**
      * Name of the property where this session is stored in the attributes of the underlying MINA session. See
@@ -601,7 +601,8 @@ public abstract class AbstractSession extends SessionHelper {
                 && CoreModuleProperties.USE_STRICT_KEX.getRequired(this)
                 && (cmd != SshConstants.SSH_MSG_KEXINIT)) {
             log.error("doHandleMessage({}) invalid 1st message: {}", this, SshConstants.getCommandMessageName(cmd));
-            throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Strict KEX Error");
+            disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, "Strict KEX Error");
+            return;
         }
 
         if (log.isDebugEnabled()) {

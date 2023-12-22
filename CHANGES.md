@@ -38,7 +38,7 @@
 
 ### [GH-445 - Terrapin attack mitigation](https://github.com/apache/mina-sshd/issues/429)
 
-There is a **new** `CoreModuleProperties` property that controls the mitigation for the [Terrapin attach](https://terrapin-attack.com/) via what is known as
+There is a **new** `CoreModuleProperties` property that controls the mitigation for the [Terrapin attack](https://terrapin-attack.com/) via what is known as
 "strict-KEX" (see [OpenSSH PROTOCOL - 1.9 transport: strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)).
 It is **disabled** by default due to its experimental nature and possible interoperability issues, so users who wish to use this feature must turn it on *explicitly*.
 
@@ -56,7 +56,18 @@ Provide (read-only) public access to internal session state values related to KE
 * *getSessionKexDetails*
 * *getSessionCountersDetails*
 
+### Added `SessionListener#sessionPeerIdentificationSent` callback
+
+Invoked after successful or failed attempt to send client/server identification to peer. The callback provides the failure error if such occurred.
+
 ## Potential compatibility issues
+
+### Added finite wait time for default implementation of `ClientSession#executeRemoteCommand`
+
+* `CoreModuleProperties#EXEC_CHANNEL_OPEN_TIMEOUT` - default = 30 seconds.
+* `CoreModuleProperties#EXEC_CHANNEL_CMD_TIMEOUT` - default = 30 seconds.
+
+This may cause failures for code that was running long execution commands using the default method implementations.
 
 ## Major Code Re-factoring
 

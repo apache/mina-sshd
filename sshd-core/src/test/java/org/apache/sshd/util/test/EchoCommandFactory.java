@@ -16,25 +16,25 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+
 package org.apache.sshd.util.test;
 
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
+import java.io.IOException;
+
+import org.apache.sshd.server.channel.ChannelSession;
+import org.apache.sshd.server.command.Command;
+import org.apache.sshd.server.command.CommandFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EchoShell extends CommandExecutionHelper {
-    public EchoShell() {
+public class EchoCommandFactory implements CommandFactory {
+    public EchoCommandFactory() {
         super();
     }
 
     @Override
-    protected boolean handleCommandLine(String command) throws Exception {
-        OutputStream out = getOutputStream();
-        out.write((command + "\n").getBytes(StandardCharsets.UTF_8));
-        out.flush();
-
-        return !"exit".equals(command);
+    public Command createCommand(ChannelSession channel, String command) throws IOException {
+        return new EchoCommand(command);
     }
 }

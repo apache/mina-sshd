@@ -62,6 +62,21 @@ public final class CoreModuleProperties {
             = Property.duration("ssh-agent-server-channel-open-timeout", Duration.ofSeconds(30));
 
     /**
+     * Value that can be set on the {@link org.apache.sshd.common.FactoryManager} the session or the channel to
+     * configure the channel open timeout value (millis) for executing a remote command using default implementation.
+     */
+    public static final Property<Duration> EXEC_CHANNEL_OPEN_TIMEOUT
+            = Property.duration("ssh-exec-channel-open-timeout", Duration.ofSeconds(30));
+
+    /**
+     * Value that can be set on the {@link org.apache.sshd.common.FactoryManager} the session or the channel to
+     * configure the channel command execution timeout value (millis) for executing a remote command using default
+     * implementation. By default it waits <U>forever</U> for the command execution to complete.
+     */
+    public static final Property<Duration> EXEC_CHANNEL_CMD_TIMEOUT
+            = Property.duration("ssh-exec-channel-cmd-timeout", Duration.ofSeconds(0));
+
+    /**
      * Value used to configure the type of proxy forwarding channel to be used. See also
      * https://tools.ietf.org/html/draft-ietf-secsh-agent-02
      */

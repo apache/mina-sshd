@@ -104,6 +104,22 @@ public interface SessionListener extends SshdEventListener {
     }
 
     /**
+     * Identification sent to peer
+     *
+     * @param session    The {@link Session} instance
+     * @param version    The resolved identification version
+     * @param extraLines Extra data preceding the identification to be sent. <B>Note:</B> the list is modifiable only if
+     *                   this is a server session. The user may modify it based on the peer.
+     * @param error      {@code null} if sending was successful
+     * @see              <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2 - Protocol
+     *                   Version Exchange</A>
+     */
+    default void sessionPeerIdentificationSent(
+            Session session, String version, List<String> extraLines, Throwable error) {
+        // ignored
+    }
+
+    /**
      * The peer's identification version was received
      *
      * @param session    The {@link Session} instance

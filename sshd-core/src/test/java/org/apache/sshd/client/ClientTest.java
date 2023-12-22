@@ -1510,7 +1510,6 @@ public class ClientTest extends BaseTestSupport {
         CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
         AtomicInteger numberOfRequests = new AtomicInteger();
         UserAuthKeyboardInteractiveFactory auth = new UserAuthKeyboardInteractiveFactory() {
-
             @Override
             public UserAuthKeyboardInteractive createUserAuth(ClientSession session) throws IOException {
                 return new UserAuthKeyboardInteractive() {
