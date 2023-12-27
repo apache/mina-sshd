@@ -43,10 +43,12 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler {
 
     public OpenSshHostKeysHandler() {
         super(REQUEST);
+        setIgnoreInvalidKeys(true);
     }
 
     public OpenSshHostKeysHandler(BufferPublicKeyParser<? extends PublicKey> parser) {
         super(REQUEST, parser);
+        setIgnoreInvalidKeys(true);
     }
 
     @Override

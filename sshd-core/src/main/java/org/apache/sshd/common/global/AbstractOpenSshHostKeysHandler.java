@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.Objects;
 
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -38,6 +39,8 @@ import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionServiceRequestHandler {
     private final String request;
     private final BufferPublicKeyParser<? extends PublicKey> parser;
+
+    private boolean ignoreInvalidKeys;
 
     protected AbstractOpenSshHostKeysHandler(String request) {
         this(request, BufferPublicKeyParser.DEFAULT);
@@ -70,18 +73,36 @@ public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionS
         if (p != null) {
             boolean debugEnabled = log.isDebugEnabled();
             while (buffer.available() > 0) {
-                PublicKey key = buffer.getPublicKey(p);
-                if (debugEnabled) {
-                    log.debug("process({})[{}] key type={}, fingerprint={}",
-                            connectionService, request, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                PublicKey key = null;
+                try {
+                    key = buffer.getPublicKey(p);
+                } catch (SshException e) {
+                    if (!isIgnoreInvalidKeys()) {
+                        throw e;
+                    }
+                    if (log.isTraceEnabled()) {
+                        log.trace("process({})[{}] received an unsupported key", connectionService, request, e);
+                    }
                 }
                 if (key != null) {
+                    if (debugEnabled) {
+                        log.debug("process({})[{}] key type={}, fingerprint={}", connectionService, request,
+                                KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
+                    }
                     keys.add(key);
                 }
             }
         }
 
         return handleHostKeys(connectionService.getSession(), keys, wantReply, buffer);
+    }
+
+    protected void setIgnoreInvalidKeys(boolean ignore) {
+        ignoreInvalidKeys = ignore;
+    }
+
+    protected boolean isIgnoreInvalidKeys() {
+        return ignoreInvalidKeys;
     }
 
     protected abstract Result handleHostKeys(

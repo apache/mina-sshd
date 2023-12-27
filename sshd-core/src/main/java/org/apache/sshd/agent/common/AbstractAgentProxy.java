@@ -92,13 +92,25 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         List<SimpleImmutableEntry<PublicKey, String>> keys = new ArrayList<>(nbIdentities);
         boolean debugEnabled = log.isDebugEnabled();
         for (int i = 0; i < nbIdentities; i++) {
-            PublicKey key = buffer.getPublicKey();
-            String comment = buffer.getString();
-            if (debugEnabled) {
-                log.debug("getIdentities() key type={}, comment={}, fingerprint={}",
-                        KeyUtils.getKeyType(key), comment, KeyUtils.getFingerPrint(key));
+            PublicKey key = null;
+            String error = null;
+            try {
+                key = buffer.getPublicKey();
+            } catch (SshException e) {
+                error = e.getLocalizedMessage();
             }
-            keys.add(new SimpleImmutableEntry<>(key, comment));
+            String comment = buffer.getString();
+            if (key == null) {
+                if (log.isTraceEnabled()) {
+                    log.trace("getIdentities() ignoring an unknown key type; comment={}; error={}", comment, error);
+                }
+            } else {
+                if (debugEnabled) {
+                    log.debug("getIdentities() key type={}, comment={}, fingerprint={}", KeyUtils.getKeyType(key), comment,
+                            KeyUtils.getFingerPrint(key));
+                }
+                keys.add(new SimpleImmutableEntry<>(key, comment));
+            }
         }
 
         return keys;

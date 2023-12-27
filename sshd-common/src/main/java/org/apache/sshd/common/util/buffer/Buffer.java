@@ -537,11 +537,14 @@ public abstract class Buffer implements Readable {
     public PublicKey getPublicKey(BufferPublicKeyParser<? extends PublicKey> parser) throws SshException {
         int ow = wpos();
         int len = ensureAvailable(getInt());
-        wpos(rpos() + len);
+        int afterKey = rpos() + len;
+        wpos(afterKey);
         try {
             return getRawPublicKey(parser);
         } finally {
             wpos(ow);
+            // Skip this key, even if the parser failed.
+            rpos(afterKey);
         }
     }
 

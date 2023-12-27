@@ -29,6 +29,8 @@
 ## Bug Fixes
 
 * [GH-428/GH-392](https://github.com/apache/mina-sshd/issues/428) SCP client fails silently when error signalled due to missing file or lacking permissions
+* [GH-434](https://github.com/apache/mina-sshd/issues/434) Ignore unknown key types from agent or in OpenSSH host keys extension
+
 
 ## New Features
 
