@@ -132,7 +132,7 @@
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
 
         <dependency.download.silent>true</dependency.download.silent>
-        <bnd.extraImports># A comment indicates 'none'</bnd.extraImports>
+        <bnd.extraImports></bnd.extraImports>
     </properties>
 
     <profiles>
