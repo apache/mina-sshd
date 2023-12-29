@@ -437,6 +437,7 @@ public class AbstractSessionTest extends BaseTestSupport {
         public MySession() {
             super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class),
                   new MyIoSession());
+            initialKexDone = true;
         }
 
         @Override

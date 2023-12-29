@@ -59,9 +59,23 @@ public final class KexExtensions {
     public static final String CLIENT_KEX_EXTENSION = "ext-info-c";
     public static final String SERVER_KEX_EXTENSION = "ext-info-s";
 
-    @SuppressWarnings("checkstyle:Indentation")
-    public static final Predicate<String> IS_KEX_EXTENSION_SIGNAL
-            = n -> CLIENT_KEX_EXTENSION.equalsIgnoreCase(n) || SERVER_KEX_EXTENSION.equalsIgnoreCase(n);
+    public static final Predicate<String> IS_KEX_EXTENSION_SIGNAL = //
+            n -> CLIENT_KEX_EXTENSION.equalsIgnoreCase(n) || SERVER_KEX_EXTENSION.equalsIgnoreCase(n);
+
+    /**
+     * Reminder:
+     *
+     * These pseudo-algorithms are only valid in the initial SSH2_MSG_KEXINIT and MUST be ignored if they are present in
+     * subsequent SSH2_MSG_KEXINIT packets.
+     *
+     * <B>Note:</B> these values are <U>appended</U> to the initial proposals and removed if received before proceeding
+     * with the standard KEX proposals negotiation.
+     *
+     * @see <A HREF="https://github.com/openssh/openssh-portable/blob/master/PROTOCOL">OpenSSH PROTOCOL - 1.9 transport:
+     *      strict key exchange extension</A>
+     */
+    public static final String STRICT_KEX_CLIENT_EXTENSION = "kex-strict-c-v00@openssh.com";
+    public static final String STRICT_KEX_SERVER_EXTENSION = "kex-strict-s-v00@openssh.com";
 
     /**
      * A case <U>insensitive</U> map of all the default known {@link KexExtensionParser} where key=the extension name

@@ -129,3 +129,18 @@ thread is not overrun by producers and actually can finish.
 Again, "client" and "server" could also be inverted. For instance, a client uploading
 files via SFTP might have an application thread pumping data through a channel, which
 might be blocked during KEX.
+
+### Strict Key Exchange
+
+"Strict KEX" is an SSH protocol extension introduced in 2023 to harden the protocol against
+a particular form of attack. For details, see ["Terrapin attack"](https://www.terrapin-attack.com/)
+and [CVE-2023-48795](https://nvd.nist.gov/vuln/detail/CVE-2023-48795). The "strict KEX"
+counter-measures are active if both peers indicate support for it at the start of the initial
+key exchange. By default, Apache MINA sshd always supports "strict kex" and advertises it, and
+thus it will always be active if the other party also supports it.
+
+If for whatever reason you want to disable using "strict KEX", this can be achieved by setting
+a custom session factory on the `SshClient` or `SshServer`. This custom session factory would create
+custom sessions subclassed from `ClientSessionImpl`or `ServerSessionImpl` that do not do anything
+in method `doStrictKexProposal()` (just return the proposal unchanged).
+

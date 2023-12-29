@@ -27,13 +27,17 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.EnumMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -45,6 +49,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
@@ -109,6 +114,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@SuppressWarnings("checkstyle:MethodCount")
 public abstract class AbstractSession extends SessionHelper {
     /**
      * Name of the property where this session is stored in the attributes of the underlying MINA session. See
@@ -191,6 +197,22 @@ public abstract class AbstractSession extends SessionHelper {
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
+
+    /**
+     * "Strict KEX" is a mitigation for the "Terrapin attack". The KEX protocol is modified as follows:
+     * <ol>
+     * <li>During the initial (unencrypted) KEX, no extra messages not strictly necessary for KEX are allowed. The
+     * KEX_INIT message must be the first one after the version identification, and no IGNORE or DEBUG messages are
+     * allowed until the KEX is completed. If a party receives such a message, it terminates the connection.</li>
+     * <li>Message sequence numbers are reset to zero after a key exchange (initial or later). When the NEW_KEYS message
+     * has been sent, the outgoing message number is reset; after a NEW_KEYS message has been received, the incoming
+     * message number is reset.</li>
+     * </ol>
+     * Strict KEX is negotiated in the original KEX proposal; it is active if and only if both parties indicate that
+     * they support strict KEX.
+     */
+    protected boolean strictKex;
+    protected long initialKexInitSequenceNumber = -1;
 
     /**
      * The {@link KeyExchangeMessageHandler} instance also serves as lock protecting {@link #kexState} changes from DONE
@@ -550,18 +572,24 @@ public abstract class AbstractSession extends SessionHelper {
                 handleDisconnect(buffer);
                 break;
             case SshConstants.SSH_MSG_IGNORE:
+                failStrictKex(cmd);
                 handleIgnore(buffer);
                 break;
             case SshConstants.SSH_MSG_UNIMPLEMENTED:
+                failStrictKex(cmd);
                 handleUnimplemented(buffer);
                 break;
             case SshConstants.SSH_MSG_DEBUG:
+                // Fail after handling -- by default a message will be logged, which might be helpful.
                 handleDebug(buffer);
+                failStrictKex(cmd);
                 break;
             case SshConstants.SSH_MSG_SERVICE_REQUEST:
+                failStrictKex(cmd);
                 handleServiceRequest(buffer);
                 break;
             case SshConstants.SSH_MSG_SERVICE_ACCEPT:
+                failStrictKex(cmd);
                 handleServiceAccept(buffer);
                 break;
             case SshConstants.SSH_MSG_KEXINIT:
@@ -571,9 +599,11 @@ public abstract class AbstractSession extends SessionHelper {
                 handleNewKeys(cmd, buffer);
                 break;
             case KexExtensions.SSH_MSG_EXT_INFO:
+                failStrictKex(cmd);
                 handleKexExtension(cmd, buffer);
                 break;
             case KexExtensions.SSH_MSG_NEWCOMPRESS:
+                failStrictKex(cmd);
                 handleNewCompression(cmd, buffer);
                 break;
             default:
@@ -589,24 +619,33 @@ public abstract class AbstractSession extends SessionHelper {
                     }
 
                     handleKexMessage(cmd, buffer);
-                } else if (currentService.process(cmd, buffer)) {
-                    resetIdleTimeout();
                 } else {
-                    /*
-                     * According to https://tools.ietf.org/html/rfc4253#section-11.4
-                     *
-                     * An implementation MUST respond to all unrecognized messages with an SSH_MSG_UNIMPLEMENTED message
-                     * in the order in which the messages were received.
-                     */
-                    if (log.isDebugEnabled()) {
-                        log.debug("process({}) Unsupported command: {}",
-                                this, SshConstants.getCommandMessageName(cmd));
+                    failStrictKex(cmd);
+                    if (currentService.process(cmd, buffer)) {
+                        resetIdleTimeout();
+                    } else {
+                        /*
+                         * According to https://tools.ietf.org/html/rfc4253#section-11.4
+                         *
+                         * An implementation MUST respond to all unrecognized messages with an SSH_MSG_UNIMPLEMENTED
+                         * message in the order in which the messages were received.
+                         */
+                        if (log.isDebugEnabled()) {
+                            log.debug("process({}) Unsupported command: {}", this, SshConstants.getCommandMessageName(cmd));
+                        }
+                        notImplemented(cmd, buffer);
                     }
-                    notImplemented(cmd, buffer);
                 }
                 break;
         }
         checkRekey();
+    }
+
+    protected void failStrictKex(int cmd) throws SshException {
+        if (!initialKexDone && strictKex) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    SshConstants.getCommandMessageName(cmd) + " not allowed during initial key exchange in strict KEX");
+        }
     }
 
     protected boolean handleFirstKexPacketFollows(int cmd, Buffer buffer, boolean followFlag) {
@@ -1118,7 +1157,7 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected int resolveIgnoreBufferDataLength() {
-        if ((ignorePacketDataLength <= 0)
+        if (!initialKexDone || (ignorePacketDataLength <= 0)
                 || (ignorePacketsFrequency <= 0L)
                 || (ignorePacketsVariance < 0)) {
             return 0;
@@ -1931,6 +1970,13 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception on errors
      */
     protected void setOutputEncoding() throws Exception {
+        if (strictKex) {
+            if (log.isDebugEnabled()) {
+                log.debug("setOutputEncoding({}): strict KEX resets output message sequence number from {} to 0", this, seqo);
+            }
+            seqo = 0;
+        }
+
         outCipher = outSettings.getCipher(seqo);
         outMac = outSettings.getMac();
         outCompression = outSettings.getCompression();
@@ -1962,6 +2008,13 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception on errors
      */
     protected void setInputEncoding() throws Exception {
+        if (strictKex) {
+            if (log.isDebugEnabled()) {
+                log.debug("setInputEncoding({}): strict KEX resets input message sequence number from {} to 0", this, seqi);
+            }
+            seqi = 0;
+        }
+
         inCipher = inSettings.getCipher(seqi);
         inMac = inSettings.getMac();
         inCompression = inSettings.getCompression();
@@ -2045,6 +2098,25 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
+     * Given a KEX proposal and a {@link KexProposalOption}, removes all occurrences of a value from a comma-separated
+     * value list.
+     *
+     * @param  options  {@link Map} holding the Kex proposal
+     * @param  option   {@link KexProposalOption} to modify
+     * @param  toRemove value to remove
+     * @return          {@code true} if the option contained the value (and it was removed); {@code false} otherwise
+     */
+    protected boolean removeValue(Map<KexProposalOption, String> options, KexProposalOption option, String toRemove) {
+        String val = options.get(option);
+        Set<String> algorithms = new LinkedHashSet<>(Arrays.asList(val.split(",")));
+        boolean result = algorithms.remove(toRemove);
+        if (result) {
+            options.put(option, algorithms.stream().collect(Collectors.joining(",")));
+        }
+        return result;
+    }
+
+    /**
      * Compute the negotiated proposals by merging the client and server proposal. The negotiated proposal will also be
      * stored in the {@link #negotiationResult} property.
      *
@@ -2056,11 +2128,43 @@ public abstract class AbstractSession extends SessionHelper {
         Map<KexProposalOption, String> s2cOptions = getServerKexProposals();
         signalNegotiationStart(c2sOptions, s2cOptions);
 
+        // Make modifiable. Strict KEX flags are to be heeded only in initial KEX, and to be ignored afterwards.
+        c2sOptions = new EnumMap<>(c2sOptions);
+        s2cOptions = new EnumMap<>(s2cOptions);
+        boolean strictKexClient = removeValue(c2sOptions, KexProposalOption.ALGORITHMS,
+                KexExtensions.STRICT_KEX_CLIENT_EXTENSION);
+        boolean strictKexServer = removeValue(s2cOptions, KexProposalOption.ALGORITHMS,
+                KexExtensions.STRICT_KEX_SERVER_EXTENSION);
+        if (removeValue(c2sOptions, KexProposalOption.ALGORITHMS, KexExtensions.STRICT_KEX_SERVER_EXTENSION)
+                && !initialKexDone) {
+            log.warn("negotiate({}) client proposal contains server flag {}; will be ignored", this,
+                    KexExtensions.STRICT_KEX_SERVER_EXTENSION);
+        }
+        if (removeValue(s2cOptions, KexProposalOption.ALGORITHMS, KexExtensions.STRICT_KEX_CLIENT_EXTENSION)
+                && !initialKexDone) {
+            log.warn("negotiate({}) server proposal contains client flag {}; will be ignored", this,
+                    KexExtensions.STRICT_KEX_CLIENT_EXTENSION);
+        }
+        // Make unmodifiable again
+        c2sOptions = Collections.unmodifiableMap(c2sOptions);
+        s2cOptions = Collections.unmodifiableMap(s2cOptions);
         Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
         Map<KexProposalOption, String> negotiatedGuess = Collections.unmodifiableMap(guess);
         try {
             boolean debugEnabled = log.isDebugEnabled();
             boolean traceEnabled = log.isTraceEnabled();
+            if (!initialKexDone) {
+                strictKex = strictKexClient && strictKexServer;
+                if (debugEnabled) {
+                    log.debug("negotiate({}) strict KEX={} client={} server={}", this, strictKex, strictKexClient,
+                            strictKexServer);
+                }
+                if (strictKex && initialKexInitSequenceNumber != 1) {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                            "Strict KEX negotiated but sequence number of first KEX_INIT received is not 1: "
+                                                                                             + initialKexInitSequenceNumber);
+                }
+            }
             SessionDisconnectHandler discHandler = getSessionDisconnectHandler();
             KexExtensionHandler extHandler = getKexExtensionHandler();
             for (KexProposalOption paramType : KexProposalOption.VALUES) {
@@ -2520,8 +2624,34 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
+    protected Map<KexProposalOption, String> doStrictKexProposal(Map<KexProposalOption, String> proposal) {
+        String value = proposal.get(KexProposalOption.ALGORITHMS);
+        String askForStrictKex = isServerSession()
+                ? KexExtensions.STRICT_KEX_SERVER_EXTENSION
+                : KexExtensions.STRICT_KEX_CLIENT_EXTENSION;
+        if (!initialKexDone) {
+            // On the initial KEX, include the strict KEX flag
+            if (GenericUtils.isEmpty(value)) {
+                value = askForStrictKex;
+            } else {
+                value += "," + askForStrictKex;
+            }
+        } else if (!GenericUtils.isEmpty(value)) {
+            // On subsequent KEXes, do not include ext-info-c/ext-info-s or the strict KEX flag in the proposal.
+            List<String> algorithms = new ArrayList<>(Arrays.asList(value.split(",")));
+            String extType = isServerSession() ? KexExtensions.SERVER_KEX_EXTENSION : KexExtensions.CLIENT_KEX_EXTENSION;
+            boolean changed = algorithms.remove(extType);
+            changed |= algorithms.remove(askForStrictKex);
+            if (changed) {
+                value = algorithms.stream().collect(Collectors.joining(","));
+            }
+        }
+        proposal.put(KexProposalOption.ALGORITHMS, value);
+        return proposal;
+    }
+
     protected byte[] sendKexInit() throws Exception {
-        Map<KexProposalOption, String> proposal = getKexProposal();
+        Map<KexProposalOption, String> proposal = doStrictKexProposal(getKexProposal());
 
         byte[] seed;
         synchronized (kexState) {
@@ -2588,6 +2718,9 @@ public abstract class AbstractSession extends SessionHelper {
     protected byte[] receiveKexInit(Buffer buffer) throws Exception {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
 
+        if (!initialKexDone) {
+            initialKexInitSequenceNumber = seqi;
+        }
         byte[] seed;
         synchronized (kexState) {
             seed = receiveKexInit(buffer, proposal);
