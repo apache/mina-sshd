@@ -35,7 +35,22 @@
 * [OpenSSH support for U2F/FIDO security keys](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.u2f)
     * **Note:** the server side supports these keys by default. The client side requires specific initialization
 * [OpenSSH public-key certificate authentication system for use by SSH](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
-* [OpenSSH strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+* [OpenSSH 1.9 transport: strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+* [(Some) OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
+
+**Note:** some implementations may be limited to client-side - i.e., we provide a capability for the client to detect if the server
+supports the extension and then use it, but our server does not publish it as being supported.
+
+| Section | Extension                  | Client | Server |
+| ------- | -------------------------- | ------ | ------ |
+| 4.3     | `posix-rename@openssh.com` | Yes    | Yes    |
+| 4.4     | `statvfs@openssh.com`      | Yes    | Yes    |
+| 4.4     | `fstatvfs@openssh.com`     | Yes    | Yes    |
+| 4.5     | `hardlink@openssh.com`     | Yes    | Yes    |
+| 4.6     | `fsync@openssh.com`        | Yes    | Yes    |
+| 4.7     | `lsetstat@openssh.com`     | Yes    | Yes    |
+| 4.8     | `limits@openssh.com`       | Yes    | Yes    |
+| 4.10    | `copy-data`                | Yes    | Yes    |
 
 ### SFTP version 3-6 + extensions
 
@@ -50,7 +65,6 @@
 * `copy-file`, `copy-data` - [DRAFT 00 - sections 6, 7](https://tools.ietf.org/id/draft-ietf-secsh-filexfer-extensions-00.txt)
 * `space-available` - [DRAFT 09 - section 9.2](https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-09#section-9.2)
 * `filename-charset`, `filename-translation-control` - [DRAFT 13 - section 6](https://tools.ietf.org/html/draft-ietf-secsh-filexfer-13#section-6) - only client side
-* Several [OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 
 ### Miscellaneous
 

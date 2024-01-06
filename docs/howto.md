@@ -23,3 +23,41 @@ In order to achieve this one needs to use a `ReservedSessionMessagesHandler` on 
 The idea is to prevent the normal session establish flow by taking over the initial handshake identification and blocking the initial KEX message from the server.
 
 A sample implementation can be found in the `EndlessTarpitSenderSupportDevelopment` class in the *sshd-contrib* package *test* section.
+
+## Disabling strict KEX
+
+The current code implements the [strict-kex](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL) extension by default. If users want/need to disable it, then
+this can be done *programmatically* as follows (the example is for the client, but a similar approach can be implemented for the server):
+
+
+```java
+class NoStrictKexSession extends ClientSessionImpl {
+    NoStrictKexSession(ClientFactoryManager client, IoSession ioSession) throws Exception {
+        super(client, ioSession);
+    }
+
+    @Override
+    protected Map<KexProposalOption, String> doStrictKexProposal(Map<KexProposalOption, String> proposal) {
+        return proposal;
+    }
+}
+
+class NoStrictKexSessionFactory extends SessionFactory {
+    NoStrictKexSessionFactory(ClientFactoryManager client) {
+        super(client);
+    }
+
+    @Override
+    protected ClientSessionImpl doCreateSession(IoSession ioSession) throws Exception {
+        return new NoStrictKexSession(getClient(), ioSession);
+    }
+}
+
+SshClient client = ...;
+SessionFactory factory = new NoStrictKexSessionFactory(client);
+client.setSessionFactory(factory);
+client.start();
+```
+
+If one needs to disable the protocol on a per-session basis, then it is possible to examine the peer's address (e.g., or anything else for that matter) in the `doCreateSession`
+or the `doStrictKexProposal` overrides and then invoke the super-class (for continuing with strict KEX) or return immediately (for disabling it).
