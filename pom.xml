@@ -104,7 +104,7 @@
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <min.required.maven.version>3.5.0</min.required.maven.version>
-        <groovy.version>3.0.11</groovy.version>
+        <groovy.version>4.0.17</groovy.version>
         <bouncycastle.version>1.77</bouncycastle.version>
             <!-- NOTE: upgrading slf4j beyond this version causes
             
@@ -411,12 +411,12 @@
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy</artifactId>
                 <version>${groovy.version}</version>
             </dependency>
             <dependency>
-                <groupId>org.codehaus.groovy</groupId>
+                <groupId>org.apache.groovy</groupId>
                 <artifactId>groovy-ant</artifactId>
                 <version>${groovy.version}</version>
                 <exclusions>
@@ -852,7 +852,7 @@
                 <plugin>
                     <groupId>org.codehaus.gmavenplus</groupId>
                     <artifactId>gmavenplus-plugin</artifactId>
-                    <version>1.13.1</version>
+                    <version>3.0.2</version>
                     <dependencies>
                           <!-- referenced indirectly by groovy-ant -->
                         <dependency>
@@ -882,12 +882,12 @@
                         </dependency>
 
                         <dependency>
-                            <groupId>org.codehaus.groovy</groupId>
+                            <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy</artifactId>
                             <version>${groovy.version}</version>
                         </dependency>
                         <dependency>
-                            <groupId>org.codehaus.groovy</groupId>
+                            <groupId>org.apache.groovy</groupId>
                             <artifactId>groovy-ant</artifactId>
                             <version>${groovy.version}</version>
                             <exclusions>
