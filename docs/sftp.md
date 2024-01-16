@@ -307,7 +307,7 @@ does not allow colon (`:`) in either one in order to avoid parsing confusion. Se
 >> deprecated ... Applications may choose to ignore or reject such
 >> data when it is received as part of a reference...
 
-See also the technical notes on the [SftpFileSystem](./technical/sft_filesystem.md).
+See also the technical notes on the [SftpFileSystem](./technical/sftp_filesystem.md).
 
 #### Configuring the `SftpFileSystemProvider`
 
