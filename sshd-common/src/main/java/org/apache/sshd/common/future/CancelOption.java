@@ -40,7 +40,7 @@ public enum CancelOption {
     /**
      * Indicates that even if waiting on a future times out or is interrupted, it shall not be canceled.
      * <p>
-     * {@link #CANCEL_ON_TIMEOUT} and {@link #CANCEL_ON_INTERRUPT} take predence over this flag. The main purpose of
+     * {@link #CANCEL_ON_TIMEOUT} and {@link #CANCEL_ON_INTERRUPT} take precedence over this flag. The main purpose of
      * this flag is to be able to call {@code verify(timeout, NO_CANCELLATION)} to suppress cancelling a future on
      * time-outs or interrupts altogether. By default, {@code verify(timeout)} will cancel the future on both time-outs
      * and interrupts.
