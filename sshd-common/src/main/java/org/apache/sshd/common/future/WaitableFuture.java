@@ -40,6 +40,18 @@ public interface WaitableFuture {
      * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete. The attached listeners will be
      * notified when the operation is completed.
      *
+     * @return             {@code true} if the operation is completed.
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException} if waiting was interrupted
+     * @see                #await(long, CancelOption[])
+     */
+    default boolean await() throws IOException {
+        return await(new CancelOption[0]);
+    }
+
+    /**
+     * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete. The attached listeners will be
+     * notified when the operation is completed.
+     *
      * @param  options     Optional {@link CancelOption}s defining the behavior on time-out or interrupt; ignored if the
      *                     future is not {@link Cancellable}.
      * @return             {@code true} if the operation is completed.
@@ -48,6 +60,19 @@ public interface WaitableFuture {
      */
     default boolean await(CancelOption... options) throws IOException {
         return await(Long.MAX_VALUE, options);
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout.
+     *
+     * @param  timeout     The number of time units to wait
+     * @param  unit        The {@link TimeUnit} for waiting
+     * @return             {@code true} if the operation is completed.
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException} if waiting was interrupted
+     * @see                #await(long, CancelOption[])
+     */
+    default boolean await(long timeout, TimeUnit unit) throws IOException {
+        return await(timeout, unit, new CancelOption[0]);
     }
 
     /**
@@ -69,6 +94,18 @@ public interface WaitableFuture {
      * Wait for the asynchronous operation to complete with the specified timeout.
      *
      * @param  timeout     The maximum duration to wait, <code>null</code> to wait forever
+     * @return             {@code true} if the operation is completed.
+     * @throws IOException if failed - specifically {@link java.io.InterruptedIOException} if waiting was interrupted
+     * @see                #await(long, CancelOption[])
+     */
+    default boolean await(Duration timeout) throws IOException {
+        return await(timeout, new CancelOption[0]);
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout.
+     *
+     * @param  timeout     The maximum duration to wait, <code>null</code> to wait forever
      * @param  options     Optional {@link CancelOption}s defining the behavior on time-out or interrupt; ignored if the
      *                     future is not {@link Cancellable}.
      * @return             {@code true} if the operation is completed.
@@ -77,6 +114,17 @@ public interface WaitableFuture {
      */
     default boolean await(Duration timeout, CancelOption... options) throws IOException {
         return timeout != null ? await(timeout.toMillis(), options) : await(options);
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout.
+     *
+     * @param  timeoutMillis Wait time in milliseconds
+     * @return               {@code true} if the operation is completed.
+     * @throws IOException   if failed - specifically {@link java.io.InterruptedIOException} if waiting was interrupted
+     */
+    default boolean await(long timeoutMillis) throws IOException {
+        return await(timeoutMillis, new CancelOption[0]);
     }
 
     /**
@@ -94,6 +142,17 @@ public interface WaitableFuture {
      * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete uninterruptibly. The attached
      * listeners will be notified when the operation is completed.
      *
+     * @return {@code true} if the operation is completed.
+     * @see    #awaitUninterruptibly(long, CancelOption[])
+     */
+    default boolean awaitUninterruptibly() {
+        return awaitUninterruptibly(new CancelOption[0]);
+    }
+
+    /**
+     * Wait {@link Long#MAX_VALUE} msec. for the asynchronous operation to complete uninterruptibly. The attached
+     * listeners will be notified when the operation is completed.
+     *
      * @param  options Optional {@link CancelOption}s defining the behavior on time-out; ignored if the future is not
      *                 {@link Cancellable}.
      * @return         {@code true} if the operation is completed.
@@ -101,6 +160,18 @@ public interface WaitableFuture {
      */
     default boolean awaitUninterruptibly(CancelOption... options) {
         return awaitUninterruptibly(Long.MAX_VALUE, options);
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
+     *
+     * @param  timeout The number of time units to wait
+     * @param  unit    The {@link TimeUnit} for waiting
+     * @return         {@code true} if the operation is completed.
+     * @see            #awaitUninterruptibly(long, CancelOption[])
+     */
+    default boolean awaitUninterruptibly(long timeout, TimeUnit unit) {
+        return awaitUninterruptibly(timeout, unit, new CancelOption[0]);
     }
 
     /**
@@ -121,12 +192,32 @@ public interface WaitableFuture {
      * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
      *
      * @param  timeoutMillis Wait time, <code>null</code> to wait forever
+     * @return               {@code true} if the operation is finished.
+     */
+    default boolean awaitUninterruptibly(Duration timeoutMillis) {
+        return awaitUninterruptibly(timeoutMillis, new CancelOption[0]);
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
+     *
+     * @param  timeoutMillis Wait time, <code>null</code> to wait forever
      * @param  options       Optional {@link CancelOption}s defining the behavior on time-out; ignored if the future is
      *                       not {@link Cancellable}.
      * @return               {@code true} if the operation is finished.
      */
     default boolean awaitUninterruptibly(Duration timeoutMillis, CancelOption... options) {
         return timeoutMillis != null ? awaitUninterruptibly(timeoutMillis.toMillis(), options) : awaitUninterruptibly(options);
+    }
+
+    /**
+     * Wait for the asynchronous operation to complete with the specified timeout uninterruptibly.
+     *
+     * @param  timeoutMillis Wait time in milliseconds
+     * @return               {@code true} if the operation is finished.
+     */
+    default boolean awaitUninterruptibly(long timeoutMillis) {
+        return awaitUninterruptibly(timeoutMillis, new CancelOption[0]);
     }
 
     /**
