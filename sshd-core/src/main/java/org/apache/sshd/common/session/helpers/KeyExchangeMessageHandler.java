@@ -28,7 +28,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -76,17 +75,17 @@ public class KeyExchangeMessageHandler {
     // new packets.
 
     /**
-     * We need the flushing thread to have priority over writing threads. So we use a lock that favors writers over
-     * readers, and any state updates and the flushing thread are writers, while writePacket() is a reader.
-     */
-    protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
-
-    /**
      * An {@link ExecutorService} used to flush the queue asynchronously.
      *
      * @see #flushQueue(DefaultKeyExchangeFuture)
      */
-    protected final ExecutorService flushRunner = Executors.newSingleThreadExecutor();
+    protected static ExecutorService flushRunner = ThreadUtils.newCachedThreadPool("kex-flusher");
+
+    /**
+     * We need the flushing thread to have priority over writing threads. So we use a lock that favors writers over
+     * readers, and any state updates and the flushing thread are writers, while writePacket() is a reader.
+     */
+    protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
 
     /**
      * The {@link AbstractSession} this {@link KeyExchangeMessageHandler} belongs to.
@@ -209,7 +208,6 @@ public class KeyExchangeMessageHandler {
                     kexFlushedFuture.get());
         });
         items.getValue().setValue(Boolean.valueOf(items.getKey().intValue() == 0));
-        flushRunner.shutdownNow();
     }
 
     /**
