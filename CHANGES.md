@@ -30,6 +30,8 @@
 
 ## Bug Fixes
 
+* [SSHD-1338](https://issues.apache.org/jira/browse/SSHD-1338) Restore binary compatibility with 2.9.2
+
 ## New Features
 
 ## Behavioral changes and enhancements
