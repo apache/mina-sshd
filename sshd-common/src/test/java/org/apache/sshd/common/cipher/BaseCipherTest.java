@@ -22,6 +22,7 @@ package org.apache.sshd.common.cipher;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.util.Arrays;
 
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
@@ -103,6 +104,13 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
 
         String expected = getClass().getName() + "[" + facName + "]";
         byte[] expBytes = expected.getBytes(StandardCharsets.UTF_8);
+        // All ciphers use no padding, so the input must be padded to a multiple of the block size
+        int length = expBytes.length;
+        int blockSize = enc.getCipherBlockSize();
+        expBytes = Arrays.copyOf(expBytes, (length / blockSize + 1) * blockSize);
+        for (int i = length; i < expBytes.length; i++) {
+            expBytes[i] = (byte) i;
+        }
         byte[] workBuf = expBytes.clone(); // need to clone since the cipher works in-line
         enc.update(workBuf, 0, workBuf.length);
 

@@ -18,6 +18,12 @@
  */
 package org.apache.sshd.common.cipher;
 
+import java.security.GeneralSecurityException;
+import java.security.InvalidAlgorithmParameterException;
+import java.security.InvalidKeyException;
+import java.security.spec.AlgorithmParameterSpec;
+
+import javax.crypto.SecretKey;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -31,6 +37,17 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public class BaseCipher implements Cipher {
 
+    // For tests
+    interface CipherFactory {
+        javax.crypto.Cipher getCipher(String transformation) throws GeneralSecurityException;
+    }
+
+    static CipherFactory factory = SecurityUtils::getCipher;
+
+    static boolean alwaysReInit;
+
+    protected Mode mode;
+
     private javax.crypto.Cipher cipher;
     private final int ivsize;
     private final int authSize;
@@ -40,6 +57,7 @@ public class BaseCipher implements Cipher {
     private final int blkSize;
     private final String transformation;
     private String s;
+    private SecretKey secretKey;
 
     public BaseCipher(int ivsize, int authSize, int kdfSize, String algorithm,
                       int keySize, String transformation, int blkSize) {
@@ -99,12 +117,14 @@ public class BaseCipher implements Cipher {
     }
 
     protected javax.crypto.Cipher createCipherInstance(Mode mode, byte[] key, byte[] iv) throws Exception {
-        javax.crypto.Cipher instance = SecurityUtils.getCipher(getTransformation());
+        javax.crypto.Cipher instance = factory.getCipher(getTransformation());
+        this.mode = mode;
+        this.secretKey = new SecretKeySpec(key, getAlgorithm());
         instance.init(
                 Mode.Encrypt.equals(mode)
                         ? javax.crypto.Cipher.ENCRYPT_MODE
                         : javax.crypto.Cipher.DECRYPT_MODE,
-                new SecretKeySpec(key, getAlgorithm()),
+                secretKey,
                 new IvParameterSpec(iv));
         return instance;
     }
@@ -119,7 +139,38 @@ public class BaseCipher implements Cipher {
 
     @Override
     public void update(byte[] input, int inputOffset, int inputLen) throws Exception {
-        cipher.update(input, inputOffset, inputLen, input, inputOffset);
+        try {
+            int stored = cipher.update(input, inputOffset, inputLen, input, inputOffset);
+            if (stored < inputLen || alwaysReInit) {
+                // Cipher.update() may buffer. We need all. Call doFinal and re-init the cipher.
+                // This works because in SSH inputLen is always a multiple of the cipher's block size.
+                stored += cipher.doFinal(input, inputOffset + stored);
+                // Now stored had better be inputLen
+                if (stored != inputLen) {
+                    throw new GeneralSecurityException(
+                            "Cipher.doFinal() did not return all bytes: " + stored + " != " + inputLen);
+                }
+                reInit(input, inputOffset, inputLen);
+            }
+        } catch (GeneralSecurityException e) {
+            // Add algorithm information
+            throw new GeneralSecurityException(
+                    "BaseCipher.update() for " + getTransformation() + '/' + getKeySize() + " failed (" + mode + ')', e);
+        }
+    }
+
+    protected void reInit(byte[] processed, int offset, int length)
+            throws InvalidKeyException, InvalidAlgorithmParameterException {
+        cipher.init(Mode.Encrypt.equals(mode)
+                ? javax.crypto.Cipher.ENCRYPT_MODE
+                : javax.crypto.Cipher.DECRYPT_MODE,
+                secretKey,
+                determineNewParameters(processed, offset, length));
+    }
+
+    protected AlgorithmParameterSpec determineNewParameters(byte[] processed, int offset, int length) {
+        // Default implementation; overridden as appropriate in subclasses
+        throw new UnsupportedOperationException(getClass() + " needs to override determineNewParameters()");
     }
 
     @Override

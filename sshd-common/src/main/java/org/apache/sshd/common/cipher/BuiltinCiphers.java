@@ -52,8 +52,20 @@ public enum BuiltinCiphers implements CipherFactory {
             return new CipherNone();
         }
     },
-    aes128cbc(Constants.AES128_CBC, 16, 0, 16, "AES", 128, "AES/CBC/NoPadding", 16),
-    aes128ctr(Constants.AES128_CTR, 16, 0, 16, "AES", 128, "AES/CTR/NoPadding", 16),
+    aes128cbc(Constants.AES128_CBC, 16, 0, 16, "AES", 128, "AES/CBC/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
+    aes128ctr(Constants.AES128_CTR, 16, 0, 16, "AES", 128, "AES/CTR/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseCTRCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
     aes128gcm(Constants.AES128_GCM, 12, 16, 16, "AES", 128, "AES/GCM/NoPadding", 16) {
         @Override
         public Cipher create() {
@@ -70,10 +82,34 @@ public enum BuiltinCiphers implements CipherFactory {
                     getKeySize(), getTransformation(), getCipherBlockSize());
         }
     },
-    aes192cbc(Constants.AES192_CBC, 16, 0, 24, "AES", 192, "AES/CBC/NoPadding", 16),
-    aes192ctr(Constants.AES192_CTR, 16, 0, 24, "AES", 192, "AES/CTR/NoPadding", 16),
-    aes256cbc(Constants.AES256_CBC, 16, 0, 32, "AES", 256, "AES/CBC/NoPadding", 16),
-    aes256ctr(Constants.AES256_CTR, 16, 0, 32, "AES", 256, "AES/CTR/NoPadding", 16),
+    aes192cbc(Constants.AES192_CBC, 16, 0, 24, "AES", 192, "AES/CBC/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
+    aes192ctr(Constants.AES192_CTR, 16, 0, 24, "AES", 192, "AES/CTR/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseCTRCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
+    aes256cbc(Constants.AES256_CBC, 16, 0, 32, "AES", 256, "AES/CBC/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
+    aes256ctr(Constants.AES256_CTR, 16, 0, 32, "AES", 256, "AES/CTR/NoPadding", 16) {
+        @Override
+        public Cipher create() {
+            return new BaseCTRCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
     /**
      * @deprecated
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
@@ -101,7 +137,13 @@ public enum BuiltinCiphers implements CipherFactory {
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
      */
     @Deprecated
-    blowfishcbc(Constants.BLOWFISH_CBC, 8, 0, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8),
+    blowfishcbc(Constants.BLOWFISH_CBC, 8, 0, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8) {
+        @Override
+        public Cipher create() {
+            return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    },
     cc20p1305_openssh(Constants.CC20P1305_OPENSSH, 8, 16, 64, "ChaCha", 256, "ChaCha", 8) {
         @Override
         public Cipher create() {
@@ -113,7 +155,13 @@ public enum BuiltinCiphers implements CipherFactory {
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
      */
     @Deprecated
-    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 0, 24, "DESede", 192, "DESede/CBC/NoPadding", 8);
+    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 0, 24, "DESede", 192, "DESede/CBC/NoPadding", 8) {
+        @Override
+        public Cipher create() {
+            return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
+                    getTransformation(), getCipherBlockSize());
+        }
+    };
 
     public static final Set<BuiltinCiphers> VALUES = Collections.unmodifiableSet(EnumSet.allOf(BuiltinCiphers.class));
 

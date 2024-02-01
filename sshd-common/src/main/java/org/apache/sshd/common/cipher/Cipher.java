@@ -45,6 +45,9 @@ public interface Cipher extends CipherInformation {
 
     /**
      * Performs in-place encryption or decryption on the given data.
+     * <p>
+     * <b>Note:</b>{@code input.length} must be a multiple of the cipher's block size.
+     * </p>
      *
      * @param  input     The input/output bytes
      * @throws Exception If failed to execute
@@ -59,7 +62,8 @@ public interface Cipher extends CipherInformation {
      *
      * @param  input       The input/output bytes
      * @param  inputOffset The offset of the data in the data buffer
-     * @param  inputLen    The number of bytes to update - starting at the given offset
+     * @param  inputLen    The number of bytes to update, starting at the given offset; must be a multiple of the
+     *                     cipher's block size
      * @throws Exception   If failed to execute
      */
     void update(byte[] input, int inputOffset, int inputLen) throws Exception;
@@ -89,11 +93,17 @@ public interface Cipher extends CipherInformation {
      * implicitly appended after the output ciphertext or implicitly verified after the input ciphertext. Header data
      * indicated by the {@code aadLen} parameter are authenticated but not encrypted/decrypted, while payload data
      * indicated by the {@code inputLen} parameter are authenticated and encrypted/decrypted.
+     * <p>
+     * <b>Note:</b> on encryption the {@code input} must have enough space after {@code offset + aadLen + inputLength}
+     * to store the authentication tag. On decryption, the authentication tag is assumed to be in the {@code input} at
+     * that offset (i.e., after the payload data).
+     * </p>
      *
      * @param  input     The input/output bytes
      * @param  offset    The offset of the data in the input buffer
      * @param  aadLen    The number of bytes to use as additional authenticated data - starting at offset
-     * @param  inputLen  The number of bytes to update - starting at offset + aadLen
+     * @param  inputLen  The number of bytes to update, starting at offset + aadLen; must be a multiple of the cipher's
+     *                   block size
      * @throws Exception If failed to execute
      */
     default void updateWithAAD(byte[] input, int offset, int aadLen, int inputLen) throws Exception {
