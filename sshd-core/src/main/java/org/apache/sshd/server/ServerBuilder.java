@@ -25,9 +25,11 @@ import java.util.List;
 import java.util.function.Function;
 
 import org.apache.sshd.common.BaseBuilder;
+import org.apache.sshd.common.BuiltinFactory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.channel.RequestHandler;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.compression.BuiltinCompressions;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionFactory;
@@ -86,6 +88,23 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
                     BuiltinCompressions.delayedZlib));
     public static final KexExtensionHandler DEFAULT_KEX_EXTENSION_HANDLER = DefaultServerKexExtensionHandler.INSTANCE;
 
+    /**
+     * Default list of ciphers for a server. This excludes the AES-CBC ciphers -- OpenSSH has stopped proposing them by
+     * default in 2014 (and removed them from the client proposal in 2017, too). CBC is susceptible to padding oracle
+     * attacks and other attacks and is thus not recommended anymore.
+     * <p>
+     * For clients, we do still include the CBC modes to better support connecting with legacy servers.
+     * </p>
+     */
+    public static final List<BuiltinCiphers> DEFAULT_SERVER_CIPHERS_PREFERENCE = Collections.unmodifiableList(
+            Arrays.asList(
+                    BuiltinCiphers.cc20p1305_openssh,
+                    BuiltinCiphers.aes128ctr,
+                    BuiltinCiphers.aes192ctr,
+                    BuiltinCiphers.aes256ctr,
+                    BuiltinCiphers.aes128gcm,
+                    BuiltinCiphers.aes256gcm));
+
     protected PublickeyAuthenticator pubkeyAuthenticator;
     protected KeyboardInteractiveAuthenticator interactiveAuthenticator;
 
@@ -105,6 +124,9 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
 
     @Override
     protected ServerBuilder fillWithDefaultValues() {
+        if (cipherFactories == null) {
+            cipherFactories(BuiltinFactory.setUpFactories(false, DEFAULT_SERVER_CIPHERS_PREFERENCE));
+        }
         super.fillWithDefaultValues();
 
         if (compressionFactories == null) {

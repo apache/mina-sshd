@@ -26,7 +26,9 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import ch.ethz.ssh2.Connection;
@@ -162,29 +164,41 @@ public class MacCompatibilityTest extends BaseTestSupport {
         Assume.assumeTrue("Known JSCH bug with " + macName, !BuiltinMacs.hmacsha512.equals(factory));
 
         JSch sch = new JSch();
-        JSch.setConfig("cipher.s2c", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
-        JSch.setConfig("cipher.c2s", "aes128-cbc,3des-cbc,blowfish-cbc,aes192-cbc,aes256-cbc,none");
-        JSch.setConfig("mac.s2c", macName);
-        JSch.setConfig("mac.c2s", macName);
-        JSch.setConfig(macName, jschMacClass);
-
-        com.jcraft.jsch.Session session = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
+        Map<String, String> values = new HashMap<>();
+        values.put("cipher.s2c", JSch.getConfig("cipher.s2c"));
+        values.put("cipher.c2s", JSch.getConfig("cipher.s2c"));
+        values.put("mac.s2c", JSch.getConfig("mac.s2c"));
+        values.put("mac.c2s", JSch.getConfig("mac.s2c"));
+        values.put(macName, JSch.getConfig(macName));
         try {
-            session.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
-            session.connect();
+            JSch.setConfig("cipher.s2c", "aes128-ctr,aes192-ctr,aes256-ctr,none");
+            JSch.setConfig("cipher.c2s", "aes128-ctr,aes192-ctr,aes256-ctr,none");
+            JSch.setConfig("mac.s2c", macName);
+            JSch.setConfig("mac.c2s", macName);
+            JSch.setConfig(macName, jschMacClass);
 
-            com.jcraft.jsch.Channel channel = session.openChannel(Channel.CHANNEL_SHELL);
-            channel.connect();
+            com.jcraft.jsch.Session session = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
+            try {
+                session.setUserInfo(new SimpleUserInfo(getCurrentTestName()));
+                session.connect();
 
-            try (OutputStream stdin = channel.getOutputStream();
-                 InputStream stdout = channel.getInputStream();
-                 InputStream stderr = channel.getExtInputStream()) {
-                runShellTest(stdin, stdout);
+                com.jcraft.jsch.Channel channel = session.openChannel(Channel.CHANNEL_SHELL);
+                channel.connect();
+
+                try (OutputStream stdin = channel.getOutputStream();
+                     InputStream stdout = channel.getInputStream();
+                     InputStream stderr = channel.getExtInputStream()) {
+                    runShellTest(stdin, stdout);
+                } finally {
+                    channel.disconnect();
+                }
             } finally {
-                channel.disconnect();
+                session.disconnect();
             }
         } finally {
-            session.disconnect();
+            for (Map.Entry<String, String> item : values.entrySet()) {
+                JSch.setConfig(item.getKey(), item.getValue());
+            }
         }
     }
 

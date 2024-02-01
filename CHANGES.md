@@ -164,5 +164,28 @@ such excess data is silently discarded.
 
 ## Potential compatibility issues
 
+### AES-CBC ciphers removed from server's defaults
+
+The AES-CBC ciphers `aes128-cbc`, `aes192-cbc`, and `aes256-cbc` have been removed from the default
+list of cipher algorithms that a server proposes in the key exchange. OpenSSH has removed these
+cipher algorithms from the server proposal in 2014, and has removed them from the client proposal
+in 2017.
+
+The cipher implementations still exist but they are not enabled by default. Existing code that
+explicitly sets the cipher factories is unaffected. Code that relies on the default settings
+will newly create a server that does not support the CBC-mode ciphers. To enable the CBC-mode
+ciphers, one can use for instance
+
+```
+SshServer server = ServerBuilder.builder()
+   ...
+   .cipherFactories(BuiltinFactory.setUpFactories(false, BaseBuilder.DEFAULT_CIPHERS_PREFERENCES));
+   ...
+   .build();
+```
+
+For the SSH _client_, the CBC ciphers are still enabled by default to facilitate connecting to
+legacy servers. We plan to remove the CBC ciphers from the client's defaults in the next release.
+
 ## Major Code Re-factoring
 

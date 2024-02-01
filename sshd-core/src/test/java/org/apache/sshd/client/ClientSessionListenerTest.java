@@ -96,7 +96,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     public void testSessionListenerCanModifyKEXNegotiation() throws Exception {
         Map<KexProposalOption, NamedResource> kexParams = new EnumMap<>(KexProposalOption.class);
         kexParams.put(KexProposalOption.ALGORITHMS, getLeastFavorite(KeyExchange.class, client.getKeyExchangeFactories()));
-        kexParams.put(KexProposalOption.C2SENC, getLeastFavorite(CipherFactory.class, client.getCipherFactories()));
+        kexParams.put(KexProposalOption.C2SENC, getLeastFavorite(CipherFactory.class, sshd.getCipherFactories()));
         kexParams.put(KexProposalOption.C2SMAC, getLeastFavorite(MacFactory.class, client.getMacFactories()));
 
         SessionListener listener = new SessionListener() {

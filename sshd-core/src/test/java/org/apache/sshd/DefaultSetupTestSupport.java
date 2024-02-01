@@ -38,6 +38,8 @@ import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.server.ServerBuilder;
+import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
 import org.junit.Test;
@@ -59,7 +61,10 @@ public abstract class DefaultSetupTestSupport<M extends AbstractFactoryManager> 
 
     @Test
     public void testDefaultCiphersList() {
-        assertSameNamedFactoriesListInstances(Cipher.class.getSimpleName(), BaseBuilder.DEFAULT_CIPHERS_PREFERENCE,
+        assertSameNamedFactoriesListInstances(Cipher.class.getSimpleName(),
+                factory instanceof SshServer
+                        ? ServerBuilder.DEFAULT_SERVER_CIPHERS_PREFERENCE
+                        : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE,
                 factory.getCipherFactories());
     }
 
