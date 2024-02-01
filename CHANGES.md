@@ -30,6 +30,8 @@
 
 ## Bug Fixes
 
+* [GH-458](https://github.com/apache/mina-sshd/issues/458) Singleton thread pool for kex message handler flushing
+
 * [SSHD-1338](https://issues.apache.org/jira/browse/SSHD-1338) Restore binary compatibility with 2.9.2
 
 ## New Features
