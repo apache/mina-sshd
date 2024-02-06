@@ -26,13 +26,11 @@
 
 # [Version 2.11.0 to 2.12.0](./docs/changes/2.12.0.md)
 
+# [Version 2.12.0 to 2.12.1](./docs/changes/2.12.1.md)
+
 # Planned for next version
 
 ## Bug Fixes
-
-* [GH-458](https://github.com/apache/mina-sshd/issues/458) Singleton thread pool for kex message handler flushing
-
-* [SSHD-1338](https://issues.apache.org/jira/browse/SSHD-1338) Restore binary compatibility with 2.9.2
 
 ## New Features
 
