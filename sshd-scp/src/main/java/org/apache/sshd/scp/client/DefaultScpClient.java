@@ -118,9 +118,10 @@ public class DefaultScpClient extends AbstractScpClient {
                 // NOTE: we use a mock file system since we expect no invocations for it
                 ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
                 Path mockPath = new MockPath(remote);
-                helper.readAck(false);
-                helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
-                        options.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+                DefaultScpStreamResolver resolver = new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd);
+                helper.readAndValidateOperationAck(cmd, resolver);
+                helper.sendStream(resolver, options.contains(Option.PreserveAttributes),
+                        ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
             }
             handleCommandExitStatus(cmd, channel);
         } finally {
