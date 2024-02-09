@@ -112,13 +112,16 @@ public class DefaultScpClient extends AbstractScpClient {
         String cmd = ScpClient.createSendCommand(remote, options);
         ClientSession session = getClientSession();
         ChannelExec channel = openCommandChannel(session, cmd);
-        try (InputStream invOut = channel.getInvertedOut();
-             OutputStream invIn = channel.getInvertedIn()) {
-            // NOTE: we use a mock file system since we expect no invocations for it
-            ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
-            Path mockPath = new MockPath(remote);
-            helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
-                    options.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+        try {
+            try (InputStream invOut = channel.getInvertedOut();
+                 OutputStream invIn = channel.getInvertedIn()) {
+                // NOTE: we use a mock file system since we expect no invocations for it
+                ScpHelper helper = new ScpHelper(session, invOut, invIn, new MockFileSystem(remote), opener, listener);
+                Path mockPath = new MockPath(remote);
+                helper.readAck(false);
+                helper.sendStream(new DefaultScpStreamResolver(name, mockPath, perms, time, size, local, cmd),
+                        options.contains(Option.PreserveAttributes), ScpHelper.DEFAULT_SEND_BUFFER_SIZE);
+            }
             handleCommandExitStatus(cmd, channel);
         } finally {
             channel.close(false);
