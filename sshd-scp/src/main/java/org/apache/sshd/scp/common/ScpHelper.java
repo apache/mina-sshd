@@ -411,12 +411,8 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
     }
 
     public void send(Collection<String> paths, boolean recursive, boolean preserve, int bufferSize) throws IOException {
-        ScpAckInfo ackInfo = readAck(false);
         boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("send({}) ACK={}", paths, ackInfo);
-        }
-        validateOperationReadyCode("send", "Paths", ackInfo);
+        readAndValidateOperationAck("send", "Paths");
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         for (String pattern : paths) {
@@ -464,11 +460,7 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
     public void sendPaths(Collection<? extends Path> paths, boolean recursive, boolean preserve, int bufferSize)
             throws IOException {
-        ScpAckInfo ackInfo = readAck(false);
-        if (log.isDebugEnabled()) {
-            log.debug("sendPaths({}) ACK={}", paths, ackInfo);
-        }
-        validateOperationReadyCode("sendPaths", "Paths", ackInfo);
+        readAndValidateOperationAck("sendPaths", "Paths");
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         for (Path file : paths) {
@@ -748,6 +740,15 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
 
     public ScpAckInfo readAck(boolean canEof) throws IOException {
         return ScpAckInfo.readAck(in, csIn, canEof);
+    }
+
+    public void readAndValidateOperationAck(String cmd, Object location) throws IOException {
+        ScpAckInfo ackInfo = readAck(false);
+        boolean debugEnabled = log.isDebugEnabled();
+        if (debugEnabled) {
+            log.debug("readAndValidateOperationAck({}) ACK={}", location, ackInfo);
+        }
+        validateOperationReadyCode(cmd, location, ackInfo);
     }
 
     @Override
