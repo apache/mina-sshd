@@ -678,33 +678,75 @@ public abstract class AbstractSftpClient
         buffer.putBytes(id);
         buffer.putLong(fileOffset);
         buffer.putUInt(len);
-        return checkData(SftpConstants.SSH_FXP_READ, buffer, dstOffset, dst, eofSignalled);
+        int reqId = send(SftpConstants.SSH_FXP_READ, buffer);
+        SftpAckData ack = new SftpAckData(reqId, fileOffset, len);
+        SftpResponse response = response(SftpConstants.SSH_FXP_READ, reqId);
+        buffer = checkDataResponse(ack, response, eofSignalled);
+        if (buffer == null) {
+            return -1; // EOF
+        }
+        if (buffer.available() <= 0) {
+            if (eofSignalled != null) {
+                Boolean eof = eofSignalled.get();
+                return (eof != null && eof.booleanValue()) ? -1 : 0;
+            }
+            return 0;
+        }
+        int bytesRead = buffer.available();
+        buffer.getRawBytes(dst, dstOffset, bytesRead);
+        return bytesRead;
     }
 
-    protected int checkData(
-            int cmd, Buffer request, int dstOffset, byte[] dst, AtomicReference<Boolean> eofSignalled)
+    /**
+     * Processes a response to an SSH_FXP_READ request.
+     *
+     * @param  ack          describing the SSH_FXP_READ request
+     * @param  response     SFTP response received
+     * @param  eofSignalled if non-{@code null}, set to {@code true} if an EOF was received
+     * @return              a {@link Buffer} containing the data received (may be empty), or {@code null} if the
+     *                      response was an SSH_FXP_EOF status
+     * @throws IOException  on errors
+     */
+    protected Buffer checkDataResponse(SftpAckData ack, SftpResponse response, AtomicReference<Boolean> eofSignalled)
             throws IOException {
-        return checkDataResponse(rpc(cmd, request), dstOffset, dst, eofSignalled);
-    }
-
-    protected int checkDataResponse(SftpResponse response, int dstoff, byte[] dst, AtomicReference<Boolean> eofSignalled)
-            throws IOException {
+        if (eofSignalled != null) {
+            eofSignalled.set(null);
+        }
         switch (response.getType()) {
             case SftpConstants.SSH_FXP_DATA:
                 Buffer buffer = response.getBuffer();
-                int len = buffer.getInt();
-                ValidateUtils.checkTrue(len >= 0, "Invalid response data len: %d", len);
-                buffer.getRawBytes(dst, dstoff, len);
-                Boolean indicator = SftpHelper.getEndOfFileIndicatorValue(buffer, getVersion());
-                if (log.isTraceEnabled()) {
-                    log.trace("checkDataResponse({}][id={}] {} offset={}, len={}, EOF={}", getClientChannel(),
-                            SftpConstants.getCommandMessageName(response.getCmd()), response.getId(), dstoff, len, indicator);
+                int dlen = buffer.getInt();
+                ValidateUtils.checkTrue(dlen >= 0 && dlen <= buffer.available(), "Invalid response data len: %d", dlen);
+                if (dlen > ack.length) {
+                    // Server sent more data than we requested. According to the SFTP draft RFCs, a server must never do
+                    // this. The length we request is a maximum that the server must never exceed.
+                    buffer.wpos(buffer.rpos() + ack.length);
+                    boolean dropExcessData = SftpModuleProperties.TOLERATE_EXCESS_DATA.getRequired(getClientChannel());
+                    if (dropExcessData) {
+                        log.warn(
+                                "checkDataResponse({}][id={}] {} offset={}, len={} SFTP protocol violation: server returned more data than requested, excess data dropped (requested len={})",
+                                getClientChannel(), SftpConstants.getCommandMessageName(response.getCmd()), response.getId(),
+                                ack.offset, dlen, ack.length);
+                    } else {
+                        throw new SshException("SFTP protocol violation: requested at most " + ack.length + " bytes but got "
+                                               + dlen + " bytes");
+                    }
+                } else {
+                    int rpos = buffer.rpos();
+                    buffer.rpos(rpos + dlen);
+                    Boolean indicator = SftpHelper.getEndOfFileIndicatorValue(buffer, getVersion());
+                    if (log.isTraceEnabled()) {
+                        log.trace("checkDataResponse({}][id={}] {} offset={}, len={}, EOF={}", getClientChannel(),
+                                SftpConstants.getCommandMessageName(response.getCmd()), response.getId(), ack.offset, dlen,
+                                indicator);
+                    }
+                    if (eofSignalled != null) {
+                        eofSignalled.set(indicator);
+                    }
+                    buffer.rpos(rpos);
+                    buffer.wpos(buffer.rpos() + dlen);
                 }
-                if (eofSignalled != null) {
-                    eofSignalled.set(indicator);
-                }
-
-                return len;
+                return buffer;
             case SftpConstants.SSH_FXP_STATUS:
                 SftpStatus status = SftpStatus.parse(response);
 
@@ -713,13 +755,16 @@ public abstract class AbstractSftpClient
                         log.trace("checkDataResponse({})[id={}] {} status: {}", getClientChannel(), response.getId(),
                                 SftpConstants.getCommandMessageName(response.getCmd()), status);
                     }
-                    return -1;
+                    if (eofSignalled != null) {
+                        eofSignalled.set(Boolean.TRUE);
+                    }
+                    return null;
                 }
-
-                throwStatusException(response.getCmd(), response.getId(), status);
-                return 0;
+                checkResponseStatus(SftpConstants.SSH_FXP_READ, response.getId(), status);
+                return new ByteArrayBuffer(new byte[0]);
             default:
-                return handleUnknownDataPacket(response);
+                handleUnknownDataPacket(response);
+                return new ByteArrayBuffer(new byte[0]);
         }
     }
 

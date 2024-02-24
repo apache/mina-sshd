@@ -387,6 +387,27 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
+    @Test
+    public void testEmptyFileDownload() throws Exception {
+        Assume.assumeTrue("Not sure appending to a file opened for reading works on Windows",
+                OsUtils.isUNIX() || OsUtils.isOSX());
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.bin");
+        byte[] expected = new byte[0];
+
+        Files.write(testFile, expected);
+
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            try (InputStream in = sftp.read(file)) {
+                assertEquals(-1, in.read());
+            }
+        }
+    }
+
     @Test // see extra fix for SSHD-538
     public void testNavigateBeyondRootFolder() throws Exception {
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");

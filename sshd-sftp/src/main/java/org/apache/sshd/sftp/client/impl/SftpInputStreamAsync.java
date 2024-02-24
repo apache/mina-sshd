@@ -42,11 +42,13 @@ import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.client.SftpClientHolder;
 import org.apache.sshd.sftp.common.SftpConstants;
-import org.apache.sshd.sftp.common.SftpHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class SftpInputStreamAsync extends InputStreamWithChannel implements SftpClientHolder {
+
+    private static final int MIN_BUFFER_SIZE = 8 * 1024;
+
     protected final Logger log;
     protected final byte[] bb = new byte[1];
     protected final long fileSize;
@@ -232,10 +234,15 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
         long windowSize = localWindow.getMaxSize();
         Session session = client.getSession();
         byte[] id = handle.getIdentifier();
-        boolean traceEnabled = log.isTraceEnabled();
-        if (fileSize > 0 && requestOffset > fileSize && !pendingReads.isEmpty()) {
+        boolean debugEnabled = log.isTraceEnabled();
+        if (fileSize > 0 && requestOffset > fileSize) {
             // We'd be issuing requests for reading beyond the expected EOF. Do that only one by one.
-            return;
+            if (!pendingReads.isEmpty()) {
+                return;
+            }
+            // Beyond the expected file size we do single sequential requests; no ahead of time requests.
+            // Hence the requestOffset is always just beyond the current buffer.
+            requestOffset = clientOffset + buffer.available();
         }
         while (pendingReads.size() < Math.max(1, windowSize / bufferSize)) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA,
@@ -247,8 +254,8 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
             buf.putUInt(bufferSize);
             int reqId = client.send(SftpConstants.SSH_FXP_READ, buf);
             SftpAckData ack = new SftpAckData(reqId, requestOffset, bufferSize);
-            if (traceEnabled) {
-                log.trace("sendRequests({}) enqueue pending ack: {}", this, ack);
+            if (debugEnabled) {
+                log.debug("sendRequests({}) enqueue pending ack: {}", this, ack);
             }
             pendingReads.add(ack);
             requestOffset += bufferSize;
@@ -261,6 +268,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
     protected boolean fillData() throws IOException {
         SftpAckData ack = pendingReads.pollFirst();
         boolean traceEnabled = log.isTraceEnabled();
+        boolean debugEnabled = log.isDebugEnabled();
         if (ack == null) {
             if (traceEnabled) {
                 log.trace("fillData({}) no pending ack", this);
@@ -276,10 +284,9 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
 
         if (!alreadyEof && clientOffset < ack.offset) {
             shortReads++;
-            // we are actually missing some data
-            // so request is synchronously
-            byte[] data = new byte[(int) (ack.offset - clientOffset + buffer.available())];
+            // We are missing some data: request it synchronously to fill the gap.
             int nb = (int) (ack.offset - clientOffset);
+            byte[] data = new byte[nb + buffer.available()];
             if (traceEnabled) {
                 log.trace("fillData({}) reading {} bytes", this, nb);
             }
@@ -299,15 +306,20 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                 }
             }
 
-            if (traceEnabled) {
-                log.trace("fillData({}) read {} bytes - EOF={}", this, cur, eofIndicator);
+            if (debugEnabled) {
+                log.debug("fillData({}) read {} of {} bytes - EOF={}", this, cur, nb, eofIndicator);
             }
 
-            if (cur > 0) {
+            if (cur == 0) {
+                // Got no data but an EOF. File got shorter? Prepare an empty buffer.
+                buffer.rpos(buffer.wpos());
+            } else if (cur < nb) {
+                // Could not fill the gap, got an EOF. Use just the data we got now.
+                buffer = new ByteArrayBuffer(data, 0, cur);
+            } else {
+                // cur == nb: Gap filled.
                 buffer.getRawBytes(data, cur, buffer.available());
                 buffer = new ByteArrayBuffer(data);
-            } else {
-                buffer.rpos(buffer.wpos());
             }
             if (!eofIndicator && !bufferAdjusted) {
                 int newBufferSize = adjustBufferIfNeeded(bufferSize, shortReads, maxReceived, ack.offset - clientOffset);
@@ -315,7 +327,7 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                     int originalSize = bufferSize;
                     bufferSize = newBufferSize;
                     bufferAdjusted = true;
-                    if (log.isDebugEnabled()) {
+                    if (debugEnabled) {
                         log.debug("adjustBufferIfNeeded({}) changing SFTP buffer size: {} -> {}", this, originalSize,
                                 bufferSize);
                     }
@@ -339,53 +351,33 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
      * @return                   a new buffer size in the range [1..currentBufferSize].
      */
     protected int adjustBufferIfNeeded(int currentBufferSize, long nOfShortReads, int maxBufferReceived, long gap) {
-        if (currentBufferSize > 8 * 1024 && nOfShortReads > 4) {
-            return Math.max(8 * 1204, maxBufferReceived);
+        if (currentBufferSize > MIN_BUFFER_SIZE && nOfShortReads > 4) {
+            return Math.max(MIN_BUFFER_SIZE, maxBufferReceived);
         }
         return currentBufferSize;
     }
 
     protected void pollBuffer(SftpAckData ack) throws IOException {
-        boolean traceEnabled = log.isTraceEnabled();
-        if (traceEnabled) {
+        if (log.isTraceEnabled()) {
             log.trace("pollBuffer({}) polling ack={}", this, ack);
         }
 
         AbstractSftpClient client = getClient();
         SftpResponse response = client.response(SftpConstants.SSH_FXP_READ, ack.id);
-        if (traceEnabled) {
-            log.trace("pollBuffer({}) response={} for ack={} - len={}", this, response.getType(), ack, response.getLength());
+        if (log.isDebugEnabled()) {
+            log.debug("pollBuffer({}) response={} for ack={} - len={}", this, response.getType(), ack, response.getLength());
         }
-
-        switch (response.getType()) {
-            case SftpConstants.SSH_FXP_DATA:
-                Buffer buf = response.getBuffer();
-                int dlen = buf.getInt();
-                int rpos = buf.rpos();
-                buf.rpos(rpos + dlen);
-                Boolean b = SftpHelper.getEndOfFileIndicatorValue(buf, client.getVersion());
-                if ((b != null) && b.booleanValue()) {
-                    eofIndicator = true;
-                }
-                buf.rpos(rpos);
-                buf.wpos(rpos + dlen);
-                maxReceived = Math.max(dlen, maxReceived);
-                this.buffer = buf;
-                break;
-            case SftpConstants.SSH_FXP_STATUS:
-                SftpStatus status = SftpStatus.parse(response);
-                if (status.getStatusCode() == SftpConstants.SSH_FX_EOF) {
-                    eofIndicator = true;
-                } else {
-                    client.checkResponseStatus(SftpConstants.SSH_FXP_READ, response.getId(), status);
-                }
-                break;
-            default:
-                IOException err = client.handleUnexpectedPacket(SftpConstants.SSH_FXP_DATA, response);
-                if (err != null) {
-                    throw err;
-                }
-                break;
+        AtomicReference<Boolean> eofSignalled = new AtomicReference<>();
+        Buffer buf = client.checkDataResponse(ack, response, eofSignalled);
+        if (buf == null) {
+            eofIndicator = true;
+        } else {
+            maxReceived = Math.max(buf.available(), maxReceived);
+            Boolean eof = eofSignalled.get();
+            if (eof != null && eof.booleanValue()) {
+                eofIndicator = true;
+            }
+            this.buffer = buf;
         }
     }
 

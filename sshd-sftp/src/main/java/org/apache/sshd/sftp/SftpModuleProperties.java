@@ -251,6 +251,14 @@ public final class SftpModuleProperties {
             = Property.integer("sftp-max-readdir-data-size", 16 * 1024);
 
     /**
+     * Apparently some SFTP servers may return more data than requested in SFTP read requests. This is a violation of
+     * the SFTP protocol. If this flag is {@code true}, such excess data is ignored and a warning is logged. If the flag
+     * is {@code false} (the default), an exception is thrown. The flag can be set on an SSH session or on the
+     * {@link SftpClient#getClientChannel() client channel} of an {@link SftpClient}.
+     */
+    public static final Property<Boolean> TOLERATE_EXCESS_DATA = Property.bool("sftp-tolerate-excess-data", false);
+
+    /**
      * Force the use of a given sftp version
      */
     public static final Property<Integer> SFTP_VERSION

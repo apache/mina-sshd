@@ -49,6 +49,14 @@
 
 ## Behavioral changes and enhancements
 
+* [GH-468](https://github.com/apache/mina-sshd/issues/468) SFTP: validate length of data received: must not be more than requested
+
+SFTP read operations now check the amount of data they get back. If it's more than
+requested an exception is thrown. SFTP servers must never return more data than the
+client requested, but it appears that there are some that do so. If property
+`SftpModuleProperties.TOLERATE_EXCESS_DATA` is set to `true`, a warning is logged and
+such excess data is silently discarded.
+
 ## Potential compatibility issues
 
 ## Major Code Re-factoring
