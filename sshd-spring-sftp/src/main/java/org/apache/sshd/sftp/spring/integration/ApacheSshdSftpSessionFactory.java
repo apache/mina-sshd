@@ -306,7 +306,7 @@ public class ApacheSshdSftpSessionFactory
             setSshClient(client);
         }
 
-        if (!client.isOpen()) {
+        if (!client.isStarted()) {
             log.info("afterPropertiesSet() - starting client");
             client.start();
             log.info("afterPropertiesSet() - client started");
