@@ -139,7 +139,8 @@ public interface ClientChannel extends Channel, StreamingChannel, ClientSessionH
      * {@link #getInvertedIn()} method instead and write data directly.
      * <p>
      * The stream must be set before the channel is opened. When the channel closes, it will {@link InputStream#close()
-     * close} the given stream.
+     * close} the given stream. If the stream should <em>not</em> be closed (for instance, if it is {@link System#in
+     * System.in}), wrap it in an {@link org.apache.sshd.common.util.io.input.NoCloseInputStream NoCloseInputStream}.
      * </p>
      *
      * @param in an {@link InputStream} to be polled and forwarded

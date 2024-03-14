@@ -111,6 +111,61 @@ public class ChannelSessionTest extends BaseTestSupport {
         }
     }
 
+    private void chainedCommands(ClientSession session) throws Exception {
+        try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+            channel.open().verify(OPEN_TIMEOUT);
+            try (ClientChannel second = session.createChannel(Channel.CHANNEL_SHELL)) {
+                // Chain stdout of the first command to stdin of the second.
+                second.setIn(channel.getInvertedOut());
+                second.open().verify(OPEN_TIMEOUT);
+
+                // Write to the first command
+                OutputStream invertedIn = channel.getInvertedIn();
+                String cmdSent = "echo foo\nexit\n";
+                invertedIn.write(cmdSent.getBytes());
+                invertedIn.flush();
+
+                long waitStart = System.currentTimeMillis();
+                Collection<ClientChannelEvent> result = second.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 10_000);
+                long waitEnd = System.currentTimeMillis();
+                assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
+                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                // Read from the second command's stdout and check the result.
+                try (InputStream invertedOut = second.getInvertedOut()) {
+                    byte[] b = new byte[1024];
+                    int l = invertedOut.read(b);
+                    String cmdReceived = (l > 0) ? new String(b, 0, l) : "";
+                    assertEquals("Mismatched echoed command", cmdSent, cmdReceived);
+                }
+            }
+        }
+    }
+
+    @Test
+    public void pipedInputStream() throws Exception {
+        try (SshServer server = setupTestServer();
+             SshClient client = setupTestClient()) {
+
+            server.setShellFactory(session -> new CommandExecutionHelper(null) {
+                @Override
+                protected boolean handleCommandLine(String command) throws Exception {
+                    OutputStream out = getOutputStream();
+                    out.write((command + "\n").getBytes(StandardCharsets.UTF_8));
+                    return !"exit".equals(command);
+                }
+            });
+            server.start();
+            client.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, server.getPort())
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(AUTH_TIMEOUT);
+                chainedCommands(session);
+            }
+        }
+    }
+
     @Test
     public void testNoFlush() throws Exception {
         try (SshServer server = setupTestServer();
