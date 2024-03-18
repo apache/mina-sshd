@@ -683,8 +683,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             String host = uri.getHost();
             int port = uri.getPort();
             String userInfo = uri.getUserInfo();
-            HostConfigEntry entry = resolveHost(userInfo, host, port, context, null);
-            jumps.add(entry);
+            HostConfigEntry entry = null;
+            do {
+                entry = resolveHost(userInfo, host, port, context, null);
+                jumps.add(entry);
+            } while((host = entry.getProxyJump()) != null);
         }
         return jumps;
     }
