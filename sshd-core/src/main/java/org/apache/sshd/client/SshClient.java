@@ -674,7 +674,10 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     protected List<HostConfigEntry> parseProxyJumps(String proxyJump, AttributeRepository context) throws IOException {
         List<HostConfigEntry> jumps = new ArrayList<>();
-        for (String jump : GenericUtils.split(proxyJump, ',')) {
+        String[] proxyJumpArray = GenericUtils.split(proxyJump, ',');
+        Collections.reverse(Arrays.asList(proxyJumpArray));
+        
+        for (String jump : proxyJumpArray) {
             String j = jump.trim();
             URI uri = URI.create(j.contains("//") ? j : "ssh://" + j);
             if (GenericUtils.isNotEmpty(uri.getScheme()) && !"ssh".equals(uri.getScheme())) {
@@ -687,7 +690,11 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             do {
                 entry = resolveHost(userInfo, host, port, context, null);
                 jumps.add(entry);
-            } while((host = entry.getProxyJump()) != null);
+                if ( entry.getProxyJump() != null && entry.getProxyJump().indexOf(',') >= 0) {
+                    jumps.addAll(parseProxyJumps(entry.getProxyJump(), context));
+                    break;
+                }
+            } while ((host = entry.getProxyJump()) != null);
         }
         return jumps;
     }
