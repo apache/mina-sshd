@@ -153,7 +153,9 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
     }
 
     public KeyPair generateKeyPair() {
-        return keyPairGenerator.generateKeyPair();
+        synchronized (this) {
+            return keyPairGenerator.generateKeyPair();
+        }
     }
 
     public byte[] encode(PublicKey key) throws InvalidKeyException {
