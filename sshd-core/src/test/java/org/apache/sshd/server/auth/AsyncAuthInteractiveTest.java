@@ -82,13 +82,10 @@ public class AsyncAuthInteractiveTest extends AsyncAuthTestBase {
             session.connect();
         } catch (JSchException e) {
             String reason = e.getMessage();
-            switch (reason) {
-                case "Auth cancel":
-                case "Auth fail":
-                    return false;
-                default:
-                    throw e;
+            if (reason != null && (reason.startsWith("Auth cancel") || reason.startsWith("Auth fail"))) {
+                return false;
             }
+            throw e;
         }
 
         try {

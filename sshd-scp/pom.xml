@@ -56,18 +56,13 @@
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>com.jcraft</groupId>
+            <groupId>com.github.mwiede</groupId>
             <artifactId>jsch</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>ch.ethz.ganymed</groupId>
             <artifactId>ganymed-ssh2</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.jcraft</groupId>
-            <artifactId>jzlib</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>
@@ -105,6 +100,8 @@
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
                     <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
                     <systemProperties>
+                        <!-- Enable using deprecated ssh-rsa signature keys with JSch 0.2.x -->
+                        <jsch.server_host_key>ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,rsa-sha2-512,rsa-sha2-256,ssh-rsa</jsch.server_host_key>
                         <org.apache.sshd.common.io.IoServiceFactoryFactory>org.apache.sshd.common.io.nio2.Nio2ServiceFactoryFactory</org.apache.sshd.common.io.IoServiceFactoryFactory>
                     </systemProperties>
                 </configuration>

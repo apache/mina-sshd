@@ -121,8 +121,8 @@ public class CompressionTest extends BaseTestSupport {
         String name = factory.getName();
         JSch.setConfig("compression.s2c", name);
         JSch.setConfig("compression.c2s", name);
-        JSch.setConfig("zlib", com.jcraft.jsch.jcraft.Compression.class.getName());
-        JSch.setConfig("zlib@openssh.com", com.jcraft.jsch.jcraft.Compression.class.getName());
+        JSch.setConfig("zlib", com.jcraft.jsch.jzlib.Compression.class.getName());
+        JSch.setConfig("zlib@openssh.com", com.jcraft.jsch.jzlib.Compression.class.getName());
     }
 
     @After

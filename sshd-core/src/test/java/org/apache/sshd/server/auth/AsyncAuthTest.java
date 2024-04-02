@@ -18,8 +18,6 @@
  */
 package org.apache.sshd.server.auth;
 
-import java.util.Objects;
-
 import com.jcraft.jsch.ChannelShell;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
@@ -86,7 +84,7 @@ public class AsyncAuthTest extends AsyncAuthTestBase {
             session.connect();
         } catch (JSchException e) {
             String reason = e.getMessage();
-            if (Objects.equals(reason, "Auth cancel")) {
+            if (reason != null && reason.startsWith("Auth cancel")) {
                 return false;
             } else {
                 throw e;
