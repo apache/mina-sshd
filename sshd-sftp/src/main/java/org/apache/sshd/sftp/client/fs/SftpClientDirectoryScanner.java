@@ -42,7 +42,10 @@ import org.apache.sshd.sftp.client.SftpClient.DirEntry;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SftpClientDirectoryScanner extends PathScanningMatcher {
+
     protected String basedir;
+
+    private boolean filesOnly = true;
 
     public SftpClientDirectoryScanner() {
         this(true);
@@ -66,6 +69,25 @@ public class SftpClientDirectoryScanner extends PathScanningMatcher {
 
         setBasedir(dir);
         setIncludes(includes);
+    }
+
+    /**
+     * Tells whether the scanner is set to return only files and links (the default).
+     *
+     * @return {@code true} if items that are not regular files or subdirectories shall be omitted; {@code false}
+     *         otherwise
+     */
+    public boolean isFilesOnly() {
+        return filesOnly;
+    }
+
+    /**
+     * Sets whether the scanner shall return only regular files, links, and subdirectories.
+     *
+     * @param filesOnly whether to skip all items that are not regular files, links, or subdirectories
+     */
+    public void setFilesOnly(boolean filesOnly) {
+        this.filesOnly = filesOnly;
     }
 
     public String getBasedir() {
@@ -171,7 +193,7 @@ public class SftpClientDirectoryScanner extends PathScanningMatcher {
                 } else if (couldHoldIncluded(name)) {
                     scandir(client, createRelativePath(rootDir, name), createRelativePath(parent, name), filesList);
                 }
-            } else if (attrs.isRegularFile()) {
+            } else if (!filesOnly || attrs.isRegularFile() || attrs.isSymbolicLink()) {
                 if (isIncluded(name)) {
                     filesList.add(new ScanDirEntry(createRelativePath(rootDir, name), createRelativePath(parent, name), de));
                 }

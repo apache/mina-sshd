@@ -378,7 +378,7 @@ public abstract class AbstractSftpClient
                     longName = getReferencedName(cmd, buffer, nameIndex.getAndIncrement());
                 }
 
-                Attributes attrs = readAttributes(cmd, buffer, nameIndex);
+                Attributes attrs = SftpHelper.complete(readAttributes(cmd, buffer, nameIndex), longName);
                 Boolean indicator = SftpHelper.getEndOfListIndicatorValue(buffer, version);
                 // TODO decide what to do if not-null and not TRUE
                 if (log.isTraceEnabled()) {
@@ -898,12 +898,11 @@ public abstract class AbstractSftpClient
                         longName = getReferencedName(cmd, buffer, nameIndex.getAndIncrement());
                     }
 
-                    Attributes attrs = readAttributes(cmd, buffer, nameIndex);
+                    Attributes attrs = SftpHelper.complete(readAttributes(cmd, buffer, nameIndex), longName);
                     if (traceEnabled) {
                         log.trace("checkDirResponse({})[id={}][{}/{}] ({})[{}]: {}", channel, response.getId(), index, count,
                                 name, longName, attrs);
                     }
-
                     entries.add(new DirEntry(name, longName, attrs));
                 }
 

@@ -132,6 +132,8 @@ public class DirectoryScanner extends PathScanningMatcher {
      */
     protected Path basedir;
 
+    private boolean filesOnly = true;
+
     public DirectoryScanner() {
         super();
     }
@@ -147,6 +149,25 @@ public class DirectoryScanner extends PathScanningMatcher {
     public DirectoryScanner(Path dir, Collection<String> includes) {
         setBasedir(dir);
         setIncludes(includes);
+    }
+
+    /**
+     * Tells whether the scanner is set to return only files (the default).
+     *
+     * @return {@code true} if items that are not regular files or subdirectories shall be omitted; {@code false}
+     *         otherwise
+     */
+    public boolean isFilesOnly() {
+        return filesOnly;
+    }
+
+    /**
+     * Sets whether the scanner shall return only regular files and subdirectories.
+     *
+     * @param filesOnly whether to skip all items that are not regular files
+     */
+    public void setFilesOnly(boolean filesOnly) {
+        this.filesOnly = filesOnly;
     }
 
     /**
@@ -230,7 +251,7 @@ public class DirectoryScanner extends PathScanningMatcher {
                     } else if (couldHoldIncluded(name)) {
                         scandir(rootDir, p, filesList);
                     }
-                } else if (Files.isRegularFile(p)) {
+                } else if (!filesOnly || Files.isRegularFile(p)) {
                     if (isIncluded(name)) {
                         filesList.add(p);
                     }

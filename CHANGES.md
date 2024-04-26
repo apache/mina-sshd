@@ -33,6 +33,7 @@
 ## Bug Fixes
 
 * [GH-455](https://github.com/apache/mina-sshd/issues/455) Fix `BaseCipher`: make sure all bytes are processed
+* [GH-489](https://github.com/apache/mina-sshd/issues/489) SFTP v3 client: better file type determination
 
 ## New Features
 

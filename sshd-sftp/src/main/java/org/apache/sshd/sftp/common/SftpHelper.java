@@ -54,6 +54,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
@@ -115,6 +116,12 @@ public final class SftpHelper {
         map.put(SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK, "No matching byte range lock");
         DEFAULT_SUBSTATUS_MESSAGE = Collections.unmodifiableMap(map);
     }
+
+    // Regular expression for a plausibility check in isUnixPermissions. It requires at least two "rwx" triples,
+    // but the "x" position may actually be any character (could be s, S, t, T, or any vendor-specific extension.
+    //
+    // Moreover, Win32-OpenSSH uses '*' for permissions not applicable on Windows.
+    private static final Pattern UNIX_PERMISSIONS_START = Pattern.compile("[-dlcbps][-r][-w][-a-zA-Z*][-r*][-w*][-a-zA-Z*].*");
 
     private SftpHelper() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -531,22 +538,23 @@ public final class SftpHelper {
      * @return       The file type - see {@code SSH_FILEXFER_TYPE_xxx} values
      */
     public static int permissionsToFileType(int perms) {
-        if ((SftpConstants.S_IFLNK & perms) == SftpConstants.S_IFLNK) {
-            return SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
-        } else if ((SftpConstants.S_IFREG & perms) == SftpConstants.S_IFREG) {
-            return SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
-        } else if ((SftpConstants.S_IFDIR & perms) == SftpConstants.S_IFDIR) {
-            return SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
-        } else if ((SftpConstants.S_IFSOCK & perms) == SftpConstants.S_IFSOCK) {
-            return SftpConstants.SSH_FILEXFER_TYPE_SOCKET;
-        } else if ((SftpConstants.S_IFBLK & perms) == SftpConstants.S_IFBLK) {
-            return SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE;
-        } else if ((SftpConstants.S_IFCHR & perms) == SftpConstants.S_IFCHR) {
-            return SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE;
-        } else if ((SftpConstants.S_IFIFO & perms) == SftpConstants.S_IFIFO) {
-            return SftpConstants.SSH_FILEXFER_TYPE_FIFO;
-        } else {
-            return SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN;
+        switch (perms & SftpConstants.S_IFMT) {
+            case SftpConstants.S_IFLNK:
+                return SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
+            case SftpConstants.S_IFREG:
+                return SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
+            case SftpConstants.S_IFDIR:
+                return SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
+            case SftpConstants.S_IFSOCK:
+                return SftpConstants.SSH_FILEXFER_TYPE_SOCKET;
+            case SftpConstants.S_IFBLK:
+                return SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE;
+            case SftpConstants.S_IFCHR:
+                return SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE;
+            case SftpConstants.S_IFIFO:
+                return SftpConstants.SSH_FILEXFER_TYPE_FIFO;
+            default:
+                return SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN;
         }
     }
 
@@ -575,6 +583,81 @@ public final class SftpHelper {
             default:
                 return 0;
         }
+    }
+
+    /**
+     * Converts a POSIX/Linux file type indicator (as if obtained by "ls -l") to a file type.
+     *
+     * @param  ch character to convert
+     * @return    the file type
+     */
+    public static int fileTypeFromChar(char ch) {
+        switch (ch) {
+            case '-':
+                return SftpConstants.SSH_FILEXFER_TYPE_REGULAR;
+            case 'd':
+                return SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY;
+            case 'l':
+                return SftpConstants.SSH_FILEXFER_TYPE_SYMLINK;
+            case 's':
+                return SftpConstants.SSH_FILEXFER_TYPE_SOCKET;
+            case 'b':
+                return SftpConstants.SSH_FILEXFER_TYPE_BLOCK_DEVICE;
+            case 'c':
+                return SftpConstants.SSH_FILEXFER_TYPE_CHAR_DEVICE;
+            case 'p':
+                return SftpConstants.SSH_FILEXFER_TYPE_FIFO;
+            default:
+                return SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN;
+        }
+    }
+
+    /**
+     * Fills in missing information in the attributes if an SFTP v3 long name is available. If missing information
+     * cannot be extracted from the long name, it is not filled in, but no error or exception is generated.
+     * <p>
+     * The SFTP draft RFC discourages parsing a long name to extract information and states the attributes should be
+     * used instead. But some SFTP v3 servers do not send all information in the attributes... for instance the
+     * SolarWinds SFTP server on Windows does not include the file type flags in the permissions. The only way to
+     * determine the file type is then to look at the permissions string in the long name.
+     * </p>
+     *
+     * @param  attrs    {@link Attributes} to complete, if necessary
+     * @param  longName to use to find missing information, may be {@code null} or empty.
+     * @return          {@code attrs}
+     */
+    public static Attributes complete(Attributes attrs, String longName) {
+        if (longName == null || longName.isEmpty()) {
+            return attrs;
+        }
+        if (attrs.getType() == SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN //
+                && (attrs.getPermissions() & SftpConstants.S_IFMT) == 0 //
+                && isUnixPermissions(longName)) {
+            // Some SFTP v3 servers do not send the file type flags in the permissions. The draft RFC does not
+            // explicitly say they should be included... if we have a longname, it's SFTP v3, and it should start
+            // with the permissions string as in POSIX/Linux "ls -l". The first character determines the file type.
+            int type = fileTypeFromChar(longName.charAt(0));
+            if (type != SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN) {
+                attrs.setType(type);
+                attrs.setPermissions(attrs.getPermissions() | fileTypeToPermission(type));
+            }
+        }
+        return attrs;
+    }
+
+    private static boolean isUnixPermissions(String longName) {
+        // Some plausibility checks. The SFTP draft RFC only gives a recommended format for "longname",
+        // not all SFTP servers might follow it.
+        int i = longName.indexOf(' ');
+        if (i < 6 || i > 11) {
+            // POSIX permissions should be 10 characters. However, sometimes there may be an additional character,
+            // like '@' on OS X to indicate extended permissions. So we allow 11. We also don't require the full
+            // 9 characters for user-group-others; at least the SolarWind SFTP server for Windows has a bug an omits
+            // the executable flag for 'others'. So be generous and require at least 7 characters (one file type,
+            // and at least two triplets).
+            return false;
+        }
+        return UNIX_PERMISSIONS_START.matcher(longName.substring(0, i)).matches();
     }
 
     /**
