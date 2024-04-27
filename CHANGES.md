@@ -32,8 +32,15 @@
 
 ## Bug Fixes
 
+* [GH-427](https://github.com/apache/mina-sshd/issues/427) SCP client: fix `DefaultScpClient.upload(InputStream, ...)`
 * [GH-455](https://github.com/apache/mina-sshd/issues/455) Fix `BaseCipher`: make sure all bytes are processed
+* [GH-470](https://github.com/apache/mina-sshd/issues/470) MontgomeryCurve: synchronize access to KeyPairGenerator
 * [GH-489](https://github.com/apache/mina-sshd/issues/489) SFTP v3 client: better file type determination
+
+
+* [PR-472](https://github.com/apache/mina-sshd/pull/472) sshd-spring-sftp: fix client start
+* [PR-476](https://github.com/apache/mina-sshd/pull/476) Fix Android detection
+* [PR-486](https://github.com/apache/mina-sshd/pull/486) Add missing `equals` and `hashCode` to U2F key classes
 
 ## New Features
 
