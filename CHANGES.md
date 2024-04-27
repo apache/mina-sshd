@@ -42,6 +42,9 @@
 * [PR-476](https://github.com/apache/mina-sshd/pull/476) Fix Android detection
 * [PR-486](https://github.com/apache/mina-sshd/pull/486) Add missing `equals` and `hashCode` to U2F key classes
 
+
+* [SSHD-1237](https://issues.apache.org/jira/browse/SSHD-1237) Handle keep-alive _channel_ requests
+
 ## New Features
 
 ## Behavioral changes and enhancements

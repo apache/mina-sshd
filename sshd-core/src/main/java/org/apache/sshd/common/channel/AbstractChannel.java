@@ -358,6 +358,12 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
      */
     protected RequestHandler.Result handleInternalRequest(String req, boolean wantReply, Buffer buffer)
             throws IOException {
+        if (req.startsWith("keepalive@") || req.startsWith("keep-alive@")) {
+            if (log.isDebugEnabled()) {
+                log.debug("handleInternalRequest({})[want-reply={}] received keep-alive: {}", this, wantReply, req);
+            }
+            return RequestHandler.Result.ReplySuccess;
+        }
         if (log.isDebugEnabled()) {
             log.debug("handleInternalRequest({})[want-reply={}] unknown type: {}", this, wantReply, req);
         }
