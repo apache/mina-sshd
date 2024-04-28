@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>30</version>
+        <version>32</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
@@ -95,7 +95,7 @@
         <maven.compiler.source>${javac.source}</maven.compiler.source>
         <ant.version>1.10.12</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
-        <build-helper-maven-plugin.version>3.2.0</build-helper-maven-plugin.version>
+        <build-helper-maven-plugin.version>3.5.0</build-helper-maven-plugin.version>
 
         <javac.target>${javac.source}</javac.target>
         <required.java.version>[${javac.target},)</required.java.version>
@@ -755,7 +755,7 @@
                 <plugin>
                     <groupId>org.codehaus.mojo</groupId>
                     <artifactId>animal-sniffer-maven-plugin</artifactId>
-                    <version>1.20</version>
+                    <version>1.23</version>
                     <configuration>
                         <signature>
                             <groupId>org.codehaus.mojo.signature</groupId>
@@ -1377,7 +1377,7 @@
             <plugin>
                 <groupId>org.apache.felix</groupId>
                 <artifactId>maven-bundle-plugin</artifactId>
-                <version>5.1.8</version>
+                <version>5.1.9</version>
                 <inherited>true</inherited>
                 <extensions>true</extensions>
                 <executions>
