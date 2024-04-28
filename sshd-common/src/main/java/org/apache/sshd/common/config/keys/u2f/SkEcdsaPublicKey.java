@@ -18,8 +18,8 @@
  */
 package org.apache.sshd.common.config.keys.u2f;
 
-import java.util.Objects;
 import java.security.interfaces.ECPublicKey;
+import java.util.Objects;
 
 public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
@@ -95,7 +95,7 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
         SkEcdsaPublicKey other = (SkEcdsaPublicKey) obj;
         return Objects.equals(this.appName, other.appName)
-            && this.noTouchRequired == other.noTouchRequired
-            && Objects.equals(this.delegatePublicKey, other.delegatePublicKey);
+                && this.noTouchRequired == other.noTouchRequired
+                && Objects.equals(this.delegatePublicKey, other.delegatePublicKey);
     }
 }

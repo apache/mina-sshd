@@ -19,6 +19,7 @@
 package org.apache.sshd.common.config.keys.u2f;
 
 import java.util.Objects;
+
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 
 public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> {
@@ -95,7 +96,7 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
 
         SkED25519PublicKey other = (SkED25519PublicKey) obj;
         return Objects.equals(this.appName, other.appName)
-            && this.noTouchRequired == other.noTouchRequired
-            && Objects.equals(this.delegatePublicKey, other.delegatePublicKey);
+                && this.noTouchRequired == other.noTouchRequired
+                && Objects.equals(this.delegatePublicKey, other.delegatePublicKey);
     }
 }
