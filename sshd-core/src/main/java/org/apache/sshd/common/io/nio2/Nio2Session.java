@@ -29,7 +29,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Queue;
-import java.util.concurrent.LinkedTransferQueue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -65,7 +65,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     private final SocketAddress remoteAddress;
     private final SocketAddress acceptanceAddress;
     private final PropertyResolver propertyResolver;
-    private final Queue<Nio2DefaultIoWriteFuture> writes = new LinkedTransferQueue<>();
+    private final Queue<Nio2DefaultIoWriteFuture> writes = new ConcurrentLinkedQueue<>();
     private final AtomicReference<Nio2DefaultIoWriteFuture> currentWrite = new AtomicReference<>();
     private final AtomicLong readCyclesCounter = new AtomicLong();
     private final AtomicLong lastReadCycleStart = new AtomicLong();
