@@ -561,7 +561,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
                             this, writeLen, result, buffer.remaining(), writeCyclesCounter.get(), System.nanoTime() - lastWriteCycleStart.get());
                 }
 
-                socket.write(buffer, null, completionHandler);
+                doWriteCycle(buffer, completionHandler);
             } catch (Throwable t) {
                 warn("handleCompletedWriteCycle({}) {} while writing to socket len={}, result={}: {}",
                         this, t.getClass().getSimpleName(), writeLen, result, t.getMessage(), t);
