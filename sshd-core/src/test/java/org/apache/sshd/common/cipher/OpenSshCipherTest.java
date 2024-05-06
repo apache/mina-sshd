@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.auth.pubkey.HostBoundPubKeyAuthTest;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
@@ -58,7 +57,7 @@ import org.testcontainers.utility.MountableFile;
 @Category(ContainerTestCase.class)
 public class OpenSshCipherTest extends BaseTestSupport {
 
-    private static final Logger LOG = LoggerFactory.getLogger(HostBoundPubKeyAuthTest.class);
+    private static final Logger LOG = LoggerFactory.getLogger(OpenSshCipherTest.class);
 
     // Re-use an already defined key
     private static final String TEST_RESOURCES = "org/apache/sshd/common/kex/extensions/client";
