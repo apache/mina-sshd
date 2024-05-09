@@ -118,6 +118,10 @@ public abstract class AbstractDH {
 
     public abstract Digest getHash() throws Exception;
 
+    public KeyEncapsulationMethod getKeyEncapsulation() {
+        return null;
+    }
+
     @Override
     public String toString() {
         return getClass().getSimpleName()

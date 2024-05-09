@@ -47,6 +47,13 @@
 
 ## New Features
 
+* The key exchange method sntrup761x25519-sha512@openssh.com is now available if the Bouncy Castle library is available.
+
+This uses a post-quantum key encapsulation method (KEM) to make key exchange future-proof against quantum attacks.
+More information can be found in IETF Memo [Secure Shell (SSH) Key Exchange Method Using Hybrid Streamlined
+NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512](https://www.ietf.org/archive/id/draft-josefsson-ntruprime-ssh-02.html).
+
+
 ## Behavioral changes and enhancements
 
 * [GH-468](https://github.com/apache/mina-sshd/issues/468) SFTP: validate length of data received: must not be more than requested

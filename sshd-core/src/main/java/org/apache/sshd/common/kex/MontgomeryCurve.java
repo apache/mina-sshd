@@ -31,9 +31,6 @@ import java.util.Arrays;
 import javax.crypto.KeyAgreement;
 
 import org.apache.sshd.common.OptionalFeature;
-import org.apache.sshd.common.digest.BuiltinDigests;
-import org.apache.sshd.common.digest.Digest;
-import org.apache.sshd.common.digest.DigestFactory;
 import org.apache.sshd.common.keyprovider.KeySizeIndicator;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -92,40 +89,38 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
     /**
      * X25519 uses Curve25519 and SHA-256 with a 32-byte key size.
      */
-    x25519("X25519", 32, BuiltinDigests.sha256,
+    x25519("X25519", 32,
            new byte[] { 0x30, 0x2a, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6e, 0x03, 0x21, 0x00 }),
 
     /**
      * X448 uses Curve448 and SHA-512 with a 56-byte key size.
      */
-    x448("X448", 56, BuiltinDigests.sha512,
+    x448("X448", 56,
          new byte[] { 0x30, 0x42, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x6f, 0x03, 0x39, 0x00 });
 
     private final String algorithm;
     private final int keySize;
     private final boolean supported;
-    private final DigestFactory digestFactory;
     private final KeyPairGenerator keyPairGenerator;
     private final KeyFactory keyFactory;
     private final byte[] encodedPublicKeyPrefix;
 
-    MontgomeryCurve(String algorithm, int keySize, DigestFactory digestFactory, byte[] encodedPublicKeyPrefix) {
+    MontgomeryCurve(String algorithm, int keySize, byte[] encodedPublicKeyPrefix) {
         this.algorithm = algorithm;
         this.keySize = keySize;
-        this.digestFactory = digestFactory;
         this.encodedPublicKeyPrefix = encodedPublicKeyPrefix;
-        boolean supported;
+        boolean isSupported;
         KeyPairGenerator generator = null;
         KeyFactory factory = null;
         try {
             SecurityUtils.getKeyAgreement(algorithm);
             generator = SecurityUtils.getKeyPairGenerator(algorithm);
             factory = SecurityUtils.getKeyFactory(algorithm);
-            supported = true;
+            isSupported = true;
         } catch (GeneralSecurityException ignored) {
-            supported = false;
+            isSupported = false;
         }
-        this.supported = supported && digestFactory.isSupported();
+        this.supported = isSupported;
         keyPairGenerator = generator;
         keyFactory = factory;
     }
@@ -146,10 +141,6 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
 
     public KeyAgreement createKeyAgreement() throws GeneralSecurityException {
         return SecurityUtils.getKeyAgreement(algorithm);
-    }
-
-    public Digest createDigest() {
-        return digestFactory.create();
     }
 
     public KeyPair generateKeyPair() {

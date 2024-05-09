@@ -19,16 +19,20 @@
 package org.apache.sshd.server.kex;
 
 import java.security.KeyPair;
+import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
+import org.apache.sshd.common.kex.XDH;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -99,8 +103,41 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         }
 
         byte[] e = updateE(buffer);
-        dh.setF(e);
-        k = dh.getK();
+        KeyEncapsulationMethod kem = dh.getKeyEncapsulation();
+        if (kem == null) {
+            dh.setF(e);
+            k = normalize(dh.getK());
+        } else {
+            try {
+                KeyEncapsulationMethod.Server kemServer = kem.getServer();
+
+                byte[] f = kemServer.init(e);
+                if (dh instanceof XDH) {
+                    if (f.length != ((XDH) dh).getKeySize()) {
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                                "Wrong E length (should be 1190 bytes): " + e.length);
+                    }
+                } else {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                            "Key encapsulation only supported for XDH");
+                }
+                dh.setF(f);
+                byte[] dhK = dh.getK();
+                Digest keyHash = dh.getHash();
+                keyHash.init();
+                keyHash.update(kemServer.getSecret());
+                keyHash.update(dhK);
+                k = keyHash.digest();
+                byte[] newF = kemServer.getEncapsulation();
+                int l = newF.length;
+                newF = Arrays.copyOf(newF, l + dh.getE().length);
+                System.arraycopy(dh.getE(), 0, newF, l, dh.getE().length);
+                setF(newF);
+            } catch (IllegalArgumentException ex) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                        "Key encapsulation error: " + ex.getMessage());
+            }
+        }
 
         KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
         String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
@@ -123,7 +160,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         dh.putE(buffer, e);
         byte[] f = getF();
         dh.putF(buffer, f);
-        buffer.putMPInt(k);
+        buffer.putBytes(k);
 
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();

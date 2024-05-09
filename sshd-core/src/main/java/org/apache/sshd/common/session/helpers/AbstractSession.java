@@ -1873,7 +1873,7 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         Buffer buffer = new ByteArrayBuffer();
-        buffer.putMPInt(k);
+        buffer.putBytes(k);
         buffer.putRawBytes(h);
         buffer.putByte((byte) 0x41);
         buffer.putRawBytes(sessionId);

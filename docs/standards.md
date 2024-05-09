@@ -29,6 +29,7 @@
     above mentioned hooks for [RFC 8308](https://tools.ietf.org/html/rfc8308).
 * [RFC 8731 - Secure Shell (SSH) Key Exchange Method Using Curve25519 and Curve448](https://tools.ietf.org/html/rfc8731)
 * [Key Exchange (KEX) Method Updates and Recommendations for Secure Shell](https://tools.ietf.org/html/draft-ietf-curdle-ssh-kex-sha2-03)
+* [Secure Shell (SSH) Key Exchange Method Using Hybrid Streamlined NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512](https://www.ietf.org/archive/id/draft-josefsson-ntruprime-ssh-02.html)
 
 ### OpenSSH
 
@@ -95,8 +96,10 @@ aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3
 
 * diffie-hellman-group1-sha1, diffie-hellman-group-exchange-sha256, diffie-hellman-group14-sha1, diffie-hellman-group14-sha256
 , diffie-hellman-group15-sha512, diffie-hellman-group16-sha512, diffie-hellman-group17-sha512, diffie-hellman-group18-sha512
-, ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521, curve25519-sha256, curve25519-sha256@libssh.org, curve448-sha512
+, ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521, curve25519-sha256, curve25519-sha256@libssh.org, curve448-sha512,
+sntrup761x25519-sha512@openssh.com
     * On Java versions before Java 11, [Bouncy Castle](./dependencies.md#bouncy-castle) is required for curve25519-sha256, curve25519-sha256@libssh.org, or curve448-sha512.
+    * [Bouncy Castle](./dependencies.md#bouncy-castle) is required for sntrup761x25519-sha512@openssh.com.
 
 ### Compressions
 

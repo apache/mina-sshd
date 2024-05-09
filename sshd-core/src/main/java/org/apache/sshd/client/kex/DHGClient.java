@@ -21,6 +21,7 @@ package org.apache.sshd.client.kex;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.security.PublicKey;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
 
@@ -30,11 +31,14 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
+import org.apache.sshd.common.kex.XDH;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
@@ -54,6 +58,8 @@ import org.apache.sshd.core.CoreModuleProperties;
 public class DHGClient extends AbstractDHClientKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
+
+    private KeyEncapsulationMethod.Client kemClient;
 
     protected DHGClient(DHFactory factory, Session session) {
         super(session);
@@ -95,7 +101,20 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         hash = dh.getHash();
         hash.init();
 
-        byte[] e = updateE(dh.getE());
+        KeyEncapsulationMethod kem = dh.getKeyEncapsulation();
+        byte[] e;
+        if (kem == null) {
+            e = updateE(dh.getE());
+        } else {
+            kemClient = kem.getClient();
+            kemClient.init();
+            e = kemClient.getPublicKey();
+            byte[] dhE = dh.getE();
+            int l = e.length;
+            e = Arrays.copyOf(e, l + dhE.length);
+            System.arraycopy(dhE, 0, e, l, dhE.length);
+            e = updateE(e);
+        }
 
         Session s = getSession();
         if (log.isDebugEnabled()) {
@@ -129,8 +148,32 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         byte[] f = updateF(buffer);
         byte[] sig = buffer.getBytes();
 
-        dh.setF(f);
-        k = dh.getK();
+        if (kemClient == null) {
+            dh.setF(f);
+            k = normalize(dh.getK());
+        } else {
+            try {
+                int l = kemClient.getEncapsulationLength();
+                if (dh instanceof XDH) {
+                    if (f.length != l + ((XDH) dh).getKeySize()) {
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                                "Wrong F length (should be 1071 bytes): " + f.length);
+                    }
+                } else {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                            "Key encapsulation only supported for XDH");
+                }
+                dh.setF(Arrays.copyOfRange(f, l, f.length));
+                Digest keyHash = dh.getHash();
+                keyHash.init();
+                keyHash.update(kemClient.extractSecret(Arrays.copyOf(f, l)));
+                keyHash.update(dh.getK());
+                k = keyHash.digest();
+            } catch (IllegalArgumentException ex) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                        "Key encapsulation error: " + ex.getMessage());
+            }
+        }
 
         buffer = new ByteArrayBuffer(k_s);
         PublicKey serverKey = buffer.getRawPublicKey();
@@ -167,7 +210,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         buffer.putBytes(k_s);
         dh.putE(buffer, getE());
         dh.putF(buffer, f);
-        buffer.putMPInt(k);
+        buffer.putBytes(k);
         hash.update(buffer.array(), 0, buffer.available());
         h = hash.digest();
 

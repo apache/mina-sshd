@@ -202,7 +202,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             validateFValue();
 
             dh.setF(f);
-            k = dh.getK();
+            k = normalize(dh.getK());
 
             buffer = new ByteArrayBuffer(k_s);
             PublicKey serverKey = buffer.getRawPublicKey();
@@ -226,7 +226,7 @@ public class DHGEXClient extends AbstractDHClientKeyExchange {
             buffer.putMPInt(g);
             buffer.putMPInt(getE());
             buffer.putMPInt(f);
-            buffer.putMPInt(k);
+            buffer.putBytes(k);
             hash.update(buffer.array(), 0, buffer.available());
             h = hash.digest();
 

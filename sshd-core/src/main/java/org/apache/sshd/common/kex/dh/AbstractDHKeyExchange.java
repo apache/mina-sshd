@@ -27,6 +27,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -160,5 +161,15 @@ public abstract class AbstractDHKeyExchange extends AbstractLoggingBean implemen
     @Override
     public String toString() {
         return getClass().getSimpleName() + "[" + getName() + "]";
+    }
+
+    protected byte[] normalize(byte[] mpInt) {
+        if (!NumberUtils.isEmpty(mpInt) && (mpInt[0] & 0x80) != 0) {
+            byte[] result = new byte[mpInt.length + 1];
+            result[0] = 0;
+            System.arraycopy(mpInt, 0, result, 1, mpInt.length);
+            return result;
+        }
+        return mpInt;
     }
 }

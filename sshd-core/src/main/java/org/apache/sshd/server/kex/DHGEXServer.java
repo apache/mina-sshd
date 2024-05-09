@@ -197,7 +197,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
 
             dh.setF(e);
 
-            k = dh.getK();
+            k = normalize(dh.getK());
 
             KeyPair kp = Objects.requireNonNull(session.getHostKey(), "No server key pair available");
             String algo = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
@@ -231,7 +231,7 @@ public class DHGEXServer extends AbstractDHServerKeyExchange {
             buffer.putMPInt(e);
             byte[] f = getF();
             buffer.putMPInt(f);
-            buffer.putMPInt(k);
+            buffer.putBytes(k);
 
             hash.update(buffer.array(), 0, buffer.available());
             h = hash.digest();
