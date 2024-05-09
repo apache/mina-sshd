@@ -557,8 +557,10 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
         if (buffer.hasRemaining()) {
             try {
                 if (log.isDebugEnabled()) {
-                    log.debug("handleCompletedWriteCycle({}) incomplete write of writeLen={}. Written result={}, resume writing buffer.remaining()={} at cycle={} after {} nanos",
-                            this, writeLen, result, buffer.remaining(), writeCyclesCounter.get(), System.nanoTime() - lastWriteCycleStart.get());
+                    log.debug(
+                            "handleCompletedWriteCycle({}) incomplete write of writeLen={}. Written result={}, resume writing buffer.remaining()={} at cycle={} after {} nanos",
+                            this, writeLen, result, buffer.remaining(), writeCyclesCounter.get(),
+                            System.nanoTime() - lastWriteCycleStart.get());
                 }
 
                 doWriteCycle(buffer, completionHandler);
