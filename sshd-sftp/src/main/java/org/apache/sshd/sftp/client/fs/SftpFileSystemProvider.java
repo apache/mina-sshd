@@ -616,16 +616,25 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         modes = EnumSet.of(OpenMode.Read);
         SftpPath p = toSftpPath(path);
         SftpClient client = p.getFileSystem().getClient();
-        return new FilterInputStream(client.read(p.toString(), modes)) {
-            @Override
-            public void close() throws IOException {
-                try {
-                    super.close();
-                } finally {
-                    client.close();
+        try {
+            SftpClient inner = client;
+            InputStream result = new FilterInputStream(client.read(p.toString(), modes)) {
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        inner.close();
+                    }
                 }
+            };
+            client = null; // Prevent closing in finally
+            return result;
+        } finally {
+            if (client != null) {
+                client.close();
             }
-        };
+        }
     }
 
     @Override
@@ -648,22 +657,31 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
         SftpPath p = toSftpPath(path);
         SftpClient client = p.getFileSystem().getClient();
-        return new FilterOutputStream(client.write(p.toString(), modes)) {
+        try {
+            SftpClient inner = client;
+            OutputStream result = new FilterOutputStream(client.write(p.toString(), modes)) {
 
-            @Override
-            public void close() throws IOException {
-                try {
-                    super.close();
-                } finally {
-                    client.close();
+                @Override
+                public void close() throws IOException {
+                    try {
+                        super.close();
+                    } finally {
+                        inner.close();
+                    }
                 }
-            }
 
-            @Override
-            public void write(byte[] b, int off, int len) throws IOException {
-                out.write(b, off, len);
+                @Override
+                public void write(byte[] b, int off, int len) throws IOException {
+                    out.write(b, off, len);
+                }
+            };
+            client = null; // Prevent closing in finally
+            return result;
+        } finally {
+            if (client != null) {
+                client.close();
             }
-        };
+        }
     }
 
     @Override

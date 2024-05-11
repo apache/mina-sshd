@@ -36,7 +36,7 @@
 * [GH-455](https://github.com/apache/mina-sshd/issues/455) Fix `BaseCipher`: make sure all bytes are processed
 * [GH-470](https://github.com/apache/mina-sshd/issues/470) MontgomeryCurve: synchronize access to KeyPairGenerator
 * [GH-489](https://github.com/apache/mina-sshd/issues/489) SFTP v3 client: better file type determination
-
+* [GH-500](https://github.com/apache/mina-sshd/issues/500) SFTP file system: fix memory leak on exceptions
 
 * [PR-472](https://github.com/apache/mina-sshd/pull/472) sshd-spring-sftp: fix client start
 * [PR-476](https://github.com/apache/mina-sshd/pull/476) Fix Android detection
