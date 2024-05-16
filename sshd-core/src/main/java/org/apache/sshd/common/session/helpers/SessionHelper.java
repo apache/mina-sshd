@@ -1146,7 +1146,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             return;
         }
 
-        listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, null);
+        listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, reason);
     }
 
     /**
