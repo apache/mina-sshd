@@ -115,6 +115,7 @@
                         <!-- These tests use NIO2 explicitly -->
                         <exclude>**/Nio2ServiceTest.java</exclude>
                         <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
+                        <exclude>**/ArcFourOpenSshTest.java</exclude>
                         <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
                         <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
                         <exclude>**/HostBoundPubKeyAuthTest.java</exclude>
