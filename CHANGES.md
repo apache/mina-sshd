@@ -34,6 +34,7 @@
 
 * [GH-427](https://github.com/apache/mina-sshd/issues/427) SCP client: fix `DefaultScpClient.upload(InputStream, ...)`
 * [GH-455](https://github.com/apache/mina-sshd/issues/455) Fix `BaseCipher`: make sure all bytes are processed
+* [GH-461](https://github.com/apache/mina-sshd/issues/461) Fix heartbeats with `wantReply=true`
 * [GH-470](https://github.com/apache/mina-sshd/issues/470) MontgomeryCurve: synchronize access to KeyPairGenerator
 * [GH-489](https://github.com/apache/mina-sshd/issues/489) SFTP v3 client: better file type determination
 * [GH-493](https://github.com/apache/mina-sshd/issues/493) Fix arcfour128 and arcfour256 ciphers
@@ -58,7 +59,41 @@ NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512](https://ww
 
 ## Behavioral changes and enhancements
 
-* [GH-468](https://github.com/apache/mina-sshd/issues/468) SFTP: validate length of data received: must not be more than requested
+### [GH-461](https://github.com/apache/mina-sshd/issues/461) Fix heartbeats with `wantReply=true`
+
+The client-side heartbeat mechanism has been updated. Such heartbeats are configured via the
+`CoreModuleProperties.HEARTBEAT_INTERVAL` property. If this interval is > 0, heartbeats are sent to
+the server.
+
+Previously these heartbeats could also be configured with a `CoreModuleProperties.HEARTBEAT_REPLY_WAIT`
+timeout. If the timeout was <= 0, the client would just send heartbeat requests without expecting any
+answers. If the timeout was > 0, the client would send requests with a flag indicating that the server
+should reply. The client would then wait for the specified duration for the reply and would terminate
+the connection if none was received.
+
+This mechanism could cause trouble if the timeout was fairly long and the server was slow to respond.
+A timeout longer than the interval could also delay subsequent heartbeats.
+
+The `CoreModuleProperties.HEARTBEAT_REPLY_WAIT` property is now _deprecated_.
+
+There is a new configuration property `CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX` instead. It defines a
+limit for the number of heartbeats sent without receiving a reply before a session is terminated. If
+the value is <= 0, the client still sends heartbeats without expecting any reply. If the value is > 0,
+the client will request a reply from the server for each heartbeat message, and it will
+terminate the connection if the number of unanswered heartbeats reaches
+`CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX`.
+
+This new way to configure heartbeats aligns with the OpenSSH configuration options
+`ServerAliveInterval` and `ServerAliveCountMax`.
+
+For compatibility with older configurations that explicitly define `CoreModuleProperties.HEARTBEAT_REPLY_WAIT`,
+the new code maps this to the new configuration (but only if `CoreModuleProperties.HEARTBEAT_INTERVAL` > 0
+and the new property `CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX` has _not_ been set) by setting
+`CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX` to
+* `CoreModuleProperties.HEARTBEAT_REPLY_WAIT` <= 0: `CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX = 0`
+* otherwise: `(CoreModuleProperties.HEARTBEAT_REPLY_WAIT / CoreModuleProperties.HEARTBEAT_INTERVAL) + 1`.
+
+### [GH-468](https://github.com/apache/mina-sshd/issues/468) SFTP: validate length of data received: must not be more than requested
 
 SFTP read operations now check the amount of data they get back. If it's more than
 requested an exception is thrown. SFTP servers must never return more data than the

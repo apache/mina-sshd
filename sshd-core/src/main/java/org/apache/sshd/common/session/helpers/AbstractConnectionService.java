@@ -53,6 +53,7 @@ import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.ForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
+import org.apache.sshd.common.future.HasException;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexState;
@@ -263,7 +264,7 @@ public abstract class AbstractConnectionService
         }
     }
 
-    protected void futureDone(IoWriteFuture future) {
+    protected void futureDone(HasException future) {
         Throwable t = future.getException();
         if (t != null) {
             Session session = getSession();

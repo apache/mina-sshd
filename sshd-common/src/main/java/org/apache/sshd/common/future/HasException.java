@@ -16,16 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io;
+package org.apache.sshd.common.future;
 
-import org.apache.sshd.common.future.HasException;
-import org.apache.sshd.common.future.SshFuture;
-import org.apache.sshd.common.future.VerifiableFuture;
+/**
+ * Something that may have a failure exception.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface HasException {
 
-public interface IoWriteFuture extends HasException, SshFuture<IoWriteFuture>, VerifiableFuture<IoWriteFuture> {
     /**
-     * @return <tt>true</tt> if the write operation is finished successfully.
+     * Returns the cause of the failure.
+     *
+     * @return the {@link Throwable} of the failure, or {@code null} if not failed (yet).
      */
-    boolean isWritten();
+    Throwable getException();
 
 }

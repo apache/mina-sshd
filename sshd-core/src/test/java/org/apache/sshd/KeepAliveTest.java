@@ -110,7 +110,7 @@ public class KeepAliveTest extends BaseTestSupport {
         // Restore default value
         CoreModuleProperties.IDLE_TIMEOUT.remove(sshd);
         CoreModuleProperties.HEARTBEAT_INTERVAL.remove(client);
-        CoreModuleProperties.HEARTBEAT_REPLY_WAIT.remove(client);
+        CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.remove(client);
     }
 
     @Test
@@ -198,7 +198,7 @@ public class KeepAliveTest extends BaseTestSupport {
                             }
                         }));
         CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, HEARTBEAT);
-        CoreModuleProperties.HEARTBEAT_REPLY_WAIT.set(client, Duration.ofSeconds(5L));
+        CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.set(client, 1);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(7L, TimeUnit.SECONDS)
                 .getSession()) {
@@ -229,8 +229,9 @@ public class KeepAliveTest extends BaseTestSupport {
                 return Result.Replied;
             }
         }));
-        CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, HEARTBEAT);
-        CoreModuleProperties.HEARTBEAT_REPLY_WAIT.set(client, Duration.ofSeconds(1));
+        CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, Duration.ofSeconds(1));
+        // CoreModuleProperties.HEARTBEAT_REPLY_WAIT.set(client, Duration.ofSeconds(1));
+        CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.set(client, 1);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
                 .getSession()) {
             session.addPasswordIdentity(getCurrentTestName());

@@ -23,14 +23,7 @@ package org.apache.sshd.common.future;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface WithException {
-
-    /**
-     * Returns the cause of the failure.
-     *
-     * @return the {@link Throwable} of the failure, or {@code null} if not failed (yet).
-     */
-    Throwable getException();
+public interface WithException extends HasException {
 
     /**
      * Sets the exception that caused the operation to fail.

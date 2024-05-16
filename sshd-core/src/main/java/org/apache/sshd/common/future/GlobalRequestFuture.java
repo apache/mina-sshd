@@ -30,7 +30,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @see org.apache.sshd.common.session.Session#request(Buffer, String, ReplyHandler)
  */
 public class GlobalRequestFuture extends DefaultSshFuture<GlobalRequestFuture>
-        implements SshFutureListener<IoWriteFuture> {
+        implements HasException, SshFutureListener<IoWriteFuture> {
 
     /**
      * A {@code ReplyHandler} is invoked asynchronously when the reply for a request with {@code want-reply = true} is
@@ -137,6 +137,7 @@ public class GlobalRequestFuture extends DefaultSshFuture<GlobalRequestFuture>
      *
      * @return a failure reason, or {@code null} if there isn't one or if the request did not fail
      */
+    @Override
     public Throwable getException() {
         Object value = getValue();
         if (value instanceof Throwable) {

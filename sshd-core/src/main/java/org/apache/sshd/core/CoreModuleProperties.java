@@ -162,9 +162,22 @@ public final class CoreModuleProperties {
     /**
      * Key used to indicate that the heartbeat request is also expecting a reply - time in <U>milliseconds</U> to wait
      * for the reply. If non-positive then no reply is expected (nor requested).
+     *
+     * @deprecated since 2.13.0, use {@link #HEARTBEAT_NO_REPLY_MAX} instead
      */
+    @Deprecated
     public static final Property<Duration> HEARTBEAT_REPLY_WAIT
             = Property.durationSec("heartbeat-reply-wait", Duration.ofMinutes(5));
+
+    /**
+     * Key to set the maximum number of heartbeat messages to send without having received a reply. If &gt; 0, heartbeat
+     * messages are sent with a flag that requires the peer to reply. The session will be killed if
+     * {@code HEARTBEAT_NO_REPLY_MAX} heartbeats have been sent without having received a reply. If &lt;= 0, heartbeat
+     * messages will be sent, but no reply is requested or expected, and the client will not kill the session.
+     *
+     * @since 2.13.0
+     */
+    public static final Property<Integer> HEARTBEAT_NO_REPLY_MAX = Property.integer("heartbeat-no-reply-max", 0);
 
     /**
      * Whether to ignore invalid identities files when pre-initializing the client session
