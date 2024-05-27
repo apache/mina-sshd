@@ -425,6 +425,8 @@ public abstract class AbstractSftpClient
                 attrs.setModifyTime(SftpHelper.readTime(buffer, version, flags));
             }
         } else if (version >= SftpConstants.SFTP_V4) {
+            ValidateUtils.checkTrue((flags & SftpConstants.SSH_FILEXFER_ATTR_UIDGID) == 0,
+                    "SFTP v%d server sent invalid SSH_FXP_ATTRS flags 0x%X; flag 0x2 must not be set", version, flags);
             attrs.setType(buffer.getUByte());
             if ((flags & SftpConstants.SSH_FILEXFER_ATTR_SIZE) != 0) {
                 attrs.setSize(buffer.getLong());
@@ -1025,7 +1027,7 @@ public abstract class AbstractSftpClient
 
         int version = getVersion();
         if (version >= SftpConstants.SFTP_V4) {
-            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
+            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL & ~SftpConstants.SSH_FILEXFER_ATTR_UIDGID);
         }
 
         if (log.isDebugEnabled()) {
@@ -1045,7 +1047,7 @@ public abstract class AbstractSftpClient
 
         int version = getVersion();
         if (version >= SftpConstants.SFTP_V4) {
-            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
+            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL & ~SftpConstants.SSH_FILEXFER_ATTR_UIDGID);
         }
 
         if (log.isDebugEnabled()) {
@@ -1066,7 +1068,7 @@ public abstract class AbstractSftpClient
 
         int version = getVersion();
         if (version >= SftpConstants.SFTP_V4) {
-            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL);
+            buffer.putInt(SftpConstants.SSH_FILEXFER_ATTR_ALL & ~SftpConstants.SSH_FILEXFER_ATTR_UIDGID);
         }
 
         if (log.isDebugEnabled()) {
