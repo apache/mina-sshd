@@ -84,7 +84,7 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  * @see    ServerFactoryManager
  * @see    org.apache.sshd.common.FactoryManager
  */
-public class SshServer extends AbstractFactoryManager implements ServerFactoryManager, Closeable {
+public class SshServer extends AbstractFactoryManager implements ServerFactoryManager {
     public static final Factory<SshServer> DEFAULT_SSH_SERVER_FACTORY = SshServer::new;
 
     public static final List<ServiceFactory> DEFAULT_SERVICE_FACTORIES = Collections.unmodifiableList(
