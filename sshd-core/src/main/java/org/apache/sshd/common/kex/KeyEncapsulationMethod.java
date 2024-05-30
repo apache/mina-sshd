@@ -34,7 +34,9 @@ public interface KeyEncapsulationMethod {
         void init();
 
         /**
-         * Retrieves the KEM public key.
+         * Gets the KEM public key.
+         *
+         * @return the KEM public key.
          */
         byte[] getPublicKey();
 
@@ -42,16 +44,16 @@ public interface KeyEncapsulationMethod {
          * Extracts the secret from an encapsulation ciphertext.
          *
          * @param  encapsulated             ciphertext to process.
-         *
+         * @return the secret from an encapsulation ciphertext.
          * @throws IllegalArgumentException if {@code encapsulated} doesn't have the expected length
          * @throws NullPointerException     if {@code encapsulated == null}
          */
         byte[] extractSecret(byte[] encapsulated);
 
         /**
-         * Retrieves the required encapsulation length in bytes.
+         * Gets the required encapsulation length in bytes.
          *
-         * @return the length required for a valid encapsulation ciphertext
+         * @return the length required for a valid encapsulation ciphertext.
          */
         int getEncapsulationLength();
     }
