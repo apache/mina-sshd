@@ -24,7 +24,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.mina.core.future.ConnectFuture;
 import org.apache.mina.core.future.IoFutureListener;
 import org.apache.mina.core.service.IoConnector;
-import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.session.IoSession;
 import org.apache.mina.transport.socket.nio.NioSession;
@@ -40,7 +39,7 @@ import org.apache.sshd.core.CoreModuleProperties;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector, IoHandler {
+public class MinaConnector extends MinaService implements org.apache.sshd.common.io.IoConnector {
 
     /**
      * Closing a MINA IoSession first fulfills the CloseFuture and later calls {@link #sessionClosed(IoSession)}. But it
