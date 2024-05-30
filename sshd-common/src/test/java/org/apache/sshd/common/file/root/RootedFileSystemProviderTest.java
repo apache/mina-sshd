@@ -157,7 +157,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testWriteFileInvalid() throws IOException {
+    public void testWriteFileInvalid() {
         Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
 
         String written = DOESNT_EXIST + getCurrentTestName();
@@ -252,42 +252,42 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testJailbreakLink() throws IOException {
+    public void testJailbreakLink() {
         testJailbreakLink("../");
     }
 
     @Test
-    public void testJailbreakLink2() throws IOException {
+    public void testJailbreakLink2() {
         testJailbreakLink("../test/");
     }
 
     @Test
-    public void testJailbreakLink3() throws IOException {
+    public void testJailbreakLink3() {
         testJailbreakLink("/..");
     }
 
     @Test
-    public void testJailbreakLink4() throws IOException {
+    public void testJailbreakLink4() {
         testJailbreakLink("/./..");
     }
 
     @Test
-    public void testJailbreakLink5() throws IOException {
+    public void testJailbreakLink5() {
         testJailbreakLink("/./../");
     }
 
     @Test
-    public void testJailbreakLink6() throws IOException {
+    public void testJailbreakLink6() {
         testJailbreakLink("./../");
     }
 
     @Test
-    public void testJailbreakLink7() throws IOException {
+    public void testJailbreakLink7() {
         String fileName = "/testdir/testdir2/../../..";
         testJailbreakLink(fileName);
     }
 
-    private void testJailbreakLink(String jailbrokenTarget) throws IOException {
+    private void testJailbreakLink(String jailbrokenTarget) {
         Path target = fileSystem.getPath(jailbrokenTarget);
         Path linkPath = fileSystem.getPath("/testLink");
         Assert.assertThrows(InvalidPathException.class, () -> fileSystem.provider().createSymbolicLink(linkPath, target));
