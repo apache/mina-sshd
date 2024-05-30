@@ -76,7 +76,7 @@ import org.apache.sshd.server.forward.TcpForwardingFilter;
  */
 public class DefaultForwarder
         extends AbstractInnerCloseable
-        implements Forwarder, SessionHolder<Session>, PortForwardingEventListenerManager {
+        implements Forwarder, SessionHolder<Session> {
 
     public static final Set<ClientChannelEvent> STATIC_IO_MSG_RECEIVED_EVENTS
             = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.OPENED, ClientChannelEvent.CLOSED));
