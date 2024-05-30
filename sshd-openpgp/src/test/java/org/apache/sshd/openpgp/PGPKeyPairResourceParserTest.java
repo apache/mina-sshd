@@ -40,7 +40,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.apache.sshd.util.test.NoIoTestCase;
-import org.bouncycastle.openpgp.PGPException;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -140,7 +139,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testDecodePrivateKeyPair() throws IOException, GeneralSecurityException, PGPException {
+    public void testDecodePrivateKeyPair() throws IOException {
         InputStream stream = getClass().getResourceAsStream(resourceName);
         assertNotNull("Missing " + resourceName, stream);
 
