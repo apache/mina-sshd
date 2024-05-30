@@ -162,7 +162,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SshClient extends AbstractFactoryManager implements ClientFactoryManager, Closeable {
+public class SshClient extends AbstractFactoryManager implements ClientFactoryManager {
     public static final Factory<SshClient> DEFAULT_SSH_CLIENT_FACTORY = SshClient::new;
 
     /**
