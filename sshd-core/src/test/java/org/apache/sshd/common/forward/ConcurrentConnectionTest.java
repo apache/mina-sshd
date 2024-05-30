@@ -234,23 +234,23 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
             throws Exception {
         outputDebugMessage("readInLoop(port=%d)", serverPort);
 
-        final Socket s = new Socket();
-        s.setSoTimeout(SO_TIMEOUT);
+        try (Socket s = new Socket()) {
+            s.setSoTimeout(SO_TIMEOUT);
 
-        barrier.await();
+            barrier.await();
 
-        s.connect(new InetSocketAddress(TEST_LOCALHOST, serverPort));
+            s.connect(new InetSocketAddress(TEST_LOCALHOST, serverPort));
 
-        s.getOutputStream().write(PAYLOAD_TO_SERVER);
+            s.getOutputStream().write(PAYLOAD_TO_SERVER);
 
-        final byte[] buf = new byte[PAYLOAD_TO_CLIENT.length];
-        final long r = s.getInputStream().read(buf);
-        LOG.debug("Read {} payload from server", r);
+            final byte[] buf = new byte[PAYLOAD_TO_CLIENT.length];
+            final long r = s.getInputStream().read(buf);
+            LOG.debug("Read {} payload from server", r);
 
-        assertEquals("Mismatched data length", PAYLOAD_TO_CLIENT.length, r);
-        s.close();
+            assertEquals("Mismatched data length", PAYLOAD_TO_CLIENT.length, r);
+            return r;
+        }
 
-        return r;
     }
 
 }
