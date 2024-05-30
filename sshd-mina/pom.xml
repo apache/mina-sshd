@@ -124,6 +124,8 @@
                         <exclude>**/StrictKexInteroperabilityTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
                         <exclude>**/OpenSSHCertificateTest.java</exclude>
+                        <!-- A MinaServiceFactory cannot be instantiated with a mock CloseableExecutorService. -->
+                        <exclude>**/DefaultIoServiceFactoryFactoryTest.java</exclude>
                     </excludes>
                     <!-- No need to re-run core tests that do not involve session creation -->
                     <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
