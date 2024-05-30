@@ -30,7 +30,6 @@ import java.util.function.Predicate;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProviderHolder;
 import org.apache.sshd.common.keyprovider.AbstractKeyPairProvider;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 
@@ -39,7 +38,7 @@ import org.apache.sshd.common.util.GenericUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ClientIdentitiesWatcher extends AbstractKeyPairProvider implements KeyPairProvider {
+public class ClientIdentitiesWatcher extends AbstractKeyPairProvider {
     private final Collection<ClientIdentityProvider> providers;
 
     public ClientIdentitiesWatcher(Collection<? extends Path> paths,
