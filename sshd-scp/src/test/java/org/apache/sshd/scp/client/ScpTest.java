@@ -86,7 +86,7 @@ import org.junit.runners.MethodSorters;
  */
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class ScpTest extends AbstractScpTestSupport {
-    public ScpTest() throws IOException {
+    public ScpTest() {
         super();
     }
 
