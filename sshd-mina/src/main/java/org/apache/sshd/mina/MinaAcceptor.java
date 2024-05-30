@@ -25,7 +25,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.mina.core.service.IoAcceptor;
-import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.mina.core.service.IoService;
 import org.apache.mina.core.session.IoSession;
@@ -38,7 +37,7 @@ import org.apache.sshd.core.CoreModuleProperties;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class MinaAcceptor extends MinaService implements org.apache.sshd.common.io.IoAcceptor, IoHandler {
+public class MinaAcceptor extends MinaService implements org.apache.sshd.common.io.IoAcceptor {
     protected final AtomicReference<IoAcceptor> acceptorHolder = new AtomicReference<>(null);
 
     // Acceptor
