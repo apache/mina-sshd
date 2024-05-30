@@ -78,7 +78,6 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.channel.ChannelSessionAware;
 import org.apache.sshd.server.command.AsyncCommand;
 import org.apache.sshd.server.command.AsyncCommandErrorStreamAware;
-import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandDirectErrorStreamAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
@@ -95,7 +94,7 @@ import org.apache.sshd.sftp.common.SftpHelper;
  */
 public class SftpSubsystem
         extends AbstractSftpSubsystemHelper
-        implements Command, Runnable, FileSystemAware, ExecutorServiceCarrier,
+        implements Runnable, FileSystemAware, ExecutorServiceCarrier,
         AsyncCommand, ChannelDataReceiver {
     protected static final Buffer CLOSE = new ByteArrayBuffer(null, 0, 0);
 
