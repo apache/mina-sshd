@@ -27,7 +27,7 @@ import java.util.concurrent.CancellationException;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DefaultCancelFuture extends DefaultSshFuture<CancelFuture> implements CancelFuture, VerifiableFuture<Boolean> {
+public class DefaultCancelFuture extends DefaultSshFuture<CancelFuture> implements CancelFuture {
 
     private CancellationException backTrace;
 
