@@ -716,7 +716,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     public static List<HostConfigEntry> readHostConfigEntries(BufferedReader rdr) throws IOException {
         HostConfigEntry curEntry = null;
-        List<HostConfigEntry> entries = new ArrayList<HostConfigEntry>();
+        List<HostConfigEntry> entries = new ArrayList<>();
 
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
@@ -748,7 +748,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
             if (pos > 0) {
                 key = line.substring(0, pos).trim();
                 value = line.substring(pos + 1);
-                valsList = new ArrayList<String>(1);
+                valsList = new ArrayList<>(1);
                 valsList.add(value);
             } else {
                 pos = line.indexOf(' ');
