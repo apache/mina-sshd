@@ -35,7 +35,6 @@ import org.apache.mina.core.session.IoSession;
 import org.apache.mina.core.session.IoSessionConfig;
 import org.apache.mina.transport.socket.SocketSessionConfig;
 import org.apache.mina.transport.socket.nio.NioSession;
-import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.Property;
 import org.apache.sshd.common.io.IoServiceEventListener;
@@ -48,7 +47,7 @@ import org.apache.sshd.core.CoreModuleProperties;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class MinaService extends AbstractCloseable
-        implements org.apache.sshd.common.io.IoService, IoHandler, Closeable {
+        implements org.apache.sshd.common.io.IoService, IoHandler {
     protected final FactoryManager manager;
     protected final org.apache.sshd.common.io.IoHandler handler;
     protected final IoProcessor<NioSession> ioProcessor;
