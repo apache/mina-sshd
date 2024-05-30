@@ -39,7 +39,7 @@ import org.apache.sshd.sftp.common.SftpConstants;
 public class SftpSubsystemFactory
         extends AbstractSftpEventListenerManager
         implements ManagedExecutorServiceSupplier, SubsystemFactory,
-        SftpEventListenerManager, SftpFileSystemAccessorManager,
+        SftpFileSystemAccessorManager,
         SftpSubsystemConfigurator {
 
     public static final String NAME = SftpConstants.SFTP_SUBSYSTEM_NAME;
