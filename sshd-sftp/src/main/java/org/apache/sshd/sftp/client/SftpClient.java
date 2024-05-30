@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.sftp.client;
 
-import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -200,7 +199,7 @@ public interface SftpClient extends SubsystemClient {
     }
 
     // CHECKSTYLE:OFF
-    abstract class CloseableHandle extends Handle implements Channel, Closeable {
+    abstract class CloseableHandle extends Handle implements Channel {
         protected CloseableHandle(String path, byte[] id) {
             super(path, id);
         }
