@@ -68,4 +68,19 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
             assertSame(clazz.getSimpleName(), expected, BuiltinIoServiceFactoryFactories.fromFactoryClass(clazz));
         }
     }
+
+    @Test
+    public void testClassNames() {
+        IoServiceFactoryFactory ioServiceProvider = getIoServiceProvider();
+        Class<?> providerClass = ioServiceProvider.getClass();
+        String providerClassName = providerClass.getName();
+        boolean found = false;
+        for (BuiltinIoServiceFactoryFactories builtin : BuiltinIoServiceFactoryFactories.VALUES) {
+            if (providerClassName.equals(builtin.getFactoryClassName())) {
+                found = true;
+                break;
+            }
+        }
+        assertTrue("No BuiltinIoServiceFactoryFactories match for class name " + providerClassName, found);
+    }
 }
