@@ -140,12 +140,8 @@ public class WindowTimeoutTest extends BaseTestSupport {
 
             window.close();
             assertFalse("Window not closed", window.isOpen());
-            try {
-                window.waitAndConsume(2 * window.getSize(), MAX_WAIT_TIME);
-                fail("Unexpected closed wait success");
-            } catch (WindowClosedException e) {
-                // expected
-            }
+            assertThrows("Unexpected closed wait success", WindowClosedException.class,
+                    () -> window.waitAndConsume(2 * window.getSize(), MAX_WAIT_TIME));
         }
     }
 }

@@ -45,36 +45,16 @@ public class NullOutputStreamTest extends JUnitTestSupport {
         NullOutputStream stream = new NullOutputStream();
         stream.close();
         assertFalse("Stream not marked as closed", stream.isOpen());
-
-        try {
-            stream.write('a');
-            fail("Unexpected single value write success");
-        } catch (EOFException e) {
-            // expected
-        }
+        assertThrows("Unexpected single value write success", EOFException.class, () -> stream.write('a'));
 
         byte[] buf = new byte[Byte.SIZE];
-        try {
-            Arrays.fill(buf, (byte) 0x41);
-            stream.write(buf);
-            fail("Unexpected full buffer write success");
-        } catch (EOFException e) {
-            // expected
-        }
+        Arrays.fill(buf, (byte) 0x41);
+        assertThrows("Unexpected full buffer write success", EOFException.class, () -> stream.write(buf));
 
-        try {
-            Arrays.fill(buf, (byte) 0x42);
-            stream.write(buf, buf.length / 2, (buf.length / 2) - 1);
-            fail("Unexpected partial buffer write success");
-        } catch (EOFException e) {
-            // expected
-        }
+        Arrays.fill(buf, (byte) 0x42);
+        assertThrows("Unexpected full buffer write success", EOFException.class,
+                () -> stream.write(buf, buf.length / 2, (buf.length / 2) - 1));
 
-        try {
-            stream.flush();
-            fail("Unexpected flush success");
-        } catch (EOFException e) {
-            // expected
-        }
+        assertThrows("Unexpected flush success", EOFException.class, stream::flush);
     }
 }

@@ -120,14 +120,8 @@ public class BuiltinMacsTest extends JUnitTestSupport {
 
     @Test
     public void testNotAllowedToRegisterBuiltinFactories() {
-        for (MacFactory expected : BuiltinMacs.VALUES) {
-            try {
-                BuiltinMacs.registerExtension(expected);
-                fail("Unexpected success for " + expected.getName());
-            } catch (IllegalArgumentException e) {
-                // expected - ignored
-            }
-        }
+        BuiltinMacs.VALUES.forEach(expected -> assertThrows("Unexpected success for " + expected.getName(),
+                IllegalArgumentException.class, () -> BuiltinMacs.registerExtension(expected)));
     }
 
     @Test(expected = IllegalArgumentException.class)

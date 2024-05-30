@@ -103,14 +103,8 @@ public class BuiltinSignaturesTest extends JUnitTestSupport {
 
     @Test
     public void testNotAllowedToRegisterBuiltinFactories() {
-        for (SignatureFactory expected : BuiltinSignatures.VALUES) {
-            try {
-                BuiltinSignatures.registerExtension(expected);
-                fail("Unexpected success for " + expected.getName());
-            } catch (IllegalArgumentException e) {
-                // expected - ignored
-            }
-        }
+        BuiltinSignatures.VALUES.forEach(expected -> assertThrows("Unexpected success for " + expected.getName(),
+                IllegalArgumentException.class, () -> BuiltinSignatures.registerExtension(expected)));
     }
 
     @Test(expected = IllegalArgumentException.class)

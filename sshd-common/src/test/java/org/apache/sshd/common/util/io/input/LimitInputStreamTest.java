@@ -74,12 +74,7 @@ public class LimitInputStreamTest extends JUnitTestSupport {
                 limited.close();
                 assertFalse("Limited stream still marked as open", limited.isOpen());
 
-                try {
-                    readLen = limited.read();
-                    fail("Unexpected one byte read success after close");
-                } catch (IOException e) {
-                    // expected
-                }
+                assertThrows("Unexpected one byte read success after close", IOException.class, limited::read);
 
                 try {
                     readLen = limited.read(actual);

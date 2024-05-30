@@ -108,11 +108,6 @@ public class NullInputStreamTest extends JUnitTestSupport {
         } catch (IOException e) {
             // expected
         }
-        try {
-            stream.reset();
-            fail("Unexpected reset success");
-        } catch (EOFException e) {
-            // expected
-        }
+        assertThrows("Unexpected reset success", EOFException.class, stream::reset);
     }
 }

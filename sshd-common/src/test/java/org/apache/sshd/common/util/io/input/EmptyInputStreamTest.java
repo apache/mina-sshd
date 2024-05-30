@@ -62,12 +62,7 @@ public class EmptyInputStreamTest extends JUnitTestSupport {
 
     private void testEmptyInputStream(String message, InputStream in, boolean errorExpected) {
         assertFalse(message + ": unexpected markSupported()", in.markSupported());
-        try {
-            in.mark(Long.SIZE);
-            fail(message + ": unexpected mark success");
-        } catch (UnsupportedOperationException e) {
-            // expected
-        }
+        assertThrows(message + ": unexpected mark success", UnsupportedOperationException.class, () -> in.mark(Long.SIZE));
 
         try {
             int len = in.available();
