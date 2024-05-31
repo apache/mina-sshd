@@ -37,10 +37,11 @@
 * [GH-461](https://github.com/apache/mina-sshd/issues/461) Fix heartbeats with `wantReply=true`
 * [GH-470](https://github.com/apache/mina-sshd/issues/470) MontgomeryCurve: synchronize access to KeyPairGenerator
 * [GH-489](https://github.com/apache/mina-sshd/issues/489) SFTP v3 client: better file type determination
-* [GH-493](https://github.com/apache/mina-sshd/issues/493) Fix arcfour128 and arcfour256 ciphers
+* [GH-493](https://github.com/apache/mina-sshd/issues/493) Fix arcfour128 and arcfour256 ciphers (regression in 2.2.0)
 * [GH-500](https://github.com/apache/mina-sshd/issues/500) SFTP file system: fix memory leak on exceptions
 * [GH-504](https://github.com/apache/mina-sshd/issues/504) Pass through failure exception to `SessionListener.sessionNegotiationEnd()`
 * [GH-509](https://github.com/apache/mina-sshd/issues/509) SFTP v[456] client: validate attribute flags
+* [GH-510](https://github.com/apache/mina-sshd/issues/510) Fix class name in BuiltinIoServiceFactoryFactories (regression in 2.6.0)
 
 * [PR-472](https://github.com/apache/mina-sshd/pull/472) sshd-spring-sftp: fix client start
 * [PR-476](https://github.com/apache/mina-sshd/pull/476) Fix Android detection
@@ -51,11 +52,12 @@
 
 ## New Features
 
-* The key exchange method sntrup761x25519-sha512@openssh.com is now available if the Bouncy Castle library is available.
+### `sntrup761x25519-sha512@openssh.com` Key Exchange
+
+The key exchange method sntrup761x25519-sha512@openssh.com is now available if the Bouncy Castle library is available.
 
 This uses a post-quantum key encapsulation method (KEM) to make key exchange future-proof against quantum attacks.
-More information can be found in IETF Memo [Secure Shell (SSH) Key Exchange Method Using Hybrid Streamlined
-NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512](https://www.ietf.org/archive/id/draft-josefsson-ntruprime-ssh-02.html).
+More information can be found in IETF Memo [Secure Shell (SSH) Key Exchange Method Using Hybrid Streamlined NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512](https://www.ietf.org/archive/id/draft-josefsson-ntruprime-ssh-02.html).
 
 
 ## Behavioral changes and enhancements
