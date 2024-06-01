@@ -548,7 +548,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     public ConnectFuture connect(
             HostConfigEntry hostConfig, AttributeRepository context, SocketAddress localAddress)
             throws IOException {
-        List<HostConfigEntry> jumps = parseProxyJumps(hostConfig.getProxyJump(), context);
+        List<HostConfigEntry> jumps = parseProxyJumps(hostConfig, context);
         return doConnect(hostConfig, jumps, context, localAddress);
     }
 
@@ -672,13 +672,52 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return connectFuture;
     }
 
+    protected List<HostConfigEntry> parseProxyJumps(HostConfigEntry entry, AttributeRepository context)
+            throws IOException {
+        List<HostConfigEntry> hops;
+        try {
+            hops = parseProxyJumps(entry.getProxyJump(), context);
+            if (GenericUtils.isEmpty(hops)) {
+                return hops;
+            }
+            // If the last entry itself has proxy jumps, we need to append them. Guard against possible proxy jump
+            // loops by imposing an upper limit on the total number of jumps.
+            for (;;) {
+                HostConfigEntry last = hops.get(hops.size() - 1);
+                try {
+                    List<HostConfigEntry> additionalHops = parseProxyJumps(last.getProxyJump(), context);
+                    if (additionalHops.isEmpty()) {
+                        break;
+                    } else {
+                        hops.addAll(additionalHops);
+                        if (hops.size() > CoreModuleProperties.MAX_PROXY_JUMPS.getRequired(this)) {
+                            throw new IllegalArgumentException("Too many proxy jumps for host " + entry.getHost());
+                        }
+                    }
+                } catch (IOException | RuntimeException e) {
+                    throw new IllegalArgumentException("Problem parsing proxyJump from host config " + last.getHost(), e);
+                }
+            }
+        } catch (IOException | RuntimeException e) {
+            throw new IllegalArgumentException("Problem parsing proxyJump from host config " + entry.getHost(), e);
+        }
+        return hops;
+    }
+
     protected List<HostConfigEntry> parseProxyJumps(String proxyJump, AttributeRepository context) throws IOException {
         List<HostConfigEntry> jumps = new ArrayList<>();
-        for (String jump : GenericUtils.split(proxyJump, ',')) {
-            String j = jump.trim();
-            URI uri = URI.create(j.contains("//") ? j : "ssh://" + j);
+        if (GenericUtils.isEmpty(proxyJump)) {
+            return jumps;
+        }
+        String[] hops = GenericUtils.split(proxyJump, ',');
+        for (String hop : hops) {
+            String h = hop.trim();
+            if (h.isEmpty()) {
+                throw new IllegalArgumentException("Empty proxy jump in list: " + proxyJump);
+            }
+            URI uri = URI.create(h.contains("://") ? h : "ssh://" + h);
             if (GenericUtils.isNotEmpty(uri.getScheme()) && !"ssh".equals(uri.getScheme())) {
-                throw new IllegalArgumentException("Unsupported scheme for proxy jump: " + jump);
+                throw new IllegalArgumentException("Unsupported scheme for proxy jump: " + hop);
             }
             String host = uri.getHost();
             int port = uri.getPort();

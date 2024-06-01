@@ -32,6 +32,7 @@
 
 ## Bug Fixes
 
+* [GH-318](https://github.com/apache/mina-sshd/issues/318) Handle cascaded proxy jumps
 * [GH-427](https://github.com/apache/mina-sshd/issues/427) SCP client: fix `DefaultScpClient.upload(InputStream, ...)`
 * [GH-455](https://github.com/apache/mina-sshd/issues/455) Fix `BaseCipher`: make sure all bytes are processed
 * [GH-461](https://github.com/apache/mina-sshd/issues/461) Fix heartbeats with `wantReply=true`
@@ -61,6 +62,63 @@ More information can be found in IETF Memo [Secure Shell (SSH) Key Exchange Meth
 
 
 ## Behavioral changes and enhancements
+
+### [GH-318](https://github.com/apache/mina-sshd/issues/318) Handle cascaded proxy jumps
+
+Proxy jumps can be configured via host configuration entries in two ways. First, proxies can be _chained_
+directly by specifiying several proxies in one `ProxyJump` directive:
+
+```
+Host target
+Hostname somewhere.example.org
+User some_user
+IdentityFile ~/.ssh/some_id
+ProxyJump jumphost2, jumphost1
+
+Host jumphost1
+Hostname jumphost1@example.org
+User jumphost1_user
+IdentityFile ~/.ssh/id_jumphost1
+
+Host jumphost2
+Hostname jumphost2@example.org
+User jumphost2_user
+IdentityFile ~/.ssh/id_jumphost2
+```
+
+Connecting to server `target` will first connect to `jumphost1`, then tunnel through to `jumphost2`, and finally
+tunnel to `target`. So the full connection will be `client`&rarr;`jumphost1`&rarr;`jumphost2`&rarr;`target`.
+
+Such proxy jump chains were already supported in Apache MINA SSHD.
+
+Newly, Apache MINA SSHD also supports _cascading_ proxy jumps, so a configuration like
+
+```
+Host target
+Hostname somewhere.example.org
+User some_user
+IdentityFile ~/.ssh/some_id
+ProxyJump jumphost2
+
+Host jumphost1
+Hostname jumphost1@example.org
+User jumphost1_user
+IdentityFile ~/.ssh/id_jumphost1
+
+Host jumphost2
+Hostname jumphost2@example.org
+ProxyJump jumphost1
+User jumphost2_user
+IdentityFile ~/.ssh/id_jumphost2
+```
+
+also works now, and produces the same connection `client`&rarr;`jumphost1`&rarr;`jumphost2`&rarr;`target`.
+
+It is possible to mis-configure such proxy jump cascades to have loops. (For instance, if host `jumphost1` in
+the above example had a `ProxyJump jumphost2` directive.) To catch such misconfigurations, Apache MINA SSHD
+imposes an upper limit on the total number of proxy jumps in a connection. An exception is thrown if there
+are more than `CoreModuleProperties.MAX_PROXY_JUMPS` proxy jumps in a connection. The default value of this
+property is 10. Most real uses of proxy jumps will have one or maybe two proxy jumps only.
 
 ### [GH-461](https://github.com/apache/mina-sshd/issues/461) Fix heartbeats with `wantReply=true`
 

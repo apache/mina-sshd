@@ -789,6 +789,17 @@ public final class CoreModuleProperties {
     public static final Property<String> X11_BIND_HOST
             = Property.string("x11-fwd-bind-host", SshdSocketAddress.LOCALHOST_IPV4);
 
+    /**
+     * Configuration value for the maximum number of proxy jumps to allow in an SSH connection; by default 10. If there
+     * are more proxy jumps for an SSH connection, chances are that the proxy chain has a loop.
+     */
+    public static final Property<Integer> MAX_PROXY_JUMPS = Property.validating(Property.integer("max-proxy-jumps", 10), p -> {
+        if (p != null) {
+            ValidateUtils.checkTrue(p.intValue() > 0, "Maximum number of proxy jumps allowed must be greater than zero, is %d",
+                    p);
+        }
+    });
+
     private CoreModuleProperties() {
         throw new UnsupportedOperationException("No instance");
     }
