@@ -194,6 +194,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected final SessionWorkBuffer decoderBuffer;
     protected int decoderState;
     protected int decoderLength;
+    protected SshException discarding;
     protected final Object encodeLock = new Object();
     protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
@@ -1597,13 +1598,37 @@ public abstract class AbstractSession extends SessionHelper {
                      * Check packet length validity - we allow 8 times the minimum required packet length support in
                      * order to be aligned with some OpenSSH versions that allow up to 256k
                      */
+                    boolean lengthOK = true;
                     if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN)
                             || (decoderLength > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT))) {
                         log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
+                        lengthOK = false;
+                    } else if (inCipher != null
+                            && ((decoderLength + ((authMode || etmMode) ? 0 : Integer.BYTES)) % inCipherSize != 0)) {
+                        log.warn("decode({}) Error decoding packet(padding; not multiple of {}): {}", this, inCipherSize,
+                                decoderLength);
+                        lengthOK = false;
+                    }
+                    if (!lengthOK) {
                         decoderBuffer.dumpHex(getSimplifiedLogger(), Level.FINEST,
                                 "decode(" + this + ") invalid length packet", this);
-                        throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                        // Mitigation against CVE-2008-5161 AKA CPNI-957037: make any disconnections due to decoding errors indistinguishable.
+                        //
+                        // If we disconnect here, a client may still deduce (since it sent only one block) that the length check failed.
+                        // So we keep on requesting more data and fail later. OpenSSH actually discards the next 256kB of data, but in fact
+                        // any number of bytes will do.
+                        //
+                        // Remember the exception, continue requiring an arbitrary number of bytes, and throw the exception later.
+                        discarding = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
+                        decoderLength = decoderBuffer.available() + (2 + random.random(20)) * inCipherSize;
+                        // Next larger multiple of the block size
+                        decoderLength = ((decoderLength + (inCipherSize - 1)) / inCipherSize) * inCipherSize;
+                        if (!authMode && !etmMode) {
+                            decoderLength -= Integer.BYTES;
+                        }
+                        log.warn("decode({}) Invalid packet length; requesting {} bytes before disconnecting", this,
+                                decoderLength - decoderBuffer.available());
                     }
                     // Ok, that's good, we can go to the next step
                     decoderState = 1;
@@ -1646,6 +1671,11 @@ public abstract class AbstractSession extends SessionHelper {
                         }
 
                         validateIncomingMac(data, 0, decoderLength + Integer.BYTES);
+                    }
+
+                    // Mitigation against CVE-2008-5161 AKA CPNI-957037. But is is highly unlikely that we pass the AAD or MAC checks above.
+                    if (discarding != null) {
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, discarding);
                     }
 
                     // Increment incoming packet sequence number

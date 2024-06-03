@@ -1186,9 +1186,22 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         signalDisconnect(reason, msg, languageTag, true);
 
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_DISCONNECT, msg.length() + Short.SIZE);
-        buffer.putInt(reason);
-        buffer.putString(msg);
-        buffer.putString("");
+        // Mitigation against CVE-2008-5161 AKA CPNI-957037: make any disconnections due to decoding errors
+        // indistinguishable from failed MAC checks.
+        switch (reason) {
+            case SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR:
+            case SshConstants.SSH2_DISCONNECT_MAC_ERROR:
+                // OpenSSH *always* sends back DISCONNECT_PROTOCOL_ERROR
+                buffer.putInt(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR);
+                // Yes, we don't tell the peer what exactly was wrong.
+                buffer.putString("Protocol error or corrupt packet");
+                break;
+            default:
+                buffer.putInt(reason);
+                buffer.putString(msg);
+                break;
+        }
+        buffer.putString(languageTag);
 
         // Write the packet with a timeout to ensure a timely close of the session
         // in case the consumer does not read packets anymore.
