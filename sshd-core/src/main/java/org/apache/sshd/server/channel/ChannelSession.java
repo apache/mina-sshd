@@ -854,6 +854,12 @@ public class ChannelSession extends AbstractServerChannel {
         String authCookie = buffer.getString();
         int screenId = buffer.getInt();
 
+        // Validate X11 auth protocol and cookie -- must not contain metacharacters.
+        // See CVE-2016-3115 xauth injection https://www.openssh.com/txt/x11fwd.adv
+        // See https://seclists.org/fulldisclosure/2016/Mar/46
+        if (!isValidXauth(authProtocol) || !isValidXauth(authCookie)) {
+            return RequestHandler.Result.ReplyFailure;
+        }
         return handleX11ForwardingParsed(requestType, session, singleConnection, authProtocol, authCookie, screenId);
     }
 
@@ -899,6 +905,22 @@ public class ChannelSession extends AbstractServerChannel {
 
         addEnvVariable(X11ForwardSupport.ENV_DISPLAY, display);
         return RequestHandler.Result.ReplySuccess;
+    }
+
+    protected boolean isValidXauth(String auth) {
+        // Alphanumeric (US-ASCII), plus '.', ':', '/', '-', and '_'.
+        int length = auth.length();
+        for (int i = 0; i < length; i++) {
+            int c = auth.charAt(i);
+            if ((c >= '0' && c <= '9')
+                    || (c >= 'A' && c <= 'Z')
+                    || (c >= 'a' && c <= 'z')
+                    || (c == '.' || c == ':' || c == '/' || c == '-' || c == '_')) {
+                continue;
+            }
+            return false;
+        }
+        return true;
     }
 
     protected void addEnvVariable(String name, String value) {
