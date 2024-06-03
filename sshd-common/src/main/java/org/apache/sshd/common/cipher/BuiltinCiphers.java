@@ -46,7 +46,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinCiphers implements CipherFactory {
-    none(Constants.NONE, 0, 0, 0, "None", 0, "None", 0) {
+    none(Constants.NONE, 0, 0, 0, "None", 0, "None", 8) {
         @Override
         public Cipher create() {
             return new CipherNone();
