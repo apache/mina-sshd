@@ -1589,9 +1589,7 @@ public abstract class AbstractSession extends SessionHelper {
                     } else if ((inCipher != null) && (!etmMode)) {
                         // Decrypt the first bytes so we can extract the packet length
                         inCipher.update(decoderBuffer.array(), 0, inCipherSize);
-
-                        int blocksCount = inCipherSize / inCipher.getCipherBlockSize();
-                        inBlocksCount.addAndGet(Math.max(1, blocksCount));
+                        inBlocksCount.incrementAndGet();
                     }
                     // Read packet length
                     decoderLength = decoderBuffer.getInt();
