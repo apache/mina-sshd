@@ -80,7 +80,7 @@ supports the extension and then use it, but our server does not publish it as be
 
 ### Ciphers
 
-* aes128cbc, aes128ctr, aes192cbc, aes192ctr, aes256cbc, aes256ctr, arcfour128, arcfour256, blowfish-cbc,
+* aes128-cbc, aes128-ctr, aes192-cbc, aes192-ctr, aes256-cbc, aes256-ctr, arcfour128, arcfour256, blowfish-cbc,
 aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3des-cbc
 
 ### Digests
@@ -122,6 +122,7 @@ the unsafe settings must do so **explicitly**. The following settings have been 
 * [OpenSSH release notes](https://www.openssh.com/releasenotes.html) - usually a good indicator of de-facto practices
 * SHA-1 based key exchanges and signatures
 * MD5-based and truncated HMAC algorithms
+* Ciphers using CBC mode.
 * [RFC 8270 - Increase the Secure Shell Minimum Recommended Diffie-Hellman Modulus Size to 2048 Bits](https://tools.ietf.org/html/rfc8270)
     **Note:** it still possible to use 1024 by initializing the value *programmatically* or via system property -
     see [Security providers setup](./security-providers.md#diff-hellman-group-exchange-configuration).
