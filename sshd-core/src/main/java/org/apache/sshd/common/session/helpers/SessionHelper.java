@@ -1191,7 +1191,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         switch (reason) {
             case SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR:
             case SshConstants.SSH2_DISCONNECT_MAC_ERROR:
-                // OpenSSH *always* sends back DISCONNECT_PROTOCOL_ERROR
+                // OpenSSH *always* sends back DISCONNECT_PROTOCOL_ERROR.
                 buffer.putInt(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR);
                 // Yes, we don't tell the peer what exactly was wrong.
                 buffer.putString("Protocol error or corrupt packet");

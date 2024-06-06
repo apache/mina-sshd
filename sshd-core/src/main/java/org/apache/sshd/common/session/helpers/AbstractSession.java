@@ -1612,13 +1612,15 @@ public abstract class AbstractSession extends SessionHelper {
                     if (!lengthOK) {
                         decoderBuffer.dumpHex(getSimplifiedLogger(), Level.FINEST,
                                 "decode(" + this + ") invalid length packet", this);
-                        // Mitigation against CVE-2008-5161 AKA CPNI-957037: make any disconnections due to decoding errors indistinguishable.
+                        // Mitigation against CVE-2008-5161 AKA CPNI-957037: make any disconnections due to decoding
+                        // errors indistinguishable from failed MAC checks.
                         //
-                        // If we disconnect here, a client may still deduce (since it sent only one block) that the length check failed.
-                        // So we keep on requesting more data and fail later. OpenSSH actually discards the next 256kB of data, but in fact
-                        // any number of bytes will do.
+                        // If we disconnect here, a client may still deduce (since it sent only one block) that the
+                        // length check failed. So we keep on requesting more data and fail later. OpenSSH actually
+                        // discards the next 256kB of data, but in fact any number of bytes will do.
                         //
-                        // Remember the exception, continue requiring an arbitrary number of bytes, and throw the exception later.
+                        // Remember the exception, continue requiring an arbitrary number of bytes, and throw the
+                        // exception later.
                         discarding = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                                 "Invalid packet length: " + decoderLength);
                         decoderLength = decoderBuffer.available() + (2 + random.random(20)) * inCipherSize;
