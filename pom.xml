@@ -27,7 +27,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.13.1</version>
+    <version>2.13.2-SNAPSHOT</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -81,7 +81,7 @@
     <properties>
         <projectRoot>${project.basedir}</projectRoot>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2024-06-20T20:40:27Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2024-06-20T20:44:27Z</project.build.outputTimestamp>
 
         <!-- NOTE: actual workspace root dir value updated by gmavenplus-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
