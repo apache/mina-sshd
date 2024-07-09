@@ -163,10 +163,10 @@ public class Poly1305Mac implements Mac {
         h3 = h3 & nb | g3 & b;
         h4 = h4 & nb | g4 & b;
 
-        long f0 = Integer.toUnsignedLong(h0 | h1 << 26) + Integer.toUnsignedLong(k0);
-        long f1 = Integer.toUnsignedLong(h1 >>> 6 | h2 << 20) + Integer.toUnsignedLong(k1);
-        long f2 = Integer.toUnsignedLong(h2 >>> 12 | h3 << 14) + Integer.toUnsignedLong(k2);
-        long f3 = Integer.toUnsignedLong(h3 >>> 18 | h4 << 8) + Integer.toUnsignedLong(k3);
+        long f0 = ((h0 | h1 << 26) & 0xFFFF_FFFFL) + (k0 & 0xFFFF_FFFFL);
+        long f1 = ((h1 >>> 6 | h2 << 20) & 0xFFFF_FFFFL) + (k1 & 0xFFFF_FFFFL);
+        long f2 = ((h2 >>> 12 | h3 << 14) & 0xFFFF_FFFFL) + (k2 & 0xFFFF_FFFFL);
+        long f3 = ((h3 >>> 18 | h4 << 8) & 0xFFFF_FFFFL) + (k3 & 0xFFFF_FFFFL);
 
         packIntLE((int) f0, out, offset);
         f1 += f0 >>> 32;
@@ -188,15 +188,15 @@ public class Poly1305Mac implements Mac {
             }
         }
 
-        long t0 = Integer.toUnsignedLong(unpackIntLE(currentBlock, 0));
-        long t1 = Integer.toUnsignedLong(unpackIntLE(currentBlock, 4));
-        long t2 = Integer.toUnsignedLong(unpackIntLE(currentBlock, 8));
-        long t3 = Integer.toUnsignedLong(unpackIntLE(currentBlock, 12));
+        int t0 = unpackIntLE(currentBlock, 0);
+        int t1 = unpackIntLE(currentBlock, 4);
+        int t2 = unpackIntLE(currentBlock, 8);
+        int t3 = unpackIntLE(currentBlock, 12);
 
         h0 += t0 & 0x3ffffff;
-        h1 += (t1 << 32 | t0) >>> 26 & 0x3ffffff;
-        h2 += (t2 << 32 | t1) >>> 20 & 0x3ffffff;
-        h3 += (t3 << 32 | t2) >>> 14 & 0x3ffffff;
+        h1 += (t0 >>> 26 | t1 << 6) & 0x3ffffff;
+        h2 += (t1 >>> 20 | t2 << 12) & 0x3ffffff;
+        h3 += (t2 >>> 14 | t3 << 18) & 0x3ffffff;
         h4 += t3 >>> 8;
 
         if (currentBlockOffset == BLOCK_SIZE) {
@@ -250,21 +250,22 @@ public class Poly1305Mac implements Mac {
         return BLOCK_SIZE;
     }
 
-    private static int unpackIntLE(byte[] buf, int off) {
-        int ret = 0;
-        for (int i = 0; i < Integer.BYTES; i++) {
-            ret |= Byte.toUnsignedInt(buf[off + i]) << i * Byte.SIZE;
-        }
+    public static int unpackIntLE(byte[] buf, int off) {
+        int ret = buf[off++] & 0xFF;
+        ret |= (buf[off++] & 0xFF) << 8;
+        ret |= (buf[off++] & 0xFF) << 16;
+        ret |= (buf[off] & 0xFF) << 24;
         return ret;
     }
 
-    private static void packIntLE(int value, byte[] dst, int off) {
-        for (int i = 0; i < Integer.BYTES; i++) {
-            dst[off + i] = (byte) (value >>> i * Byte.SIZE);
-        }
+    public static void packIntLE(int value, byte[] dst, int off) {
+        dst[off++] = (byte) value;
+        dst[off++] = (byte) (value >> 8);
+        dst[off++] = (byte) (value >> 16);
+        dst[off] = (byte) (value >> 24);
     }
 
     private static long unsignedProduct(int i1, int i2) {
-        return Integer.toUnsignedLong(i1) * Integer.toUnsignedLong(i2);
+        return (i1 & 0xFFFF_FFFFL) * i2;
     }
 }
