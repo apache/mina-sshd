@@ -51,6 +51,13 @@ public class BuiltinCiphersTest extends BaseTestSupport {
     }
 
     @Test
+    public void testBlockSize() {
+        for (BuiltinCiphers cipher : BuiltinCiphers.VALUES) {
+            assertTrue("Cipher " + cipher + " block size too small", cipher.getCipherBlockSize() >= 8);
+        }
+    }
+
+    @Test
     public void testFromEnumName() {
         for (BuiltinCiphers expected : BuiltinCiphers.VALUES) {
             String name = expected.name();

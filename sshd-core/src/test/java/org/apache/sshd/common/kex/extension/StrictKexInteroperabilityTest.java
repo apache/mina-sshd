@@ -86,11 +86,11 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
     private DockerfileBuilder strictKexImage(DockerfileBuilder builder, boolean withStrictKex) {
         if (!withStrictKex) {
             return builder
-                    // CentOS 7 is EOL and thus unlikely to get the security update for strict KEX.
-                    .from("centos:7.9.2009") //
-                    .run("yum install -y openssh-server") // Installs OpenSSH 7.4
-                    .run("/usr/sbin/sshd-keygen") // Generate multiple host keys
-                    .run("adduser bob"); // Add a user
+                    .from("alpine:3.9.2") //
+                    .run("apk --update add openssh-server") // Installs OpenSSH 7.9_p1-r6
+                    .run("ssh-keygen -A") // Generate multiple host keys
+                    .run("adduser -D bob") // Add a user
+                    .run("echo 'bob:passwordBob' | chpasswd"); // Give it a password to unlock the user
         } else {
             return builder
                     .from("alpine:20231219") //
