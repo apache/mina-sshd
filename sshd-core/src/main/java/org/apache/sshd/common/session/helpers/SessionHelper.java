@@ -758,7 +758,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
                 buffer = new ByteArrayBuffer();
             }
 
-            buffer.putMPInt(k);
+            buffer.putBytes(k);
             buffer.putRawBytes(h);
             buffer.putRawBytes(e);
             hash.update(buffer.array(), 0, buffer.available());

@@ -34,6 +34,8 @@
 
 ## Bug Fixes
 
+* [GH-525](https://github.com/apache/mina-sshd/issues/525) Fix sntrup761x25519-sha512 key exchange
+
 ## New Features
 
 ## Potential compatibility issues

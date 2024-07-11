@@ -31,11 +31,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public abstract class XDH extends AbstractDH {
 
-    protected MontgomeryCurve curve;
+    protected final MontgomeryCurve curve;
+    protected final boolean raw;
     protected byte[] f;
 
-    public XDH(MontgomeryCurve curve) throws Exception {
+    public XDH(MontgomeryCurve curve, boolean raw) throws Exception {
         this.curve = Objects.requireNonNull(curve, "No MontgomeryCurve provided");
+        this.raw = raw;
         myKeyAgree = curve.createKeyAgreement();
     }
 
@@ -77,6 +79,7 @@ public abstract class XDH extends AbstractDH {
     protected byte[] calculateK() throws Exception {
         Objects.requireNonNull(f, "Missing 'f' value");
         myKeyAgree.doPhase(curve.decode(f), true);
-        return stripLeadingZeroes(myKeyAgree.generateSecret());
+        byte[] secret = myKeyAgree.generateSecret();
+        return raw ? secret : stripLeadingZeroes(secret);
     }
 }

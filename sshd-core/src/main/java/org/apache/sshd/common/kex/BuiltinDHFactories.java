@@ -253,7 +253,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new XDH(MontgomeryCurve.x25519) {
+            return new XDH(MontgomeryCurve.x25519, false) {
 
                 @Override
                 public Digest getHash() throws Exception {
@@ -274,7 +274,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new XDH(MontgomeryCurve.x25519) {
+            return new XDH(MontgomeryCurve.x25519, false) {
 
                 @Override
                 public Digest getHash() throws Exception {
@@ -298,7 +298,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new XDH(MontgomeryCurve.x448) {
+            return new XDH(MontgomeryCurve.x448, false) {
 
                 @Override
                 public Digest getHash() throws Exception {
@@ -322,7 +322,7 @@ public enum BuiltinDHFactories implements DHFactory {
             if (!GenericUtils.isEmpty(params)) {
                 throw new IllegalArgumentException("No accepted parameters for " + getName());
             }
-            return new XDH(MontgomeryCurve.x25519) {
+            return new XDH(MontgomeryCurve.x25519, true) {
 
                 @Override
                 public KeyEncapsulationMethod getKeyEncapsulation() {
