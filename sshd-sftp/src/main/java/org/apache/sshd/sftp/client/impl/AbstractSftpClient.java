@@ -20,7 +20,6 @@ package org.apache.sshd.sftp.client.impl;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
 import java.nio.file.attribute.FileTime;
@@ -1239,7 +1238,7 @@ public abstract class AbstractSftpClient
     }
 
     @Override
-    public OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
+    public SftpOutputStreamAsync write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
         if (bufferSize != 0 && bufferSize < MIN_WRITE_BUFFER_SIZE) {
             throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.="
                                                + MIN_WRITE_BUFFER_SIZE);
@@ -1250,6 +1249,13 @@ public abstract class AbstractSftpClient
         }
 
         return new SftpOutputStreamAsync(this, bufferSize, path, mode);
+    }
+
+    @Override
+    public void put(InputStream stream, int bufferSize, String path, Collection<OpenMode> modes) throws IOException {
+        try (SftpOutputStreamAsync out = write(path, bufferSize, modes)) {
+            out.transferFrom(stream);
+        }
     }
 
     protected int getReadBufferSize() {

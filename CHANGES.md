@@ -40,6 +40,8 @@
 
 ## New Features
 
+* New utility methods `SftpClient.put(Path localFile, String remoteFileName)` and `SftpClient.put(InputStream in, String remoteFileName)` facilitate SFTP file uploading.
+
 ## Potential compatibility issues
 
 ## Major Code Re-factoring

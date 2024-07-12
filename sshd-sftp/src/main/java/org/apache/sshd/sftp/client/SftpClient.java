@@ -24,7 +24,9 @@ import java.io.OutputStream;
 import java.nio.channels.Channel;
 import java.nio.channels.FileChannel;
 import java.nio.charset.Charset;
+import java.nio.file.Files;
 import java.nio.file.OpenOption;
+import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.AclEntry;
 import java.nio.file.attribute.FileTime;
@@ -961,6 +963,76 @@ public interface SftpClient extends SubsystemClient {
      * @throws IOException If failed to execute
      */
     OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException;
+
+    default void put(Path localFile, String path) throws IOException {
+        put(localFile, 0, path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
+    }
+
+    default void put(InputStream stream, String path) throws IOException {
+        put(stream, 0, path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
+    }
+
+    default void put(Path localFile, int bufferSize, String path) throws IOException {
+        put(localFile, bufferSize, path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
+    }
+
+    default void put(InputStream stream, int bufferSize, String path) throws IOException {
+        put(stream, bufferSize, path, EnumSet.of(OpenMode.Write, OpenMode.Create, OpenMode.Truncate));
+    }
+
+    default void put(Path localFile, String path, OpenMode... modes) throws IOException {
+        put(localFile, 0, path, GenericUtils.of(modes));
+    }
+
+    default void put(InputStream stream, String path, OpenMode... modes) throws IOException {
+        put(stream, 0, path, GenericUtils.of(modes));
+    }
+
+    default void put(Path localFile, int bufferSize, String path, OpenMode... modes) throws IOException {
+        put(localFile, bufferSize, path, GenericUtils.of(modes));
+    }
+
+    default void put(InputStream stream, int bufferSize, String path, OpenMode... modes) throws IOException {
+        put(stream, bufferSize, path, GenericUtils.of(modes));
+    }
+
+    default void put(Path localFile, String path, Collection<OpenMode> modes) throws IOException {
+        put(localFile, 0, path, modes);
+    }
+
+    default void put(InputStream stream, String path, Collection<OpenMode> modes) throws IOException {
+        put(stream, 0, path, modes);
+    }
+
+    /**
+     * Uploads a local file to a remote file.
+     *
+     * @param  localFile   {@link Path} of the local file to upload
+     * @param  bufferSize  SFTP packet size; i.e., amount of data to send in a single SFTP request. Most servers have a
+     *                     limit of 256kB. If zero, a default buffer size is chosen depending on the peer's channel
+     *                     packet size; so typically about 32kB.
+     * @param  path        The remote file path
+     * @param  mode        The remote file {@link OpenMode}s
+     * @throws IOException if data cannot be read, or cannot be written
+     */
+    default void put(Path localFile, int bufferSize, String path, Collection<OpenMode> modes) throws IOException {
+        try (InputStream in = Files.newInputStream(localFile)) {
+            put(in, bufferSize, path, modes);
+        }
+    }
+
+    /**
+     * Write data from an {@link InputStream} to a remote file.
+     *
+     * @param  stream      {@link InputStream} to read from
+     * @param  bufferSize  SFTP packet size; i.e., amount of data to send in a single SFTP request. Most servers have a
+     *                     limit of 256kB. If zero, a default buffer size is chosen depending on the peer's channel
+     *                     packet size; so typically about 32kB.
+     * @param  path        The remote file path
+     * @param  mode        The remote file {@link OpenMode}s
+     * @throws IOException if data cannot be read, or cannot be written
+     */
+    void put(InputStream stream, int bufferSize, String path, Collection<OpenMode> modes) throws IOException;
 
     /**
      * @param  <E>           The generic extension type

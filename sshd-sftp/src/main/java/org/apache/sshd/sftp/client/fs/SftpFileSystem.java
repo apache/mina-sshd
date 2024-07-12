@@ -25,6 +25,7 @@ import java.io.StreamCorruptedException;
 import java.nio.charset.Charset;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystemException;
+import java.nio.file.Path;
 import java.nio.file.attribute.GroupPrincipal;
 import java.nio.file.attribute.UserPrincipal;
 import java.nio.file.attribute.UserPrincipalLookupService;
@@ -563,6 +564,36 @@ public class SftpFileSystem
         @Override
         public OutputStream write(String path, Collection<OpenMode> mode) throws IOException {
             return write(path, writeSize, mode);
+        }
+
+        @Override
+        public void put(Path localFile, String path) throws IOException {
+            put(localFile, writeSize, path);
+        }
+
+        @Override
+        public void put(InputStream stream, String path) throws IOException {
+            put(stream, writeSize, path);
+        }
+
+        @Override
+        public void put(Path localFile, String path, OpenMode... modes) throws IOException {
+            put(localFile, writeSize, path, GenericUtils.of(modes));
+        }
+
+        @Override
+        public void put(InputStream stream, String path, OpenMode... modes) throws IOException {
+            put(stream, writeSize, path, GenericUtils.of(modes));
+        }
+
+        @Override
+        public void put(Path localFile, String path, Collection<OpenMode> modes) throws IOException {
+            put(localFile, writeSize, path, modes);
+        }
+
+        @Override
+        public void put(InputStream stream, String path, Collection<OpenMode> modes) throws IOException {
+            put(stream, writeSize, path, modes);
         }
 
         @Override
