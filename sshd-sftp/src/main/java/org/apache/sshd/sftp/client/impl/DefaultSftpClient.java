@@ -29,13 +29,13 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -72,7 +72,7 @@ import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 public class DefaultSftpClient extends AbstractSftpClient {
     private final ClientSession clientSession;
     private final ChannelSubsystem channel;
-    private final Map<Integer, Buffer> messages = new HashMap<>();
+    private final Map<Integer, Buffer> messages = new ConcurrentHashMap<>();
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
     private final AtomicInteger versionHolder = new AtomicInteger(0);
@@ -305,33 +305,15 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public Buffer receive(int id) throws IOException {
-        Session session = getClientSession();
-        Duration idleTimeout = CoreModuleProperties.IDLE_TIMEOUT.getRequired(session);
+        Duration idleTimeout = CoreModuleProperties.IDLE_TIMEOUT.getRequired(getClientSession());
         if (GenericUtils.isNegativeOrNull(idleTimeout)) {
             idleTimeout = CoreModuleProperties.IDLE_TIMEOUT.getRequiredDefault();
         }
-
-        Instant now = Instant.now();
-        Instant waitEnd = now.plus(idleTimeout);
-        boolean traceEnabled = log.isTraceEnabled();
-        for (int count = 1;; count++) {
-            if (isClosing() || (!isOpen())) {
-                throw new SshException("Channel is being closed");
-            }
-            if (now.compareTo(waitEnd) > 0) {
-                throw new SshException("Timeout expired while waiting for id=" + id);
-            }
-
-            Buffer buffer = receive(id, Duration.between(now, waitEnd));
-            if (buffer != null) {
-                return buffer;
-            }
-
-            now = Instant.now();
-            if (traceEnabled) {
-                log.trace("receive({}) check iteration #{} for id={} remain time={}", this, count, id, idleTimeout);
-            }
+        Buffer result = receive(id, idleTimeout);
+        if (result == null) {
+            throw new SshException("Timeout expired while waiting for id=" + id);
         }
+        return result;
     }
 
     @Override
@@ -342,19 +324,30 @@ public class DefaultSftpClient extends AbstractSftpClient {
     @Override
     public Buffer receive(int id, Duration idleTimeout) throws IOException {
         synchronized (messages) {
-            Buffer buffer = messages.remove(id);
-            if (buffer != null) {
-                return buffer;
-            }
             if (GenericUtils.isPositive(idleTimeout)) {
-                try {
-                    messages.wait(idleTimeout.toMillis(), idleTimeout.getNano() % 1_000_000);
-                } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
+                Instant waitUntil = Instant.now().plus(idleTimeout);
+                for (;;) {
+                    if (isClosing() || !isOpen()) {
+                        throw new SshException("Channel is being closed");
+                    }
+                    Buffer buffer = messages.remove(id);
+                    if (buffer != null) {
+                        return buffer;
+                    }
+                    Duration waitFor = Duration.between(Instant.now(), waitUntil);
+                    if (!GenericUtils.isPositive(waitFor)) {
+                        break; // Timeout expired
+                    }
+                    try {
+                        messages.wait(waitFor.toMillis(), waitFor.getNano() % 1_000_000);
+                    } catch (InterruptedException e) {
+                        throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
+                    }
                 }
             }
+            // Try one last time.
+            return messages.remove(id);
         }
-        return null;
     }
 
     protected void init(ClientSession session, SftpVersionSelector initialVersionSelector, Duration initializationTimeout)

@@ -262,10 +262,6 @@ public abstract class AbstractSftpClient
     protected void checkResponseStatus(int cmd, int id, SftpStatus status) throws IOException {
         if (!status.isOk()) {
             throwStatusException(cmd, id, status);
-        } else if (log.isTraceEnabled()) {
-            log.trace("throwStatusException({})[id={}] cmd={} status={}",
-                    getClientChannel(), id, SftpConstants.getCommandMessageName(cmd),
-                    status);
         }
     }
 

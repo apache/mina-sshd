@@ -19,6 +19,7 @@
 package org.apache.sshd.sftp.client.impl;
 
 import java.io.IOException;
+import java.time.Duration;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.LinkedList;
@@ -163,7 +164,7 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
                 log.debug("flush({}) waiting for ack #{}: {}", this, ackIndex, ack);
             }
 
-            Buffer buf = client.receive(ack.id, 0L);
+            Buffer buf = client.receive(ack.id, Duration.ZERO);
             if (buf == null) {
                 if (debugEnabled) {
                     log.debug("flush({}) no response for ack #{}: {}", this, ackIndex, ack);
