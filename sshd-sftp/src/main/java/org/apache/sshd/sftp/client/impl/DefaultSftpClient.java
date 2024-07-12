@@ -60,6 +60,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpErrorDataHandler;
+import org.apache.sshd.sftp.client.SftpMessage;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.extensions.ParserUtils;
@@ -268,6 +269,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public int send(int cmd, Buffer buffer) throws IOException {
+        SftpMessage msg = write(cmd, buffer);
+        msg.waitUntilSent();
+        return msg.getId();
+    }
+
+    @Override
+    public SftpMessage write(int cmd, Buffer buffer) throws IOException {
         int id = cmdId.incrementAndGet();
         int len = buffer.available();
         if (log.isTraceEnabled()) {
@@ -298,9 +306,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         ClientChannel clientChannel = getClientChannel();
         IoOutputStream asyncIn = clientChannel.getAsyncIn();
         IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
-        Duration cmdTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
-        writeFuture.verify(cmdTimeout);
-        return id;
+        Duration sendTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
+        return new SftpMessage(id, writeFuture, sendTimeout);
     }
 
     @Override

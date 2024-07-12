@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface RawSftpClient {
+
     /**
      * @param  cmd         Command to send - <B>Note:</B> only lower 8-bits are used
      * @param  buffer      The {@link Buffer} containing the command data
@@ -35,6 +36,8 @@ public interface RawSftpClient {
      * @throws IOException if failed to send command
      */
     int send(int cmd, Buffer buffer) throws IOException;
+
+    SftpMessage write(int cmd, Buffer buffer) throws IOException;
 
     /**
      * @param  id          The expected request id

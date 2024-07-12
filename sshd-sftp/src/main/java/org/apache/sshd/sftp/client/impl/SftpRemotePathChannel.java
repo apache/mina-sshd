@@ -362,14 +362,10 @@ public class SftpRemotePathChannel extends FileChannel {
         long totalRead;
 
         synchronized (lock) {
-            try {
-                beginBlocking("transferTo");
+            beginBlocking("transferTo");
 
-                // DO NOT CLOSE THE STREAM AS IT WOULD CLOSE THE HANDLE
-                @SuppressWarnings("resource")
-                SftpInputStreamAsync input = new SftpInputStreamAsync(
-                        (AbstractSftpClient) sftp,
-                        copySize, position, count, getRemotePath(), handle);
+            try (SftpInputStreamAsync input = new SftpInputStreamAsync(
+                    (AbstractSftpClient) sftp, copySize, position, count, getRemotePath(), handle, false)) {
                 totalRead = input.transferTo(count, target);
                 eof = input.isEof();
                 completed = true;
@@ -400,42 +396,22 @@ public class SftpRemotePathChannel extends FileChannel {
         }
         ensureMode(true);
 
-        ClientSession clientSession = sftp.getClientSession();
-        int copySize = SftpModuleProperties.COPY_BUF_SIZE.getRequired(clientSession);
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
-            log.debug("transferFrom({})[position={}, count={}] use copySize={} for source={}",
-                    this, position, count, copySize, src);
+            log.debug("transferFrom({})[position={}, count={}] for source={}",
+                    this, position, count, src);
         }
 
         boolean completed = false;
-        long totalRead = 0L;
-        byte[] buffer = new byte[(int) Math.min(copySize, count)];
 
+        long totalWritten = 0;
         synchronized (lock) {
-            try {
-                beginBlocking("transferFrom");
-
-                // DO NOT CLOSE THE OUTPUT STREAM AS IT WOULD CLOSE THE HANDLE
-                @SuppressWarnings("resource")
-                SftpOutputStreamAsync output = new SftpOutputStreamAsync(
-                        (AbstractSftpClient) sftp,
-                        copySize, getRemotePath(), handle);
+            beginBlocking("transferFrom");
+            try (SftpOutputStreamAsync output = new SftpOutputStreamAsync(
+                    (AbstractSftpClient) sftp, 0, getRemotePath(), handle, false)) {
                 output.setOffset(position);
-
-                while (totalRead < count) {
-                    ByteBuffer wrap = ByteBuffer.wrap(
-                            buffer, 0, (int) Math.min(buffer.length, count - totalRead));
-                    int read = src.read(wrap);
-                    if (read > 0) {
-                        output.write(buffer, 0, read);
-                        totalRead += read;
-                    } else {
-                        break;
-                    }
-                }
+                totalWritten = output.transferFrom(src, count);
                 output.flush();
-                // DO NOT CLOSE THE OUTPUT STREAM AS IT WOULD CLOSE THE HANDLE
                 completed = true;
             } finally {
                 endBlocking("transferFrom", completed);
@@ -443,10 +419,10 @@ public class SftpRemotePathChannel extends FileChannel {
         }
 
         if (debugEnabled) {
-            log.debug("transferFrom({})[position={}, count={}] use copySize={} - totalRead={}, completed={} for source={}",
-                    this, position, count, copySize, totalRead, completed, src);
+            log.debug("transferFrom({})[position={}, count={}] - totalRead={}, completed={} for source={}",
+                    this, position, count, totalWritten, completed, src);
         }
-        return totalRead;
+        return totalWritten;
     }
 
     @Override

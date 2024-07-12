@@ -37,7 +37,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.input.InputStreamWithChannel;
 import org.apache.sshd.sftp.client.SftpClient;
-import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.client.SftpClientHolder;
@@ -65,25 +64,26 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
 
     private final AbstractSftpClient clientInstance;
     private final String path;
+    private final boolean ownsHandle;
 
     public SftpInputStreamAsync(AbstractSftpClient client, int bufferSize,
                                 String path, Collection<OpenMode> mode)
             throws IOException {
-        this.log = LoggerFactory.getLogger(getClass());
-        this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
-        this.path = path;
-        Attributes attrs = client.stat(path);
-        this.fileSize = attrs.getSize();
-        this.handle = client.open(path, mode);
-        this.bufferSize = bufferSize;
+        this(client, bufferSize, 0, client.stat(path).getSize(), path, client.open(path, mode));
     }
 
     public SftpInputStreamAsync(AbstractSftpClient client, int bufferSize, long clientOffset, long fileSize,
                                 String path, CloseableHandle handle) {
+        this(client, bufferSize, clientOffset, fileSize, path, handle, true);
+    }
+
+    public SftpInputStreamAsync(AbstractSftpClient client, int bufferSize, long clientOffset, long fileSize,
+                                String path, CloseableHandle handle, boolean closeHandle) {
         this.log = LoggerFactory.getLogger(getClass());
         this.clientInstance = Objects.requireNonNull(client, "No SFTP client instance");
         this.path = path;
         this.handle = handle;
+        this.ownsHandle = closeHandle;
         this.bufferSize = bufferSize;
         this.requestOffset = clientOffset;
         this.clientOffset = clientOffset;
@@ -398,10 +398,12 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                     pollBuffer(ack);
                 }
             } finally {
-                if (debugEnabled) {
-                    log.debug("close({}) closing file handle; {} short reads", this, shortReads);
+                if (ownsHandle) {
+                    if (debugEnabled) {
+                        log.debug("close({}) closing file handle; {} short reads", this, shortReads);
+                    }
+                    handle.close();
                 }
-                handle.close();
             }
         } finally {
             handle = null;

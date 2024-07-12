@@ -66,6 +66,7 @@ import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClientFactory;
 import org.apache.sshd.sftp.client.SftpErrorDataHandler;
+import org.apache.sshd.sftp.client.SftpMessage;
 import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.client.impl.AbstractSftpClient;
 import org.apache.sshd.sftp.client.impl.SftpPathImpl;
@@ -602,6 +603,21 @@ public class SftpFileSystem
             } else {
                 throw new StreamCorruptedException(
                         "send(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") delegate is not a "
+                                                   + RawSftpClient.class.getSimpleName());
+            }
+        }
+
+        @Override
+        public SftpMessage write(int cmd, Buffer buffer) throws IOException {
+            if (!isOpen()) {
+                throw new IOException("write(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") client is closed");
+            }
+
+            if (delegate instanceof RawSftpClient) {
+                return ((RawSftpClient) delegate).write(cmd, buffer);
+            } else {
+                throw new StreamCorruptedException(
+                        "write(cmd=" + SftpConstants.getCommandMessageName(cmd) + ") delegate is not a "
                                                    + RawSftpClient.class.getSimpleName());
             }
         }

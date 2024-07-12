@@ -1240,10 +1240,7 @@ public abstract class AbstractSftpClient
 
     @Override
     public OutputStream write(String path, int bufferSize, Collection<OpenMode> mode) throws IOException {
-        if (bufferSize <= 0) {
-            bufferSize = getWriteBufferSize();
-        }
-        if (bufferSize < MIN_WRITE_BUFFER_SIZE) {
+        if (bufferSize != 0 && bufferSize < MIN_WRITE_BUFFER_SIZE) {
             throw new IllegalArgumentException("Insufficient write buffer size: " + bufferSize + ", min.="
                                                + MIN_WRITE_BUFFER_SIZE);
         }
@@ -1260,6 +1257,7 @@ public abstract class AbstractSftpClient
     }
 
     protected int getWriteBufferSize() {
+        // Do not use. -13 is wrong anyway.
         return (int) getClientChannel().getRemoteWindow().getPacketSize() - 13;
     }
 

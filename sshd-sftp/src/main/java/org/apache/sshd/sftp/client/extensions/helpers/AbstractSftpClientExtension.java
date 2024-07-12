@@ -36,6 +36,7 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Handle;
+import org.apache.sshd.sftp.client.SftpMessage;
 import org.apache.sshd.sftp.client.extensions.SftpClientExtension;
 import org.apache.sshd.sftp.client.impl.SftpResponse;
 import org.apache.sshd.sftp.client.impl.SftpStatus;
@@ -91,6 +92,11 @@ public abstract class AbstractSftpClientExtension extends AbstractLoggingBean im
     @Override
     public int send(int cmd, Buffer buffer) throws IOException {
         return raw.send(cmd, buffer);
+    }
+
+    @Override
+    public SftpMessage write(int cmd, Buffer buffer) throws IOException {
+        return raw.write(cmd, buffer);
     }
 
     @Override
