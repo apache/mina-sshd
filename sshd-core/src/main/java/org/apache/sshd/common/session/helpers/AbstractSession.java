@@ -1361,7 +1361,7 @@ public abstract class AbstractSession extends SessionHelper {
     @Override
     public Buffer createBuffer(byte cmd, int len) {
         if (len <= 0) {
-            return prepareBuffer(cmd, new ByteArrayBuffer());
+            return prepareBuffer(cmd, new PacketBuffer());
         }
 
         // Since the caller claims to know how many bytes they will need
@@ -1376,7 +1376,7 @@ public abstract class AbstractSession extends SessionHelper {
             len += outMacSize;
         }
 
-        return prepareBuffer(cmd, new ByteArrayBuffer(new byte[len + Byte.SIZE], false));
+        return prepareBuffer(cmd, new PacketBuffer(new byte[len + Byte.SIZE], false));
     }
 
     @Override

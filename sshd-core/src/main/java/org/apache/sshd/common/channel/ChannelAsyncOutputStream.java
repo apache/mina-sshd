@@ -31,6 +31,7 @@ import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.helpers.PacketBuffer;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
@@ -397,6 +398,20 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     protected Buffer createSendBuffer(Buffer buffer, Channel channel, int length) {
         SessionContext.validateSessionPayloadSize(length, "Invalid send buffer length: %d");
 
+        if (buffer instanceof PacketBuffer && buffer.available() == length && cmd == SshConstants.SSH_MSG_CHANNEL_DATA) {
+            // Caller had prepared a packet buffer with SSH header and everything already,
+            // and we're writing it completely.
+            //
+            // Fill in cmd and length, and off we go.
+            int wpos = buffer.wpos();
+            buffer.rpos(SshConstants.SSH_PACKET_HEADER_LEN);
+            buffer.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
+            buffer.putByte(cmd);
+            buffer.putUInt(channel.getRecipient());
+            buffer.putUInt(length);
+            buffer.wpos(wpos);
+            return buffer;
+        }
         Session s = channel.getSession();
         Buffer buf = s.createBuffer(cmd, length + 12);
         buf.putUInt(channel.getRecipient());
