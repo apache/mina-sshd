@@ -392,6 +392,25 @@ public final class BufferUtils {
     }
 
     /**
+     * @param  buf A buffer holding a 32-bit signed integer in <B>big endian</B> format.
+     * @param  off The offset of the data in the buffer
+     * @param  len The available data length. <B>Note:</B> if more than 4 bytes are available, then only the
+     *             <U>first</U> 4 bytes in the buffer will be used (starting at the specified <tt>offset</tt>)
+     * @return     The integer value read
+     */
+    public static int getInt(byte[] buf, int off, int len) {
+        if (len < Integer.BYTES) {
+            throw new IllegalArgumentException("Not enough data for an INT: required=" + Integer.BYTES + ", available=" + len);
+        }
+
+        int i = (buf[off++] & 0xFF) << 24;
+        i |= (buf[off++] & 0xFF) << 16;
+        i |= (buf[off++] & 0xFF) << 8;
+        i |= buf[off] & 0xFF;
+        return i;
+    }
+
+    /**
      * @param  buf A buffer holding a 32-bit unsigned integer in <B>big endian</B> format. <B>Note:</B> if more than 4
      *             bytes are available, then only the <U>first</U> 4 bytes in the buffer will be used
      * @return     The result as a {@code long} whose 32 high-order bits are zero
@@ -409,15 +428,7 @@ public final class BufferUtils {
      * @return     The result as a {@code long} whose 32 high-order bits are zero
      */
     public static long getUInt(byte[] buf, int off, int len) {
-        if (len < Integer.BYTES) {
-            throw new IllegalArgumentException("Not enough data for a UINT: required=" + Integer.BYTES + ", available=" + len);
-        }
-
-        long l = (buf[off] << 24) & 0xff000000L;
-        l |= (buf[off + 1] << 16) & 0x00ff0000L;
-        l |= (buf[off + 2] << 8) & 0x0000ff00L;
-        l |= (buf[off + 3]) & 0x000000ffL;
-        return l;
+        return getInt(buf, off, len) & 0xFFFF_FFFFL;
     }
 
     public static long getLong(byte[] buf, int off, int len) {

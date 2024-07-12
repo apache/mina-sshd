@@ -197,14 +197,58 @@ public class ByteArrayBuffer extends Buffer {
 
     @Override
     public byte getByte() {
-        ensureAvailable(Byte.BYTES);
+        if (rpos >= wpos) {
+            throw new BufferException("Underflow: no available bytes in buffer");
+        }
         return data[rpos++];
     }
 
     @Override
     public void putByte(byte b) {
-        ensureCapacity(Byte.BYTES);
+        if (wpos >= data.length) {
+            ensureCapacity(Byte.BYTES);
+        }
         data[wpos++] = b;
+    }
+
+    @Override
+    public int getInt() {
+        if (rpos + Integer.BYTES > wpos) {
+            throw new BufferException("Underflow: not enough bytes in buffer, need " + Integer.BYTES);
+        }
+        int i = BufferUtils.getInt(data, rpos, Integer.BYTES);
+        rpos += Integer.BYTES;
+        return i;
+    }
+
+    @Override
+    public void putInt(long i) {
+        ValidateUtils.checkTrue(((int) i) == i, "Invalid INT32 value: %d", i);
+        if (wpos + Integer.BYTES > data.length) {
+            ensureCapacity(Integer.BYTES);
+        }
+        BufferUtils.putUInt(i, data, wpos, Integer.BYTES);
+        wpos += Integer.BYTES;
+    }
+
+    @Override
+    public long getUInt() {
+        if (rpos + Integer.BYTES > wpos) {
+            throw new BufferException("Underflow: not enough bytes in buffer, need " + Integer.BYTES);
+        }
+        long l = BufferUtils.getUInt(data, rpos, Integer.BYTES);
+        rpos += Integer.BYTES;
+        return l;
+    }
+
+    @Override
+    public void putUInt(long i) {
+        ValidateUtils.checkTrue((i & 0xFFFF_FFFFL) == i, "Invalid UINT32 value: %d", i);
+        if (wpos + Integer.BYTES > data.length) {
+            ensureCapacity(Integer.BYTES);
+        }
+        BufferUtils.putUInt(i, data, wpos, Integer.BYTES);
+        wpos += Integer.BYTES;
     }
 
     @Override
@@ -219,16 +263,30 @@ public class ByteArrayBuffer extends Buffer {
     @Override
     public void putBuffer(ByteBuffer buffer) {
         int required = buffer.remaining();
-        ensureCapacity(required + Integer.SIZE);
+        ensureCapacity(required + Integer.BYTES);
         putUInt(required);
         buffer.get(data, wpos, required);
         wpos += required;
     }
 
     @Override
+    public void putBytes(byte[] b, int off, int len) {
+        ValidateUtils.checkTrue(len >= 0, "Negative raw bytes length: %d", len);
+        if (wpos + Integer.BYTES + len > data.length) {
+            ensureCapacity(Integer.BYTES + len);
+        }
+        BufferUtils.putUInt(len, data, wpos, Integer.BYTES);
+        wpos += Integer.BYTES;
+        System.arraycopy(b, off, data, wpos, len);
+        wpos += len;
+    }
+
+    @Override
     public void putRawBytes(byte[] d, int off, int len) {
         ValidateUtils.checkTrue(len >= 0, "Negative raw bytes length: %d", len);
-        ensureCapacity(len);
+        if (wpos + len > data.length) {
+            ensureCapacity(len);
+        }
         System.arraycopy(d, off, data, wpos, len);
         wpos += len;
     }
