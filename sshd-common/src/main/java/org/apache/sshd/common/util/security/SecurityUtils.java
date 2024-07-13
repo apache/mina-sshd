@@ -134,6 +134,7 @@ public final class SecurityUtils {
     public static final String SECURITY_PROVIDER_REGISTRARS = "org.apache.sshd.security.registrars";
     public static final List<String> DEFAULT_SECURITY_PROVIDER_REGISTRARS = Collections.unmodifiableList(
             Arrays.asList(
+                    "org.apache.sshd.common.util.security.SunJCESecurityProviderRegistrar",
                     "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
                     "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
 

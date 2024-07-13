@@ -38,11 +38,23 @@
 
 ## Bug Fixes
 
+* [GH-524](https://github.com/apache/mina-sshd/issues/524) Performance improvements
+
 ## New Features
 
 * New utility methods `SftpClient.put(Path localFile, String remoteFileName)` and `SftpClient.put(InputStream in, String remoteFileName)` facilitate SFTP file uploading.
 
 ## Potential compatibility issues
+
+There is a new `SecurityProviderRegistrar` that is registered by default
+if there is a `SunJCE` security provider and that uses the AES and
+HmacSHA* implementations from `SunJCE` even if Bouncy Castle is also
+registered. `SunJCE` has native implementation, whereas Bouncy Castle
+may not.
+
+The new registrar has the name "SunJCEWrapper" and can be configured
+like any other registrar. It can be disabled via the system property
+`org.apache.sshd.security.provider.SunJCEWrapper.enabled=false`.
 
 ## Major Code Re-factoring
 

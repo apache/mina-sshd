@@ -22,8 +22,10 @@ package org.apache.sshd.common.cipher;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.spec.AlgorithmParameterSpec;
 import java.util.Arrays;
 
+import javax.crypto.spec.GCMParameterSpec;
 import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -78,9 +80,15 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
             javax.crypto.Cipher cipher = SecurityUtils.getCipher(transformation);
             byte[] key = new byte[bsize];
             byte[] iv = new byte[ivsize];
+            AlgorithmParameterSpec params;
+            if (transformation.contains("/GCM/")) {
+                params = new GCMParameterSpec(128, iv);
+            } else {
+                params = new IvParameterSpec(iv);
+            }
             cipher.init(javax.crypto.Cipher.ENCRYPT_MODE,
                     new SecretKeySpec(key, algorithm),
-                    new IvParameterSpec(iv));
+                    params);
         } catch (GeneralSecurityException e) {
             if (e instanceof InvalidKeyException) {
                 Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "/" + ivsize + "]", false /*
