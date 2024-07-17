@@ -39,6 +39,7 @@
 ## Bug Fixes
 
 * [GH-524](https://github.com/apache/mina-sshd/issues/524) Performance improvements
+* [GH-533](https://github.com/apache/mina-sshd/issues/533) Fix multi-step authentication
 
 ## New Features
 
