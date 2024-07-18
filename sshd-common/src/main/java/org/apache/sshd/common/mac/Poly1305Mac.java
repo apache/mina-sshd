@@ -95,20 +95,36 @@ public class Poly1305Mac implements Mac {
         k1 = unpackIntLE(key, 20);
         k2 = unpackIntLE(key, 24);
         k3 = unpackIntLE(key, 28);
+
+        currentBlockOffset = 0;
     }
 
     @Override
     public void update(byte[] in, int offset, int length) {
-        while (length > 0) {
-            if (currentBlockOffset == BLOCK_SIZE) {
-                processBlock();
-            }
-
+        if (currentBlockOffset > 0) {
+            // There is a partially filled block.
             int toCopy = Math.min(length, BLOCK_SIZE - currentBlockOffset);
             System.arraycopy(in, offset, currentBlock, currentBlockOffset, toCopy);
             offset += toCopy;
             length -= toCopy;
             currentBlockOffset += toCopy;
+            if (currentBlockOffset == BLOCK_SIZE) {
+                processBlock(currentBlock, 0, BLOCK_SIZE);
+                currentBlockOffset = 0;
+            }
+            if (length == 0) {
+                return;
+            }
+        }
+        while (length >= BLOCK_SIZE) {
+            processBlock(in, offset, BLOCK_SIZE);
+            offset += BLOCK_SIZE;
+            length -= BLOCK_SIZE;
+        }
+        if (length > 0) {
+            // Put remaining bytes into internal buffer (length < BLOCK_SIZE here).
+            System.arraycopy(in, offset, currentBlock, 0, length);
+            currentBlockOffset = length;
         }
     }
 
@@ -125,7 +141,14 @@ public class Poly1305Mac implements Mac {
             throw new BufferOverflowException();
         }
         if (currentBlockOffset > 0) {
-            processBlock();
+            if (currentBlockOffset < BLOCK_SIZE) {
+                // padding
+                currentBlock[currentBlockOffset] = 1;
+                for (int i = currentBlockOffset + 1; i < BLOCK_SIZE; i++) {
+                    currentBlock[i] = 0;
+                }
+            }
+            processBlock(currentBlock, 0, currentBlockOffset);
         }
 
         h1 += h0 >>> 26;
@@ -179,19 +202,12 @@ public class Poly1305Mac implements Mac {
         reset();
     }
 
-    private void processBlock() {
-        if (currentBlockOffset < BLOCK_SIZE) {
-            // padding
-            currentBlock[currentBlockOffset] = 1;
-            for (int i = currentBlockOffset + 1; i < BLOCK_SIZE; i++) {
-                currentBlock[i] = 0;
-            }
-        }
+    private void processBlock(byte[] block, int offset, int length) {
 
-        int t0 = unpackIntLE(currentBlock, 0);
-        int t1 = unpackIntLE(currentBlock, 4);
-        int t2 = unpackIntLE(currentBlock, 8);
-        int t3 = unpackIntLE(currentBlock, 12);
+        int t0 = unpackIntLE(block, offset);
+        int t1 = unpackIntLE(block, offset + 4);
+        int t2 = unpackIntLE(block, offset + 8);
+        int t3 = unpackIntLE(block, offset + 12);
 
         h0 += t0 & 0x3ffffff;
         h1 += (t0 >>> 26 | t1 << 6) & 0x3ffffff;
@@ -199,7 +215,7 @@ public class Poly1305Mac implements Mac {
         h3 += (t2 >>> 14 | t3 << 18) & 0x3ffffff;
         h4 += t3 >>> 8;
 
-        if (currentBlockOffset == BLOCK_SIZE) {
+        if (length == BLOCK_SIZE) {
             h4 += 1 << 24;
         }
 
@@ -226,8 +242,6 @@ public class Poly1305Mac implements Mac {
         h0 += (int) (tp4 >>> 26) * 5;
         h1 += h0 >>> 26;
         h0 &= 0x3ffffff;
-
-        currentBlockOffset = 0;
     }
 
     private void reset() {
