@@ -32,7 +32,7 @@
 
 # Version 2.13.0 to 2.13.1
 
-No code changes; only a re-deployment. The deployment of 2.13.0 to MAven Central had omitted the source bundles.
+No code changes; only a re-deployment. The deployment of 2.13.0 to Maven Central had omitted the source bundles.
 
 # Planned for next version
 
