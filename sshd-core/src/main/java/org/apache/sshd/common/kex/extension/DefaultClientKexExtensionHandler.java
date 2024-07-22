@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.kex.extension.parser.ExtInfoInAuth;
 import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
@@ -165,5 +166,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      * @param marshaller {@link BiConsumer} writing the extensions into an SSH message
      */
     public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
+        // ext-info-in-auth@openssh.com
+        marshaller.accept(ExtInfoInAuth.NAME, "");
     }
 }
