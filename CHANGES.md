@@ -30,15 +30,13 @@
 
 # [Version 2.12.1 to 2.13.0](./docs/changes/2.13.0.md)
 
-# Version 2.13.0 to 2.13.1
+# [Version 2.13.0 to 2.13.1](./docs/changes/2.13.1.md)
 
-No code changes; only a re-deployment. The deployment of 2.13.0 to Maven Central had omitted the source bundles.
+# [Version 2.13.1 to 2.13.2](./docs/changes/2.13.2.md)
 
 # Planned for next version
 
 ## Bug Fixes
-
-* [GH-525](https://github.com/apache/mina-sshd/issues/525) Fix sntrup761x25519-sha512 key exchange
 
 ## New Features
 
