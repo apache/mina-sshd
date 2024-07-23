@@ -800,6 +800,13 @@ public final class CoreModuleProperties {
         }
     });
 
+    /**
+     * Obfuscate keystroke timing. Values can be {@code yes}, {@code true}, {@code no}, {@code false},
+     * {@code interval:[int-value]} to specify the keystroke default interval in milliseconds.
+     */
+    public static final Property<String> OBFUSCATE_KEYSTROKE_TIMING
+            = Property.string("obfuscate-keystroke-timing", Boolean.FALSE.toString());
+
     private CoreModuleProperties() {
         throw new UnsupportedOperationException("No instance");
     }
