@@ -33,65 +33,65 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
+@SuppressWarnings("checksyle:MethodCount")
 public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
-    public SimpleGeneratorHostKeyProviderTest() {
-        super();
-    }
 
     @Test
-    public void testDSA() throws IOException, GeneralSecurityException {
+    void dsa() throws IOException, GeneralSecurityException {
         testSimpleGeneratorHostKeyProvider(KeyUtils.DSS_ALGORITHM, KeyPairProvider.SSH_DSS, 512, null);
     }
 
     @Test
-    public void testRSA() throws IOException, GeneralSecurityException {
+    void rsa() throws IOException, GeneralSecurityException {
         testSimpleGeneratorHostKeyProvider(KeyUtils.RSA_ALGORITHM, KeyPairProvider.SSH_RSA, 512, null);
     }
 
     @Test
-    public void testECnistp256() throws IOException, GeneralSecurityException {
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
-        Assume.assumeTrue(ECCurves.nistp256 + " N/A", ECCurves.nistp256.isSupported());
+    void eCnistp256() throws IOException, GeneralSecurityException {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
+        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
+        Assumptions.assumeTrue(ECCurves.nistp256.isSupported(), ECCurves.nistp256 + " N/A");
         testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1,
                 new ECGenParameterSpec("prime256v1"));
     }
 
     @Test
-    public void testECnistp384() throws IOException, GeneralSecurityException {
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
-        Assume.assumeTrue(ECCurves.nistp384 + " N/A", ECCurves.nistp384.isSupported());
+    void eCnistp384() throws IOException, GeneralSecurityException {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
+        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
+        Assumptions.assumeTrue(ECCurves.nistp384.isSupported(), ECCurves.nistp384 + " N/A");
         testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1,
                 new ECGenParameterSpec("P-384"));
     }
 
     @Test
-    public void testECnistp521() throws IOException, GeneralSecurityException {
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
-        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
-        Assume.assumeTrue(ECCurves.nistp521 + " N/A", ECCurves.nistp521.isSupported());
+    void eCnistp521() throws IOException, GeneralSecurityException {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
+        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
+        Assumptions.assumeTrue(ECCurves.nistp521.isSupported(), ECCurves.nistp521 + " N/A");
         testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1,
                 new ECGenParameterSpec("P-521"));
     }
 
     @Test
-    public void testEdDSA() throws IOException, GeneralSecurityException {
-        Assume.assumeTrue("EdDSA not supported", SecurityUtils.isEDDSACurveSupported());
+    void edDSA() throws IOException, GeneralSecurityException {
+        Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), "EdDSA not supported");
         testSimpleGeneratorHostKeyProvider(SecurityUtils.EDDSA, KeyPairProvider.SSH_ED25519, -1, null);
     }
 
@@ -100,7 +100,7 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
             throws IOException, GeneralSecurityException {
         Path path = initKeyFileLocation(algorithm);
         KeyPair kpWrite = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
-        assertTrue("Key file not generated: " + path, Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS));
+        assertTrue(Files.exists(path, IoUtils.EMPTY_LINK_OPTIONS), "Key file not generated: " + path);
 
         KeyPair kpRead = invokeSimpleGeneratorHostKeyProvider(path, algorithm, keyType, keySize, keySpec);
         assertKeyPairEquals("Mismatched write/read key pairs", kpWrite, kpRead);
@@ -141,12 +141,12 @@ public class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         for (String type : types) {
             if (keyType.equals(type)) {
                 kp = provider.loadKey(null, keyType);
-                assertNotNull("Failed to load key for " + keyType, kp);
+                assertNotNull(kp, "Failed to load key for " + keyType);
                 break;
             }
         }
 
-        assertNotNull("Expected key type not found: " + keyType, kp);
+        assertNotNull(kp, "Expected key type not found: " + keyType);
         return kp;
     }
 

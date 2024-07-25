@@ -24,24 +24,25 @@ import java.util.Date;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PropertyResolverCommonValuesTest extends JUnitTestSupport {
     public PropertyResolverCommonValuesTest() {
         super();
     }
 
     @Test
-    public void testToBooleanOnNonBooleanValues() {
+    void toBooleanOnNonBooleanValues() {
         for (Object v : new Object[] { 1, 2L, 3.0f, 4.0d, new Date(), Calendar.class, TimeUnit.DAYS }) {
             try {
                 Boolean result = PropertyResolverUtils.toBoolean(v);
@@ -53,7 +54,7 @@ public class PropertyResolverCommonValuesTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testParseBooleanOnNonBooleanValues() {
+    void parseBooleanOnNonBooleanValues() {
         for (String v : new String[] { getCurrentTestName(), "0", "1" }) {
             try {
                 Boolean result = PropertyResolverUtils.parseBoolean(v);

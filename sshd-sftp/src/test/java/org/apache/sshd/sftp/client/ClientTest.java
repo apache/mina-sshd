@@ -66,18 +66,24 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TestChannelListener;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 @SuppressWarnings("checkstyle:MethodCount")
 public class ClientTest extends BaseTestSupport {
     private SshServer sshd;
@@ -92,25 +98,25 @@ public class ClientTest extends BaseTestSupport {
         @Override
         public void sessionCreated(Session session) {
             assertObjectInstanceOf("Non client session creation notification", ClientSession.class, session);
-            assertNull("Multiple creation notifications", clientSessionHolder.getAndSet((ClientSession) session));
+            assertNull(clientSessionHolder.getAndSet((ClientSession) session), "Multiple creation notifications");
         }
 
         @Override
         public void sessionEvent(Session session, Event event) {
             assertObjectInstanceOf("Non client session event notification: " + event, ClientSession.class, session);
-            assertSame("Mismatched client session event instance: " + event, clientSessionHolder.get(), session);
+            assertSame(clientSessionHolder.get(), session, "Mismatched client session event instance: " + event);
         }
 
         @Override
         public void sessionException(Session session, Throwable t) {
             assertObjectInstanceOf("Non client session exception notification", ClientSession.class, session);
-            assertNotNull("No session exception data", t);
+            assertNotNull(t, "No session exception data");
         }
 
         @Override
         public void sessionClosed(Session session) {
             assertObjectInstanceOf("Non client session closure notification", ClientSession.class, session);
-            assertSame("Mismatched client session closure instance", clientSessionHolder.getAndSet(null), session);
+            assertSame(clientSessionHolder.getAndSet(null), session, "Mismatched client session closure instance");
         }
     };
 
@@ -118,8 +124,8 @@ public class ClientTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
@@ -172,8 +178,8 @@ public class ClientTest extends BaseTestSupport {
         client.addSessionListener(clientSessionListener);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -184,22 +190,22 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSimpleClientListener() throws Exception {
+    void simpleClientListener() throws Exception {
         AtomicReference<Channel> channelHolder = new AtomicReference<>(null);
         client.addChannelListener(new ChannelListener() {
             @Override
             public void channelOpenSuccess(Channel channel) {
-                assertSame("Mismatched opened channel instances", channel, channelHolder.get());
+                assertSame(channel, channelHolder.get(), "Mismatched opened channel instances");
             }
 
             @Override
             public void channelOpenFailure(Channel channel, Throwable reason) {
-                assertSame("Mismatched failed open channel instances", channel, channelHolder.get());
+                assertSame(channel, channelHolder.get(), "Mismatched failed open channel instances");
             }
 
             @Override
             public void channelInitialized(Channel channel) {
-                assertNull("Multiple channel initialization notifications", channelHolder.getAndSet(channel));
+                assertNull(channelHolder.getAndSet(channel), "Multiple channel initialization notifications");
             }
 
             @Override
@@ -209,7 +215,7 @@ public class ClientTest extends BaseTestSupport {
 
             @Override
             public void channelClosed(Channel channel, Throwable reason) {
-                assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
+                assertSame(channel, channelHolder.getAndSet(null), "Mismatched closed channel instances");
             }
         });
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
@@ -247,7 +253,7 @@ public class ClientTest extends BaseTestSupport {
     private <C extends Closeable> void testClientListener(
             AtomicReference<Channel> channelHolder, Class<C> channelType, Factory<? extends C> factory)
             throws Exception {
-        assertNull(channelType.getSimpleName() + ": Unexpected currently active channel", channelHolder.get());
+        assertNull(channelHolder.get(), channelType.getSimpleName() + ": Unexpected currently active channel");
 
         try (C instance = factory.create()) {
             Channel expectedChannel;
@@ -260,14 +266,14 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Channel actualChannel = channelHolder.get();
-            assertSame("Mismatched listener " + channelType.getSimpleName() + " instances", expectedChannel, actualChannel);
+            assertSame(expectedChannel, actualChannel, "Mismatched listener " + channelType.getSimpleName() + " instances");
         }
 
-        assertNull(channelType.getSimpleName() + ": Active channel closure not signalled", channelHolder.get());
+        assertNull(channelHolder.get(), channelType.getSimpleName() + ": Active channel closure not signalled");
     }
 
     @Test
-    public void testCreateChannelByType() throws Exception {
+    void createChannelByType() throws Exception {
         client.start();
 
         Collection<ClientChannel> channels = new LinkedList<>();
@@ -281,7 +287,7 @@ public class ClientTest extends BaseTestSupport {
             Set<Long> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
                 long id = c.getChannelId();
-                assertTrue("Channel ID repeated: " + id, ids.add(id));
+                assertTrue(ids.add(id), "Channel ID repeated: " + id);
             }
         } finally {
             for (Closeable c : channels) {
@@ -294,7 +300,7 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     /**
@@ -304,7 +310,7 @@ public class ClientTest extends BaseTestSupport {
      * @throws Exception If failed
      */
     @Test
-    public void testChannelListenersPropagation() throws Exception {
+    void channelListenersPropagation() throws Exception {
         Map<String, TestChannelListener> clientListeners = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         addChannelListener(clientListeners, client, new TestChannelListener(client.getClass().getSimpleName()));
 
@@ -347,24 +353,24 @@ public class ClientTest extends BaseTestSupport {
 
         for (TestChannelListener l : listeners) {
             if (activeSize >= 0) {
-                assertEquals(phase + ": mismatched active channels size for " + l.getName() + " listener",
-                        activeSize, GenericUtils.size(l.getActiveChannels()));
+                assertEquals(activeSize, GenericUtils.size(l.getActiveChannels()),
+                        phase + ": mismatched active channels size for " + l.getName() + " listener");
             }
 
             if (openSize >= 0) {
-                assertEquals(phase + ": mismatched open channels size for " + l.getName() + " listener",
-                        openSize, GenericUtils.size(l.getOpenChannels()));
+                assertEquals(openSize, GenericUtils.size(l.getOpenChannels()),
+                        phase + ": mismatched open channels size for " + l.getName() + " listener");
             }
 
-            assertEquals(phase + ": unexpected failed channels size for " + l.getName() + " listener",
-                    0, GenericUtils.size(l.getFailedChannels()));
+            assertEquals(0, GenericUtils.size(l.getFailedChannels()),
+                    phase + ": unexpected failed channels size for " + l.getName() + " listener");
         }
     }
 
     private static <L extends ChannelListener & NamedResource> void addChannelListener(
             Map<String, L> listeners, ChannelListenerManager manager, L listener) {
         String name = listener.getName();
-        assertNull("Duplicate listener named " + name, listeners.put(name, listener));
+        assertNull(listeners.put(name, listener), "Duplicate listener named " + name);
         manager.addChannelListener(listener);
     }
 
@@ -372,7 +378,7 @@ public class ClientTest extends BaseTestSupport {
         ClientSession session = createTestClientSession(TEST_LOCALHOST);
         try {
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
-            assertEquals("Mismatched connect host", TEST_LOCALHOST, addr.getHostString());
+            assertEquals(TEST_LOCALHOST, addr.getHostString(), "Mismatched connect host");
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close
@@ -388,13 +394,13 @@ public class ClientTest extends BaseTestSupport {
         ClientSession session = client.connect(getCurrentTestName(), host, port)
                 .verify(CONNECT_TIMEOUT).getSession();
         try {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
-            assertNotNull("No reported connect address", addr);
-            assertEquals("Mismatched connect port", port, addr.getPort());
+            assertNotNull(addr, "No reported connect address");
+            assertEquals(port, addr.getPort(), "Mismatched connect port");
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

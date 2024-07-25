@@ -40,7 +40,7 @@
             <artifactId>sshd-core</artifactId>
             <version>${project.version}</version>
         </dependency>
-            <!-- replacements for the excluded artifacts -->
+        <!-- replacements for the excluded artifacts -->
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpg-jdk18on</artifactId>
@@ -75,7 +75,7 @@
                     <groupId>org.apache.sshd</groupId>
                     <artifactId>sshd-osgi</artifactId>
                 </exclusion>
-                    <!-- We are using the jdk18on artifacts -->
+                <!-- We are using the jdk18on artifacts -->
                 <exclusion>
                     <groupId>org.bouncycastle</groupId>
                     <artifactId>bcpg-jdk15on</artifactId>
@@ -95,7 +95,7 @@
             </exclusions>
         </dependency>
 
-            <!--  Test dependencies -->
+        <!--  Test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
@@ -114,6 +114,11 @@
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-sftp</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

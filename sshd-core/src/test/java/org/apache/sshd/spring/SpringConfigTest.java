@@ -30,12 +30,12 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
 /**
@@ -43,7 +43,7 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SpringConfigTest extends BaseTestSupport {
 
     private ClassPathXmlApplicationContext context;
@@ -52,28 +52,28 @@ public class SpringConfigTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void jschInit() {
+    @BeforeAll
+    static void jschInit() {
         JSchLogger.init();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         Class<?> clazz = getClass();
         Package pkg = clazz.getPackage();
         context = new ClassPathXmlApplicationContext(
                 "classpath:" + pkg.getName().replace('.', '/') + "/" + clazz.getSimpleName() + ".xml");
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (context != null) {
             context.close();
         }
     }
 
     @Test
-    public void testSpringConfig() throws Exception {
+    void springConfig() throws Exception {
         SshServer server = CoreTestSupportUtils.setupTestFullSupportServer(context.getBean(SshServer.class));
         int port = server.getPort();
 

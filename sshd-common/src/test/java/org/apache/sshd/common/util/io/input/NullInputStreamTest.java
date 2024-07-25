@@ -23,17 +23,21 @@ import java.io.EOFException;
 import java.io.IOException;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class NullInputStreamTest extends JUnitTestSupport {
     private static final NullInputStream INSTANCE = new NullInputStream();
 
@@ -42,36 +46,36 @@ public class NullInputStreamTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testReadOneChar() throws IOException {
+    void readOneChar() throws IOException {
         assertEquals(-1, INSTANCE.read());
     }
 
     @Test
-    public void testReadFullBuffer() throws IOException {
+    void readFullBuffer() throws IOException {
         assertEquals(-1, INSTANCE.read(new byte[Byte.SIZE]));
     }
 
     @Test
-    public void testReadPartialBuffer() throws IOException {
+    void readPartialBuffer() throws IOException {
         byte[] buf = new byte[Byte.SIZE];
         assertEquals(-1, INSTANCE.read(buf, buf.length / 2, (buf.length / 2) - 1));
     }
 
     @Test
-    public void testSkip() throws IOException {
+    void skip() throws IOException {
         assertEquals(0L, INSTANCE.skip(Long.SIZE));
     }
 
     @Test
-    public void testAvailable() throws IOException {
+    void available() throws IOException {
         assertEquals(0, INSTANCE.available());
     }
 
     @Test
-    public void testNotAllowedToAccessAfterClose() throws IOException {
+    void notAllowedToAccessAfterClose() throws IOException {
         NullInputStream stream = new NullInputStream();
         stream.close();
-        assertFalse("Stream not marked as closed", stream.isOpen());
+        assertFalse(stream.isOpen(), "Stream not marked as closed");
 
         try {
             int nRead = stream.read();
@@ -108,6 +112,6 @@ public class NullInputStreamTest extends JUnitTestSupport {
         } catch (IOException e) {
             // expected
         }
-        assertThrows("Unexpected reset success", EOFException.class, stream::reset);
+        assertThrows(EOFException.class, stream::reset, "Unexpected reset success");
     }
 }

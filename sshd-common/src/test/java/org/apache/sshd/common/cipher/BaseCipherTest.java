@@ -33,14 +33,15 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.cipher.Cipher.Mode;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.Tag;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Category({ NoIoTestCase.class })
+@Tag("NoIoTestCase")
 public abstract class BaseCipherTest extends JUnitTestSupport {
     protected BaseCipherTest() {
         super();
@@ -60,7 +61,7 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
             cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, new SecretKeySpec(key, algorithm));
         } catch (GeneralSecurityException e) {
             if (e instanceof InvalidKeyException) { // NOTE: assumption violations are NOT test failures...
-                Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "] N/A", false);
+                Assumptions.assumeTrue(false, algorithm + "/" + transformation + "[" + bsize + "] N/A");
             }
 
             throw e;
@@ -91,10 +92,10 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
                     params);
         } catch (GeneralSecurityException e) {
             if (e instanceof InvalidKeyException) {
-                Assume.assumeTrue(algorithm + "/" + transformation + "[" + bsize + "/" + ivsize + "]", false /*
-                                                                                                              * force
-                                                                                                              * exception
-                                                                                                              */);
+                Assumptions.assumeTrue(false, algorithm + "/" + transformation + "[" + bsize + "/" + ivsize + "]" /*
+                                                                                                                  * force
+                                                                                                                  * exception
+                                                                                                                  */);
             }
 
             throw e;
@@ -127,6 +128,6 @@ public abstract class BaseCipherTest extends JUnitTestSupport {
         byte[] actBytes = workBuf.clone(); // need to clone since the cipher works in-line
         dec.update(actBytes, 0, actBytes.length);
 
-        assertArrayEquals(facName, expBytes, actBytes);
+        assertArrayEquals(expBytes, actBytes, facName);
     }
 }

@@ -24,22 +24,24 @@ import java.util.Collections;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
     public DefaultIoServiceFactoryFactoryTest() {
         super();
     }
 
     @Test
-    public void testBuiltinIoServiceFactoryFactories() {
+    void builtinIoServiceFactoryFactories() {
         for (BuiltinIoServiceFactoryFactories f : BuiltinIoServiceFactoryFactories.VALUES) {
             if (!f.isSupported()) {
                 continue;
@@ -49,13 +51,13 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
                     = DefaultIoServiceFactoryFactory.newInstance(IoServiceFactoryFactory.class, name);
             Class<?> expected = f.getFactoryClass();
             Class<?> actual = factoryInstance.getClass();
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @SuppressWarnings("boxing")
     @Test
-    public void testExecutorServiceInitialization() throws Exception {
+    void executorServiceInitialization() throws Exception {
         CloseableExecutorService service = Mockito.mock(CloseableExecutorService.class);
         Mockito.when(service.shutdownNow()).thenReturn(Collections.emptyList());
         Mockito.when(service.isShutdown()).thenReturn(Boolean.TRUE);
@@ -78,7 +80,7 @@ public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
 
                     CloseableExecutorService svc
                             = (CloseableExecutorService) factory.getClass().getMethod("getExecutorService").invoke(factory);
-                    assertSame(name + " - mismatched executor service", service, svc);
+                    assertSame(service, svc, name + " - mismatched executor service");
                 } catch (NoSuchMethodException e) {
                     // ignore if there's no executor service
                 }

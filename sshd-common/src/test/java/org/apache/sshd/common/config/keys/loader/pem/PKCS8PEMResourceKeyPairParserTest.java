@@ -38,38 +38,33 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
-    private final String algorithm;
-    private final int keySize;
+    private String algorithm;
+    private int keySize;
 
-    public PKCS8PEMResourceKeyPairParserTest(String algorithm, int keySize) {
+    public void initPKCS8PEMResourceKeyPairParserTest(String algorithm, int keySize) {
         this.algorithm = algorithm;
         this.keySize = keySize;
     }
 
-    @Parameters(name = "{0}-{1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (Integer ks : RSA_SIZES) {
@@ -94,8 +89,10 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         return params;
     }
 
-    @Test // see SSHD-760
-    public void testLocallyGeneratedPkcs8() throws IOException, GeneralSecurityException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}-{1}") // see SSHD-760
+    public void locallyGeneratedPkcs8(String algorithm, int keySize) throws IOException, GeneralSecurityException {
+        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
         if (keySize > 0) {
             generator.initialize(keySize);
@@ -114,7 +111,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
                 Iterable<KeyPair> ids = SecurityUtils.loadKeyPairIdentities(
                         null, NamedResource.ofName(getCurrentTestName()), bais, null);
                 KeyPair kp2 = GenericUtils.head(ids);
-                assertNotNull("No identity loaded", kp2);
+                assertNotNull(kp2, "No identity loaded");
                 assertKeyEquals("Mismatched public key", kp.getPublic(), kp2.getPublic());
                 assertKeyEquals("Mismatched private key", prv1, kp2.getPrivate());
             }
@@ -135,15 +132,17 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      *
      * openssl genpkey -algorithm ed25519 -out pkcs8-ed25519.pem openssl asn1parse -inform PEM -in ...file... -dump
      */
-    @Test // see SSHD-989
-    public void testPKCS8FileParsing() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}-{1}") // see SSHD-989
+    public void pkcs8FileParsing(String algorithm, int keySize) throws Exception {
+        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".pem";
         URL url = getClass().getResource(resourceKey);
-        assertNotNull("No test file=" + resourceKey, url);
+        assertNotNull(url, "No test file=" + resourceKey);
 
         Collection<KeyPair> pairs = PKCS8PEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
-        assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+        assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
         validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
         // Check for an encrypted key
     }
@@ -153,25 +152,27 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      *
      * openssl [rsa|dsa|ec] -in <file>.pem -out <file>.enc -aes-128-cbc
      */
-    @Test
-    public void testTraditionalEncryptedPEMParsing() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}-{1}")
+    public void traditionalEncryptedPEMParsing(String algorithm, int keySize) throws Exception {
+        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".enc";
         URL url = getClass().getResource(resourceKey);
-        assertNotNull("No encrypted test file=" + resourceKey, url);
+        assertNotNull(url, "No encrypted test file=" + resourceKey);
         // The eddsa (ed25519) PEM file with RFC 1421 traditional encryption comes from
         // https://github.com/bcgit/bc-java/issues/1238#issuecomment-1263162809 and has a
         // different password. Unknown how it was generated; openssl always writes the
         // RFC 5958 EncryptedPrivateKeyInfo.
         String password = "eddsa".equalsIgnoreCase(algorithm) ? "Vjvyhfngz0MCUs$kwOF0" : "test";
         Collection<KeyPair> pairs = PEMResourceParserUtils.PROXY.loadKeyPairs(null, url, (s, r, i) -> password);
-        assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+        assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
         validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
         // Try again using the standard key pair parser
         try (InputStream in = url.openStream()) {
             pairs = SecurityUtils.getKeyPairResourceParser().loadKeyPairs(null, NamedResource.ofName(getCurrentTestName()),
                     (s, r, i) -> password, in);
-            assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+            assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
             validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
         }
     }
@@ -181,22 +182,24 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      *
      * openssl pkcs8 -in <file>.pem -out <file>.enc2 -topk8
      */
-    @Test
-    public void testEncryptedPEMParsing() throws Exception {
-        Assume.assumeTrue(SecurityUtils.isBouncyCastleRegistered());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}-{1}")
+    public void encryptedPEMParsing(String algorithm, int keySize) throws Exception {
+        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered());
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".enc2";
         URL url = getClass().getResource(resourceKey);
-        assertNotNull("No encrypted test file=" + resourceKey, url);
+        assertNotNull(url, "No encrypted test file=" + resourceKey);
         String password = "test";
         Collection<KeyPair> pairs = PEMResourceParserUtils.PROXY.loadKeyPairs(null, url, (s, r, i) -> password);
-        assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+        assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
         validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
         // Try again using the standard key pair parser
         try (InputStream in = url.openStream()) {
             pairs = SecurityUtils.getKeyPairResourceParser().loadKeyPairs(null, NamedResource.ofName(getCurrentTestName()),
                     (s, r, i) -> password, in);
-            assertEquals("Mismatched extract keys count", 1, GenericUtils.size(pairs));
+            assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
             validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
         }
     }

@@ -27,39 +27,33 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class SttySupportTest extends JUnitTestSupport {
-    private final String resourceName;
+    private String resourceName;
 
-    public SttySupportTest(String resourceName) {
+    public void initSttySupportTest(String resourceName) {
         this.resourceName = resourceName;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(Arrays.asList("stty-output-1.txt", "stty-output-2.txt"));
     }
 
-    @Test
-    public void testParseSttyOutput() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void parseSttyOutput(String resourceName) throws Exception {
+        initSttySupportTest(resourceName);
         String stty;
         try (InputStream s = ValidateUtils.checkNotNull(
                 getClass().getResourceAsStream(resourceName), "Missing %s", resourceName);

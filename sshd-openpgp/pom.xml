@@ -56,20 +56,30 @@
             <artifactId>jpgpj</artifactId>
             <version>1.3</version>
             <exclusions>
-                    <!-- Replaced by the jdk18on equivalent -->
+                <!-- Replaced by the jdk18on equivalent -->
                 <exclusion>
-                  <groupId>org.bouncycastle</groupId>
-                  <artifactId>bcpg-jdk15on</artifactId>
+                    <groupId>org.bouncycastle</groupId>
+                    <artifactId>bcpg-jdk15on</artifactId>
                 </exclusion>
             </exclusions>
         </dependency>
 
-            <!-- test dependencies -->
+        <!-- test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>

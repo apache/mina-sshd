@@ -30,19 +30,22 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityProviderRegistrarTestSupport;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class EdDSASecurityProviderRegistrarTest extends SecurityProviderRegistrarTestSupport {
     private static SecurityProviderRegistrar registrarInstance;
 
@@ -50,14 +53,14 @@ public class EdDSASecurityProviderRegistrarTest extends SecurityProviderRegistra
         super();
     }
 
-    @BeforeClass
-    public static void checkEDDSASupported() {
-        Assume.assumeTrue(SecurityUtils.isEDDSACurveSupported());
+    @BeforeAll
+    static void checkEDDSASupported() {
+        Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported());
         registrarInstance = new EdDSASecurityProviderRegistrar();
     }
 
     @Test
-    public void testSupportedSecurityEntities() {
+    void supportedSecurityEntities() {
         assertSecurityEntitySupportState(getCurrentTestName(), registrarInstance, true, registrarInstance.getName(),
                 KeyPairGenerator.class, KeyFactory.class);
         assertSecurityEntitySupportState(getCurrentTestName(), registrarInstance, true,
@@ -69,21 +72,21 @@ public class EdDSASecurityProviderRegistrarTest extends SecurityProviderRegistra
             if (supported.contains(entity)) {
                 continue;
             }
-            assertFalse("Unexpected support for " + entity.getSimpleName(),
-                    registrarInstance.isSecurityEntitySupported(entity, registrarInstance.getName()));
+            assertFalse(registrarInstance.isSecurityEntitySupported(entity, registrarInstance.getName()),
+                    "Unexpected support for " + entity.getSimpleName());
         }
     }
 
     @Test
-    public void testGetSecurityProvider() {
+    void getSecurityProvider() {
         Provider expected = registrarInstance.getSecurityProvider();
-        assertNotNull("No provider created", expected);
-        assertEquals("Mismatched provider name", registrarInstance.getName(), expected.getName());
+        assertNotNull(expected, "No provider created");
+        assertEquals(registrarInstance.getName(), expected.getName(), "Mismatched provider name");
         assertObjectInstanceOf("Mismatched provider type", EdDSASecurityProvider.class, expected);
     }
 
     @Test
-    public void testGetSecurityProviderCaching() {
+    void getSecurityProviderCaching() {
         testGetSecurityProviderCaching(getCurrentTestName(), registrarInstance);
     }
 }

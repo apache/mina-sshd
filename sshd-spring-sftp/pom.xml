@@ -68,7 +68,7 @@
             <artifactId>spring-integration-file</artifactId>
         </dependency>
 
-            <!-- Test dependencies -->
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.springframework.integration</groupId>
             <artifactId>spring-integration-sftp</artifactId>
@@ -84,6 +84,11 @@
             <artifactId>sshd-core</artifactId>
             <version>${project.version}</version>
             <type>test-jar</type>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
         <dependency>

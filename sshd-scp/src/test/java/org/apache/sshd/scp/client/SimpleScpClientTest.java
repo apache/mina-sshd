@@ -31,14 +31,19 @@ import org.apache.sshd.scp.common.ScpHelper;
 import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     private final Path targetPath;
     private final Path parentPath;
@@ -51,6 +56,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
+    @BeforeEach
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -61,21 +67,21 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     }
 
     @Test
-    public void testSessionClosedWhenClientClosed() throws Exception {
+    void sessionClosedWhenClientClosed() throws Exception {
         try (CloseableScpClient scp = login()) {
-            assertTrue("SCP not open", scp.isOpen());
+            assertTrue(scp.isOpen(), "SCP not open");
 
             Session session = scp.getClientSession();
-            assertTrue("Session not open", session.isOpen());
+            assertTrue(session.isOpen(), "Session not open");
 
             scp.close();
-            assertFalse("Session not closed", session.isOpen());
-            assertFalse("SCP not closed", scp.isOpen());
+            assertFalse(session.isOpen(), "Session not closed");
+            assertFalse(scp.isOpen(), "SCP not closed");
         }
     }
 
     @Test
-    public void testScpUploadProxy() throws Exception {
+    void scpUploadProxy() throws Exception {
         try (CloseableScpClient scp = login()) {
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                     ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
@@ -92,12 +98,12 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
             scp.upload(localFile, remotePath);
 
             byte[] uploaded = Files.readAllBytes(remoteFile);
-            assertArrayEquals("Mismatched uploaded data", written, uploaded);
+            assertArrayEquals(written, uploaded, "Mismatched uploaded data");
         }
     }
 
     @Test
-    public void testScpDownloadProxy() throws Exception {
+    void scpDownloadProxy() throws Exception {
         try (CloseableScpClient scp = login()) {
             Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                     ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
@@ -113,7 +119,7 @@ public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
             scp.download(remotePath, localFile);
 
             byte[] downloaded = Files.readAllBytes(localFile);
-            assertArrayEquals("Mismatched downloaded data", written, downloaded);
+            assertArrayEquals(written, downloaded, "Mismatched downloaded data");
         }
     }
 

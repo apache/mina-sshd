@@ -59,19 +59,24 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.JSchUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Port forwarding tests
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class PortForwardingLoadTest extends BaseTestSupport {
     private final Logger log;
 
@@ -151,13 +156,13 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         log = LoggerFactory.getLogger(getClass());
     }
 
-    @BeforeClass
-    public static void jschInit() {
+    @BeforeAll
+    static void jschInit() {
         JSchLogger.init();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestFullSupportServer();
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.addPortForwardingEventListener(serverSideListener);
@@ -181,8 +186,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         this.acceptor = acceptor;
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -193,7 +198,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
 
     @Test
     @SuppressWarnings("checkstyle:nestedtrydepth")
-    public void testLocalForwardingPayload() throws Exception {
+    void localForwardingPayload() throws Exception {
         final int numIterations = 100;
         final String payloadTmpData = "This is significantly longer Test Data. This is significantly "
                                       + "longer Test Data. This is significantly longer Test Data. This is significantly "
@@ -334,8 +339,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             }
 
             try {
-                assertTrue("Failed to await pending iterations=" + numIterations,
-                        iterationsSignal.tryAcquire(numIterations, numIterations, TimeUnit.SECONDS));
+                assertTrue(iterationsSignal.tryAcquire(numIterations, numIterations, TimeUnit.SECONDS),
+                        "Failed to await pending iterations=" + numIterations);
             } finally {
                 log.info("{} remove port forwarding for {}", getCurrentTestName(), sinkPort);
                 session.delPortForwardingL(sinkPort);
@@ -348,11 +353,11 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             session.disconnect();
         }
 
-        assertEquals("Some errors occured", 0, errors.get());
+        assertEquals(0, errors.get(), "Some errors occured");
     }
 
     private static void assertPayloadEquals(String message, byte[] expectedBytes, byte[] actualBytes) {
-        assertEquals(message + ": mismatched payload length", expectedBytes.length, actualBytes.length);
+        assertEquals(expectedBytes.length, actualBytes.length, message + ": mismatched payload length");
 
         for (int index = 0; index < expectedBytes.length; index++) {
             if (expectedBytes[index] == actualBytes[index]) {
@@ -373,7 +378,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     }
 
     @Test
-    public void testRemoteForwardingPayload() throws Exception {
+    void remoteForwardingPayload() throws Exception {
         final int numIterations = 100;
         final String payload = "This is significantly longer Test Data. This is significantly "
                                + "longer Test Data. This is significantly longer Test Data. This is significantly "
@@ -413,7 +418,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
                 }
             };
             tWriter.start();
-            assertTrue("Server not started", started.await(1, TimeUnit.SECONDS));
+            assertTrue(started.await(1, TimeUnit.SECONDS), "Server not started");
 
             final RuntimeException lenOK[] = new RuntimeException[numIterations];
             final RuntimeException dataOK[] = new RuntimeException[numIterations];
@@ -462,8 +467,8 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             log.info("Successful iterations: " + ok + " out of " + numIterations);
             Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             for (int i = 0; i < numIterations; i++) {
-                assertNull("Bad length at iteration " + i, lenOK[i]);
-                assertNull("Bad data at iteration " + i, dataOK[i]);
+                assertNull(lenOK[i], "Bad length at iteration " + i);
+                assertNull(dataOK[i], "Bad data at iteration " + i);
             }
             Thread.sleep(TimeUnit.SECONDS.toMillis(1L));
             session.delPortForwardingR(forwardedPort);
@@ -475,7 +480,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     }
 
     @Test
-    public void testForwardingOnLoad() throws Exception {
+    void forwardingOnLoad() throws Exception {
         //        final String path = "/history/recent/troubles/";
         //        final String host = "www.bbc.co.uk";
         //        final String path = "";
@@ -576,7 +581,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
         if (str.indexOf("</html>") <= 0) {
             System.err.println(str);
         }
-        assertTrue("Missing HTML close tag", str.indexOf("</html>") > 0);
+        assertTrue(str.indexOf("</html>") > 0, "Missing HTML close tag");
         get.releaseConnection();
         //        url.openConnection().setDefaultUseCaches(false);
         //        Reader reader = new BufferedReader(new InputStreamReader(url.openStream()));

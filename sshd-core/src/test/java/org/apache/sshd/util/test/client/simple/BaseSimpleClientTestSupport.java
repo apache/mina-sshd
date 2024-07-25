@@ -23,8 +23,8 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.simple.SimpleClient;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -40,7 +40,7 @@ public abstract class BaseSimpleClientTestSupport extends BaseTestSupport {
         super();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.start();
@@ -52,7 +52,7 @@ public abstract class BaseSimpleClientTestSupport extends BaseTestSupport {
         simple.setAuthenticationTimeout(AUTH_TIMEOUT.toMillis());
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);

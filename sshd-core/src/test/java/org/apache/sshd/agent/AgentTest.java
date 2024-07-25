@@ -49,23 +49,26 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+
+@TestMethodOrder(MethodName.class)
 public class AgentTest extends BaseTestSupport {
     public AgentTest() {
         super();
     }
 
-    @BeforeClass
-    public static void checkTestAssumptions() {
+    @BeforeAll
+    static void checkTestAssumptions() {
         // TODO: revisit this test to work without BC
-        Assume.assumeTrue("BouncyCastle not registered", SecurityUtils.isBouncyCastleRegistered());
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
         AprLibrary library = null;
         try {
             library = AprLibrary.getInstance();
@@ -77,11 +80,11 @@ public class AgentTest extends BaseTestSupport {
                 throw e;
             }
         }
-        Assume.assumeTrue("Native library N/A", library != null);
+        Assumptions.assumeTrue(library != null, "Native library N/A");
     }
 
     @Test
-    public void testAgentServer() throws Exception {
+    void agentServer() throws Exception {
         try (AgentServer agent = new AgentServer()) {
             String authSocket = agent.start();
 
@@ -91,23 +94,23 @@ public class AgentTest extends BaseTestSupport {
 
             try (SshAgent client = new AgentClient(manager, authSocket)) {
                 Iterable<? extends Map.Entry<PublicKey, String>> keys = client.getIdentities();
-                assertNotNull("No initial identities", keys);
+                assertNotNull(keys, "No initial identities");
                 assertObjectInstanceOf("Non collection initial identities", Collection.class, keys);
-                assertEquals("Unexpected initial identities size", 0, ((Collection<?>) keys).size());
+                assertEquals(0, ((Collection<?>) keys).size(), "Unexpected initial identities size");
 
                 KeyPairProvider provider = createTestHostKeyProvider();
                 KeyPair k = provider.loadKey(null, KeyPairProvider.SSH_RSA);
                 client.addIdentity(k, "");
                 keys = client.getIdentities();
-                assertNotNull("No registered identities after add", keys);
+                assertNotNull(keys, "No registered identities after add");
                 assertObjectInstanceOf("Non collection registered identities", Collection.class, keys);
-                assertEquals("Mismatched registered keys size", 1, ((Collection<?>) keys).size());
+                assertEquals(1, ((Collection<?>) keys).size(), "Mismatched registered keys size");
 
                 client.removeIdentity(k.getPublic());
                 keys = client.getIdentities();
-                assertNotNull("No registered identities after remove", keys);
+                assertNotNull(keys, "No registered identities after remove");
                 assertObjectInstanceOf("Non collection removed identities", Collection.class, keys);
-                assertEquals("Registered keys size not empty", 0, ((Collection<?>) keys).size());
+                assertEquals(0, ((Collection<?>) keys).size(), "Registered keys size not empty");
 
                 client.removeAllIdentities();
             }
@@ -116,7 +119,7 @@ public class AgentTest extends BaseTestSupport {
 
     @Test
     @SuppressWarnings("checkstyle:nestedtrydepth")
-    public void testAgentForwarding() throws Exception {
+    void agentForwarding() throws Exception {
         TestEchoShellFactory shellFactory = new TestEchoShellFactory();
         ProxyAgentFactory agentFactory = new ProxyAgentFactory();
         LocalAgentFactory localAgentFactory = new LocalAgentFactory();

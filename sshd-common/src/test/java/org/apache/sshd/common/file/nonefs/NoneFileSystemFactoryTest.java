@@ -24,28 +24,31 @@ import java.nio.file.FileSystem;
 import java.nio.file.spi.FileSystemProvider;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class NoneFileSystemFactoryTest extends JUnitTestSupport {
     public NoneFileSystemFactoryTest() {
         super();
     }
 
     @Test
-    public void testFileSystemCreation() throws IOException {
+    void fileSystemCreation() throws IOException {
         FileSystem fs = NoneFileSystemFactory.INSTANCE.createFileSystem(null);
         FileSystemProvider provider = fs.provider();
-        assertEquals("Mismatched provider scheme", NoneFileSystemProvider.SCHEME, provider.getScheme());
+        assertEquals(NoneFileSystemProvider.SCHEME, provider.getScheme(), "Mismatched provider scheme");
     }
 
     @Test
-    public void testUserHomeDirectory() throws IOException {
+    void userHomeDirectory() throws IOException {
         assertNull(NoneFileSystemFactory.INSTANCE.getUserHomeDir(null));
     }
 }

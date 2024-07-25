@@ -56,19 +56,26 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
     private static final String HASHED_HOST = "192.168.1.61";
     private static final Map<SshdSocketAddress, List<PublicKey>> HOST_KEYS = new TreeMap<>(SshdSocketAddress.BY_HOST_AND_PORT);
@@ -79,10 +86,10 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void loadHostsEntries() throws Exception {
+    @BeforeAll
+    static void loadHostsEntries() throws Exception {
         URL url = KnownHostsServerKeyVerifierTest.class.getResource(KnownHostEntry.STD_HOSTS_FILENAME);
-        assertNotNull("Missing test file resource", url);
+        assertNotNull(url, "Missing test file resource");
         entriesFile = Paths.get(url.toURI());
         outputDebugMessage("loadHostsEntries(%s)", entriesFile);
         hostsEntries = loadEntries(entriesFile);
@@ -100,7 +107,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
     @Test
     @SuppressWarnings({ "unchecked", "rawtypes" })
-    public void testParallelLoading() {
+    void parallelLoading() {
         KnownHostsServerKeyVerifier verifier
                 = new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, entriesFile) {
                     @Override
@@ -133,15 +140,15 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
             Mockito.when(session.getConnectAddress()).thenReturn(host);
             if ("revoked".equals(entry.getMarker())) {
-                assertFalse("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, publicKey));
+                assertFalse(verifier.verifyServerKey(session, host, publicKey), "Failed to validate server=" + entry);
             } else {
-                assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, publicKey));
+                assertTrue(verifier.verifyServerKey(session, host, publicKey), "Failed to validate server=" + entry);
             }
         }));
     }
 
     @Test
-    public void testNoUpdatesNoNewHostsAuthentication() throws Exception {
+    void noUpdatesNoNewHostsAuthentication() throws Exception {
         AtomicInteger delegateCount = new AtomicInteger(0);
         ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
             delegateCount.incrementAndGet();
@@ -170,17 +177,17 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(hostKey)));
             outputDebugMessage("Verify host=%s", entry);
             if ("revoked".equals(entry.getMarker())) {
-                assertFalse("Failed to verify server=" + entry, invokeVerifier(verifier, host, hostKey));
+                assertFalse(invokeVerifier(verifier, host, hostKey), "Failed to verify server=" + entry);
             } else {
-                assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, host, hostKey));
+                assertTrue(invokeVerifier(verifier, host, hostKey), "Failed to verify server=" + entry);
             }
-            assertEquals("Unexpected delegate invocation for host=" + entry, 0, delegateCount.get());
-            assertEquals("Unexpected update invocation for host=" + entry, 0, updateCount.get());
+            assertEquals(0, delegateCount.get(), "Unexpected delegate invocation for host=" + entry);
+            assertEquals(0, updateCount.get(), "Unexpected update invocation for host=" + entry);
         }));
     }
 
     @Test
-    public void testFileUpdatedOnEveryNewHost() throws Exception {
+    void fileUpdatedOnEveryNewHost() throws Exception {
         AtomicInteger delegateCount = new AtomicInteger(0);
         ServerKeyVerifier delegate = (clientSession, remoteAddress, serverKey) -> {
             delegateCount.incrementAndGet();
@@ -211,10 +218,10 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     .findAny()
                     .orElseThrow(() -> new IllegalStateException("Missing updated key for " + KeyUtils.getKeyType(serverKey)));
             outputDebugMessage("Verify host=%s", entry);
-            assertTrue("Failed to verify server=" + entry, invokeVerifier(verifier, hostIdentity, serverKey));
+            assertTrue(invokeVerifier(verifier, hostIdentity, serverKey), "Failed to verify server=" + entry);
             verificationCount++;
-            assertEquals("Mismatched number of delegate counts for server=" + entry, verificationCount, delegateCount.get());
-            assertEquals("Mismatched number of update counts for server=" + entry, verificationCount, updateCount.get());
+            assertEquals(verificationCount, delegateCount.get(), "Mismatched number of delegate counts for server=" + entry);
+            assertEquals(verificationCount, updateCount.get(), "Mismatched number of update counts for server=" + entry);
         }
 
         // make sure we have all the original entries and ONLY them
@@ -227,7 +234,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     .findAny()
                     .orElseThrow(() -> new IllegalStateException("Missing updated key for " + expected));
 
-            assertTrue("No updated entry for host=" + hostIdentity, updatedEntries.get(hostIdentity).remove(actual));
+            assertTrue(updatedEntries.get(hostIdentity).remove(actual), "No updated entry for host=" + hostIdentity);
             if (updatedEntries.get(hostIdentity).isEmpty()) {
                 updatedEntries.remove(hostIdentity);
             }
@@ -244,15 +251,15 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 expLine = expLine.substring(0, pos).trim();
             }
 
-            assertEquals("Mismatched entry data for host=" + hostIdentity, expLine, actual.getConfigLine());
+            assertEquals(expLine, actual.getConfigLine(), "Mismatched entry data for host=" + hostIdentity);
         });
 
-        assertTrue("Unexpected extra updated hosts: " + updatedEntries, updatedEntries.isEmpty());
+        assertTrue(updatedEntries.isEmpty(), "Unexpected extra updated hosts: " + updatedEntries);
     }
 
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void testWriteHashedHostValues() throws Exception {
+    void writeHashedHostValues() throws Exception {
         Path path = getKnownHostCopyPath();
         Files.deleteIfExists(path);
 
@@ -278,14 +285,14 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             outputDebugMessage("Write host=%s", entry);
 
             Mockito.when(session.getConnectAddress()).thenReturn(host);
-            assertTrue("Failed to validate server=" + entry, verifier.verifyServerKey(session, host, serverKey));
+            assertTrue(verifier.verifyServerKey(session, host, serverKey), "Failed to validate server=" + entry);
         });
 
         // force re-read to ensure all values are hashed
         Collection<HostEntryPair> keys = verifier.reloadKnownHosts(session, path);
         for (HostEntryPair ke : keys) {
             KnownHostEntry entry = ke.getHostEntry();
-            assertNotNull("No hashing for entry=" + entry, entry.getHashedEntry());
+            assertNotNull(entry.getHashedEntry(), "No hashing for entry=" + entry);
         }
         verifier.setLoadedHostsEntries(keys);
 
@@ -299,12 +306,12 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             outputDebugMessage("Re-validate host=%s", entry);
 
             Mockito.when(session.getConnectAddress()).thenReturn(host);
-            assertTrue("Failed to re-validate server=" + entry, verifier.verifyServerKey(session, host, serverKey));
+            assertTrue(verifier.verifyServerKey(session, host, serverKey), "Failed to re-validate server=" + entry);
         });
     }
 
     @Test
-    public void testRejectModifiedServerKey() throws Exception {
+    void rejectModifiedServerKey() throws Exception {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         PublicKey modifiedKey = kp.getPublic();
         AtomicInteger acceptCount = new AtomicInteger(0);
@@ -317,8 +324,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                             KnownHostEntry entry, PublicKey expected, PublicKey actual)
                             throws Exception {
                         acceptCount.incrementAndGet();
-                        assertNull("Unexpected marker for " + remoteAddress, entry.getMarker());
-                        assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
+                        assertNull(entry.getMarker(), "Unexpected marker for " + remoteAddress);
+                        assertSame(modifiedKey, actual, "Mismatched actual key for " + remoteAddress);
                         return super.acceptModifiedServerKey(clientSession, remoteAddress, entry, expected, actual);
                     }
 
@@ -337,8 +344,8 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             SshdSocketAddress hostIdentity = ke.getKey();
             for (KnownHostEntry entry : ke.getValue()) {
                 outputDebugMessage("Verify host=%s", entry);
-                assertFalse("Unexpected to verification success for " + entry,
-                        invokeVerifier(verifier, hostIdentity, modifiedKey));
+                assertFalse(invokeVerifier(verifier, hostIdentity, modifiedKey),
+                        "Unexpected to verification success for " + entry);
                 long acceptedCount = ke.getValue().stream()
                         .filter(k -> !"revoked".equals(k.getMarker()))
                         .count();
@@ -347,16 +354,18 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                 } else {
                     validationCount++;
                 }
-                assertEquals("Mismatched invocation count (acceptModifiedServerKey) for host=" + entry, validationCount,
-                        acceptCount.get());
-                assertEquals("Mismatched invocation count (acceptUnknownHostKey) host=" + entry, validUnknownCount,
-                        unknownCount.get());
+                assertEquals(validationCount,
+                        acceptCount.get(),
+                        "Mismatched invocation count (acceptModifiedServerKey) for host=" + entry);
+                assertEquals(validUnknownCount,
+                        unknownCount.get(),
+                        "Mismatched invocation count (acceptUnknownHostKey) host=" + entry);
             }
         }
     }
 
     @Test
-    public void testAcceptModifiedServerKeyUpdatesFile() throws Exception {
+    void acceptModifiedServerKeyUpdatesFile() throws Exception {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         PublicKey modifiedKey = kp.getPublic();
         Path path = createKnownHostsCopy();
@@ -367,14 +376,14 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     ClientSession clientSession, SocketAddress remoteAddress,
                     KnownHostEntry entry, PublicKey expected, PublicKey actual)
                     throws Exception {
-                assertSame("Mismatched actual key for " + remoteAddress, modifiedKey, actual);
+                assertSame(modifiedKey, actual, "Mismatched actual key for " + remoteAddress);
                 return true;
             }
         };
 
         hostsEntries.forEach((host, list) -> {
             outputDebugMessage("Verify host=%s", host);
-            assertTrue("Failed to verify " + host, invokeVerifier(verifier, host, modifiedKey));
+            assertTrue(invokeVerifier(verifier, host, modifiedKey), "Failed to verify " + host);
         });
 
         String expected = PublicKeyEntry.toString(modifiedKey);
@@ -391,7 +400,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             }
 
             String actual = updated.getConfigLine();
-            assertNotNull("No updated entry for " + hostsEntries.get(host), actual);
+            assertNotNull(actual, "No updated entry for " + hostsEntries.get(host));
             int pos = actual.indexOf(' ');
             if (actual.charAt(0) == KnownHostEntry.MARKER_INDICATOR) {
                 for (pos++; pos < actual.length(); pos++) {
@@ -403,39 +412,45 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
             }
 
             actual = GenericUtils.trimToEmpty(actual.substring(pos + 1));
-            assertEquals("Mismatched updated value for host=" + host, expected, actual);
+            assertEquals(expected, actual, "Mismatched updated value for host=" + host);
         });
 
-        assertTrue("Unexpected extra updated entries: " + updatedKeys, updatedKeys.isEmpty());
+        assertTrue(updatedKeys.isEmpty(), "Unexpected extra updated entries: " + updatedKeys);
     }
 
-    @Test   // SSHD-1063
-    public void testUpdateSameHost2PortsStdFirstSameKey() throws Exception {
+    // SSHD-1063
+    @Test
+    void updateSameHost2PortsStdFirstSameKey() throws Exception {
         testUpdateSameHostWithDifferentPorts(SshConstants.DEFAULT_PORT, 2020, true);
     }
 
-    @Test   // SSHD-1063
-    public void testUpdateSameHost2PortsStdLastSameKey() throws Exception {
+    // SSHD-1063
+    @Test
+    void updateSameHost2PortsStdLastSameKey() throws Exception {
         testUpdateSameHostWithDifferentPorts(2020, SshConstants.DEFAULT_PORT, true);
     }
 
-    @Test   // SSHD-1063
-    public void testUpdateSameHost2NonStdPortsSameKey() throws Exception {
+    // SSHD-1063
+    @Test
+    void updateSameHost2NonStdPortsSameKey() throws Exception {
         testUpdateSameHostWithDifferentPorts(2020, 2222, true);
     }
 
-    @Test   // SSHD-1063
-    public void testUpdateSameHost2PortsStdFirstDiffKeys() throws Exception {
+    // SSHD-1063
+    @Test
+    void updateSameHost2PortsStdFirstDiffKeys() throws Exception {
         testUpdateSameHostWithDifferentPorts(SshConstants.DEFAULT_PORT, 2020, false);
     }
 
-    @Test   // SSHD-1063
-    public void testUpdateSameHost2PortsStdLastDiffKeys() throws Exception {
+    // SSHD-1063
+    @Test
+    void updateSameHost2PortsStdLastDiffKeys() throws Exception {
         testUpdateSameHostWithDifferentPorts(2020, SshConstants.DEFAULT_PORT, false);
     }
 
-    @Test   // SSHD-1063
-    public void testUpdateSameHost2NonStdPortsDiffKeys() throws Exception {
+    // SSHD-1063
+    @Test
+    void updateSameHost2NonStdPortsDiffKeys() throws Exception {
         testUpdateSameHostWithDifferentPorts(2020, 2222, false);
     }
 
@@ -452,17 +467,17 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
 
         SocketAddress address1 = new SshdSocketAddress(HASHED_HOST, port1);
         boolean accepted1 = invokeVerifier(verifier, address1, serverKey1);
-        assertTrue("Accepted on port=" + port1 + " ?", accepted1);
+        assertTrue(accepted1, "Accepted on port=" + port1 + " ?");
 
         KeyPair kp2 = useSameKey ? kp1 : CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         PublicKey serverKey2 = kp2.getPublic();
 
         SocketAddress address2 = new SshdSocketAddress(HASHED_HOST, port2);
         boolean accepted2 = invokeVerifier(verifier, address2, serverKey2);
-        assertTrue("Accepted on port=" + port2 + " ?", accepted2);
+        assertTrue(accepted2, "Accepted on port=" + port2 + " ?");
 
         Map<SshdSocketAddress, List<KnownHostEntry>> updatedKeys = loadEntries(path);
-        assertEquals("Mismatched total entries count", 2, updatedKeys.size());
+        assertEquals(2, updatedKeys.size(), "Mismatched total entries count");
     }
 
     private Path createKnownHostsCopy() throws IOException {
@@ -509,7 +524,7 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
                     int port = 0;
                     if (a.charAt(0) == HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_START_DELIM) {
                         pos = a.indexOf(HostPatternsHolder.NON_STANDARD_PORT_PATTERN_ENCLOSURE_END_DELIM, 1);
-                        assertTrue("Missing non-standard port host pattern enclosure: " + a, pos > 0);
+                        assertTrue(pos > 0, "Missing non-standard port host pattern enclosure: " + a);
 
                         port = Integer.parseInt(a.substring(pos + 2));
                         a = a.substring(1, pos);

@@ -39,8 +39,8 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -133,7 +133,7 @@ public abstract class AbstractScpTestSupport extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
@@ -206,7 +206,7 @@ public abstract class AbstractScpTestSupport extends BaseTestSupport {
         return creator.createScpClient(session, listener);
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         sshd.setFileSystemFactory(fileSystemFactory);
     }

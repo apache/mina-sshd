@@ -24,40 +24,36 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
-    private final String value;
-    private final String loginPart;
-    private final String keyPart;
-    private final Map<String, String> options;
+    private String value;
+    private String loginPart;
+    private String keyPart;
+    private Map<String, String> options;
 
-    public AuthorizedKeyEntryLoginOptionsParseTest(String value, String loginPart, String keyPart,
-                                                   Map<String, String> options) {
+    public void initAuthorizedKeyEntryLoginOptionsParseTest(
+            String value, String loginPart, String keyPart,
+            Map<String, String> options) {
         this.value = value;
         this.loginPart = loginPart;
         this.keyPart = keyPart;
         this.options = options;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         addData(params, "ssh-rsa AAAAB2...19Q==", "john@example.net", "from=\"*.sales.example.net,!pc.sales.example.net\"");
@@ -103,22 +99,26 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
         params.add(new Object[] { value, value.substring(0, pos), value.substring(pos + 1), optionsMap });
     }
 
-    @Test
-    public void testResolveEntryComponents() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void resolveEntryComponents(String value, String loginPart, String keyPart, Map<String, String> options) {
+        initAuthorizedKeyEntryLoginOptionsParseTest(value, loginPart, keyPart, options);
         Map.Entry<String, String> actual = AuthorizedKeyEntry.resolveEntryComponents(value);
-        assertNotNull(value, actual);
-        assertEquals("login(" + value + ")", loginPart, actual.getKey());
-        assertEquals("remainder(" + value + ")", keyPart, actual.getValue());
+        assertNotNull(actual, value);
+        assertEquals(loginPart, actual.getKey(), "login(" + value + ")");
+        assertEquals(keyPart, actual.getValue(), "remainder(" + value + ")");
     }
 
-    @Test
-    public void testParseLoginOptions() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void parseLoginOptions(String value, String loginPart, String keyPart, Map<String, String> options) {
+        initAuthorizedKeyEntryLoginOptionsParseTest(value, loginPart, keyPart, options);
         Map<String, String> parsed = AuthorizedKeyEntry.parseLoginOptions(loginPart);
         options.forEach((key, expected) -> {
             String actual = parsed.get(key);
-            assertEquals(key, expected, actual);
+            assertEquals(expected, actual, key);
         });
-        assertEquals("Mismatched size", options.size(), parsed.size());
+        assertEquals(options.size(), parsed.size(), "Mismatched size");
     }
 
     @Override

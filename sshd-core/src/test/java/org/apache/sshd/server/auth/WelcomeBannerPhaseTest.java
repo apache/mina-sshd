@@ -30,23 +30,20 @@ import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
     private static SshServer sshd;
@@ -55,17 +52,16 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
     private WelcomeBannerPhase phase;
 
-    public WelcomeBannerPhaseTest(WelcomeBannerPhase phase) {
+    public void initWelcomeBannerPhaseTest(WelcomeBannerPhase phase) {
         this.phase = phase;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(WelcomeBannerPhase.VALUES);
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(WelcomeBannerPhaseTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -74,8 +70,8 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -93,8 +89,10 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void testWelcomeBannerPhase() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void welcomeBannerPhase(WelcomeBannerPhase phase) throws Exception {
+        initWelcomeBannerPhaseTest(phase);
         CoreModuleProperties.WELCOME_BANNER_PHASE.set(sshd, phase);
         CoreModuleProperties.WELCOME_BANNER.set(sshd, phase.name());
 
@@ -107,7 +105,7 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
             @Override
             public void welcome(ClientSession session, String banner, String lang) {
-                assertNull("Multiple banner invocations", welcomeHolder.getAndSet(banner));
+                assertNull(welcomeHolder.getAndSet(banner), "Multiple banner invocations");
             }
 
             @Override
@@ -132,11 +130,11 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
         Object banner = welcomeHolder.getAndSet(null);
         if (WelcomeBannerPhase.NEVER.equals(phase)) {
-            assertNull("Unexpected banner", banner);
+            assertNull(banner, "Unexpected banner");
         } else {
             WelcomeBannerPhase value
                     = PropertyResolverUtils.toEnum(WelcomeBannerPhase.class, banner, false, WelcomeBannerPhase.VALUES);
-            assertSame("Mismatched banner value", phase, value);
+            assertSame(phase, value, "Mismatched banner value");
         }
     }
 }

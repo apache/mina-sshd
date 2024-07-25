@@ -28,41 +28,42 @@ import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairResourceParserTestSupport {
-    public OpenSSHKeyPairResourceParserDecodingTest(BuiltinIdentities identity) {
-        super(identity);
+
+    public void initOpenSSHKeyPairResourceParserDecodingTest(BuiltinIdentities identity) {
+        setIdentity(identity);
     }
 
-    @Parameters(name = "type={0}")
     public static List<Object[]> parameters() {
         return parameterize(BuiltinIdentities.VALUES);
     }
 
-    @Test
-    public void testLoadUnencryptedKeyPairs() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={0}")
+    public void loadUnencryptedKeyPairs(BuiltinIdentities identity) throws Exception {
+        initOpenSSHKeyPairResourceParserDecodingTest(identity);
         testLoadKeyPairs(false, null);
     }
 
-    @Test
-    public void testLoadEncryptedKeyPairs() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={0}")
+    public void loadEncryptedKeyPairs(BuiltinIdentities identity) throws Exception {
+        initOpenSSHKeyPairResourceParserDecodingTest(identity);
         testLoadKeyPairs(true, DEFAULT_PASSWORD_PROVIDER);
     }
 
@@ -70,7 +71,7 @@ public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairReso
     protected void testLoadKeyPairs(
             boolean encrypted, String resourceKey, Collection<KeyPair> pairs, PublicKey pubEntry)
             throws Exception {
-        assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
+        assertEquals(1, GenericUtils.size(pairs), "Mismatched pairs count");
 
         Class<? extends PublicKey> pubType = identity.getPublicKeyType();
         Class<? extends PrivateKey> prvType = identity.getPrivateKeyType();
@@ -85,7 +86,7 @@ public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairReso
 
             String pubName = KeyUtils.getKeyType(pubKey);
             String prvName = KeyUtils.getKeyType(prvKey);
-            assertEquals("Mismatched reported key type names", pubName, prvName);
+            assertEquals(pubName, prvName, "Mismatched reported key type names");
 
             if (!supportedTypeNames.contains(pubName)) {
                 fail("Unsupported key type name (" + pubName + "): " + supportedTypeNames);
@@ -95,7 +96,7 @@ public class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairReso
 
             @SuppressWarnings("rawtypes")
             PrivateKeyEntryDecoder decoder = OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
-            assertNotNull("No private key decoder", decoder);
+            assertNotNull(decoder, "No private key decoder");
 
             if (decoder.isPublicKeyRecoverySupported()) {
                 @SuppressWarnings("unchecked")

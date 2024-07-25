@@ -19,14 +19,14 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ARCFOUR256Test extends BaseCipherTest {
     public ARCFOUR256Test() {
         super();
@@ -34,7 +34,7 @@ public class ARCFOUR256Test extends BaseCipherTest {
 
     @Test
     @SuppressWarnings("deprecation")
-    public void testEncryptDecrypt() throws Exception {
+    void encryptDecrypt() throws Exception {
         // for RC4 256 bits we need the JCE unlimited strength policy
         ensureCipherInformationKeySizeSupported(BuiltinCiphers.arcfour256);
         testEncryptDecrypt(BuiltinCiphers.arcfour256);

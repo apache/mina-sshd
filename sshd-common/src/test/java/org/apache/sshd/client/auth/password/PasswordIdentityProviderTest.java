@@ -29,24 +29,25 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PasswordIdentityProviderTest extends JUnitTestSupport {
     public PasswordIdentityProviderTest() {
         super();
     }
 
     @Test
-    public void testMultiProvider() throws IOException, GeneralSecurityException {
+    void multiProvider() throws IOException, GeneralSecurityException {
         String[][] values = {
                 { getClass().getSimpleName(), getCurrentTestName() },
                 { new Date(System.currentTimeMillis()).toString() },
@@ -69,7 +70,7 @@ public class PasswordIdentityProviderTest extends JUnitTestSupport {
 
     private static void assertProviderContents(String message, PasswordIdentityProvider p, Iterable<String> expected)
             throws IOException, GeneralSecurityException {
-        assertNotNull(message + ": no provider", p);
+        assertNotNull(p, message + ": no provider");
         assertEquals(message, expected, p.loadPasswords(null));
     }
 }

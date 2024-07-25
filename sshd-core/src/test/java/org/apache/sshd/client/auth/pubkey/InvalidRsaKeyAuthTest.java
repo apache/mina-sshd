@@ -32,9 +32,9 @@ import org.apache.sshd.server.auth.hostbased.RejectAllHostBasedAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 public class InvalidRsaKeyAuthTest extends BaseTestSupport {
 
@@ -48,8 +48,8 @@ public class InvalidRsaKeyAuthTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setupClientAndServer() throws Exception {
+    @BeforeEach
+    void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(InvalidRsaKeyAuthTest.class);
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setHostBasedAuthenticator(RejectAllHostBasedAuthenticator.INSTANCE);
@@ -65,8 +65,8 @@ public class InvalidRsaKeyAuthTest extends BaseTestSupport {
         client.start();
     }
 
-    @After
-    public void teardownClientAndServer() throws Exception {
+    @AfterEach
+    void teardownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -85,7 +85,7 @@ public class InvalidRsaKeyAuthTest extends BaseTestSupport {
 
     // SSHD-1231
     @Test
-    public void testConnectWithWrongRsaKeyFirst() throws Exception {
+    void connectWithWrongRsaKeyFirst() throws Exception {
         // Generate an RSA key the client will try first, and which the server will reject.
         KeyPairGenerator generator = KeyPairGenerator.getInstance(KeyUtils.RSA_ALGORITHM);
         generator.initialize(2048);

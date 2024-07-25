@@ -29,34 +29,38 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.signature.BuiltinSignatures.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinSignaturesTest extends JUnitTestSupport {
     public BuiltinSignaturesTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (BuiltinSignatures expected : BuiltinSignatures.VALUES) {
             String name = expected.getName();
             BuiltinSignatures actual = BuiltinSignatures.fromFactoryName(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testParseSignaturesList() {
+    void parseSignaturesList() {
         List<String> builtin = NamedResource.getNameList(BuiltinSignatures.VALUES);
         List<String> unknown
                 = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
@@ -93,52 +97,54 @@ public class BuiltinSignaturesTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveFactoryOnBuiltinValues() {
+    void resolveFactoryOnBuiltinValues() {
         for (SignatureFactory expected : BuiltinSignatures.VALUES) {
             String name = expected.getName();
             SignatureFactory actual = BuiltinSignatures.resolveFactory(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testNotAllowedToRegisterBuiltinFactories() {
-        BuiltinSignatures.VALUES.forEach(expected -> assertThrows("Unexpected success for " + expected.getName(),
-                IllegalArgumentException.class, () -> BuiltinSignatures.registerExtension(expected)));
+    void notAllowedToRegisterBuiltinFactories() {
+        BuiltinSignatures.VALUES.forEach(expected -> assertThrows(IllegalArgumentException.class,
+                () -> BuiltinSignatures.registerExtension(expected), "Unexpected success for " + expected.getName()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testNotAllowedToOverrideRegisteredFactories() {
-        SignatureFactory expected = Mockito.mock(SignatureFactory.class);
-        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+    @Test
+    void notAllowedToOverrideRegisteredFactories() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            SignatureFactory expected = Mockito.mock(SignatureFactory.class);
+            Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String name = expected.getName();
-        try {
-            for (int index = 1; index <= Byte.SIZE; index++) {
-                BuiltinSignatures.registerExtension(expected);
-                assertEquals("Unexpected success at attempt #" + index, 1, index);
+            String name = expected.getName();
+            try {
+                for (int index = 1; index <= Byte.SIZE; index++) {
+                    BuiltinSignatures.registerExtension(expected);
+                    assertEquals(1, index, "Unexpected success at attempt #" + index);
+                }
+            } finally {
+                BuiltinSignatures.unregisterExtension(name);
             }
-        } finally {
-            BuiltinSignatures.unregisterExtension(name);
-        }
+        });
     }
 
     @Test
-    public void testResolveFactoryOnRegisteredExtension() {
+    void resolveFactoryOnRegisteredExtension() {
         SignatureFactory expected = Mockito.mock(SignatureFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
         String name = expected.getName();
         try {
-            assertNull("Extension already registered", BuiltinSignatures.resolveFactory(name));
+            assertNull(BuiltinSignatures.resolveFactory(name), "Extension already registered");
             BuiltinSignatures.registerExtension(expected);
 
             SignatureFactory actual = BuiltinSignatures.resolveFactory(name);
-            assertSame("Mismatched resolved instance", expected, actual);
+            assertSame(expected, actual, "Mismatched resolved instance");
         } finally {
             SignatureFactory actual = BuiltinSignatures.unregisterExtension(name);
-            assertSame("Mismatched unregistered instance", expected, actual);
-            assertNull("Extension not un-registered", BuiltinSignatures.resolveFactory(name));
+            assertSame(expected, actual, "Mismatched unregistered instance");
+            assertNull(BuiltinSignatures.resolveFactory(name), "Extension not un-registered");
         }
     }
 }

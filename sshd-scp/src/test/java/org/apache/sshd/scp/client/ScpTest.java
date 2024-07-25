@@ -74,30 +74,37 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test for SCP support.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ScpTest extends AbstractScpTestSupport {
     public ScpTest() {
         super();
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         setupClientAndServer(ScpTest.class);
     }
 
     @Test
-    public void testNormalizedScpRemotePaths() throws Exception {
+    void normalizedScpRemotePaths() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -133,13 +140,13 @@ public class ScpTest extends AbstractScpTestSupport {
 
                 String path = sb.toString();
                 scp.upload(localPath, path);
-                assertTrue("Remote file not ready for " + path,
-                        waitForFile(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L)));
+                assertTrue(waitForFile(remoteFile, data.length, TimeUnit.SECONDS.toMillis(5L)),
+                        "Remote file not ready for " + path);
 
                 byte[] actual = Files.readAllBytes(remoteFile);
-                assertArrayEquals("Mismatched uploaded data for " + path, data, actual);
+                assertArrayEquals(data, actual, "Mismatched uploaded data for " + path);
                 Files.delete(remoteFile);
-                assertFalse("Remote file (" + remoteFile + ") not deleted for " + path, Files.exists(remoteFile));
+                assertFalse(Files.exists(remoteFile), "Remote file (" + remoteFile + ") not deleted for " + path);
             }
         }
     }
@@ -154,7 +161,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testUploadAbsoluteDriveLetter() throws Exception {
+    void uploadAbsoluteDriveLetter() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -187,7 +194,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpUploadOverwrite() throws Exception {
+    void scpUploadOverwrite() throws Exception {
         String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
         Path targetPath = detectTargetFolder();
@@ -213,7 +220,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpUploadZeroLengthFile() throws Exception {
+    void scpUploadZeroLengthFile() throws Exception {
         Path targetPath = detectTargetFolder();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
@@ -227,7 +234,7 @@ public class ScpTest extends AbstractScpTestSupport {
                 fch.truncate(0L);
             }
         }
-        assertEquals("Non-zero size for local file=" + zeroLocal, 0L, Files.size(zeroLocal));
+        assertEquals(0L, Files.size(zeroLocal), "Non-zero size for local file=" + zeroLocal);
 
         Path zeroRemote = remoteDir.resolve(zeroLocal.getFileName());
         if (Files.exists(zeroRemote)) {
@@ -242,7 +249,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpDownloadZeroLengthFile() throws Exception {
+    void scpDownloadZeroLengthFile() throws Exception {
         Path targetPath = detectTargetFolder();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
@@ -260,7 +267,7 @@ public class ScpTest extends AbstractScpTestSupport {
                 fch.truncate(0L);
             }
         }
-        assertEquals("Non-zero size for remote file=" + zeroRemote, 0L, Files.size(zeroRemote));
+        assertEquals(0L, Files.size(zeroRemote), "Non-zero size for remote file=" + zeroRemote);
 
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), zeroRemote);
         try (CloseableScpClient scp = createCloseableScpClient()) {
@@ -270,7 +277,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpNativeOnSingleFile() throws Exception {
+    void scpNativeOnSingleFile() throws Exception {
         String data = getClass().getName() + "#" + getCurrentTestName() + IoUtils.EOL;
 
         Path targetPath = detectTargetFolder();
@@ -287,7 +294,7 @@ public class ScpTest extends AbstractScpTestSupport {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             CommonTestSupportUtils.writeFile(localOutFile, data);
 
-            assertFalse("Remote folder already exists: " + remoteDir, Files.exists(remoteDir));
+            assertFalse(Files.exists(remoteDir), "Remote folder already exists: " + remoteDir);
 
             String localOutPath = localOutFile.toString();
             String remoteOutPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, remoteOutFile);
@@ -319,7 +326,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpNativeOnMultipleFiles() throws Exception {
+    void scpNativeOnMultipleFiles() throws Exception {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -392,7 +399,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpNativeOnRecursiveDirs() throws Exception {
+    void scpNativeOnRecursiveDirs() throws Exception {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -425,8 +432,9 @@ public class ScpTest extends AbstractScpTestSupport {
         }
     }
 
-    @Test // see SSHD-893
-    public void testScpNativeOnDirWithPattern() throws Exception {
+    // see SSHD-893
+    @Test
+    void scpNativeOnDirWithPattern() throws Exception {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -456,7 +464,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpVirtualOnDirWithPattern() throws Exception {
+    void scpVirtualOnDirWithPattern() throws Exception {
         Path remoteDir = getTempTargetRelativeFile(
                 getClass().getSimpleName(), getCurrentTestName(), ScpHelper.SCP_COMMAND_PREFIX, "virtual");
         CommonTestSupportUtils.deleteRecursive(remoteDir); // start fresh
@@ -499,7 +507,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpNativeOnMixedDirAndFiles() throws Exception {
+    void scpNativeOnMixedDirAndFiles() throws Exception {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -528,7 +536,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
             scp.download(remotePath + "/*", localDir);
             assertFileLength(local1, data.length, DEFAULT_TIMEOUT);
-            assertFalse("Unexpected recursive local file: " + localSub2, Files.exists(localSub2));
+            assertFalse(Files.exists(localSub2), "Unexpected recursive local file: " + localSub2);
 
             Files.delete(local1);
             scp.download(remotePath + "/*", localDir, ScpClient.Option.Recursive);
@@ -538,7 +546,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testScpNativePreserveAttributes() throws Exception {
+    void scpNativePreserveAttributes() throws Exception {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -595,7 +603,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testStreamsUploadAndDownload() throws Exception {
+    void streamsUploadAndDownload() throws Exception {
         try (CloseableScpClient scp = createCloseableScpClient()) {
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -612,16 +620,17 @@ public class ScpTest extends AbstractScpTestSupport {
             assertFileLength(remoteFile, data.length, DEFAULT_TIMEOUT);
 
             byte[] uploaded = Files.readAllBytes(remoteFile);
-            assertArrayEquals("Mismatched uploaded data", data, uploaded);
+            assertArrayEquals(data, uploaded, "Mismatched uploaded data");
 
             outputDebugMessage("Download data from %s", remotePath);
             byte[] downloaded = scp.downloadBytes(remotePath);
-            assertArrayEquals("Mismatched downloaded data", uploaded, downloaded);
+            assertArrayEquals(uploaded, downloaded, "Mismatched downloaded data");
         }
     }
 
-    @Test // see SSHD-649
-    public void testScpFileOpener() throws Exception {
+    // see SSHD-649
+    @Test
+    void scpFileOpener() throws Exception {
         class TrackingFileOpener extends DefaultScpFileOpener {
             private final AtomicInteger readCount = new AtomicInteger(0);
             private final AtomicInteger writeCount = new AtomicInteger(0);
@@ -686,32 +695,33 @@ public class ScpTest extends AbstractScpTestSupport {
             assertFileLength(remoteFile, data.length, DEFAULT_TIMEOUT);
 
             AtomicInteger serverRead = serverOpener.getReadCount();
-            assertEquals("Mismatched server upload open read count", 0, serverRead.get());
+            assertEquals(0, serverRead.get(), "Mismatched server upload open read count");
 
             AtomicInteger serverWrite = serverOpener.getWriteCount();
-            assertEquals("Mismatched server upload write count", 1, serverWrite.getAndSet(0));
+            assertEquals(1, serverWrite.getAndSet(0), "Mismatched server upload write count");
 
             AtomicInteger clientRead = clientOpener.getReadCount();
-            assertEquals("Mismatched client upload read count", 1, clientRead.getAndSet(0));
+            assertEquals(1, clientRead.getAndSet(0), "Mismatched client upload read count");
 
             AtomicInteger clientWrite = clientOpener.getWriteCount();
-            assertEquals("Mismatched client upload write count", 0, clientWrite.get());
+            assertEquals(0, clientWrite.get(), "Mismatched client upload write count");
 
             Files.delete(localFile);
             scp.download(remotePath, localFile);
             assertFileLength(localFile, data.length, DEFAULT_TIMEOUT);
 
-            assertEquals("Mismatched server download open read count", 1, serverRead.getAndSet(0));
-            assertEquals("Mismatched server download write count", 0, serverWrite.get());
-            assertEquals("Mismatched client download read count", 0, clientRead.get());
-            assertEquals("Mismatched client download write count", 1, clientWrite.getAndSet(0));
+            assertEquals(1, serverRead.getAndSet(0), "Mismatched server download open read count");
+            assertEquals(0, serverWrite.get(), "Mismatched server download write count");
+            assertEquals(0, clientRead.get(), "Mismatched client download read count");
+            assertEquals(1, clientWrite.getAndSet(0), "Mismatched client download write count");
         } finally {
             factory.setScpFileOpener(opener);
         }
     }
 
-    @Test // see SSHD-628
-    public void testScpExitStatusPropagation() throws Exception {
+    // see SSHD-628
+    @Test
+    void scpExitStatusPropagation() throws Exception {
         int testExitValue = 7365;
         class InternalScpCommand extends ScpCommand {
 
@@ -765,8 +775,8 @@ public class ScpTest extends AbstractScpTestSupport {
                 outputDebugMessage("Upload success to %s", remotePath);
             } catch (ScpException e) {
                 Integer exitCode = e.getExitStatus();
-                assertNotNull("No upload exit status", exitCode);
-                assertEquals("Mismatched upload exit status", testExitValue, exitCode.intValue());
+                assertNotNull(exitCode, "No upload exit status");
+                assertEquals(testExitValue, exitCode.intValue(), "Mismatched upload exit status");
             }
 
             if (Files.deleteIfExists(remoteFile)) {
@@ -782,8 +792,8 @@ public class ScpTest extends AbstractScpTestSupport {
                 outputDebugMessage("Download success to %s: %s", remotePath, new String(downloaded, StandardCharsets.UTF_8));
             } catch (ScpException e) {
                 Integer exitCode = e.getExitStatus();
-                assertNotNull("No download exit status", exitCode);
-                assertEquals("Mismatched download exit status", testExitValue, exitCode.intValue());
+                assertNotNull(exitCode, "No download exit status");
+                assertEquals(testExitValue, exitCode.intValue(), "Mismatched download exit status");
             }
         } finally {
             sshd.setCommandFactory(factory);
@@ -819,12 +829,13 @@ public class ScpTest extends AbstractScpTestSupport {
                         .println();
             }
         } else {
-            assertEquals("Mismatched last modified time for " + file.getAbsolutePath(), expectedSeconds, actualSeconds);
+            assertEquals(expectedSeconds, actualSeconds, "Mismatched last modified time for " + file.getAbsolutePath());
         }
     }
 
-    @Test // see GH-428
-    public void testMissingRemoteFile() throws Exception {
+    // see GH-428
+    @Test
+    void missingRemoteFile() throws Exception {
         Path targetPath = detectTargetFolder();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
                 ScpHelper.SCP_COMMAND_PREFIX, getClass().getSimpleName(), getCurrentTestName());
@@ -834,20 +845,20 @@ public class ScpTest extends AbstractScpTestSupport {
         Path missingRemote = remoteDir.resolve(missingLocal.getFileName());
         Files.deleteIfExists(missingLocal);
         Files.deleteIfExists(missingRemote);
-        assertFalse("Remote file not deleted", Files.exists(missingRemote));
+        assertFalse(Files.exists(missingRemote), "Remote file not deleted");
 
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), missingRemote);
         try (CloseableScpClient scp = createCloseableScpClient()) {
             scp.download(remotePath, missingLocal.toString());
             fail("Unexpected success to copy non-existent remote file");
         } catch (ScpException e) {
-            assertEquals("Mismatched SCP failure code", ScpAckInfo.ERROR, e.getExitStatus().intValue());
+            assertEquals(ScpAckInfo.ERROR, e.getExitStatus().intValue(), "Mismatched SCP failure code");
         }
 
     }
 
     @Test
-    public void testJschScp() throws Exception {
+    void jschScp() throws Exception {
         com.jcraft.jsch.Session session = getJschSession();
         try {
             String data = getCurrentTestName() + "\n";
@@ -859,15 +870,15 @@ public class ScpTest extends AbstractScpTestSupport {
             Path target = Paths.get(unixPath);
             CommonTestSupportUtils.deleteRecursive(root);
             Files.createDirectories(root);
-            assertTrue("Failed to ensure existence of " + root, Files.exists(root));
+            assertTrue(Files.exists(root), "Failed to ensure existence of " + root);
 
             Files.deleteIfExists(target);
-            assertFalse("Failed to delete 1st time: " + target, Files.exists(target));
+            assertFalse(Files.exists(target), "Failed to delete 1st time: " + target);
             sendFile(session, unixPath, target, data);
             assertFileLength(target, data.length(), DEFAULT_TIMEOUT);
 
             Files.deleteIfExists(target);
-            assertFalse("Failed to delete 2nd time: " + target, Files.exists(target));
+            assertFalse(Files.exists(target), "Failed to delete 2nd time: " + target);
             sendFile(session, unixDir, target, data);
             assertFileLength(target, data.length(), DEFAULT_TIMEOUT);
 
@@ -875,8 +886,8 @@ public class ScpTest extends AbstractScpTestSupport {
 
             readFileError(session, unixDir);
 
-            assertEquals("Mismatched file data", data, readFile(session, unixPath, target));
-            assertEquals("Mismatched dir data", data, readDir(session, unixDir, target));
+            assertEquals(data, readFile(session, unixPath, target), "Mismatched file data");
+            assertEquals(data, readDir(session, unixDir, target), "Mismatched dir data");
 
             Files.deleteIfExists(target);
             Files.deleteIfExists(root);
@@ -897,7 +908,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     @Test
-    public void testWithGanymede() throws Exception {
+    void withGanymede() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path scpRoot = CommonTestSupportUtils.resolve(targetPath,
@@ -923,26 +934,26 @@ public class ScpTest extends AbstractScpTestSupport {
                     info.keyExchangeAlgorithm, info.serverHostKeyAlgorithm,
                     info.clientToServerCryptoAlgorithm, info.serverToClientCryptoAlgorithm,
                     info.clientToServerMACAlgorithm, info.serverToClientMACAlgorithm);
-            assertTrue("Failed to authenticate", conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName()));
+            assertTrue(conn.authenticateWithPassword(getCurrentTestName(), getCurrentTestName()), "Failed to authenticate");
 
             SCPClient scpClient = new SCPClient(conn);
             try (OutputStream output = scpClient.put(fileName, expected.length, remotePath, mode)) {
                 output.write(expected);
             }
 
-            assertTrue("Remote file not created: " + remoteFile, Files.exists(remoteFile));
+            assertTrue(Files.exists(remoteFile), "Remote file not created: " + remoteFile);
             byte[] remoteData = Files.readAllBytes(remoteFile);
-            assertArrayEquals("Mismatched remote put data", expected, remoteData);
+            assertArrayEquals(expected, remoteData, "Mismatched remote put data");
 
             Arrays.fill(remoteData, (byte) 0); // make sure we start with a clean slate
             try (InputStream input = scpClient.get(remotePath + "/" + fileName)) {
                 int readLen = input.read(remoteData);
-                assertEquals("Mismatched remote get data size", expected.length, readLen);
+                assertEquals(expected.length, readLen, "Mismatched remote get data size");
                 // make sure we reached EOF
-                assertEquals("Unexpected extra data after read expected size", -1, input.read());
+                assertEquals(-1, input.read(), "Unexpected extra data after read expected size");
             }
 
-            assertArrayEquals("Mismatched remote get data", expected, remoteData);
+            assertArrayEquals(expected, remoteData, "Mismatched remote get data");
         } finally {
             conn.close();
         }
@@ -964,7 +975,7 @@ public class ScpTest extends AbstractScpTestSupport {
             String expHeader
                     = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                       + " " + Files.size(target) + " " + fileName;
-            assertEquals("Mismatched header for " + path, expHeader, header);
+            assertEquals(expHeader, header, "Mismatched header for " + path);
 
             String lenValue = header.substring(6, header.indexOf(' ', 6));
             int length = Integer.parseInt(lenValue);
@@ -973,7 +984,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
             byte[] buffer = new byte[length];
             length = is.read(buffer, 0, buffer.length);
-            assertEquals("Mismatched read data length for " + path, length, buffer.length);
+            assertEquals(length, buffer.length, "Mismatched read data length for " + path);
             assertAckReceived(is, "Read data of " + path);
 
             os.write(0);
@@ -997,7 +1008,7 @@ public class ScpTest extends AbstractScpTestSupport {
             String header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
             String expPrefix = ScpReceiveDirCommandDetails.COMMAND_NAME
                                + ScpReceiveDirCommandDetails.DEFAULT_DIR_OCTAL_PERMISSIONS + " 0 ";
-            assertTrue("Bad header prefix for " + path + ": " + header, header.startsWith(expPrefix));
+            assertTrue(header.startsWith(expPrefix), "Bad header prefix for " + path + ": " + header);
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
@@ -1005,19 +1016,19 @@ public class ScpTest extends AbstractScpTestSupport {
             String expHeader
                     = ScpReceiveFileCommandDetails.COMMAND_NAME + ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                       + " " + Files.size(target) + " " + fileName;
-            assertEquals("Mismatched dir header for " + path, expHeader, header);
+            assertEquals(expHeader, header, "Mismatched dir header for " + path);
             int length = Integer.parseInt(header.substring(6, header.indexOf(' ', 6)));
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             byte[] buffer = new byte[length];
             length = is.read(buffer, 0, buffer.length);
-            assertEquals("Mismatched read buffer size for " + path, length, buffer.length);
+            assertEquals(length, buffer.length, "Mismatched read buffer size for " + path);
             assertAckReceived(is, "Read date of " + path);
 
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             header = ScpIoUtils.readLine(is, StandardCharsets.UTF_8, false);
-            assertEquals("Mismatched end value for " + path, "E", header);
+            assertEquals("E", header, "Mismatched end value for " + path);
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
 
             return new String(buffer, StandardCharsets.UTF_8);
@@ -1036,7 +1047,7 @@ public class ScpTest extends AbstractScpTestSupport {
             c.connect();
 
             ScpAckInfo.sendOk(os, StandardCharsets.UTF_8);
-            assertEquals("Mismatched response for command: " + command, ScpAckInfo.ERROR, is.read());
+            assertEquals(ScpAckInfo.ERROR, is.read(), "Mismatched response for command: " + command);
         } finally {
             c.disconnect();
         }
@@ -1078,7 +1089,7 @@ public class ScpTest extends AbstractScpTestSupport {
     }
 
     protected void assertAckReceived(InputStream is, String command) throws IOException {
-        assertEquals("No ACK for command=" + command, 0, is.read());
+        assertEquals(0, is.read(), "No ACK for command=" + command);
     }
 
     protected void sendFileError(com.jcraft.jsch.Session session, String path, String name, String data) throws Exception {
@@ -1094,7 +1105,7 @@ public class ScpTest extends AbstractScpTestSupport {
 
             command = "C7777 " + data.length() + " " + name;
             ScpIoUtils.writeLine(os, StandardCharsets.UTF_8, command);
-            assertEquals("Mismatched response for command=" + command, ScpAckInfo.ERROR, is.read());
+            assertEquals(ScpAckInfo.ERROR, is.read(), "Mismatched response for command=" + command);
         } finally {
             c.disconnect();
         }

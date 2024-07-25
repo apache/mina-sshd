@@ -32,27 +32,32 @@ import org.apache.sshd.sftp.client.extensions.CopyFileExtension;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
     public CopyFileExtensionImplTest() throws IOException {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
     @Test
-    public void testCopyFileExtension() throws Exception {
+    void copyFileExtension() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
                 SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -68,22 +73,22 @@ public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
         String dstPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, dstFile);
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
-        assertFalse("Destination file unexpectedly exists", Files.exists(dstFile, options));
+        assertFalse(Files.exists(dstFile, options), "Destination file unexpectedly exists");
 
         try (SftpClient sftp = createSingleSessionClient()) {
             CopyFileExtension ext = assertExtensionCreated(sftp, CopyFileExtension.class);
             ext.copyFile(srcPath, dstPath, false);
-            assertTrue("Source file not preserved", Files.exists(srcFile, options));
-            assertTrue("Destination file not created", Files.exists(dstFile, options));
+            assertTrue(Files.exists(srcFile, options), "Source file not preserved");
+            assertTrue(Files.exists(dstFile, options), "Destination file not created");
 
             byte[] actual = Files.readAllBytes(dstFile);
-            assertArrayEquals("Mismatched copied data", data, actual);
+            assertArrayEquals(data, actual, "Mismatched copied data");
 
             try {
                 ext.copyFile(srcPath, dstPath, false);
                 fail("Unexpected success to overwrite existing destination: " + dstFile);
             } catch (IOException e) {
-                assertTrue("Not an SftpException", e instanceof SftpException);
+                assertTrue(e instanceof SftpException, "Not an SftpException");
             }
         }
     }

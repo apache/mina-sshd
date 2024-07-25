@@ -39,22 +39,27 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
     public AuthorizedKeysAuthenticatorTest() {
         super();
     }
 
     @Test
-    public void testAutomaticReload() throws Exception {
+    void automaticReload() throws Exception {
         Path file = getTempTargetRelativeFile(getCurrentTestName());
         if (Files.exists(file)) {
             Files.delete(file);
@@ -66,13 +71,13 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
             protected Collection<AuthorizedKeyEntry> reloadAuthorizedKeys(
                     Path path, String username, ServerSession session)
                     throws IOException, GeneralSecurityException {
-                assertSame("Mismatched reload path", file, path);
+                assertSame(file, path, "Mismatched reload path");
                 reloadCount.incrementAndGet();
                 return super.reloadAuthorizedKeys(path, username, session);
             }
         };
-        assertFalse("Unexpected authentication success for missing file " + file,
-                auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
+        assertFalse(auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null),
+                "Unexpected authentication success for missing file " + file);
 
         List<String> keyLines = loadDefaultSupportedKeys();
         assertHierarchyTargetFolderExists(file.getParent());
@@ -90,31 +95,31 @@ public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
             Files.setLastModifiedTime(file, FileTime.from(Instant.now().minusSeconds(4)));
 
             List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(file);
-            assertEquals("Mismatched number of loaded entries", keyLines.size(), entries.size());
+            assertEquals(keyLines.size(), entries.size(), "Mismatched number of loaded entries");
 
             List<PublicKey> keySet = PublicKeyEntry.resolvePublicKeyEntries(null, entries, PublicKeyEntryResolver.FAILING);
-            assertEquals("Mismatched number of loaded keys", entries.size(), keySet.size());
+            assertEquals(entries.size(), keySet.size(), "Mismatched number of loaded keys");
 
             reloadCount.set(0);
             for (int index = 0; index < keySet.size(); index++) {
                 PublicKey k = keySet.get(index);
                 String keyData = keyLines.get(index); // we know they are 1-1 matching
 
-                assertTrue("Failed to authenticate with key #" + (index + 1) + " " + k.getAlgorithm() + "[" + keyData
-                           + "] on file=" + file,
-                        auth.authenticate(getCurrentTestName(), k, null));
+                assertTrue(auth.authenticate(getCurrentTestName(), k, null),
+                        "Failed to authenticate with key #" + (index + 1) + " " + k.getAlgorithm() + "[" + keyData
+                                                                             + "] on file=" + file);
 
                 // we expect EXACTLY ONE re-load call since we did not modify the file during the authentication
-                assertEquals("Unexpected keys re-loading of " + keyLines.size() + " remaining at key #" + (index + 1)
-                             + " on file=" + file,
-                        1, reloadCount.get());
+                assertEquals(1, reloadCount.get(),
+                        "Unexpected keys re-loading of " + keyLines.size() + " remaining at key #" + (index + 1)
+                                                   + " on file=" + file);
             }
 
             keyLines.remove(0);
         }
 
-        assertTrue("File no longer exists: " + file, Files.exists(file));
-        assertFalse("Unexpected authentication success for empty file " + file,
-                auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null));
+        assertTrue(Files.exists(file), "File no longer exists: " + file);
+        assertFalse(auth.authenticate(getCurrentTestName(), Mockito.mock(PublicKey.class), null),
+                "Unexpected authentication success for empty file " + file);
     }
 }

@@ -25,24 +25,29 @@ import java.util.List;
 import java.util.NoSuchElementException;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category(NoIoTestCase.class)
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
+@SuppressWarnings("checksyle:MethodCount")
 public class GenericUtilsTest extends JUnitTestSupport {
-    public GenericUtilsTest() {
-        super();
-    }
 
     @Test
-    public void testIsBlank() {
+    void isBlank() {
         assertTrue(GenericUtils.isBlank(null));
         assertTrue(GenericUtils.isBlank(""));
         assertTrue(GenericUtils.isBlank(" "));
@@ -51,7 +56,7 @@ public class GenericUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testFilterToNotBlank() {
+    void filterToNotBlank() {
         assertEquals(Collections.emptyList(), GenericUtils.filterToNotBlank(Arrays.asList((String) null)));
         assertEquals(Collections.emptyList(), GenericUtils.filterToNotBlank(Arrays.asList("")));
         assertEquals(Collections.emptyList(), GenericUtils.filterToNotBlank(Arrays.asList(" ")));
@@ -68,7 +73,7 @@ public class GenericUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSplitAndJoin() {
+    void splitAndJoin() {
         List<String> expected = Collections.unmodifiableList(
                 Arrays.asList(
                         getClass().getPackage().getName().replace('.', '/'),
@@ -80,8 +85,9 @@ public class GenericUtilsTest extends JUnitTestSupport {
             String sep = String.valueOf(ch);
             String s = GenericUtils.join(expected, sep);
             String[] actual = GenericUtils.split(s, ch);
-            assertEquals("Mismatched split length for separator=" + sep, expected.size(),
-                    GenericUtils.length((Object[]) actual));
+            assertEquals(expected.size(),
+                    GenericUtils.length((Object[]) actual),
+                    "Mismatched split length for separator=" + sep);
 
             for (int index = 0; index < actual.length; index++) {
                 String e = expected.get(index);
@@ -94,9 +100,9 @@ public class GenericUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testStripQuotes() {
+    void stripQuotes() {
         String expected = getCurrentTestName();
-        assertSame("Unexpected un-quoted stripping", expected, GenericUtils.stripQuotes(expected));
+        assertSame(expected, GenericUtils.stripQuotes(expected), "Unexpected un-quoted stripping");
 
         StringBuilder sb = new StringBuilder(2 + expected.length()).append('|').append(expected).append('|');
         for (int index = 0; index < GenericUtils.QUOTES.length(); index++) {
@@ -105,12 +111,12 @@ public class GenericUtilsTest extends JUnitTestSupport {
             sb.setCharAt(sb.length() - 1, delim);
 
             CharSequence actual = GenericUtils.stripQuotes(sb);
-            assertEquals("Mismatched result for delim (" + delim + ")", expected, actual.toString());
+            assertEquals(expected, actual.toString(), "Mismatched result for delim (" + delim + ")");
         }
     }
 
     @Test
-    public void testStripOnlyFirstLayerQuotes() {
+    void stripOnlyFirstLayerQuotes() {
         StringBuilder sb = new StringBuilder().append("||").append(getCurrentTestName()).append("||");
         char[] delims = { '\'', '"', '"', '\'' };
         for (int index = 0; index < delims.length; index += 2) {
@@ -123,24 +129,25 @@ public class GenericUtilsTest extends JUnitTestSupport {
 
             CharSequence expected = sb.subSequence(1, sb.length() - 1);
             CharSequence actual = GenericUtils.stripQuotes(sb);
-            assertEquals("Mismatched result for delim (" + topDelim + "/" + innerDelim + ")", expected.toString(),
-                    actual.toString());
+            assertEquals(expected.toString(),
+                    actual.toString(),
+                    "Mismatched result for delim (" + topDelim + "/" + innerDelim + ")");
         }
     }
 
     @Test
-    public void testStripDelimiters() {
+    void stripDelimiters() {
         String expected = getCurrentTestName();
         final char delim = '|';
-        assertSame("Unexpected un-delimited stripping", expected, GenericUtils.stripDelimiters(expected, delim));
+        assertSame(expected, GenericUtils.stripDelimiters(expected, delim), "Unexpected un-delimited stripping");
 
         CharSequence actual = GenericUtils.stripDelimiters(
                 new StringBuilder(2 + expected.length()).append(delim).append(expected).append(delim), delim);
-        assertEquals("Mismatched stripped values", expected, actual.toString());
+        assertEquals(expected, actual.toString(), "Mismatched stripped values");
     }
 
     @Test
-    public void testStripDelimitersOnlyIfOnBothEnds() {
+    void stripDelimitersOnlyIfOnBothEnds() {
         final char delim = '$';
         StringBuilder expected = new StringBuilder().append(delim).append(getCurrentTestName()).append(delim);
         for (int index : new int[] { 0, expected.length() - 1 }) {
@@ -150,22 +157,23 @@ public class GenericUtilsTest extends JUnitTestSupport {
             // trash one end
             expected.setCharAt(index, (char) (delim + 1));
 
-            assertSame("Mismatched result for delim at index=" + index, expected,
-                    GenericUtils.stripDelimiters(expected, delim));
+            assertSame(expected,
+                    GenericUtils.stripDelimiters(expected, delim),
+                    "Mismatched result for delim at index=" + index);
         }
     }
 
     @Test
-    public void testAccumulateExceptionOnNullValues() {
-        assertNull("Unexpected null/null result", ExceptionUtils.accumulateException(null, null));
+    void accumulateExceptionOnNullValues() {
+        assertNull(ExceptionUtils.accumulateException(null, null), "Unexpected null/null result");
 
         Throwable expected = new NoSuchMethodException(getClass().getName() + "#" + getCurrentTestName());
-        assertSame("Mismatched null/extra result", expected, ExceptionUtils.accumulateException(null, expected));
-        assertSame("Mismatched current/null result", expected, ExceptionUtils.accumulateException(expected, null));
+        assertSame(expected, ExceptionUtils.accumulateException(null, expected), "Mismatched null/extra result");
+        assertSame(expected, ExceptionUtils.accumulateException(expected, null), "Mismatched current/null result");
     }
 
     @Test
-    public void testAccumulateExceptionOnExistingCurrent() {
+    void accumulateExceptionOnExistingCurrent() {
         RuntimeException[] expected = new RuntimeException[] {
                 new IllegalArgumentException(getCurrentTestName()),
                 new ClassCastException(getClass().getName()),
@@ -174,33 +182,34 @@ public class GenericUtilsTest extends JUnitTestSupport {
         RuntimeException current = new UnsupportedOperationException("top");
         for (RuntimeException extra : expected) {
             RuntimeException actual = ExceptionUtils.accumulateException(current, extra);
-            assertSame("Mismatched returned actual exception", current, actual);
+            assertSame(current, actual, "Mismatched returned actual exception");
         }
 
         Throwable[] actual = current.getSuppressed();
-        assertArrayEquals("Suppressed", expected, actual);
+        assertArrayEquals(expected, actual, "Suppressed");
     }
 
     @Test
-    public void testNullOrEmptyCharArrayComparison() {
+    void nullOrEmptyCharArrayComparison() {
         char[][] values = new char[][] { null, GenericUtils.EMPTY_CHAR_ARRAY };
         for (char[] c1 : values) {
             for (char[] c2 : values) {
-                assertEquals(((c1 == null) ? "null" : "empty") + " vs. " + ((c2 == null) ? "null" : "empty"), 0,
-                        GenericUtils.compare(c1, c2));
+                assertEquals(0,
+                        GenericUtils.compare(c1, c2),
+                        ((c1 == null) ? "null" : "empty") + " vs. " + ((c2 == null) ? "null" : "empty"));
             }
         }
     }
 
     @Test
-    public void testCharArrayComparison() {
+    void charArrayComparison() {
         String s1 = getClass().getSimpleName();
         char[] c1 = s1.toCharArray();
-        assertEquals("Same value equality", 0, GenericUtils.compare(c1, s1.toCharArray()));
+        assertEquals(0, GenericUtils.compare(c1, s1.toCharArray()), "Same value equality");
 
         String s2 = getCurrentTestName();
         char[] c2 = s2.toCharArray();
-        assertEquals("s1 vs. s2", Integer.signum(s1.compareTo(s2)), Integer.signum(GenericUtils.compare(c1, c2)));
-        assertEquals("s2 vs. s1", Integer.signum(s2.compareTo(s1)), Integer.signum(GenericUtils.compare(c2, c1)));
+        assertEquals(Integer.signum(s1.compareTo(s2)), Integer.signum(GenericUtils.compare(c1, c2)), "s1 vs. s2");
+        assertEquals(Integer.signum(s2.compareTo(s1)), Integer.signum(GenericUtils.compare(c2, c1)), "s2 vs. s1");
     }
 }

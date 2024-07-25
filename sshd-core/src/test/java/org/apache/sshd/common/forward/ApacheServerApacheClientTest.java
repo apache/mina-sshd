@@ -28,19 +28,21 @@ import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Port forwarding tests, Apache server & client
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport {
     private static final Logger LOG = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(10L);
@@ -55,8 +57,8 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         super();
     }
 
-    @BeforeClass
-    public static void startSshServer() throws IOException {
+    @BeforeAll
+    static void startSshServer() throws IOException {
         LOG.info("Starting SSHD...");
         server = SshServer.setUpDefaultServer();
         server.setPasswordAuthenticator((u, p, s) -> true);
@@ -75,15 +77,15 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         LOG.info("SSHD Running on port {}", server.getPort());
     }
 
-    @AfterClass
-    public static void stopServer() throws IOException {
+    @AfterAll
+    static void stopServer() throws IOException {
         if (!server.close(true).await(TIMEOUT)) {
             LOG.warn("Failed to close server within {} sec.", TIMEOUT.toMillis() / 1000);
         }
     }
 
-    @Before
-    public void createClient() throws IOException {
+    @BeforeEach
+    void createClient() throws IOException {
         client = SshClient.setUpDefaultClient();
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         CoreModuleProperties.NIO2_READ_BUFFER_SIZE.set(client, 32 * 1024);
@@ -97,11 +99,11 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
         LOG.info("Authenticated");
     }
 
-    @After
-    public void stopClient() throws Exception {
+    @AfterEach
+    void stopClient() throws Exception {
         LOG.info("Disconnecting Client");
         try {
-            assertTrue("Failed to close session", session.close(true).await(TIMEOUT));
+            assertTrue(session.close(true).await(TIMEOUT), "Failed to close session");
         } finally {
             session = null;
             client.stop();

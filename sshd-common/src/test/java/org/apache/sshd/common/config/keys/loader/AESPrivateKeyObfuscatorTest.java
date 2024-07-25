@@ -32,42 +32,39 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
-    private final int keyLength;
+    private int keyLength;
 
-    public AESPrivateKeyObfuscatorTest(int keyLength) {
+    public void initAESPrivateKeyObfuscatorTest(int keyLength) {
         this.keyLength = keyLength;
     }
 
-    @Parameters(name = "keyLength={0}")
     public static List<Object[]> parameters() {
         List<Integer> lengths = AESPrivateKeyObfuscator.getAvailableKeyLengths();
-        assertFalse("No lengths available", GenericUtils.isEmpty(lengths));
+        assertFalse(GenericUtils.isEmpty(lengths), "No lengths available");
         return parameterize(lengths);
     }
 
-    @Test
-    public void testAvailableKeyLengthExists() throws GeneralSecurityException {
-        assertEquals("Not a BYTE size multiple", 0, keyLength % Byte.SIZE);
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "keyLength={0}")
+    public void availableKeyLengthExists(int keyLength) throws GeneralSecurityException {
+        initAESPrivateKeyObfuscatorTest(keyLength);
+        assertEquals(0, keyLength % Byte.SIZE, "Not a BYTE size multiple");
 
         PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext();
         encContext.setCipherName(AESPrivateKeyObfuscator.CIPHER_NAME);
@@ -75,25 +72,27 @@ public class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
         encContext.setCipherType(Integer.toString(keyLength));
 
         int actual = AESPrivateKeyObfuscator.INSTANCE.resolveKeyLength(encContext);
-        assertEquals("Mismatched resolved key length", keyLength, actual);
+        assertEquals(keyLength, actual, "Mismatched resolved key length");
 
         // see SSHD-987
         byte[] iv = AESPrivateKeyObfuscator.INSTANCE.generateInitializationVector(encContext);
-        assertEquals("Mismatched IV size", 16 /* TODO change this if GCM allowed */, iv.length);
+        assertEquals(16 /* TODO change this if GCM allowed */, iv.length, "Mismatched IV size");
 
         Key key = new SecretKeySpec(iv, AESPrivateKeyObfuscator.CIPHER_NAME);
         Cipher c = SecurityUtils.getCipher(AESPrivateKeyObfuscator.CIPHER_NAME);
         c.init(Cipher.DECRYPT_MODE, key);
     }
 
-    @Test
-    public void testSingleCipherMatch() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "keyLength={0}")
+    public void singleCipherMatch(int keyLength) {
+        initAESPrivateKeyObfuscatorTest(keyLength);
         Predicate<CipherInformation> selector = AESPrivateKeyObfuscator.createCipherSelector(
                 keyLength, PrivateKeyEncryptionContext.DEFAULT_CIPHER_MODE);
         Collection<CipherInformation> matches = BuiltinCiphers.VALUES.stream()
                 .filter(selector)
                 .collect(Collectors.toList());
-        assertEquals("Mismatched matching ciphers: " + matches, 1, GenericUtils.size(matches));
+        assertEquals(1, GenericUtils.size(matches), "Mismatched matching ciphers: " + matches);
     }
 
     @Override

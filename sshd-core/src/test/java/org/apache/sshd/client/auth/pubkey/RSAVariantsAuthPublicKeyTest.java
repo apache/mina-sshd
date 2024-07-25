@@ -41,24 +41,20 @@ import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
     private static final List<NamedFactory<Signature>> RSA_FACTORIES = Collections.unmodifiableList(
             BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE.stream()
@@ -76,15 +72,15 @@ public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
     private static int port;
     private static SshClient client;
 
-    private final SignatureFactory factory;
+    private SignatureFactory factory;
 
-    public RSAVariantsAuthPublicKeyTest(SignatureFactory factory) {
-        Assume.assumeTrue("Skip unsupported factory", factory.isSupported());
+    public void initRSAVariantsAuthPublicKeyTest(SignatureFactory factory) {
+        Assumptions.assumeTrue(factory.isSupported(), "Skip unsupported factory");
         this.factory = factory;
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(RSAVariantsAuthPublicKeyTest.class);
         sshd.setSignatureFactories(RSA_FACTORIES);
         sshd.setKeyPairProvider(KEYS_PROVIDER);
@@ -108,8 +104,8 @@ public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -127,23 +123,24 @@ public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
         }
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(RSA_FACTORIES);
     }
 
-    @Test
-    public void testRSAVariantAuth() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void rsaVariantAuth(SignatureFactory factory) throws IOException {
+        initRSAVariantsAuthPublicKeyTest(factory);
         client.setSignatureFactories(Collections.singletonList(factory));
         try (ClientSession session = createClientSession(client, port)) {
             List<KeyPair> keys = KEYS_PROVIDER.loadKeys(session);
             KeyPair kp = keys.get(0);
-            assertEquals("Mismatched key type", KeyPairProvider.SSH_RSA, KeyUtils.getKeyType(kp));
+            assertEquals(KeyPairProvider.SSH_RSA, KeyUtils.getKeyType(kp), "Mismatched key type");
             session.addPublicKeyIdentity(kp);
             session.auth().verify(AUTH_TIMEOUT);
 
             String serverKeyType = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-            assertEquals("Mismatched host key used", factory.getName(), serverKeyType);
+            assertEquals(factory.getName(), serverKeyType, "Mismatched host key used");
         }
     }
 

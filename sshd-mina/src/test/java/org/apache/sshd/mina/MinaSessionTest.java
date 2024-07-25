@@ -27,16 +27,18 @@ import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests specific to the MINA connection back-end.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class MinaSessionTest extends BaseTestSupport {
 
     public MinaSessionTest() {
@@ -45,17 +47,17 @@ public class MinaSessionTest extends BaseTestSupport {
 
     private IoProcessor<?> getProcessor(AbstractFactoryManager manager) throws Exception {
         IoServiceFactory ioServiceFactory = manager.getIoServiceFactory();
-        assertTrue("Unexpected type " + ioServiceFactory.getClass(), ioServiceFactory instanceof MinaServiceFactory);
+        assertTrue(ioServiceFactory instanceof MinaServiceFactory, "Unexpected type " + ioServiceFactory.getClass());
         // Get the ioProcessor field
         Field f = MinaServiceFactory.class.getDeclaredField("ioProcessor");
         f.setAccessible(true);
         Object processor = f.get(ioServiceFactory);
-        assertTrue("Unexpected type " + processor.getClass(), processor instanceof IoProcessor<?>);
+        assertTrue(processor instanceof IoProcessor<?>, "Unexpected type " + processor.getClass());
         return (IoProcessor<?>) processor;
     }
 
     @Test
-    public void testIoProcessorClosed() throws Exception {
+    void ioProcessorClosed() throws Exception {
         IoProcessor<?> ioProcessor = null;
         try (SshServer server = setupTestServer()) {
             server.start();
@@ -63,9 +65,9 @@ public class MinaSessionTest extends BaseTestSupport {
                 client.start();
                 ioProcessor = getProcessor(client);
             }
-            assertTrue("MINA client IoProcessor should be closed", ioProcessor.isDisposed() || ioProcessor.isDisposing());
+            assertTrue(ioProcessor.isDisposed() || ioProcessor.isDisposing(), "MINA client IoProcessor should be closed");
             ioProcessor = getProcessor(server);
         }
-        assertTrue("MINA server IoProcessor should be closed", ioProcessor.isDisposed() || ioProcessor.isDisposing());
+        assertTrue(ioProcessor.isDisposed() || ioProcessor.isDisposing(), "MINA server IoProcessor should be closed");
     }
 }

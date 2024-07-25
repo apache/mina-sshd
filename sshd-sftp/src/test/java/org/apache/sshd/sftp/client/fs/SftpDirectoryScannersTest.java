@@ -42,32 +42,38 @@ import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.sftp.client.SftpClient.DirEntry;
 import org.apache.sshd.sftp.client.fs.SftpClientDirectoryScanner.ScanDirEntry;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
     public SftpDirectoryScannersTest() throws IOException {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
     @Test
-    public void testSftpPathDirectoryScannerDeepScanning() throws IOException {
+    void sftpPathDirectoryScannerDeepScanning() throws IOException {
         testSftpPathDirectoryScanner(setupDeepScanning(), "**/*");
     }
 
     @Test
-    public void testSftpPathDirectoryScannerFileSuffixMatching() throws IOException {
+    void sftpPathDirectoryScannerFileSuffixMatching() throws IOException {
         testSftpPathDirectoryScanner(setupFileSuffixMatching(), "*.txt");
     }
 
@@ -86,17 +92,18 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
     }
 
     @Test
-    public void testSftpClientDirectoryScannerDeepScanning() throws IOException {
+    void sftpClientDirectoryScannerDeepScanning() throws IOException {
         testSftpClientDirectoryScanner(setupDeepScanning(), "**/*");
     }
 
     @Test
-    public void testSftpClientDirectoryScannerFileSuffixMatching() throws IOException {
+    void sftpClientDirectoryScannerFileSuffixMatching() throws IOException {
         testSftpClientDirectoryScanner(setupFileSuffixMatching(), "*.txt");
     }
 
-    @Test   // see SSHD-1102
-    public void testDirectoryStreamFilter() throws IOException {
+    // see SSHD-1102
+    @Test
+    void directoryStreamFilter() throws IOException {
         SetupDetails details = setupFileSuffixMatching();
         List<Path> expected = details.getExpected();
         List<Path> actual = new ArrayList<>();
@@ -125,7 +132,7 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
             throws IOException {
         try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir, filter)) {
             for (Path p : ds) {
-                assertTrue("Unfiltered path: " + p, filter.accept(p));
+                assertTrue(filter.accept(p), "Unfiltered path: " + p);
 
                 if (Files.isDirectory(p)) {
                     collectMatchingFiles(p, filter, matches);
@@ -136,40 +143,44 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
         }
     }
 
-    @Test(expected = IllegalStateException.class)
-    public void testClosedDirectoryStreamIteration() throws IOException {
-        SetupDetails details = setupDeepScanning();
-        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
-            Path dir = fs.getPath(details.getRemoteFilePath());
-            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
-                ds.close();
+    @Test
+    void closedDirectoryStreamIteration() throws IOException {
+        assertThrows(IllegalStateException.class, () -> {
+            SetupDetails details = setupDeepScanning();
+            try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+                Path dir = fs.getPath(details.getRemoteFilePath());
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+                    ds.close();
 
-                for (Path p : ds) {
-                    fail("Unexpected iterated path: " + p);
+                    for (Path p : ds) {
+                        fail("Unexpected iterated path: " + p);
+                    }
                 }
             }
-        }
-    }
-
-    @Test(expected = IllegalStateException.class)
-    public void testDirectoryStreamRepeatedIteration() throws IOException {
-        SetupDetails details = setupDeepScanning();
-        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
-            Path dir = fs.getPath(details.getRemoteFilePath());
-            try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
-                for (Path p : ds) {
-                    assertNotNull(p);
-                }
-
-                for (Path p : ds) {
-                    fail("Unexpected iterated path: " + p);
-                }
-            }
-        }
+        });
     }
 
     @Test
-    public void testDirectoryStreamClosedEarly() throws IOException {
+    void directoryStreamRepeatedIteration() throws IOException {
+        assertThrows(IllegalStateException.class, () -> {
+            SetupDetails details = setupDeepScanning();
+            try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+                Path dir = fs.getPath(details.getRemoteFilePath());
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
+                    for (Path p : ds) {
+                        assertNotNull(p);
+                    }
+
+                    for (Path p : ds) {
+                        fail("Unexpected iterated path: " + p);
+                    }
+                }
+            }
+        });
+    }
+
+    @Test
+    void directoryStreamClosedEarly() throws IOException {
         Path targetPath = detectTargetFolder();
         Path rootDir = CommonTestSupportUtils.resolve(targetPath, TEMP_SUBFOLDER_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -197,8 +208,8 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
                     n++;
                 }
 
-                assertTrue("Expected some read-ahead", n > 1);
-                assertTrue("Expected early stream end", n < 2000);
+                assertTrue(n > 1, "Expected some read-ahead");
+                assertTrue(n < 2000, "Expected early stream end");
                 assertThrows(NoSuchElementException.class, () -> entries.next());
             }
         }
@@ -213,7 +224,7 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
             actual = ds.scan(sftp, () -> new ArrayList<>(expected.size()));
         }
 
-        assertEquals("Mismatched result size", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Mismatched result size");
 
         Collections.sort(expected, PathUtils.BY_CASE_INSENSITIVE_FILENAME);
         Collections.sort(actual, DirEntry.BY_CASE_SENSITIVE_FILENAME);
@@ -223,11 +234,11 @@ public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
             Path lclPath = expected.get(index);
             ScanDirEntry remEntry = actual.get(index);
             String filename = remEntry.getFilename();
-            assertEquals("Mismatched name", Objects.toString(lclPath.getFileName()), filename);
+            assertEquals(Objects.toString(lclPath.getFileName()), filename, "Mismatched name");
 
             Path relPath = lclRoot.relativize(lclPath);
             String lclRelative = Objects.toString(relPath).replace(File.separatorChar, '/');
-            assertEquals("Mismatched relative path", lclRelative, remEntry.getRelativePath());
+            assertEquals(lclRelative, remEntry.getRelativePath(), "Mismatched relative path");
 
             Attributes attrs = remEntry.getAttributes();
             assertEquals("Mismatched directory indicator for " + filename, Files.isDirectory(lclPath), attrs.isDirectory());

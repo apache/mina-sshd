@@ -39,16 +39,20 @@ import org.apache.sshd.server.session.AbstractServerSession;
 import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ServerProxyAcceptorTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
@@ -57,15 +61,15 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -75,7 +79,7 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientAddressOverride() throws Exception {
+    void clientAddressOverride() throws Exception {
         SshdSocketAddress expectedClientAddress = new SshdSocketAddress("7.3.6.5", 7365);
         String proxyMetadata = getCurrentTestName()
                                + " " + expectedClientAddress.getHostName()
@@ -94,14 +98,15 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
                 buffer.getRawBytes(rawData);
                 outputDebugMessage("acceptServerProxyMetadata(%s) proxy data: %s", session,
                         new String(rawData, StandardCharsets.UTF_8));
-                assertArrayEquals("Mismatched meta data", metaDataBytes, rawData);
+                assertArrayEquals(metaDataBytes, rawData, "Mismatched meta data");
 
                 int count = invocationCount.incrementAndGet();
                 if (count == 1) {
                     ((AbstractServerSession) session).setClientAddress(expectedClientAddress);
                 } else {
-                    assertSame("Mismatched client address for invocation #" + count, expectedClientAddress,
-                            session.getClientAddress());
+                    assertSame(expectedClientAddress,
+                            session.getClientAddress(),
+                            "Mismatched client address for invocation #" + count);
                 }
                 return true; // proxy completed
             }
@@ -125,7 +130,7 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
             private void verifyClientAddress(String location, Session session) {
                 assertObjectInstanceOf(location + ": not a server session", ServerSession.class, session);
                 SocketAddress actualClientAddress = ((ServerSession) session).getClientAddress();
-                assertSame(location + ": mismatched client address instance", expectedClientAddress, actualClientAddress);
+                assertSame(expectedClientAddress, actualClientAddress, location + ": mismatched client address instance");
             }
         });
         sshd.start();
@@ -140,8 +145,8 @@ public class ServerProxyAcceptorTest extends BaseTestSupport {
                 = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
-            assertTrue("Failed to receive session signal on time",
-                    sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+            assertTrue(sessionSignal.tryAcquire(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS),
+                    "Failed to receive session signal on time");
         } finally {
             client.stop();
         }

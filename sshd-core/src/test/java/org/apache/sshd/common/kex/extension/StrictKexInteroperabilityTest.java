@@ -34,11 +34,10 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.ContainerTestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
@@ -48,6 +47,8 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 import org.testcontainers.utility.MountableFile;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * Tests to ensure that an Apache MINA sshd client can talk to OpenSSH servers with or without "strict KEX". This
  * implicitly tests the message sequence number handling; if sequence numbers get out of sync or are reset wrongly,
@@ -56,7 +57,7 @@ import org.testcontainers.utility.MountableFile;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://github.com/apache/mina-sshd/issues/445">Terrapin Mitigation: &quot;strict-kex&quot;</A>
  */
-@Category(ContainerTestCase.class)
+@Tag("ContainerTestCase")
 public class StrictKexInteroperabilityTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(StrictKexInteroperabilityTest.class);
@@ -69,15 +70,15 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         client = setupTestClient();
         SessionFactory factory = new TestSessionFactory(client);
         client.setSessionFactory(factory);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (client != null) {
             client.stop();
         }
@@ -102,12 +103,12 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
     }
 
     @Test
-    public void testStrictKexOff() throws Exception {
+    void strictKexOff() throws Exception {
         testStrictKex(false);
     }
 
     @Test
-    public void testStrictKexOn() throws Exception {
+    void strictKexOn() throws Exception {
         testStrictKex(true);
     }
 
@@ -138,8 +139,8 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
             try (ClientSession session = client.connect("bob", sshdContainer.getHost(), sshdContainer.getMappedPort(22))
                     .verify(CONNECT_TIMEOUT).getSession()) {
                 session.auth().verify(AUTH_TIMEOUT);
-                assertTrue("Should authenticate", session.isAuthenticated());
-                assertTrue("Unexpected session type " + session.getClass().getName(), session instanceof TestSession);
+                assertTrue(session.isAuthenticated(), "Should authenticate");
+                assertTrue(session instanceof TestSession, "Unexpected session type " + session.getClass().getName());
                 assertEquals("Unexpected strict KEX usage", withStrictKex, ((TestSession) session).usesStrictKex());
                 try (ChannelShell channel = session.createShellChannel()) {
                     channel.setOut(System.out);
@@ -148,15 +149,15 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
                     PipedOutputStream pos = new PipedOutputStream();
                     PipedInputStream pis = new PipedInputStream(pos);
                     channel.setIn(pis);
-                    assertTrue("Could not open session", channel.open().await(DEFAULT_TIMEOUT));
+                    assertTrue(channel.open().await(DEFAULT_TIMEOUT), "Could not open session");
                     LOG.info("writing some data...");
                     pos.write("\n\n".getBytes(StandardCharsets.UTF_8));
-                    assertTrue("Channel should be open", channel.isOpen());
+                    assertTrue(channel.isOpen(), "Channel should be open");
                     assertTrue(session.reExchangeKeys().verify(CONNECT_TIMEOUT).isDone());
-                    assertTrue("Channel should be open", channel.isOpen());
+                    assertTrue(channel.isOpen(), "Channel should be open");
                     LOG.info("writing some data...");
                     pos.write("\n\n".getBytes(StandardCharsets.UTF_8));
-                    assertTrue("Channel should be open", channel.isOpen());
+                    assertTrue(channel.isOpen(), "Channel should be open");
                     channel.close(true);
                 }
             }

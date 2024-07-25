@@ -31,21 +31,23 @@ import java.util.regex.Pattern;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class HostConfigEntryTest extends JUnitTestSupport {
-    public HostConfigEntryTest() {
-        super();
-    }
 
     private void expect(String hostname, int port, String username, HostConfigEntry resolved) throws Exception {
         assertEquals(hostname, resolved.getHostName());
@@ -57,7 +59,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSetTwice() throws Exception {
+    void setTwice() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo", "foo.example.com", 22, "test");
         entry.setProperties(null);
         entry.setHost("bar");
@@ -70,7 +72,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testArgumentsOverrideConfig() throws Exception {
+    void argumentsOverrideConfig() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo.example.com", null, 22, "test");
         HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
                 .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
@@ -78,7 +80,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testConfigSetsHostname() throws Exception {
+    void configSetsHostname() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo.example.com", "bar.example.com", 22, "test");
         HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
                 .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
@@ -86,7 +88,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testWildcardHostname() throws Exception {
+    void wildcardHostname() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo*", null, 22, "test");
         HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
                 .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
@@ -94,7 +96,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testDefaults() throws Exception {
+    void defaults() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo*", "bar.example.com", 22, "test");
         HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
                 .resolveEffectiveHost("foo", 0, null, "", null, null);
@@ -102,7 +104,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testDefaultDefaults() throws Exception {
+    void defaultDefaults() throws Exception {
         HostConfigEntry entry = new HostConfigEntry();
         entry.setHost("foo*");
         entry.setUsername("test");
@@ -112,7 +114,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCoalescing() throws Exception {
+    void coalescing() throws Exception {
         HostConfigEntry first = new HostConfigEntry();
         first.setHost("foo*");
         first.setHostName("bar.example.com");
@@ -132,7 +134,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCoalescingFirstValue() throws Exception {
+    void coalescingFirstValue() throws Exception {
         HostConfigEntry first = new HostConfigEntry();
         first.setHost("fo*");
         first.setHostName("bar.example.com");
@@ -146,7 +148,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCoalescingIdentityFile() throws Exception {
+    void coalescingIdentityFile() throws Exception {
         HostConfigEntry first = new HostConfigEntry();
         first.setHost("fo*");
         first.setHostName("bar.example.com");
@@ -166,8 +168,9 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         assertEquals("xFile,dFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
     }
 
-    @Test // See GH-351
-    public void testProxyJump() throws Exception {
+    // See GH-351
+    @Test
+    void proxyJump() throws Exception {
         HostConfigEntry bastion = new HostConfigEntry();
         bastion.setHost("bastion");
         bastion.setHostName("1.2.3.4");
@@ -180,9 +183,9 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         HostConfigEntry resolved = resolver.resolveEffectiveHost("server1", 0, null, "someone", null, null);
         expect("server1", 22, "someone", resolved);
         Collection<String> identities = resolved.getIdentities();
-        assertTrue("Unexpected configured identities " + identities, identities == null || identities.isEmpty());
+        assertTrue(identities == null || identities.isEmpty(), "Unexpected configured identities " + identities);
         String identityProp = resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
-        assertNull("Unexpected IdentityFile property", identityProp);
+        assertNull(identityProp, "Unexpected IdentityFile property");
         // Same handling as in SshClient.parseProxyJumps()
         String proxy = resolved.getProperty(HostConfigEntry.PROXY_JUMP_CONFIG_PROP);
         assertEquals("bastion", proxy);
@@ -190,15 +193,15 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         resolved = resolver.resolveEffectiveHost(uri.getHost(), uri.getPort(), null, uri.getUserInfo(), null, null);
         expect("1.2.3.4", 22, "username", resolved);
         identities = resolved.getIdentities();
-        assertNotNull("Should have identities", identities);
+        assertNotNull(identities, "Should have identities");
         assertEquals("[yFile]", identities.toString());
         identityProp = resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
-        assertNotNull("Should have IdentityFile property", identityProp);
+        assertNotNull(identityProp, "Should have IdentityFile property");
         assertEquals("yFile", identityProp);
     }
 
     @Test
-    public void testNegatingPatternOverridesAll() {
+    void negatingPatternOverridesAll() {
         String testHost = "37.77.34.7";
         String[] elements = GenericUtils.split(testHost, '.');
         StringBuilder sb = new StringBuilder(testHost.length() + Byte.SIZE);
@@ -224,13 +227,13 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         }
 
         for (int index = 0; index < patterns.size(); index++) {
-            assertFalse("Unexpected match for " + patterns, HostPatternsHolder.isHostMatch(testHost, 0, patterns));
+            assertFalse(HostPatternsHolder.isHostMatch(testHost, 0, patterns), "Unexpected match for " + patterns);
             Collections.shuffle(patterns);
         }
     }
 
     @Test
-    public void testHostWildcardPatternMatching() {
+    void hostWildcardPatternMatching() {
         String pkgName = getClass().getPackage().getName();
         String[] elements = GenericUtils.split(pkgName, '.');
         StringBuilder sb = new StringBuilder(pkgName.length() + Long.SIZE + 1).append(HostPatternsHolder.WILDCARD_PATTERN);
@@ -256,7 +259,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testIPAddressWildcardPatternMatching() {
+    void iPAddressWildcardPatternMatching() {
         StringBuilder sb = new StringBuilder().append("10.0.0.");
         int sbLen = sb.length();
 
@@ -266,12 +269,12 @@ public class HostConfigEntryTest extends JUnitTestSupport {
             sb.append(v);
 
             String address = sb.toString();
-            assertTrue("No match for " + address, HostPatternsHolder.isHostMatch(address, pattern));
+            assertTrue(HostPatternsHolder.isHostMatch(address, pattern), "No match for " + address);
         }
     }
 
     @Test
-    public void testHostSingleCharPatternMatching() {
+    void hostSingleCharPatternMatching() {
         String value = getCurrentTestName();
         StringBuilder sb = new StringBuilder(value);
         for (boolean restoreOriginal : new boolean[] { true, false }) {
@@ -286,7 +289,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testIPAddressSingleCharPatternMatching() {
+    void iPAddressSingleCharPatternMatching() {
         StringBuilder sb = new StringBuilder().append("10.0.0.");
         int sbLen = sb.length();
 
@@ -302,13 +305,13 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
             String pattern = sb.toString();
             HostPatternValue pp = HostPatternsHolder.toPattern(pattern);
-            assertTrue("No match for " + address + " on pattern=" + pattern,
-                    HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)));
+            assertTrue(HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)),
+                    "No match for " + address + " on pattern=" + pattern);
         }
     }
 
     @Test
-    public void testIPv6AddressSingleCharPatternMatching() {
+    void iPv6AddressSingleCharPatternMatching() {
         StringBuilder sb = new StringBuilder().append("fe80::7780:db3:a57:6a9");
         int sbLen = sb.length();
 
@@ -324,33 +327,33 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
             String pattern = sb.toString();
             HostPatternValue pp = HostPatternsHolder.toPattern(pattern);
-            assertTrue("No match for " + address + " on pattern=" + pattern,
-                    HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)));
+            assertTrue(HostPatternsHolder.isHostMatch(address, 0, Collections.singletonList(pp)),
+                    "No match for " + address + " on pattern=" + pattern);
         }
     }
 
     @Test
-    public void testIsValidPatternChar() {
+    void isValidPatternChar() {
         for (char ch = '\0'; ch <= ' '; ch++) {
-            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")",
-                    HostPatternsHolder.isValidPatternChar(ch));
+            assertFalse(HostPatternsHolder.isValidPatternChar(ch),
+                    "Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")");
         }
 
         for (char ch = 'a'; ch <= 'z'; ch++) {
-            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue(HostPatternsHolder.isValidPatternChar(ch), "Valid character not recognized: " + Character.toString(ch));
         }
 
         for (char ch = 'A'; ch <= 'Z'; ch++) {
-            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue(HostPatternsHolder.isValidPatternChar(ch), "Valid character not recognized: " + Character.toString(ch));
         }
 
         for (char ch = '0'; ch <= '9'; ch++) {
-            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue(HostPatternsHolder.isValidPatternChar(ch), "Valid character not recognized: " + Character.toString(ch));
         }
 
         for (char ch : new char[] {
                 '-', '_', '.', HostPatternsHolder.SINGLE_CHAR_PATTERN, HostPatternsHolder.WILDCARD_PATTERN }) {
-            assertTrue("Valid character not recognized: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertTrue(HostPatternsHolder.isValidPatternChar(ch), "Valid character not recognized: " + Character.toString(ch));
         }
 
         for (char ch : new char[] {
@@ -358,68 +361,68 @@ public class HostConfigEntryTest extends JUnitTestSupport {
                 '#', '$', '^', '&', '~', '<', '>',
                 ',', '/', '\\', '\'', '"', ';'
         }) {
-            assertFalse("Unexpected valid character: " + Character.toString(ch), HostPatternsHolder.isValidPatternChar(ch));
+            assertFalse(HostPatternsHolder.isValidPatternChar(ch), "Unexpected valid character: " + Character.toString(ch));
         }
 
         for (char ch = 0x7E; ch <= 0xFF; ch++) {
-            assertFalse("Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")",
-                    HostPatternsHolder.isValidPatternChar(ch));
+            assertFalse(HostPatternsHolder.isValidPatternChar(ch),
+                    "Unexpected valid character (0x" + Integer.toHexString(ch & 0xFF) + ")");
         }
     }
 
     @Test
-    public void testReadSimpleHostsConfigEntries() throws IOException {
+    void readSimpleHostsConfigEntries() throws IOException {
         validateHostConfigEntries(readHostConfigEntries());
     }
 
     @Test
-    public void testReadGlobalHostsConfigEntries() throws IOException {
+    void readGlobalHostsConfigEntries() throws IOException {
         List<HostConfigEntry> entries = validateHostConfigEntries(readHostConfigEntries());
-        assertTrue("Not enough entries read", GenericUtils.size(entries) > 1);
+        assertTrue(GenericUtils.size(entries) > 1, "Not enough entries read");
 
         // global entry MUST be 1st one
         HostConfigEntry globalEntry = entries.get(0);
-        assertEquals("Mismatched global entry pattern", HostPatternsHolder.ALL_HOSTS_PATTERN, globalEntry.getHost());
+        assertEquals(HostPatternsHolder.ALL_HOSTS_PATTERN, globalEntry.getHost(), "Mismatched global entry pattern");
 
         for (int index = 1; index < entries.size(); index++) {
             HostConfigEntry entry = entries.get(index);
-            assertFalse("No properties for " + entry, MapEntryUtils.isEmpty(entry.getProperties()));
+            assertFalse(MapEntryUtils.isEmpty(entry.getProperties()), "No properties for " + entry);
             boolean noHostName = GenericUtils.isEmpty(entry.getHostName());
             boolean noPort = entry.getPort() <= 0;
             boolean noUsername = GenericUtils.isEmpty(entry.getUsername());
             boolean noIdentities = GenericUtils.isEmpty(entry.getIdentities());
             if (index == 1) {
-                assertFalse("No username for " + entry, noUsername);
+                assertFalse(noUsername, "No username for " + entry);
             } else {
-                assertTrue("Unexpected username for " + entry, noUsername);
+                assertTrue(noUsername, "Unexpected username for " + entry);
             }
             if (index == 2) {
-                assertFalse("No target port for " + entry, noPort);
+                assertFalse(noPort, "No target port for " + entry);
             } else {
-                assertTrue("Unexpected target port for " + entry, noPort);
+                assertTrue(noPort, "Unexpected target port for " + entry);
             }
             if (index == 3) {
-                assertFalse("No target host for " + entry, noHostName);
+                assertFalse(noHostName, "No target host for " + entry);
             } else {
-                assertTrue("Unexpected target host for " + entry, noHostName);
+                assertTrue(noHostName, "Unexpected target host for " + entry);
             }
             if (index == 4) {
-                assertFalse("No identities for " + entry, noIdentities);
+                assertFalse(noIdentities, "No identities for " + entry);
             } else {
-                assertTrue("Unexpected identity for " + entry, noIdentities);
+                assertTrue(noIdentities, "Unexpected identity for " + entry);
             }
         }
     }
 
     @Test
-    public void testReadMultipleHostPatterns() throws IOException {
+    void readMultipleHostPatterns() throws IOException {
         List<HostConfigEntry> entries = validateHostConfigEntries(readHostConfigEntries());
-        assertEquals("Mismatched number of entries", 1, GenericUtils.size(entries));
-        assertEquals("Mismatched number of patterns", 3, GenericUtils.size(entries.get(0).getPatterns()));
+        assertEquals(1, GenericUtils.size(entries), "Mismatched number of entries");
+        assertEquals(3, GenericUtils.size(entries.get(0).getPatterns()), "Mismatched number of patterns");
     }
 
     @Test
-    public void testResolveIdentityFilePath() throws Exception {
+    void resolveIdentityFilePath() throws Exception {
         final String hostValue = getClass().getSimpleName();
         final int portValue = 7365;
         final String userValue = getCurrentTestName();
@@ -449,11 +452,11 @@ public class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     private static <C extends Collection<HostConfigEntry>> C validateHostConfigEntries(C entries) {
-        assertFalse("No entries", GenericUtils.isEmpty(entries));
+        assertFalse(GenericUtils.isEmpty(entries), "No entries");
 
         for (HostConfigEntry entry : entries) {
-            assertFalse("No pattern for " + entry, GenericUtils.isEmpty(entry.getHost()));
-            assertFalse("No extra properties for " + entry, MapEntryUtils.isEmpty(entry.getProperties()));
+            assertFalse(GenericUtils.isEmpty(entry.getHost()), "No pattern for " + entry);
+            assertFalse(MapEntryUtils.isEmpty(entry.getProperties()), "No extra properties for " + entry);
         }
 
         return entries;
@@ -465,7 +468,7 @@ public class HostConfigEntryTest extends JUnitTestSupport {
 
     private List<HostConfigEntry> readHostConfigEntries(String resourceName) throws IOException {
         URL url = getClass().getResource(resourceName);
-        assertNotNull("Missing resource " + resourceName, url);
+        assertNotNull(url, "Missing resource " + resourceName);
         return HostConfigEntry.readHostConfigEntries(url);
     }
 

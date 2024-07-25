@@ -36,29 +36,34 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     public AuthorizedKeyEntryTest() {
         super();
     }
 
     @Test
-    public void testReadAuthorizedKeysFile() throws Exception {
+    void readAuthorizedKeysFile() throws Exception {
         Path file = getTempTargetRelativeFile(getCurrentTestName());
         writeDefaultSupportedKeys(file);
         runAuthorizedKeysTests(AuthorizedKeyEntry.readAuthorizedKeys(file));
     }
 
     @Test
-    public void testEncodePublicKeyEntry() throws Exception {
+    void encodePublicKeyEntry() throws Exception {
         List<String> keyLines = loadDefaultSupportedKeys();
         StringBuilder sb = new StringBuilder(Byte.MAX_VALUE);
         for (String line : keyLines) {
@@ -76,33 +81,33 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
             }
 
             PublicKey key = entry.appendPublicKey(null, sb, PublicKeyEntryResolver.FAILING);
-            assertNotNull("No key for line=" + line, key);
+            assertNotNull(key, "No key for line=" + line);
 
             String encoded = sb.toString();
-            assertEquals("Mismatched encoded form for line=" + line, data, encoded);
+            assertEquals(data, encoded, "Mismatched encoded form for line=" + line);
         }
     }
 
     @Test
-    @Ignore("It might cause some exceptions if user's file contains unsupported keys")
-    public void testReadDefaultAuthorizedKeysFile() throws Exception {
+    @Disabled("It might cause some exceptions if user's file contains unsupported keys")
+    void readDefaultAuthorizedKeysFile() throws Exception {
         Path path = AuthorizedKeysAuthenticator.getDefaultAuthorizedKeysFile();
-        assertNotNull("No default location", path);
+        assertNotNull(path, "No default location");
 
         LinkOption[] options = IoUtils.getLinkOptions(true);
         if (!Files.exists(path, options)) {
             outputDebugMessage("Verify non-existing %s", path);
             Collection<AuthorizedKeyEntry> entries = AuthorizedKeysAuthenticator.readDefaultAuthorizedKeys();
-            assertTrue("Non-empty keys even though file not found: " + entries, GenericUtils.isEmpty(entries));
+            assertTrue(GenericUtils.isEmpty(entries), "Non-empty keys even though file not found: " + entries);
         } else {
-            assertFalse("Not a file: " + path, Files.isDirectory(path, options));
+            assertFalse(Files.isDirectory(path, options), "Not a file: " + path);
             runAuthorizedKeysTests(AuthorizedKeysAuthenticator.readDefaultAuthorizedKeys());
         }
     }
 
     @Test
-    @Ignore("Used to test specific files")
-    public void testSpecificFile() throws Exception {
+    @Disabled("Used to test specific files")
+    void specificFile() throws Exception {
         Path path = Paths.get("C:" + File.separator + "Temp", "id_ed25519" + PublicKeyEntry.PUBKEY_FILE_SUFFIX);
         testReadAuthorizedKeys(AuthorizedKeyEntry.readAuthorizedKeys(path));
     }
@@ -114,7 +119,7 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
     }
 
     private static <C extends Collection<AuthorizedKeyEntry>> C testReadAuthorizedKeys(C entries) throws Exception {
-        assertFalse("No entries read", GenericUtils.isEmpty(entries));
+        assertFalse(GenericUtils.isEmpty(entries), "No entries read");
 
         Exception err = null;
         for (AuthorizedKeyEntry entry : entries) {
@@ -144,8 +149,8 @@ public class AuthorizedKeyEntryTest extends AuthorizedKeysTestSupport {
         PublickeyAuthenticator auth = PublickeyAuthenticator.fromAuthorizedEntries(
                 getCurrentTestName(), null, entries, PublicKeyEntryResolver.FAILING);
         for (PublicKey key : keySet) {
-            assertTrue("Failed to authenticate with key=" + key.getAlgorithm(),
-                    auth.authenticate(getCurrentTestName(), key, null));
+            assertTrue(auth.authenticate(getCurrentTestName(), key, null),
+                    "Failed to authenticate with key=" + key.getAlgorithm());
         }
 
         return auth;

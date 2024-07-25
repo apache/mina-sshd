@@ -33,19 +33,19 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.JSchUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * Port forwarding tests - Apache server, JSch client
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
     private static final Logger LOG = LoggerFactory.getLogger(ApacheServerJSchClientTest.class);
@@ -68,8 +68,8 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
     /*
      * Starts an SSH Server
      */
-    @BeforeClass
-    public static void startSshServer() throws IOException {
+    @BeforeAll
+    static void startSshServer() throws IOException {
         LOG.info("Starting SSHD...");
         server = CoreTestSupportUtils.setupTestFullSupportServer(SshServer.setUpDefaultServer());
         server.setPasswordAuthenticator((u, p, s) -> true);
@@ -82,20 +82,20 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
         LOG.info("SSHD Running on port {}", server.getPort());
     }
 
-    @BeforeClass
-    public static void jschInit() {
+    @BeforeAll
+    static void jschInit() {
         JSchLogger.init();
     }
 
-    @AfterClass
-    public static void stopServer() throws IOException {
+    @AfterAll
+    static void stopServer() throws IOException {
         if (!server.close(true).await(TIMEOUT)) {
             LOG.warn("Failed to close server within {} sec.", TimeUnit.MILLISECONDS.toSeconds(TIMEOUT));
         }
     }
 
-    @Before
-    public void createClient() throws Exception {
+    @BeforeEach
+    void createClient() throws Exception {
         JSch client = new JSch();
         session = client.getSession("user", TEST_LOCALHOST, sshServerPort);
         session.setUserInfo(new SimpleUserInfo("password"));
@@ -104,8 +104,8 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
         LOG.trace("Client is running now...");
     }
 
-    @After
-    public void stopClient() throws Exception {
+    @AfterEach
+    void stopClient() throws Exception {
         LOG.info("Disconnecting Client");
         session.disconnect();
     }

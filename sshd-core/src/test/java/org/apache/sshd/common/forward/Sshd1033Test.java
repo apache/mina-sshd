@@ -41,18 +41,21 @@ import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * Local + dynamic port forwarding test
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class Sshd1033Test extends BaseTestSupport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Sshd1033Test.class);
@@ -64,8 +67,8 @@ public class Sshd1033Test extends BaseTestSupport {
         // Default constructor
     }
 
-    @BeforeClass
-    public static void beforeClass() throws Exception {
+    @BeforeAll
+    static void beforeClass() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(Sshd1033Test.class);
         sshd.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         sshd.setChannelFactories(Arrays.asList(
@@ -76,28 +79,28 @@ public class Sshd1033Test extends BaseTestSupport {
         sshPort = sshd.getPort();
     }
 
-    @AfterClass
-    public static void afterClass() throws Exception {
+    @AfterAll
+    static void afterClass() throws Exception {
         sshd.stop();
     }
 
     @Test
-    public void testDirect() throws IOException {
+    void direct() throws IOException {
         testRemoteURL(null);
     }
 
     @Test
-    public void testLocalAndDynamic() throws IOException {
+    void localAndDynamic() throws IOException {
         doTest(true, true);
     }
 
     @Test
-    public void testLocal() throws IOException {
+    void local() throws IOException {
         doTest(true, false);
     }
 
     @Test
-    public void testDynamic() throws IOException {
+    void dynamic() throws IOException {
         doTest(false, true);
     }
 

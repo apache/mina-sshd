@@ -23,83 +23,86 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ECCurvesTest extends JUnitTestSupport {
     public ECCurvesTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (ECCurves expected : ECCurves.VALUES) {
             String name = expected.getName();
             for (int index = 0; index < name.length(); index++) {
                 ECCurves actual = ECCurves.fromCurveName(name);
-                assertSame(name, expected, actual);
+                assertSame(expected, actual, name);
                 name = shuffleCase(name);
             }
         }
     }
 
     @Test
-    public void testAllNamesListed() {
+    void allNamesListed() {
         Set<ECCurves> listed = EnumSet.noneOf(ECCurves.class);
         for (String name : ECCurves.NAMES) {
             ECCurves c = ECCurves.fromCurveName(name);
-            assertNotNull("No curve for listed name=" + name, c);
-            assertTrue("Duplicated listed name: " + name, listed.add(c));
+            assertNotNull(c, "No curve for listed name=" + name);
+            assertTrue(listed.add(c), "Duplicated listed name: " + name);
         }
 
         assertEquals("Mismatched listed vs. values", ECCurves.VALUES, listed);
     }
 
     @Test
-    public void testFromKeySize() {
+    void fromKeySize() {
         for (ECCurves expected : ECCurves.VALUES) {
             String name = expected.getName();
             ECCurves actual = ECCurves.fromCurveSize(expected.getKeySize());
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testFromCurveParameters() {
+    void fromCurveParameters() {
         for (ECCurves expected : ECCurves.VALUES) {
             String name = expected.getName();
             ECCurves actual = ECCurves.fromCurveParameters(expected.getParameters());
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testFromKeyType() {
+    void fromKeyType() {
         for (ECCurves expected : ECCurves.VALUES) {
             String keyType = expected.getKeyType();
             for (int index = 0; index < keyType.length(); index++) {
                 ECCurves actual = ECCurves.fromKeyType(keyType);
-                assertSame(keyType, expected, actual);
+                assertSame(expected, actual, keyType);
                 keyType = shuffleCase(keyType);
             }
         }
     }
 
     @Test
-    public void testAllKeyTypesListed() {
+    void allKeyTypesListed() {
         Set<ECCurves> listed = EnumSet.noneOf(ECCurves.class);
         for (String name : ECCurves.KEY_TYPES) {
             ECCurves c = ECCurves.fromKeyType(name);
-            assertNotNull("No curve for listed key type=" + name, c);
-            assertTrue("Duplicated listed key type: " + name, listed.add(c));
+            assertNotNull(c, "No curve for listed key type=" + name);
+            assertTrue(listed.add(c), "Duplicated listed key type: " + name);
         }
 
         assertEquals("Mismatched listed vs. values", ECCurves.VALUES, listed);

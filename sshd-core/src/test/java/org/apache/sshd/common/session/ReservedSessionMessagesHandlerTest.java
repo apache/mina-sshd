@@ -35,16 +35,19 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
@@ -54,8 +57,8 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.start();
         port = sshd.getPort();
@@ -63,8 +66,8 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -74,7 +77,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientToServer() throws Exception {
+    void clientToServer() throws Exception {
         AccumulatingHandler handler = new AccumulatingHandler();
         sshd.setReservedSessionMessagesHandler(handler);
 
@@ -90,7 +93,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testServerToClient() throws Exception {
+    void serverToClient() throws Exception {
         final AccumulatingHandler handler = new AccumulatingHandler();
         client.setReservedSessionMessagesHandler(handler);
 
@@ -121,7 +124,7 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
                     = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
-                assertTrue("Failed to complete test on time", signal.tryAcquire(31L, TimeUnit.SECONDS));
+                assertTrue(signal.tryAcquire(31L, TimeUnit.SECONDS), "Failed to complete test on time");
             } finally {
                 client.stop();
             }
@@ -151,16 +154,16 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             session.sendIgnoreMessage(data.getBytes(StandardCharsets.UTF_8));
         }
 
-        assertTrue("Failed to accumulate ignored messages on time",
-                handler.waitForIgnoreCount(expected.size(), TimeUnit.SECONDS, expected.size() * 2));
+        assertTrue(handler.waitForIgnoreCount(expected.size(), TimeUnit.SECONDS, expected.size() * 2),
+                "Failed to accumulate ignored messages on time");
 
         List<byte[]> actual = handler.getIgnoredMessages();
-        assertEquals("Mismatched size of ignored messages", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Mismatched size of ignored messages");
 
         for (int index = 0; index < actual.size(); index++) {
             String expValue = expected.get(index);
             String actValue = new String(actual.get(index), StandardCharsets.UTF_8);
-            assertEquals("Mismatched ignored message payload at index=" + index, expValue, actValue);
+            assertEquals(expValue, actValue, "Mismatched ignored message payload at index=" + index);
         }
     }
 
@@ -178,16 +181,16 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             session.sendDebugMessage(entry.getValue(), entry.getKey(), null);
         }
 
-        assertTrue("Failed to accumulate debug messages on time",
-                handler.waitForDebugCount(expected.size(), TimeUnit.SECONDS, expected.size() * 2));
+        assertTrue(handler.waitForDebugCount(expected.size(), TimeUnit.SECONDS, expected.size() * 2),
+                "Failed to accumulate debug messages on time");
 
         List<? extends Map.Entry<String, Boolean>> actual = handler.getDebugMessages();
-        assertEquals("Mismatched size of debug messages", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Mismatched size of debug messages");
 
         for (int index = 0; index < actual.size(); index++) {
             Map.Entry<String, Boolean> expEntry = expected.get(index);
             Map.Entry<String, Boolean> actEntry = actual.get(index);
-            assertEquals("Mismatched debug entry at index " + index, expEntry, actEntry);
+            assertEquals(expEntry, actEntry, "Mismatched debug entry at index " + index);
         }
     }
 

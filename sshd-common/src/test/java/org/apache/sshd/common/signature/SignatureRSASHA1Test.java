@@ -33,18 +33,23 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SignatureRSASHA1Test extends JUnitTestSupport {
     private static final Base64.Decoder B64_DECODER = Base64.getDecoder();
     @SuppressWarnings("checkstyle:linelength")
@@ -59,8 +64,8 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void initializeTestKey() throws GeneralSecurityException {
+    @BeforeAll
+    static void initializeTestKey() throws GeneralSecurityException {
         byte[] exp = B64_DECODER.decode("Iw==");
         @SuppressWarnings("checkstyle:linelength")
         byte[] mod = B64_DECODER.decode(
@@ -69,8 +74,9 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         testKey = kf.generatePublic(new RSAPublicKeySpec(new BigInteger(mod), new BigInteger(exp)));
     }
 
-    @Test // see SSHD-642
-    public void testLeadingZeroesBC() throws Throwable {
+    // see SSHD-642
+    @Test
+    void leadingZeroesBC() throws Throwable {
         testLeadingZeroes(new Factory<SignatureRSA>() {
             @Override
             public SignatureRSA create() {
@@ -79,12 +85,12 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
                     protected java.security.Signature doInitSignature(
                             SessionContext session, String algo, Key key, boolean forSigning)
                             throws GeneralSecurityException {
-                        assertFalse("Signature not initialized for verification", forSigning);
+                        assertFalse(forSigning, "Signature not initialized for verification");
                         java.security.Signature signature = super.doInitSignature(session, algo, key, forSigning);
                         if (SecurityUtils.isBouncyCastleRegistered()) {
                             Provider provider = signature.getProvider();
                             String name = provider.getName();
-                            assertEquals("Mismatched BC provider name", SecurityUtils.BOUNCY_CASTLE, name);
+                            assertEquals(SecurityUtils.BOUNCY_CASTLE, name, "Mismatched BC provider name");
                         }
                         return signature;
                     }
@@ -93,18 +99,19 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         });
     }
 
-    @Test // see SSHD-642
-    public void testLeadingZeroesJCE() throws Throwable {
+    // see SSHD-642
+    @Test
+    void leadingZeroesJCE() throws Throwable {
         testLeadingZeroes(() -> new SignatureRSASHA1() {
             @Override
             protected java.security.Signature doInitSignature(
                     SessionContext session, String algo, Key key, boolean forSigning)
                     throws GeneralSecurityException {
-                assertFalse("Signature not initialized for verification", forSigning);
+                assertFalse(forSigning, "Signature not initialized for verification");
                 java.security.Signature signature = java.security.Signature.getInstance(algo);
                 Provider provider = signature.getProvider();
                 String name = provider.getName();
-                assertNotEquals("BC provider used although not required", SecurityUtils.BOUNCY_CASTLE, name);
+                assertNotEquals(SecurityUtils.BOUNCY_CASTLE, name, "BC provider used although not required");
                 return signature;
             }
         });
@@ -115,16 +122,16 @@ public class SignatureRSASHA1Test extends JUnitTestSupport {
         rsa.initVerifier(null, testKey);
 
         int vSize = rsa.getVerifierSignatureSize();
-        assertTrue("Verifier signature size not initialized", vSize > 0);
+        assertTrue(vSize > 0, "Verifier signature size not initialized");
 
         // make sure padding is required
         Map.Entry<String, byte[]> encoding = rsa.extractEncodedSignature(
                 TEST_SIGNATURE, SignatureRSA.SUPPORTED_KEY_TYPES);
-        assertNotNull("Signature is not encoded", encoding);
+        assertNotNull(encoding, "Signature is not encoded");
         byte[] data = encoding.getValue();
-        assertTrue("Signature data size (" + data.length + ") not below verifier size (" + vSize + ")", data.length < vSize);
+        assertTrue(data.length < vSize, "Signature data size (" + data.length + ") not below verifier size (" + vSize + ")");
 
         rsa.update(null, TEST_MSG);
-        assertTrue("Failed to verify", rsa.verify(null, TEST_SIGNATURE));
+        assertTrue(rsa.verify(null, TEST_SIGNATURE), "Failed to verify");
     }
 }

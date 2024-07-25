@@ -19,7 +19,7 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 public class AES128GCMTest extends BaseAuthenticatedCipherTest {
 
@@ -28,7 +28,7 @@ public class AES128GCMTest extends BaseAuthenticatedCipherTest {
     }
 
     @Test
-    public void testEncryptDecrypt() throws Exception {
+    void encryptDecrypt() throws Exception {
         ensureFullCipherInformationSupported(BuiltinCiphers.aes128gcm);
         testAuthenticatedEncryptDecrypt(BuiltinCiphers.aes128gcm);
     }

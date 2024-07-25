@@ -31,62 +31,65 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.kex.Moduli.DhGroup;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ModuliTest extends JUnitTestSupport {
     public ModuliTest() {
         super();
     }
 
-    @BeforeClass
-    @AfterClass
-    public static void clearInternalModuliCache() {
+    @BeforeAll
+    @AfterAll
+    static void clearInternalModuliCache() {
         Moduli.clearInternalModuliCache();
     }
 
-    @Before
-    @After
-    public void clearCache() {
+    @BeforeEach
+    @AfterEach
+    void clearCache() {
         clearInternalModuliCache();
     }
 
     @Test
-    public void testLoadInternalModuli() throws IOException {
+    void loadInternalModuli() throws IOException {
         URL moduli = getClass().getResource(Moduli.INTERNAL_MODULI_RESPATH);
-        assertNotNull("Missing internal moduli resource", moduli);
+        assertNotNull(moduli, "Missing internal moduli resource");
 
         List<DhGroup> expected = Moduli.loadInternalModuli(moduli);
-        assertTrue("No moduli groups parsed", GenericUtils.isNotEmpty(expected));
+        assertTrue(GenericUtils.isNotEmpty(expected), "No moduli groups parsed");
 
         for (int index = 1; index <= Byte.SIZE; index++) {
             List<DhGroup> actual = Moduli.loadInternalModuli(moduli);
-            assertSame("Mismatched cached instance at retry #" + index, expected, actual);
+            assertSame(expected, actual, "Mismatched cached instance at retry #" + index);
         }
     }
 
     @Test
-    public void testKeySizesCoverage() throws IOException {
+    void keySizesCoverage() throws IOException {
         URL moduli = getClass().getResource(Moduli.INTERNAL_MODULI_RESPATH);
         List<DhGroup> groups = Moduli.loadInternalModuli(moduli);
         Collection<Integer> actualSizes = new TreeSet<>(Comparator.naturalOrder());
         for (DhGroup g : groups) {
             int size = g.getSize();
             // SSHD-1108 - raised default minimum to 2048...
-            assertTrue("Size below min. required " + 1024 + ": " + size, size >= 1024);
-            assertTrue("Size above max. allowed " + SecurityUtils.MAX_DHGEX_KEY_SIZE, size <= SecurityUtils.MAX_DHGEX_KEY_SIZE);
+            assertTrue(size >= 1024, "Size below min. required " + 1024 + ": " + size);
+            assertTrue(size <= SecurityUtils.MAX_DHGEX_KEY_SIZE, "Size above max. allowed " + SecurityUtils.MAX_DHGEX_KEY_SIZE);
             actualSizes.add(size);
         }
 

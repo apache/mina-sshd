@@ -23,37 +23,31 @@ import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @param  <C> Generic {@link AbstractScpCommandDetails} type
  *
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class AbstractScpCommandDetailsTest<C extends AbstractScpCommandDetails> extends JUnitTestSupport {
-    private final String header;
-    private final Constructor<C> ctor;
+    private String header;
+    private Constructor<C> ctor;
 
-    public AbstractScpCommandDetailsTest(String header, Class<C> cmdClass) throws Exception {
+    public void initAbstractScpCommandDetailsTest(String header, Class<C> cmdClass) throws Exception {
         this.header = header;
         this.ctor = cmdClass.getDeclaredConstructor(String.class);
     }
 
-    @Parameters(name = "cmd={0}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // not serializing it
@@ -72,17 +66,21 @@ public class AbstractScpCommandDetailsTest<C extends AbstractScpCommandDetails> 
         };
     }
 
-    @Test
-    public void testHeaderEquality() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "cmd={0}")
+    public void headerEquality(String header, Class<C> cmdClass) throws Exception {
+        initAbstractScpCommandDetailsTest(header, cmdClass);
         C details = ctor.newInstance(header);
         assertEquals(header, details.toHeader());
     }
 
-    @Test
-    public void testDetailsEquality() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "cmd={0}")
+    public void detailsEquality(String header, Class<C> cmdClass) throws Exception {
+        initAbstractScpCommandDetailsTest(header, cmdClass);
         C d1 = ctor.newInstance(header);
         C d2 = ctor.newInstance(header);
-        assertEquals("HASH ?", d1.hashCode(), d2.hashCode());
-        assertEquals("EQ ?", d1, d2);
+        assertEquals(d1.hashCode(), d2.hashCode(), "HASH ?");
+        assertEquals(d1, d2, "EQ ?");
     }
 }

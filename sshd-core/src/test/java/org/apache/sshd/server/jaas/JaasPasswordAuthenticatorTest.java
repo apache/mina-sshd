@@ -34,28 +34,32 @@ import javax.security.auth.login.LoginException;
 import javax.security.auth.spi.LoginModule;
 
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
     public JaasPasswordAuthenticatorTest() {
         super();
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         Configuration config = new Configuration() {
             @Override
             public AppConfigurationEntry[] getAppConfigurationEntry(String name) {
@@ -75,18 +79,18 @@ public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
         Configuration.setConfiguration(config);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         Configuration.setConfiguration(null);
     }
 
     @Test
-    public void testAuthenticator() {
+    void authenticator() {
         JaasPasswordAuthenticator auth = new JaasPasswordAuthenticator();
-        assertNull("Unexpected initial domain", auth.getDomain());
+        assertNull(auth.getDomain(), "Unexpected initial domain");
 
         auth.setDomain("domain");
-        assertEquals("Mismatched domain", "domain", auth.getDomain());
+        assertEquals("domain", auth.getDomain(), "Mismatched domain");
 
         assertTrue(auth.authenticate("sshd", "sshd", null));
         assertFalse(auth.authenticate("sshd", "dummy", null));

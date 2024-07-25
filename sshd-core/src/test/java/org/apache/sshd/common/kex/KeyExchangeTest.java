@@ -24,40 +24,43 @@ import java.util.function.Function;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KeyExchangeTest extends BaseTestSupport {
     public KeyExchangeTest() {
         super();
     }
 
     @Test
-    public void testSimpleKexOpcodeName() {
+    void simpleKexOpcodeName() {
         testKexOpcodeName(KeyExchange.SIMPLE_KEX_OPCODES_MAP, KeyExchange::getSimpleKexOpcodeName);
     }
 
     @Test
-    public void testGroupKexOpcodeName() {
+    void groupKexOpcodeName() {
         testKexOpcodeName(KeyExchange.GROUP_KEX_OPCODES_MAP, KeyExchange::getGroupKexOpcodeName);
     }
 
     private static void testKexOpcodeName(Map<Integer, String> opsMap, Function<Integer, String> xformer) {
         opsMap.forEach((cmd, expected) -> {
             String actual = xformer.apply(cmd);
-            assertSame("Mismatched results for cmd=" + cmd, expected, actual);
+            assertSame(expected, actual, "Mismatched results for cmd=" + cmd);
 
             if (SshConstants.isAmbiguousOpcode(cmd)) {
-                assertEquals("Unexpected ambiguous command resolution for " + cmd, cmd.toString(),
-                        SshConstants.getCommandMessageName(cmd));
+                assertEquals(cmd.toString(),
+                        SshConstants.getCommandMessageName(cmd),
+                        "Unexpected ambiguous command resolution for " + cmd);
             }
         });
     }

@@ -25,21 +25,21 @@ import com.jcraft.jsch.Session;
 import com.jcraft.jsch.UserInfo;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.util.test.JSchLogger;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class AsyncAuthInteractiveTest extends AsyncAuthTestBase {
     public AsyncAuthInteractiveTest() {
         super();
     }
 
-    @BeforeClass
-    public static void jschInit() {
+    @BeforeAll
+    static void jschInit() {
         JSchLogger.init();
     }
 

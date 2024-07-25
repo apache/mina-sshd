@@ -40,16 +40,13 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.ContainerTestCase;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.Testcontainers;
@@ -58,6 +55,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.MountableFile;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test setup: run a gRPC server on localhost; run an Apache MINA sshd server on localhost. Run an OpenSSH client in a
@@ -79,8 +79,7 @@ import org.testcontainers.utility.MountableFile;
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1055">SSHD-1055</a>
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
  */
-@RunWith(Parameterized.class)
-@Category(ContainerTestCase.class)
+@Tag("ContainerTestCase")
 public class PortForwardingWithOpenSshTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(PortForwardingWithOpenSshTest.class);
@@ -88,8 +87,8 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
     // We re-use a key from the ClientOpenSSHCertificatesTest.
     private static final String TEST_KEYS = "org/apache/sshd/client/opensshcerts/user";
 
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
+    @TempDir
+    File tmp;
 
     private Server gRpc;
     private int gRpcPort;
@@ -100,9 +99,9 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
     private CountDownLatch forwardingSetup;
     private int forwardedPort;
 
-    private final String portToForward;
+    private String portToForward;
 
-    public PortForwardingWithOpenSshTest(String portToForward) {
+    public void initPortForwardingWithOpenSshTest(String portToForward) {
         this.portToForward = portToForward;
     }
 
@@ -112,13 +111,12 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
      * @return the remote port specifications to use
      * @see    <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
      */
-    @Parameterized.Parameters(name = "{0}")
     public static String[] portSpecifications() {
         return new String[] { "127.0.0.1:0", "0.0.0.0:0", "0", "localhost:0" };
     }
 
-    @Before
-    public void startServers() throws Exception {
+    @BeforeEach
+    void startServers() throws Exception {
         // gRPC server
         gRpc = ServerBuilder.forPort(0).build();
         CountDownLatch gRpcStarted = new CountDownLatch(1);
@@ -161,8 +159,8 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
         sshPort = sshd.getPort();
     }
 
-    @After
-    public void teardownServers() throws Exception {
+    @AfterEach
+    void teardownServers() throws Exception {
         try {
             gRpc.shutdownNow();
         } finally {
@@ -170,11 +168,13 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void forwardingWithConnectionClose() throws Exception {
+    @MethodSource("portSpecifications")
+    @ParameterizedTest(name = "{0}")
+    public void forwardingWithConnectionClose(String portToForward) throws Exception {
+        initPortForwardingWithOpenSshTest(portToForward);
         // Write the entrypoint file. From within the test container, the host running the container and our two servers
         // is accessible as "host.testcontainers.internal".
-        File entryPoint = tmp.newFile();
+        File entryPoint = File.createTempFile("junit", null, tmp);
         String lines = "#!/bin/sh\n" //
                        + "\n" //
                        + "chmod 0600 /root/.ssh/*\n" //
@@ -204,7 +204,7 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
             Testcontainers.exposeHostPorts(sshPort, gRpcPort);
             sshdContainer.start();
             forwardingSetup.await();
-            assertTrue("Server should listen on port", forwardedPort > 0);
+            assertTrue(forwardedPort > 0, "Server should listen on port");
             LOG.info("sshd server listening for forwarding on port {}", forwardedPort);
             // Connect to the forwarded port. We should end up connecting to the gRPC server, which will balk
             // because it expects HTTP 2, and disconnect.
@@ -226,10 +226,11 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
                     }
                 }
             }
-            assertFalse("Expected data", content.isEmpty());
+            assertFalse(content.isEmpty(), "Expected data");
             String last = content.get(content.size() - 1);
-            assertTrue("Unexpected data: " + last, last.endsWith(
-                    "HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 474554202f204854545020312e310d0a436f6e6e65637469"));
+            assertTrue(last.endsWith(
+                    "HTTP/2 client preface string missing or corrupt. Hex dump for received bytes: 474554202f204854545020312e310d0a436f6e6e65637469"),
+                    "Unexpected data: " + last);
         } finally {
             sshdContainer.stop();
         }

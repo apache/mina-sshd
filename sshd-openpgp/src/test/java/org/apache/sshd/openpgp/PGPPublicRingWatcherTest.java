@@ -29,24 +29,26 @@ import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class PGPPublicRingWatcherTest extends JUnitTestSupport {
     public PGPPublicRingWatcherTest() {
         super();
     }
 
     @Test
-    public void testDefaultRingPath() {
+    void defaultRingPath() {
         Path path = PGPPublicRingWatcher.detectDefaultPublicRingFilePath();
-        Assume.assumeTrue("No default ring detected", path != null);
+        Assumptions.assumeTrue(path != null, "No default ring detected");
 
         try {
             testPublicRingWatcher(path);
@@ -57,21 +59,21 @@ public class PGPPublicRingWatcherTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testV1ResourcesKeyPath() throws Exception {
+    void v1ResourcesKeyPath() throws Exception {
         Path dir = CommonTestSupportUtils.resolve(
                 detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "keyring");
         Path file = dir.resolve(PGPPublicRingWatcher.GPG_V1_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
-        assertFalse("No keys extracted", MapEntryUtils.isEmpty(keys));
+        assertFalse(MapEntryUtils.isEmpty(keys), "No keys extracted");
     }
 
     @Test
-    public void testV2ResourcesKeyPath() throws Exception {
+    void v2ResourcesKeyPath() throws Exception {
         Path dir = CommonTestSupportUtils.resolve(
                 detectSourcesFolder(), TEST_SUBFOLDER, RESOURCES_SUBFOLDER, "kbx2ring");
         Path file = dir.resolve(PGPPublicRingWatcher.GPG_V2_PUBLIC_RING_FILENAME);
         Map<String, PublicKey> keys = testPublicRingWatcher(file);
-        assertFalse("No keys extracted", MapEntryUtils.isEmpty(keys));
+        assertFalse(MapEntryUtils.isEmpty(keys), "No keys extracted");
     }
 
     private NavigableMap<String, PublicKey> testPublicRingWatcher(Path file) throws Exception {

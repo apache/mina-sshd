@@ -40,27 +40,23 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test Cipher algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CipherTest extends BaseTestSupport {
     private static final Integer NUM_LOADTEST_ROUNDS = 100000;
 
@@ -91,33 +87,33 @@ public class CipherTest extends BaseTestSupport {
     private static int port;
 
     private final Random random = CommonTestSupportUtils.getRandomizerInstance();
-    private final BuiltinCiphers builtInCipher;
-    private final Class<? extends com.jcraft.jsch.Cipher> jschCipher;
-    private final int loadTestRounds;
+    private BuiltinCiphers builtInCipher;
+    private Class<? extends com.jcraft.jsch.Cipher> jschCipher;
+    private int loadTestRounds;
 
-    public CipherTest(BuiltinCiphers builtInCipher,
-                      Class<? extends com.jcraft.jsch.Cipher> jschCipher,
-                      int loadTestRounds) {
+    public void initCipherTest(
+            BuiltinCiphers builtInCipher,
+            Class<? extends com.jcraft.jsch.Cipher> jschCipher,
+            int loadTestRounds) {
         this.builtInCipher = builtInCipher;
         this.jschCipher = jschCipher;
         this.loadTestRounds = loadTestRounds;
     }
 
-    @Parameters(name = "cipher={0}, load={2}")
     public static Collection<Object[]> parameters() {
         return PARAMETERS;
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(CipherTest.class);
         sshd.start();
         port = sshd.getPort();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -127,10 +123,14 @@ public class CipherTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void testBuiltinCipherSession() throws Exception {
-        Assume.assumeTrue("No internal support for " + builtInCipher.getName(),
-                builtInCipher.isSupported() && checkCipher(jschCipher.getName()));
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "cipher={0}, load={2}")
+    public void builtinCipherSession(
+            BuiltinCiphers builtInCipher, Class<? extends com.jcraft.jsch.Cipher> jschCipher, int loadTestRounds)
+            throws Exception {
+        initCipherTest(builtInCipher, jschCipher, loadTestRounds);
+        Assumptions.assumeTrue(builtInCipher.isSupported() && checkCipher(jschCipher.getName()),
+                "No internal support for " + builtInCipher.getName());
         sshd.setCipherFactories(Collections.singletonList(builtInCipher));
         runJschTest(port);
     }
@@ -158,7 +158,7 @@ public class CipherTest extends BaseTestSupport {
 
                     int len = is.read(actData);
                     String actual = new String(actData, 0, len, StandardCharsets.UTF_8);
-                    assertEquals("Mismatched command at iteration " + i, expected, actual);
+                    assertEquals(expected, actual, "Mismatched command at iteration " + i);
                 }
             } finally {
                 c.disconnect();
@@ -168,9 +168,12 @@ public class CipherTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void testCipherLoad() throws Exception {
-        Assume.assumeTrue("No internal support for " + builtInCipher.getName(), builtInCipher.isSupported());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "cipher={0}, load={2}")
+    public void cipherLoad(BuiltinCiphers builtInCipher, Class<? extends com.jcraft.jsch.Cipher> jschCipher, int loadTestRounds)
+            throws Exception {
+        initCipherTest(builtInCipher, jschCipher, loadTestRounds);
+        Assumptions.assumeTrue(builtInCipher.isSupported(), "No internal support for " + builtInCipher.getName());
         loadTest(builtInCipher, random, loadTestRounds);
     }
 

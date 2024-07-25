@@ -28,48 +28,44 @@ import java.util.List;
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions.BCryptBadRoundsException;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourceParserTestSupport {
-    public OpenSSHMaxBCryptRoundsSettingTest(BuiltinIdentities identity) {
-        super(identity);
+    public void initOpenSSHMaxBCryptRoundsSettingTest(BuiltinIdentities identity) {
+        setIdentity(identity);
     }
 
-    @Parameters(name = "type={0}")
     public static List<Object[]> parameters() {
         return parameterize(BuiltinIdentities.VALUES);
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         BCryptKdfOptions.setMaxAllowedRounds(1); // we know all our test cases use 16
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         BCryptKdfOptions.setMaxAllowedRounds(BCryptKdfOptions.DEFAULT_MAX_ROUNDS);
     }
 
-    @Test
-    public void testMaxRoundsSettingFailure() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={0}")
+    public void maxRoundsSettingFailure(BuiltinIdentities identity) throws Exception {
+        initOpenSSHMaxBCryptRoundsSettingTest(identity);
         testLoadKeyPairs(true, DEFAULT_PASSWORD_PROVIDER);
     }
 

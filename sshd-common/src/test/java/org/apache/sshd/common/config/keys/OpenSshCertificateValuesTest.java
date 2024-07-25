@@ -21,11 +21,13 @@ package org.apache.sshd.common.config.keys;
 
 import java.time.Instant;
 
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@TestMethodOrder(MethodName.class)
 public class OpenSshCertificateValuesTest {
 
     public OpenSshCertificateValuesTest() {
@@ -33,24 +35,28 @@ public class OpenSshCertificateValuesTest {
     }
 
     @Test
-    public void testValidAfterMinMaxSuccess() {
+    void validAfterMinMaxSuccess() {
         new OpenSshCertificateImpl().setValidAfter(OpenSshCertificate.MIN_EPOCH);
         new OpenSshCertificateImpl().setValidAfter(OpenSshCertificate.INFINITY);
     }
 
     @Test
-    public void testValidBeforeMinMaxSuccess() {
+    void validBeforeMinMaxSuccess() {
         new OpenSshCertificateImpl().setValidBefore(OpenSshCertificate.MIN_EPOCH);
         new OpenSshCertificateImpl().setValidBefore(OpenSshCertificate.INFINITY);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testValidAfterOutOfBounds() {
-        new OpenSshCertificateImpl().setValidAfter(Instant.EPOCH.minusSeconds(1L));
+    @Test
+    void validAfterOutOfBounds() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new OpenSshCertificateImpl().setValidAfter(Instant.EPOCH.minusSeconds(1L));
+        });
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testValidBeforeOutOfBounds() {
-        new OpenSshCertificateImpl().setValidBefore(Instant.EPOCH.minusSeconds(1L));
+    @Test
+    void validBeforeOutOfBounds() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new OpenSshCertificateImpl().setValidBefore(Instant.EPOCH.minusSeconds(1L));
+        });
     }
 }

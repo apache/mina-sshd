@@ -21,28 +21,33 @@ package org.apache.sshd.sftp.common;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SftpUniversalOwnerAndGroupTest extends JUnitTestSupport {
     public SftpUniversalOwnerAndGroupTest() {
         super();
     }
 
     @Test
-    public void testNameFormat() {
+    void nameFormat() {
         for (SftpUniversalOwnerAndGroup value : SftpUniversalOwnerAndGroup.VALUES) {
             String name = value.getName();
-            assertFalse(value.name() + ": empty name", GenericUtils.isEmpty(name));
-            assertEquals(value.name() + ": bad suffix", '@', name.charAt(name.length() - 1));
+            assertFalse(GenericUtils.isEmpty(name), value.name() + ": empty name");
+            assertEquals('@', name.charAt(name.length() - 1), value.name() + ": bad suffix");
 
             for (int index = 0; index < name.length() - 1; index++) {
                 char ch = name.charAt(index);
@@ -54,15 +59,15 @@ public class SftpUniversalOwnerAndGroupTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (String name : new String[] { null, "", getCurrentTestName() }) {
-            assertNull("Unexpected value for '" + name + "'", SftpUniversalOwnerAndGroup.fromName(name));
+            assertNull(SftpUniversalOwnerAndGroup.fromName(name), "Unexpected value for '" + name + "'");
         }
 
         for (SftpUniversalOwnerAndGroup expected : SftpUniversalOwnerAndGroup.VALUES) {
             String name = expected.getName();
             for (int index = 0; index < name.length(); index++) {
-                assertSame(name, expected, SftpUniversalOwnerAndGroup.fromName(name));
+                assertSame(expected, SftpUniversalOwnerAndGroup.fromName(name), name);
                 name = shuffleCase(name);
             }
         }

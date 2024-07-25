@@ -61,21 +61,29 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
     public PublicKeyAuthenticationTest() {
         super();
     }
 
-    @Test // see SSHD-618
-    public void testPublicKeyAuthDifferentThanKex() throws Exception {
+    // see SSHD-618
+    @Test
+    void publicKeyAuthDifferentThanKex() throws Exception {
         KeyPairProvider serverKeys = KeyPairProvider.wrap(
                 CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024),
                 CommonTestSupportUtils.generateKeyPair(KeyUtils.DSS_ALGORITHM, 512),
@@ -88,7 +96,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         sshd.setPublickeyAuthenticator((username, key, session) -> {
             String keyType = KeyUtils.getKeyType(key);
             String expType = KeyUtils.getKeyType(clientIdentity);
-            assertEquals("Mismatched client key types", expType, keyType);
+            assertEquals(expType, keyType, "Mismatched client key types");
             assertKeyEquals("Mismatched authentication public keys", clientIdentity.getPublic(), key);
             return true;
         });
@@ -102,7 +110,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
             client.setServerKeyVerifier((sshClientSession, remoteAddress, serverKey) -> {
                 String keyType = KeyUtils.getKeyType(serverKey);
                 String expType = kexSignature.getName();
-                assertEquals("Mismatched server key type", expType, keyType);
+                assertEquals(expType, keyType, "Mismatched server key type");
 
                 KeyPair kp;
                 try {
@@ -136,8 +144,9 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @Test // see SSHD-624
-    public void testUserAuthPkOkWrongKey() throws Exception {
+    // see SSHD-624
+    @Test
+    void userAuthPkOkWrongKey() throws Exception {
         sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
                     @Override
@@ -183,8 +192,9 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @Test // see SSHD-1141
-    public void testUserAuthPkOkWrongAlgorithm() throws Exception {
+    // see SSHD-1141
+    @Test
+    void userAuthPkOkWrongAlgorithm() throws Exception {
         sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory() {
                     @Override
@@ -213,15 +223,16 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT).getSession()) {
                 s.addPublicKeyIdentity(clientIdentity);
-                assertTrue("Successful authentication expected", s.auth().verify(AUTH_TIMEOUT).isSuccess());
+                assertTrue(s.auth().verify(AUTH_TIMEOUT).isSuccess(), "Successful authentication expected");
             } finally {
                 client.stop();
             }
         }
     }
 
-    @Test // see SSHD-862
-    public void testSessionContextPropagatedToKeyFilePasswordProvider() throws Exception {
+    // see SSHD-862
+    @Test
+    void sessionContextPropagatedToKeyFilePasswordProvider() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.start();
 
@@ -234,18 +245,18 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                     public String getPassword(
                             SessionContext session, NamedResource resourceKey, int retryIndex)
                             throws IOException {
-                        assertSame("Mismatched session context", s, session);
-                        assertEquals("Mismatched retry index", 0, retryIndex);
+                        assertSame(s, session, "Mismatched session context");
+                        assertEquals(0, retryIndex, "Mismatched retry index");
 
                         String name = resourceKey.getName();
                         int pos = name.lastIndexOf('/');
                         if (pos >= 0) {
                             name = name.substring(pos + 1);
                         }
-                        assertEquals("Mismatched location", keyLocation, name);
+                        assertEquals(keyLocation, name, "Mismatched location");
 
                         Boolean passwordRequested = session.getAttribute(PASSWORD_ATTR);
-                        assertNull("Password already requested", passwordRequested);
+                        assertNull(passwordRequested, "Password already requested");
                         session.setAttribute(PASSWORD_ATTR, Boolean.TRUE);
                         return "super secret passphrase";
                     }
@@ -253,9 +264,9 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                 s.setKeyIdentityProvider(new KeyIdentityProvider() {
                     @Override
                     public Iterable<KeyPair> loadKeys(SessionContext session) throws IOException, GeneralSecurityException {
-                        assertSame("Mismatched session context", s, session);
+                        assertSame(s, session, "Mismatched session context");
                         URL location = getClass().getResource(keyLocation);
-                        assertNotNull("Missing key file " + keyLocation, location);
+                        assertNotNull(location, "Missing key file " + keyLocation);
 
                         URLResource resourceKey = new URLResource(location);
                         Iterable<KeyPair> ids;
@@ -263,23 +274,24 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                             ids = SecurityUtils.loadKeyPairIdentities(session, resourceKey, keyData, passwordProvider);
                         }
                         KeyPair kp = GenericUtils.head(ids);
-                        assertNotNull("No identity loaded from " + resourceKey, kp);
+                        assertNotNull(kp, "No identity loaded from " + resourceKey);
                         return Collections.singletonList(kp);
                     }
                 });
                 s.auth().verify(AUTH_TIMEOUT);
 
                 Boolean passwordRequested = s.getAttribute(PASSWORD_ATTR);
-                assertNotNull("Password provider not invoked", passwordRequested);
-                assertTrue("Password not requested", passwordRequested.booleanValue());
+                assertNotNull(passwordRequested, "Password provider not invoked");
+                assertTrue(passwordRequested.booleanValue(), "Password not requested");
             } finally {
                 client.stop();
             }
         }
     }
 
-    @Test   // see SSHD-1114
-    public void testPublicKeyAuthenticationReporter() throws Exception {
+    // see SSHD-1114
+    @Test
+    void publicKeyAuthenticationReporter() throws Exception {
         KeyPair goodIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
         KeyPair badIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
         List<PublicKey> attempted = new ArrayList<>();
@@ -310,14 +322,14 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
             @Override
             public void signalAuthenticationSuccess(ClientSession session, String service, KeyPair identity)
                     throws Exception {
-                assertTrue("Mismatched success identity", KeyUtils.compareKeys(goodIdentity.getPublic(), identity.getPublic()));
+                assertTrue(KeyUtils.compareKeys(goodIdentity.getPublic(), identity.getPublic()), "Mismatched success identity");
             }
 
             @Override
             public void signalAuthenticationFailure(
                     ClientSession session, String service, KeyPair identity, boolean partial, List<String> serverMethods)
                     throws Exception {
-                assertTrue("Mismatched failed identity", KeyUtils.compareKeys(badIdentity.getPublic(), identity.getPublic()));
+                assertTrue(KeyUtils.compareKeys(badIdentity.getPublic(), identity.getPublic()), "Mismatched failed identity");
             }
         };
 
@@ -346,8 +358,9 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         assertKeyListEquals("Signed", Collections.singletonList(goodIdentity.getPublic()), signed);
     }
 
-    @Test   // see SSHD-1114
-    public void testAuthenticationAttemptsExhausted() throws Exception {
+    // see SSHD-1114
+    @Test
+    void authenticationAttemptsExhausted() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
@@ -404,12 +417,12 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
             }
         }
 
-        assertEquals("Mismatched invocation count", 1, exhaustedCount.getAndSet(0));
-        assertEquals("Mismatched retries count", 4 /* 3 attempts + null */, attemptsCount.getAndSet(0));
+        assertEquals(1, exhaustedCount.getAndSet(0), "Mismatched invocation count");
+        assertEquals(4 /* 3 attempts + null */, attemptsCount.getAndSet(0), "Mismatched retries count");
     }
 
     @Test
-    public void testRsaAuthenticationOldServer() throws Exception {
+    void rsaAuthenticationOldServer() throws Exception {
         KeyPair userkey = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 2048);
         List<String> factoryNames = sshd.getSignatureFactoriesNames();
         // Remove anything that has "rsa" in the name, except "ssh-rsa". Make sure "ssh-rsa" is there.
@@ -440,7 +453,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
             try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                     .verify(CONNECT_TIMEOUT).getSession()) {
                 session.addPublicKeyIdentity(userkey);
-                assertTrue("Successful authentication expected", session.auth().verify(AUTH_TIMEOUT).isSuccess());
+                assertTrue(session.auth().verify(AUTH_TIMEOUT).isSuccess(), "Successful authentication expected");
             } finally {
                 client.stop();
             }

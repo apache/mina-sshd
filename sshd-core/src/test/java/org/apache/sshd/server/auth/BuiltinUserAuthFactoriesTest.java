@@ -30,39 +30,36 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.auth.BuiltinUserAuthFactories.ParseResult;
 import org.apache.sshd.server.auth.gss.UserAuthGSSFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
-    private final BuiltinUserAuthFactories factory;
+    private BuiltinUserAuthFactories factory;
 
-    public BuiltinUserAuthFactoriesTest(BuiltinUserAuthFactories factory) {
+    public void initBuiltinUserAuthFactoriesTest(BuiltinUserAuthFactories factory) {
         this.factory = factory;
     }
 
-    @Parameters(name = "Factory={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(BuiltinUserAuthFactories.VALUES);
     }
 
-    @BeforeClass
-    public static void testAllConstantsCovered() throws Exception {
+    @BeforeAll
+    static void testAllConstantsCovered() throws Exception {
         Field[] fields = UserAuthMethodFactory.class.getDeclaredFields();
         Collection<String> factories = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
 
@@ -82,43 +79,50 @@ public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
                 continue;
             }
 
-            assertTrue("Duplicate factory name constant: " + name, factories.add(name));
+            assertTrue(factories.add(name), "Duplicate factory name constant: " + name);
         }
 
-        assertTrue("Unexpected GSS name constant", factories.add(UserAuthGSSFactory.NAME));
-        assertEquals("Mismatched factories names count: " + factories, factories.size(),
-                BuiltinUserAuthFactories.VALUES.size());
+        assertTrue(factories.add(UserAuthGSSFactory.NAME), "Unexpected GSS name constant");
+        assertEquals(factories.size(),
+                BuiltinUserAuthFactories.VALUES.size(),
+                "Mismatched factories names count: " + factories);
     }
 
-    @Test
-    public void testSingletonFactoryInstance() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "Factory={0}")
+    public void singletonFactoryInstance(BuiltinUserAuthFactories factory) {
+        initBuiltinUserAuthFactoriesTest(factory);
         UserAuthFactory expected = factory.create();
         for (int index = 1; index <= Byte.SIZE; index++) {
-            assertSame("Mismatched factory instance at invocation #" + index, expected, factory.create());
+            assertSame(expected, factory.create(), "Mismatched factory instance at invocation #" + index);
         }
     }
 
-    @Test
-    public void testFromFactoryName() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "Factory={0}")
+    public void fromFactoryName(BuiltinUserAuthFactories factory) {
+        initBuiltinUserAuthFactoriesTest(factory);
         String name = factory.getName();
         UserAuthFactory expected = factory.create();
         for (int index = 1, count = name.length(); index <= count; index++) {
             UserAuthFactory actual = BuiltinUserAuthFactories.fromFactoryName(name);
-            assertSame("Mismatched factory instance for name=" + name, expected, actual);
+            assertSame(expected, actual, "Mismatched factory instance for name=" + name);
             name = shuffleCase(name); // prepare for next iteration
         }
     }
 
-    @Test
-    public void testParseResult() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "Factory={0}")
+    public void parseResult(BuiltinUserAuthFactories factory) {
+        initBuiltinUserAuthFactoriesTest(factory);
         ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(factory.getName());
-        assertNotNull("No parse result", result);
+        assertNotNull(result, "No parse result");
 
         List<UserAuthFactory> parsed = result.getParsedFactories();
-        assertEquals("Mismatched parsed count", 1, GenericUtils.size(parsed));
-        assertSame("Mismatched parsed factory instance", factory.create(), parsed.get(0));
+        assertEquals(1, GenericUtils.size(parsed), "Mismatched parsed count");
+        assertSame(factory.create(), parsed.get(0), "Mismatched parsed factory instance");
 
         Collection<String> unsupported = result.getUnsupportedFactories();
-        assertTrue("Unexpected unsupported values: " + unsupported, GenericUtils.isEmpty(unsupported));
+        assertTrue(GenericUtils.isEmpty(unsupported), "Unexpected unsupported values: " + unsupported);
     }
 }

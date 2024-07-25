@@ -22,56 +22,59 @@ package org.apache.sshd.sftp.client.extensions;
 import org.apache.sshd.sftp.client.RawSftpClient;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinSftpClientExtensionsTest extends BaseTestSupport {
     public BuiltinSftpClientExtensionsTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (String name : new String[] { null, "", getCurrentTestName() }) {
-            assertNull("Unexpected result for name='" + name + "'", BuiltinSftpClientExtensions.fromName(name));
+            assertNull(BuiltinSftpClientExtensions.fromName(name), "Unexpected result for name='" + name + "'");
         }
 
         for (BuiltinSftpClientExtensions expected : BuiltinSftpClientExtensions.VALUES) {
             String name = expected.getName();
             for (int index = 0; index < name.length(); index++) {
                 BuiltinSftpClientExtensions actual = BuiltinSftpClientExtensions.fromName(name);
-                assertSame(name, expected, actual);
+                assertSame(expected, actual, name);
                 name = shuffleCase(name);
             }
         }
     }
 
     @Test
-    public void testFromType() {
+    void fromType() {
         for (Class<?> clazz : new Class<?>[] { null, getClass(), SftpClientExtension.class }) {
-            assertNull("Unexpected value for class=" + clazz, BuiltinSftpClientExtensions.fromType(clazz));
+            assertNull(BuiltinSftpClientExtensions.fromType(clazz), "Unexpected value for class=" + clazz);
         }
 
         for (BuiltinSftpClientExtensions expected : BuiltinSftpClientExtensions.VALUES) {
             Class<?> type = expected.getType();
             BuiltinSftpClientExtensions actual = BuiltinSftpClientExtensions.fromType(type);
-            assertSame(type.getSimpleName(), expected, actual);
+            assertSame(expected, actual, type.getSimpleName());
         }
     }
 
     @Test
-    public void testFromInstance() {
+    void fromInstance() {
         for (Object instance : new Object[] { null, this }) {
-            assertNull("Unexpected value for " + instance, BuiltinSftpClientExtensions.fromInstance(instance));
+            assertNull(BuiltinSftpClientExtensions.fromInstance(instance), "Unexpected value for " + instance);
         }
 
         SftpClient mockClient = Mockito.mock(SftpClient.class);
@@ -80,8 +83,8 @@ public class BuiltinSftpClientExtensionsTest extends BaseTestSupport {
         for (BuiltinSftpClientExtensions expected : BuiltinSftpClientExtensions.VALUES) {
             SftpClientExtension e = expected.create(mockClient, mockRaw);
             BuiltinSftpClientExtensions actual = BuiltinSftpClientExtensions.fromInstance(e);
-            assertSame(expected.getName(), expected, actual);
-            assertEquals("Mismatched extension name", expected.getName(), actual.getName());
+            assertSame(expected, actual, expected.getName());
+            assertEquals(expected.getName(), actual.getName(), "Mismatched extension name");
         }
     }
 }

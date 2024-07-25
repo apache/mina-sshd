@@ -32,24 +32,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class MultiKeyIdentityProviderTest extends JUnitTestSupport {
     public MultiKeyIdentityProviderTest() {
         super();
     }
 
-    @Test // see SSHD-860
-    public void testLazyKeyIdentityMultiProvider() throws IOException, GeneralSecurityException {
+    // see SSHD-860
+    @Test
+    void lazyKeyIdentityMultiProvider() throws IOException, GeneralSecurityException {
         List<KeyPair> expected = new ArrayList<>();
         for (int index = 1; index <= Short.SIZE; index++) {
             PublicKey pub = Mockito.mock(PublicKey.class);
@@ -73,13 +79,13 @@ public class MultiKeyIdentityProviderTest extends JUnitTestSupport {
         Iterator<KeyPair> iter = keys.iterator();
         for (int index = 0, count = expected.size(); index < count; index++) {
             KeyPair kpExpected = expected.get(index);
-            assertTrue("Premature keys exhaustion after " + index + " iterations", iter.hasNext());
+            assertTrue(iter.hasNext(), "Premature keys exhaustion after " + index + " iterations");
             KeyPair kpActual = iter.next();
-            assertSame("Mismatched key at index=" + index, kpExpected, kpActual);
-            assertEquals("Mismatched requested lazy key position", index + 1, position.get());
+            assertSame(kpExpected, kpActual, "Mismatched key at index=" + index);
+            assertEquals(index + 1, position.get(), "Mismatched requested lazy key position");
         }
 
-        assertFalse("Not all keys exhausted", iter.hasNext());
+        assertFalse(iter.hasNext(), "Not all keys exhausted");
     }
 
     private static KeyIdentityProvider wrapKeyPairs(AtomicInteger position, Iterable<KeyPair> keys) {

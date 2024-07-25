@@ -34,39 +34,39 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.channel.PtyMode;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class TtyFilterOutputStreamTest extends JUnitTestSupport {
-    private final PtyMode mode;
+    private PtyMode mode;
 
-    public TtyFilterOutputStreamTest(PtyMode mode) {
+    public TtyFilterOutputStreamTest() {
+    }
+
+    public void initTtyFilterOutputStreamTest(PtyMode mode) {
         this.mode = Objects.requireNonNull(mode, "No test modes");
     }
 
-    @Parameters(name = "mode={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(TtyFilterOutputStream.OUTPUT_OPTIONS);
     }
 
-    @Test
-    public void testCRLFHandling() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "mode={0}")
+    public void crlfHandling(PtyMode mode) throws IOException {
+        initTtyFilterOutputStreamTest(mode);
         List<String> lines = Arrays.asList(getClass().getPackage().getName(),
                 getClass().getSimpleName(), getCurrentTestName(),
                 "(" + mode + ")", new Date(System.currentTimeMillis()).toString());
@@ -98,23 +98,23 @@ public class TtyFilterOutputStreamTest extends JUnitTestSupport {
     private static void assertCRLFCounts(PtyMode mode, int numLines, int crCount, int lfCount) {
         switch (mode) {
             case ECHO: // no modifications
-                assertEquals("Mismatched CR coumt", numLines, crCount);
-                assertEquals("Mismatched LF coumt", numLines, lfCount);
+                assertEquals(numLines, crCount, "Mismatched CR coumt");
+                assertEquals(numLines, lfCount, "Mismatched LF coumt");
                 break;
 
             case INLCR: // Map NL into CR
-                assertEquals("Mismatched CR count", numLines * 2, crCount);
-                assertEquals("Mismatched LF coumt", 0, lfCount);
+                assertEquals(numLines * 2, crCount, "Mismatched CR count");
+                assertEquals(0, lfCount, "Mismatched LF coumt");
                 break;
 
             case ICRNL: // Map CR to NL on input
-                assertEquals("Mismatched CR count", 0, crCount);
-                assertEquals("Mismatched LF coumt", numLines * 2, lfCount);
+                assertEquals(0, crCount, "Mismatched CR count");
+                assertEquals(numLines * 2, lfCount, "Mismatched LF coumt");
                 break;
 
             case IGNCR: // Ignore CR
-                assertEquals("Mismatched CR count", 0, crCount);
-                assertEquals("Mismatched LF coumt", numLines, lfCount);
+                assertEquals(0, crCount, "Mismatched CR count");
+                assertEquals(numLines, lfCount, "Mismatched LF coumt");
                 break;
 
             default:

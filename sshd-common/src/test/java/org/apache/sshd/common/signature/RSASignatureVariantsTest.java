@@ -20,48 +20,34 @@
 package org.apache.sshd.common.signature;
 
 import java.security.KeyPair;
-import java.util.Arrays;
-import java.util.List;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 /**
  * NOTE: some tests are inherited from parent
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class RSASignatureVariantsTest extends SignatureVariantTestSupport {
     private static KeyPair kp;
 
-    public RSASignatureVariantsTest(SignatureFactory factory) {
-        super(factory, kp);
+    @ParameterizedTest
+    @EnumSource(value = BuiltinSignatures.class, names = { "rsa", "rsaSHA256", "rsaSHA512" })
+    public void initRSASignatureVariantsTest(SignatureFactory factory) throws Exception {
+        signature(factory, kp);
     }
 
-    @BeforeClass
-    public static void initializeSigningKeyPair() throws Exception {
+    @BeforeAll
+    static void initializeSigningKeyPair() throws Exception {
         kp = initializeSigningKeyPair(KeyUtils.RSA_ALGORITHM);
     }
 
-    @Parameters(name = "{0}")
-    public static List<Object[]> parameters() {
-        return parameterize(
-                Arrays.asList(
-                        BuiltinSignatures.rsa,
-                        BuiltinSignatures.rsaSHA256,
-                        BuiltinSignatures.rsaSHA512));
-    }
 }

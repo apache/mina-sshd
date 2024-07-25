@@ -37,29 +37,24 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * Test compression algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CompressionTest extends BaseTestSupport {
     private static final Collection<KexProposalOption> COMPRESSION_OPTIONS
             = Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
@@ -67,33 +62,14 @@ public class CompressionTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
 
-    private final CompressionFactory factory;
-    private final SessionListener listener;
+    private SessionListener listener;
 
-    public CompressionTest(CompressionFactory factory) {
-        this.factory = factory;
-        listener = new SessionListener() {
-            @Override
-            @SuppressWarnings("synthetic-access")
-            public void sessionEvent(Session session, Event event) {
-                if (Event.KeyEstablished.equals(event)) {
-                    String expected = factory.getName();
-                    for (KexProposalOption option : COMPRESSION_OPTIONS) {
-                        String actual = session.getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
-                        assertEquals("Mismatched value for " + option, expected, actual);
-                    }
-                }
-            }
-        };
-    }
-
-    @Parameters(name = "factory={0}")
     public static List<Object[]> parameters() {
         return parameterize(BuiltinCompressions.VALUES);
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(MacCompatibilityTest.class);
@@ -102,8 +78,8 @@ public class CompressionTest extends BaseTestSupport {
         port = sshd.getPort();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -113,8 +89,31 @@ public class CompressionTest extends BaseTestSupport {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
+        if (sshd != null) {
+            sshd.removeSessionListener(listener);
+        }
+        JSch.setConfig("compression.s2c", "none");
+        JSch.setConfig("compression.c2s", "none");
+    }
+
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "factory={0}")
+    public void compression(CompressionFactory factory) throws Exception {
+        listener = new SessionListener() {
+            @Override
+            @SuppressWarnings("synthetic-access")
+            public void sessionEvent(Session session, Event event) {
+                if (Event.KeyEstablished.equals(event)) {
+                    String expected = factory.getName();
+                    for (KexProposalOption option : COMPRESSION_OPTIONS) {
+                        String actual = session.getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
+                        assertEquals(expected, actual, "Mismatched value for " + option);
+                    }
+                }
+            }
+        };
         sshd.setCompressionFactories(Collections.singletonList(factory));
         sshd.addSessionListener(listener);
 
@@ -123,20 +122,7 @@ public class CompressionTest extends BaseTestSupport {
         JSch.setConfig("compression.c2s", name);
         JSch.setConfig("zlib", com.jcraft.jsch.jzlib.Compression.class.getName());
         JSch.setConfig("zlib@openssh.com", com.jcraft.jsch.jzlib.Compression.class.getName());
-    }
-
-    @After
-    public void tearDown() throws Exception {
-        if (sshd != null) {
-            sshd.removeSessionListener(listener);
-        }
-        JSch.setConfig("compression.s2c", "none");
-        JSch.setConfig("compression.c2s", "none");
-    }
-
-    @Test
-    public void testCompression() throws Exception {
-        Assume.assumeTrue("Skip unsupported compression " + factory, factory.isSupported());
+        Assumptions.assumeTrue(factory.isSupported(), "Skip unsupported compression " + factory);
 
         JSch sch = new JSch();
         com.jcraft.jsch.Session s = sch.getSession(getCurrentTestName(), TEST_LOCALHOST, port);
@@ -158,7 +144,7 @@ public class CompressionTest extends BaseTestSupport {
 
                     int len = is.read(data);
                     String str = new String(data, 0, len, StandardCharsets.UTF_8);
-                    assertEquals("Mismatched read data at iteration #" + i, testCommand, str);
+                    assertEquals(testCommand, str, "Mismatched read data at iteration #" + i);
                 }
             } finally {
                 c.disconnect();
@@ -167,4 +153,5 @@ public class CompressionTest extends BaseTestSupport {
             s.disconnect();
         }
     }
+
 }

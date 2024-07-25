@@ -29,40 +29,43 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class IoUtilsTest extends JUnitTestSupport {
     public IoUtilsTest() {
         super();
     }
 
     @Test
-    public void testFollowLinks() {
-        assertTrue("Null ?", IoUtils.followLinks((LinkOption[]) null));
-        assertTrue("Empty ?", IoUtils.followLinks(IoUtils.EMPTY_LINK_OPTIONS));
-        assertFalse("No-follow ?", IoUtils.followLinks(IoUtils.getLinkOptions(false)));
+    void followLinks() {
+        assertTrue(IoUtils.followLinks((LinkOption[]) null), "Null ?");
+        assertTrue(IoUtils.followLinks(IoUtils.EMPTY_LINK_OPTIONS), "Empty ?");
+        assertFalse(IoUtils.followLinks(IoUtils.getLinkOptions(false)), "No-follow ?");
     }
 
     @Test
-    public void testGetEOLBytes() {
+    void getEOLBytes() {
         byte[] expected = IoUtils.getEOLBytes();
-        assertTrue("Empty bytes", NumberUtils.length(expected) > 0);
+        assertTrue(NumberUtils.length(expected) > 0, "Empty bytes");
 
         for (int index = 1; index < Byte.SIZE; index++) {
             byte[] actual = IoUtils.getEOLBytes();
-            assertNotSame("Same bytes received at iteration " + index, expected, actual);
-            assertArrayEquals("Mismatched bytes at iteration " + index, expected, actual);
+            assertNotSame(expected, actual, "Same bytes received at iteration " + index);
+            assertArrayEquals(expected, actual, "Mismatched bytes at iteration " + index);
         }
     }
 
@@ -72,8 +75,8 @@ public class IoUtilsTest extends JUnitTestSupport {
      * @throws IOException on failure
      */
     @Test
-    public void testCheckExists() throws IOException {
-        Assume.assumeFalse("Not relevant for Windows", OsUtils.isWin32());
+    void checkExists() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "Not relevant for Windows");
         testCheckExists(Paths.get("target/IoUtilsTest").toAbsolutePath());
     }
 
@@ -98,15 +101,15 @@ public class IoUtilsTest extends JUnitTestSupport {
 
         Path targetWithLink = baseDir.resolve("folder1/folder2/link/dirintarget");
 
-        Assert.assertTrue("symlink follow should work", IoUtils.checkFileExists(targetWithLink));
-        Assert.assertTrue("symlink follow should work", IoUtils.checkFileExistsAnySymlinks(targetWithLink, false));
+        assertTrue(IoUtils.checkFileExists(targetWithLink), "symlink follow should work");
+        assertTrue(IoUtils.checkFileExistsAnySymlinks(targetWithLink, false), "symlink follow should work");
 
-        Assert.assertFalse("Link at end shouldn't be followed", IoUtils.checkFileExistsAnySymlinks(link, true));
-        Assert.assertFalse("Nofollow shouldn't follow directory",
-                IoUtils.checkFileExistsAnySymlinks(targetWithLink, true));
-        Assert.assertFalse("Link at beginning shouldn't be followed",
-                IoUtils.checkFileExistsAnySymlinks(link2, true));
-        Assert.assertTrue("Root directory must exist",
-                IoUtils.checkFileExistsAnySymlinks(baseDir, true));
+        assertFalse(IoUtils.checkFileExistsAnySymlinks(link, true), "Link at end shouldn't be followed");
+        assertFalse(IoUtils.checkFileExistsAnySymlinks(targetWithLink, true),
+                "Nofollow shouldn't follow directory");
+        assertFalse(IoUtils.checkFileExistsAnySymlinks(link2, true),
+                "Link at beginning shouldn't be followed");
+        assertTrue(IoUtils.checkFileExistsAnySymlinks(baseDir, true),
+                "Root directory must exist");
     }
 }

@@ -30,14 +30,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
     public AbstractGeneratorHostKeyProviderTest() {
         super();
@@ -45,19 +46,19 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
     @Test
     @SuppressWarnings("synthetic-access")
-    public void testOverwriteKey() throws Exception {
+    void overwriteKey() throws Exception {
         Path tempDir = assertHierarchyTargetFolderExists(getTempTargetFolder());
         Path keyPairFile = tempDir.resolve(getCurrentTestName() + ".key");
         Files.deleteIfExists(keyPairFile);
 
         TestProvider provider = new TestProvider(keyPairFile);
         provider.loadKeys(null);
-        assertEquals("Mismatched generate write count", 1, provider.getWriteCount());
+        assertEquals(1, provider.getWriteCount(), "Mismatched generate write count");
 
         provider = new TestProvider(keyPairFile);
         provider.setOverwriteAllowed(false);
         provider.loadKeys(null);
-        assertEquals("Mismatched load write count", 0, provider.getWriteCount());
+        assertEquals(0, provider.getWriteCount(), "Mismatched load write count");
     }
 
     private static final class TestProvider extends AbstractGeneratorHostKeyProvider {

@@ -24,26 +24,26 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PuttySpecialKeysTest extends AbstractPuttyTestSupport {
     public PuttySpecialKeysTest() {
         super();
     }
 
-    @Test   // SSHD-1247
-    public void testArgon2KeyDerivation() throws Exception {
-        Assume.assumeTrue("BC provider available", SecurityUtils.isBouncyCastleRegistered());
+    // SSHD-1247
+    @Test
+    void argon2KeyDerivation() throws Exception {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BC provider available");
         testDecodeSpecialEncryptedPuttyKeyFile("ssh-rsa", "argon2id", "123456");
     }
 

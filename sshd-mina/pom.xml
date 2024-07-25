@@ -63,6 +63,11 @@
             <scope>test</scope>
         </dependency>
         <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-common</artifactId>
             <version>${project.version}</version>
@@ -128,7 +133,7 @@
                         <exclude>**/DefaultIoServiceFactoryFactoryTest.java</exclude>
                     </excludes>
                     <!-- No need to re-run core tests that do not involve session creation -->
-                    <excludedGroups>org.apache.sshd.util.test.NoIoTestCase</excludedGroups>
+                    <excludedGroups>NoIoTestCase</excludedGroups>
                     <!-- Tests are located in the sshd-core reusable test jar -->
                     <dependenciesToScan>
                         <dependency>org.apache.sshd:sshd-core</dependency>

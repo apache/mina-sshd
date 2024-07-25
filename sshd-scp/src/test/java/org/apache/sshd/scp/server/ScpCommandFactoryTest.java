@@ -25,18 +25,22 @@ import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.scp.common.ScpHelper;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ScpCommandFactoryTest extends BaseTestSupport {
     public ScpCommandFactoryTest() {
         super();
@@ -46,19 +50,19 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
      * Make sure that the builder returns a factory with the default values if no {@code withXXX} method is invoked
      */
     @Test
-    public void testBuilderDefaultFactoryValues() {
+    void builderDefaultFactoryValues() {
         ScpCommandFactory factory = new ScpCommandFactory.Builder().build();
-        assertNull("Mismatched delegate", factory.getDelegateCommandFactory());
-        assertNull("Mismatched executor", factory.getExecutorServiceProvider());
-        assertEquals("Mismatched send size", ScpHelper.DEFAULT_SEND_BUFFER_SIZE, factory.getSendBufferSize());
-        assertEquals("Mismatched receive size", ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize());
+        assertNull(factory.getDelegateCommandFactory(), "Mismatched delegate");
+        assertNull(factory.getExecutorServiceProvider(), "Mismatched executor");
+        assertEquals(ScpHelper.DEFAULT_SEND_BUFFER_SIZE, factory.getSendBufferSize(), "Mismatched send size");
+        assertEquals(ScpHelper.DEFAULT_RECEIVE_BUFFER_SIZE, factory.getReceiveBufferSize(), "Mismatched receive size");
     }
 
     /**
      * Make sure that the builder initializes correctly the built factory
      */
     @Test
-    public void testBuilderCorrectlyInitializesFactory() {
+    void builderCorrectlyInitializesFactory() {
         CommandFactory delegate = dummyFactory();
         CloseableExecutorService service = dummyExecutor();
         Supplier<CloseableExecutorService> provider = () -> service;
@@ -70,10 +74,10 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
                 .withSendBufferSize(sendSize)
                 .withReceiveBufferSize(receiveSize)
                 .build();
-        assertSame("Mismatched delegate", delegate, factory.getDelegateCommandFactory());
-        assertSame("Mismatched executor", provider, factory.getExecutorServiceProvider());
-        assertEquals("Mismatched send size", sendSize, factory.getSendBufferSize());
-        assertEquals("Mismatched receive size", receiveSize, factory.getReceiveBufferSize());
+        assertSame(delegate, factory.getDelegateCommandFactory(), "Mismatched delegate");
+        assertSame(provider, factory.getExecutorServiceProvider(), "Mismatched executor");
+        assertEquals(sendSize, factory.getSendBufferSize(), "Mismatched send size");
+        assertEquals(receiveSize, factory.getReceiveBufferSize(), "Mismatched receive size");
     }
 
     /**
@@ -85,15 +89,15 @@ public class ScpCommandFactoryTest extends BaseTestSupport {
      * {@link ScpCommandFactory.Builder#build()} method</LI> </UL
      */
     @Test
-    public void testBuilderUniqueInstance() {
+    void builderUniqueInstance() {
         ScpCommandFactory.Builder builder = new ScpCommandFactory.Builder();
         ScpCommandFactory f1 = builder.withDelegate(dummyFactory()).build();
         ScpCommandFactory f2 = builder.build();
-        assertNotSame("No new instance built", f1, f2);
-        assertSame("Mismatched delegate", f1.getDelegateCommandFactory(), f2.getDelegateCommandFactory());
+        assertNotSame(f1, f2, "No new instance built");
+        assertSame(f1.getDelegateCommandFactory(), f2.getDelegateCommandFactory(), "Mismatched delegate");
 
         ScpCommandFactory f3 = builder.withDelegate(dummyFactory()).build();
-        assertNotSame("Delegate not changed", f1.getDelegateCommandFactory(), f3.getDelegateCommandFactory());
+        assertNotSame(f1.getDelegateCommandFactory(), f3.getDelegateCommandFactory(), "Delegate not changed");
     }
 
     private static CloseableExecutorService dummyExecutor() {

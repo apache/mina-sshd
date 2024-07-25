@@ -24,36 +24,33 @@ import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSupport {
-    private final LocalForwardingEntry entry;
-    private final SshdSocketAddress expected;
+    private LocalForwardingEntry entry;
+    private SshdSocketAddress expected;
 
-    public LocalForwardingEntryCombinedBoundAddressTest(SshdSocketAddress local, SshdSocketAddress bound,
-                                                        SshdSocketAddress expected) {
+    public void initLocalForwardingEntryCombinedBoundAddressTest(
+            SshdSocketAddress local, SshdSocketAddress bound,
+            SshdSocketAddress expected) {
         this.entry = new LocalForwardingEntry(local, bound);
         this.expected = expected;
     }
 
-    @Parameters(name = "local={0}, bound={1}, expected={2}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
@@ -86,30 +83,34 @@ public class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSuppo
         };
     }
 
-    @Test
-    public void testResolvedValue() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "local={0}, bound={1}, expected={2}")
+    public void resolvedValue(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
+        initLocalForwardingEntryCombinedBoundAddressTest(local, bound, expected);
         assertEquals(expected, entry.getCombinedBoundAddress());
     }
 
-    @Test
-    public void testHashCode() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "local={0}, bound={1}, expected={2}")
+    public void testHashCode(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
+        initLocalForwardingEntryCombinedBoundAddressTest(local, bound, expected);
         assertEquals(expected.hashCode(), entry.hashCode());
     }
 
-    @Test
-    public void testSameInstanceReuse() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "local={0}, bound={1}, expected={2}")
+    public void sameInstanceReuse(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
+        initLocalForwardingEntryCombinedBoundAddressTest(local, bound, expected);
         SshdSocketAddress combined = entry.getCombinedBoundAddress();
-        SshdSocketAddress local = entry.getLocalAddress();
-        SshdSocketAddress bound = entry.getBoundAddress();
         boolean eqLocal = Objects.equals(combined, local);
         boolean eqBound = Objects.equals(combined, bound);
         if (eqLocal) {
-            assertSame("Not same local reference", combined, local);
+            assertSame(combined, local, "Not same local reference");
         } else if (eqBound) {
-            assertSame("Not same bound reference", combined, bound);
+            assertSame(combined, bound, "Not same bound reference");
         } else {
-            assertNotSame("Unexpected same local reference", combined, local);
-            assertNotSame("Unexpected same bound reference", combined, bound);
+            assertNotSame(combined, local, "Unexpected same local reference");
+            assertNotSame(combined, bound, "Unexpected same bound reference");
         }
     }
 

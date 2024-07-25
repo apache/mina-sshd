@@ -31,41 +31,38 @@ import java.util.List;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class BuiltinIdentitiesTest extends JUnitTestSupport {
-    private final BuiltinIdentities expected;
+    private BuiltinIdentities expected;
 
-    public BuiltinIdentitiesTest(BuiltinIdentities expected) {
+    public void initBuiltinIdentitiesTest(BuiltinIdentities expected) {
         this.expected = expected;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(BuiltinIdentities.VALUES);
     }
 
-    @BeforeClass // Dirty hack around the parameterized run
-    public static void testAllConstantsCovered() throws Exception {
+    @BeforeAll // Dirty hack around the parameterized run
+    static void testAllConstantsCovered() throws Exception {
         Field[] fields = BuiltinIdentities.Constants.class.getFields();
         for (Field f : fields) {
             int mods = f.getModifiers();
@@ -85,46 +82,56 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
             String name = f.getName();
             String value = (String) f.get(null);
             BuiltinIdentities id = BuiltinIdentities.fromName(value);
-            assertNotNull("No match found for field " + name + "=" + value, id);
+            assertNotNull(id, "No match found for field " + name + "=" + value);
         }
     }
 
-    @Test
-    public void testFromName() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void fromName(BuiltinIdentities expected) {
+        initBuiltinIdentitiesTest(expected);
         String name = expected.getName();
         for (int index = 0, count = name.length(); index < count; index++) {
-            assertSame(name, expected, BuiltinIdentities.fromName(name));
+            assertSame(expected, BuiltinIdentities.fromName(name), name);
             name = shuffleCase(name);
         }
     }
 
-    @Test
-    public void testFromAlgorithm() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void fromAlgorithm(BuiltinIdentities expected) {
+        initBuiltinIdentitiesTest(expected);
         String algorithm = expected.getAlgorithm();
         for (int index = 0, count = algorithm.length(); index < count; index++) {
-            assertSame(algorithm, expected, BuiltinIdentities.fromAlgorithm(algorithm));
+            assertSame(expected, BuiltinIdentities.fromAlgorithm(algorithm), algorithm);
             algorithm = shuffleCase(algorithm);
         }
     }
 
-    @Test
-    public void testFromKey() throws GeneralSecurityException {
-        Assume.assumeTrue("Unsupported built-in identity", expected.isSupported());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void fromKey(BuiltinIdentities expected) throws GeneralSecurityException {
+        initBuiltinIdentitiesTest(expected);
+        Assumptions.assumeTrue(expected.isSupported(), "Unsupported built-in identity");
         KeyPairGenerator gen = SecurityUtils.getKeyPairGenerator(expected.getAlgorithm());
         KeyPair kp = gen.generateKeyPair();
         outputDebugMessage("Checking built-in identity: %s", expected);
-        assertSame(expected + "[pair]", expected, BuiltinIdentities.fromKeyPair(kp));
-        assertSame(expected + "[public]", expected, BuiltinIdentities.fromKey(kp.getPublic()));
-        assertSame(expected + "[private]", expected, BuiltinIdentities.fromKey(kp.getPrivate()));
+        assertSame(expected, BuiltinIdentities.fromKeyPair(kp), expected + "[pair]");
+        assertSame(expected, BuiltinIdentities.fromKey(kp.getPublic()), expected + "[public]");
+        assertSame(expected, BuiltinIdentities.fromKey(kp.getPrivate()), expected + "[private]");
     }
 
-    @Test
-    public void testNonEmptySupportedKeyTypeNames() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void nonEmptySupportedKeyTypeNames(BuiltinIdentities expected) {
+        initBuiltinIdentitiesTest(expected);
         assertTrue(GenericUtils.isNotEmpty(expected.getSupportedKeyTypes()));
     }
 
-    @Test
-    public void testNoOverlappingKeyTypeNamesWithOtherIdentities() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void noOverlappingKeyTypeNamesWithOtherIdentities(BuiltinIdentities expected) {
+        initBuiltinIdentitiesTest(expected);
         Collection<String> current = expected.getSupportedKeyTypes();
         for (BuiltinIdentities identity : BuiltinIdentities.VALUES) {
             if (UnaryEquator.isSameReference(expected, identity)) {

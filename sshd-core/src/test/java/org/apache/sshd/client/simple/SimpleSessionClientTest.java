@@ -33,33 +33,37 @@ import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
     public SimpleSessionClientTest() {
         super();
     }
 
     @Test
-    public void testLoginSessionWithPassword() throws Exception {
+    void loginSessionWithPassword() throws Exception {
         // make sure authentication occurs only for passwords
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         client.start();
 
         try (ClientSession session = simple.sessionLogin(
                 TEST_LOCALHOST, port, getCurrentTestName(), getCurrentTestName())) {
-            assertEquals("Mismatched session username", getCurrentTestName(), session.getUsername());
+            assertEquals(getCurrentTestName(), session.getUsername(), "Mismatched session username");
         }
     }
 
     @Test
-    public void testLoginSessionWithIdentity() throws Exception {
+    void loginSessionWithIdentity() throws Exception {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
         AtomicBoolean identityQueried = new AtomicBoolean(false);
         sshd.setPublickeyAuthenticator((username, key, session) -> {
@@ -76,14 +80,13 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
 
         try (ClientSession session = simple.sessionLogin(
                 TEST_LOCALHOST, port, getCurrentTestName(), identity)) {
-            assertEquals("Mismatched session username",
-                    getCurrentTestName(), session.getUsername());
-            assertTrue("User identity not queried", identityQueried.get());
+            assertEquals(getCurrentTestName(), session.getUsername(), "Mismatched session username");
+            assertTrue(identityQueried.get(), "User identity not queried");
         }
     }
 
     @Test
-    public void testConnectionTimeout() throws Exception {
+    void connectionTimeout() throws Exception {
         client.addSessionListener(new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
@@ -105,12 +108,12 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             long nanoDuration = nanoEnd - nanoStart;
             long nanoTimeout = CONNECT_TIMEOUT.toNanos();
             // we allow the timeout to be shorter than the connect timeout, but no more than 3 times its value
-            assertTrue("Expired time (" + nanoDuration + ") too long", nanoDuration < (nanoTimeout * 3L));
+            assertTrue(nanoDuration < (nanoTimeout * 3L), "Expired time (" + nanoDuration + ") too long");
         }
     }
 
     @Test
-    public void testAuthenticationTimeout() throws Exception {
+    void authenticationTimeout() throws Exception {
         // make sure authentication occurs only for passwords
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         PasswordAuthenticator delegate = Objects.requireNonNull(
@@ -134,7 +137,7 @@ public class SimpleSessionClientTest extends BaseSimpleClientTestSupport {
             long nanoDuration = nanoEnd - nanoStart;
             long nanoTimeout = AUTH_TIMEOUT.toNanos();
             // we allow the timeout to be shorter than the connect timeout, but no more than 3 times its value
-            assertTrue("Expired time (" + nanoDuration + ") too long", nanoDuration < (nanoTimeout * 3L));
+            assertTrue(nanoDuration < (nanoTimeout * 3L), "Expired time (" + nanoDuration + ") too long");
         }
     }
 }

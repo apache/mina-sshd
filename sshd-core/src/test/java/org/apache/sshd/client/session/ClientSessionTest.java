@@ -51,17 +51,23 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusPasswordAuthenticator;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ClientSessionTest extends BaseTestSupport {
 
     private static SshServer sshd;
@@ -72,8 +78,8 @@ public class ClientSessionTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(ClientSessionTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -82,8 +88,8 @@ public class ClientSessionTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -101,15 +107,15 @@ public class ClientSessionTest extends BaseTestSupport {
         }
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
     }
 
     @Test
-    public void testDefaultExecuteCommandMethod() throws Exception {
+    void defaultExecuteCommandMethod() throws Exception {
         String expectedCommand = getCurrentTestName() + "-CMD";
         String expectedResponse = getCurrentTestName() + "-RSP";
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
@@ -117,8 +123,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                assertEquals("Mismatched incoming command", expectedCommand, command);
-                assertFalse("Duplicated command call", cmdProcessed);
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
                 OutputStream stdout = getOutputStream();
                 stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
                 stdout.flush();
@@ -135,12 +141,12 @@ public class ClientSessionTest extends BaseTestSupport {
 
             // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
             String actualResponse = session.executeRemoteCommand(expectedCommand + "\n");
-            assertEquals("Mismatched command response", expectedResponse, actualResponse);
+            assertEquals(expectedResponse, actualResponse, "Mismatched command response");
         }
     }
 
     @Test
-    public void testExceptionThrownIfRemoteStderrWrittenTo() throws Exception {
+    void exceptionThrownIfRemoteStderrWrittenTo() throws Exception {
         String expectedCommand = getCurrentTestName() + "-CMD";
         String expectedErrorMessage = getCurrentTestName() + "-ERR";
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
@@ -148,8 +154,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                assertEquals("Mismatched incoming command", expectedCommand, command);
-                assertFalse("Duplicated command call", cmdProcessed);
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
                 OutputStream stderr = getErrorStream();
                 stderr.write(expectedErrorMessage.getBytes(StandardCharsets.US_ASCII));
                 stderr.flush();
@@ -181,11 +187,11 @@ public class ClientSessionTest extends BaseTestSupport {
             actualErrorMessage = cause.getMessage();
         }
 
-        assertEquals("Mismatched captured error message", expectedErrorMessage, actualErrorMessage);
+        assertEquals(expectedErrorMessage, actualErrorMessage, "Mismatched captured error message");
     }
 
     @Test
-    public void testExceptionThrownIfNonZeroExitStatus() throws Exception {
+    void exceptionThrownIfNonZeroExitStatus() throws Exception {
         String expectedCommand = getCurrentTestName() + "-CMD";
         int expectedErrorCode = 7365;
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
@@ -198,8 +204,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                assertEquals("Mismatched incoming command", expectedCommand, command);
-                assertFalse("Duplicated command call", cmdProcessed);
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
                 OutputStream stdout = getOutputStream();
                 stdout.write(command.getBytes(StandardCharsets.US_ASCII));
                 stdout.flush();
@@ -231,11 +237,12 @@ public class ClientSessionTest extends BaseTestSupport {
             actualErrorMessage = cause.getMessage();
         }
 
-        assertEquals("Mismatched captured error code", Integer.toString(expectedErrorCode), actualErrorMessage);
+        assertEquals(Integer.toString(expectedErrorCode), actualErrorMessage, "Mismatched captured error code");
     }
 
-    @Test // see SSHD-859
-    public void testConnectionContextPropagation() throws Exception {
+    // see SSHD-859
+    @Test
+    void connectionContextPropagation() throws Exception {
         AttributeRepository expected = AttributeRepository.ofKeyValuePair(
                 new AttributeKey<String>(), getCurrentTestName());
         AtomicInteger creationCount = new AtomicInteger(0);
@@ -243,7 +250,7 @@ public class ClientSessionTest extends BaseTestSupport {
             @Override
             public void sessionCreated(Session session) {
                 AttributeRepository actual = ((ClientSession) session).getConnectionContext();
-                assertSame("Mismatched connection context", expected, actual);
+                assertSame(expected, actual, "Mismatched connection context");
                 creationCount.incrementAndGet();
             }
         };
@@ -256,20 +263,22 @@ public class ClientSessionTest extends BaseTestSupport {
                     .getSession()) {
                 session.addPasswordIdentity(getCurrentTestName());
                 session.auth().verify(AUTH_TIMEOUT);
-                assertEquals("Session listener invocation count mismatch", 1, creationCount.getAndSet(0));
+                assertEquals(1, creationCount.getAndSet(0), "Session listener invocation count mismatch");
             }
         } finally {
             client.removeSessionListener(listener);
         }
     }
 
-    @Test // SSHD-1050
-    public void testAuthGetsNotifiedIfErrorBeforeFirstAuth() throws Exception {
+    // SSHD-1050
+    @Test
+    void authGetsNotifiedIfErrorBeforeFirstAuth() throws Exception {
         testEarlyErrorAuthAttempts(1);
     }
 
-    @Test // SSHD-1050
-    public void testSecondAuthNotifiedAfterEarlyError() throws Exception {
+    // SSHD-1050
+    @Test
+    void secondAuthNotifiedAfterEarlyError() throws Exception {
         testEarlyErrorAuthAttempts(3);
     }
 
@@ -297,22 +306,23 @@ public class ClientSessionTest extends BaseTestSupport {
                 outputDebugMessage("%s(%s)", getCurrentTestName(), authId);
 
                 AuthFuture future = session.auth();
-                assertTrue(authId + " not completed on time", future.await(AUTH_TIMEOUT));
-                assertTrue(authId + " has no result", future.isDone());
-                assertFalse(authId + " unexpected success", future.isSuccess());
-                assertTrue(authId + " not marked as failed", future.isFailure());
+                assertTrue(future.await(AUTH_TIMEOUT), authId + " not completed on time");
+                assertTrue(future.isDone(), authId + " has no result");
+                assertFalse(future.isSuccess(), authId + " unexpected success");
+                assertTrue(future.isFailure(), authId + " not marked as failed");
 
                 Throwable exception = future.getException();
                 String message = exception.getMessage();
-                assertTrue(authId + " invalid exception message: " + message, message.contains("too many header lines"));
+                assertTrue(message.contains("too many header lines"), authId + " invalid exception message: " + message);
             }
         } finally {
             CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.set(sshd, null);
         }
     }
 
-    @Test   // SSHD-1276
-    public void testRedirectCommandErrorStream() throws Exception {
+    // SSHD-1276
+    @Test
+    void redirectCommandErrorStream() throws Exception {
         String expectedCommand = getCurrentTestName() + "-CMD";
         String expectedStdout = getCurrentTestName() + "-STDOUT";
         String expectedStderr = getCurrentTestName() + "-STDERR";
@@ -321,8 +331,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                assertEquals("Mismatched incoming command", expectedCommand, command);
-                assertFalse("Duplicated command call", cmdProcessed);
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
                 writeResponse(getOutputStream(), expectedStdout);
                 writeResponse(getErrorStream(), expectedStderr);
                 cmdProcessed = true;
@@ -360,7 +370,7 @@ public class ClientSessionTest extends BaseTestSupport {
         }
 
         String[] lines = GenericUtils.split(response, '\n');
-        assertEquals("Mismatched response lines count", 2, lines.length);
+        assertEquals(2, lines.length, "Mismatched response lines count");
 
         Collection<String> values = new ArrayList<>(Arrays.asList(lines));
         // We don't rely on the order the strings were written
@@ -370,11 +380,12 @@ public class ClientSessionTest extends BaseTestSupport {
             }
         }
 
-        assertTrue("Unexpected response remainders: " + values, values.isEmpty());
+        assertTrue(values.isEmpty(), "Unexpected response remainders: " + values);
     }
 
-    @Test // SSHD-1303
-    public void testRedirectCommandErrorStreamIsEmpty() throws Exception {
+    // SSHD-1303
+    @Test
+    void redirectCommandErrorStreamIsEmpty() throws Exception {
         String expectedCommand = getCurrentTestName() + "-CMD";
         String expectedStdout = getCurrentTestName() + "-STDOUT";
         String expectedStderr = getCurrentTestName() + "-STDERR";
@@ -383,8 +394,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                assertEquals("Mismatched incoming command", expectedCommand, command);
-                assertFalse("Duplicated command call", cmdProcessed);
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
                 writeResponse(getOutputStream(), expectedStdout);
                 writeResponse(getErrorStream(), expectedStderr);
                 cmdProcessed = true;
@@ -423,7 +434,7 @@ public class ClientSessionTest extends BaseTestSupport {
         }
 
         String[] lines = GenericUtils.split(response, '\n');
-        assertEquals("Mismatched response lines count", 2, lines.length);
+        assertEquals(2, lines.length, "Mismatched response lines count");
 
         Collection<String> values = new ArrayList<>(Arrays.asList(lines));
         // We don't rely on the order the strings were written
@@ -433,11 +444,12 @@ public class ClientSessionTest extends BaseTestSupport {
             }
         }
 
-        assertTrue("Unexpected response remainders: " + values, values.isEmpty());
+        assertTrue(values.isEmpty(), "Unexpected response remainders: " + values);
     }
 
-    @Test // SSHD-1302
-    public void testReadInputStreamTwice() throws Exception {
+    // SSHD-1302
+    @Test
+    void readInputStreamTwice() throws Exception {
         String expectedCommand = getCurrentTestName() + "-CMD";
         String expectedStdout = getCurrentTestName() + "-STDOUT";
         String expectedStderr = getCurrentTestName() + "-STDERR";
@@ -446,8 +458,8 @@ public class ClientSessionTest extends BaseTestSupport {
 
             @Override
             protected boolean handleCommandLine(String command) throws Exception {
-                assertEquals("Mismatched incoming command", expectedCommand, command);
-                assertFalse("Duplicated command call", cmdProcessed);
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
                 writeResponse(getOutputStream(), expectedStdout);
                 writeResponse(getErrorStream(), expectedStderr);
                 cmdProcessed = true;
@@ -499,7 +511,7 @@ public class ClientSessionTest extends BaseTestSupport {
         }
 
         String[] lines = GenericUtils.split(response, '\n');
-        assertEquals("Mismatched response lines count", 2, lines.length);
+        assertEquals(2, lines.length, "Mismatched response lines count");
 
         Collection<String> values = new ArrayList<>(Arrays.asList(lines));
         // We don't rely on the order the strings were written
@@ -509,6 +521,6 @@ public class ClientSessionTest extends BaseTestSupport {
             }
         }
 
-        assertTrue("Unexpected response remainders: " + values, values.isEmpty());
+        assertTrue(values.isEmpty(), "Unexpected response remainders: " + values);
     }
 }

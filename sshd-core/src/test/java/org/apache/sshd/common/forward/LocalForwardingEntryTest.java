@@ -27,26 +27,30 @@ import java.util.stream.IntStream;
 
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class LocalForwardingEntryTest extends BaseTestSupport {
     public LocalForwardingEntryTest() {
         super();
     }
 
-    @Test // NOTE: this also checks indirectly SshSocketAddress host comparison case-insensitive
-    public void testCaseInsensitiveMatching() {
+    // NOTE: this also checks indirectly SshSocketAddress host comparison case-insensitive
+    @Test
+    void caseInsensitiveMatching() {
         SshdSocketAddress local = new SshdSocketAddress(getClass().getSimpleName(), 0);
         SshdSocketAddress bound = new SshdSocketAddress(getCurrentTestName(), 7365);
         LocalForwardingEntry expected = new LocalForwardingEntry(local, bound);
@@ -65,7 +69,7 @@ public class LocalForwardingEntryTest extends BaseTestSupport {
                 Collections.shuffle(entries);
 
                 LocalForwardingEntry actual = LocalForwardingEntry.findMatchingEntry(host, port, entries);
-                assertSame("Mismatched result for host=" + host, expected, actual);
+                assertSame(expected, actual, "Mismatched result for host=" + host);
 
                 host = shuffleCase(host);
             }
@@ -73,7 +77,7 @@ public class LocalForwardingEntryTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSingleWildcardMatching() {
+    void singleWildcardMatching() {
         SshdSocketAddress address = new SshdSocketAddress(getCurrentTestName(), 7365);
         LocalForwardingEntry expected = new LocalForwardingEntry(address, address);
         int port = address.getPort();
@@ -91,12 +95,12 @@ public class LocalForwardingEntryTest extends BaseTestSupport {
                 SshdSocketAddress.IPV6_SHORT_ANY_ADDRESS
         }) {
             LocalForwardingEntry actual = LocalForwardingEntry.findMatchingEntry(host, port, entries);
-            assertSame("Host=" + host, expected, actual);
+            assertSame(expected, actual, "Host=" + host);
         }
     }
 
     @Test
-    public void testLoopbackMatching() {
+    void loopbackMatching() {
         int port = 7365;
         List<LocalForwardingEntry> entries = IntStream.rangeClosed(1, 4)
                 .mapToObj(seed -> {
@@ -117,12 +121,12 @@ public class LocalForwardingEntryTest extends BaseTestSupport {
             LocalForwardingEntry actual
                     = LocalForwardingEntry.findMatchingEntry(SshdSocketAddress.LOCALHOST_NAME, port, entries);
             entries.remove(numEntries);
-            assertSame("Host=" + host, expected, actual);
+            assertSame(expected, actual, "Host=" + host);
         }
     }
 
     @Test
-    public void testMultipleWildcardCandidates() {
+    void multipleWildcardCandidates() {
         int port = 7365;
         List<LocalForwardingEntry> entries = IntStream.rangeClosed(1, 4)
                 .mapToObj(seed -> {
@@ -145,8 +149,8 @@ public class LocalForwardingEntryTest extends BaseTestSupport {
                 fail("Unexpected success for host=" + host + ": " + actual);
             } catch (IllegalStateException e) {
                 String msg = e.getMessage();
-                assertTrue("Bad exception message: " + msg,
-                        msg.startsWith("Multiple candidate matches for " + host + "@" + port + ":"));
+                assertTrue(msg.startsWith("Multiple candidate matches for " + host + "@" + port + ":"),
+                        "Bad exception message: " + msg);
             }
         }
     }
