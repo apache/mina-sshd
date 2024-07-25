@@ -145,7 +145,10 @@
     
     <profiles>
         <profile>
-            <id>jdk8</id>
+            <id>surefireJdk8</id>
+            <activation>
+                <property>surefireJdk8</property>
+            </activation>
             <properties>
                 <surefire.argLine />
             </properties>

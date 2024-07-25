@@ -86,7 +86,7 @@ jobs:
 
       - name: Build and test with maven
         # Skip all static checks, they were already done in the compile jobs
-        run: mvn -B --errors --activate-profiles ci,jdk${{ matrix.java }} -DjdkToolchainVersion=${{ matrix.java }} --no-transfer-progress package
+        run: mvn -B --errors --activate-profiles ci -DsurefireJdk${{ matrix.java }} -DsurefireJdk=${{ matrix.java }} --no-transfer-progress package
 
       - name: Archive test results and logs
         # if: success() || failure() to also get the test results on successful runs.
