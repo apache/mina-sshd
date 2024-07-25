@@ -30,19 +30,18 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Category(NoIoTestCase.class)
-@RunWith(MockitoJUnitRunner.class)
+@Tag("NoIoTestCase")
+@ExtendWith(MockitoExtension.class)
 public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
 
     @Mock
@@ -55,8 +54,8 @@ public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void prepareBuffer() throws Exception {
+    @BeforeEach
+    void prepareBuffer() throws Exception {
         // Create an RSA key
         key = KeyPairGenerator.getInstance("RSA").generateKeyPair().getPublic();
         // Serialize it twice to a buffer, but insert a fake item in between
@@ -69,7 +68,7 @@ public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
     }
 
     @Test
-    public void clientIgnoresUnknownKeys() throws Exception {
+    void clientIgnoresUnknownKeys() throws Exception {
         boolean[] handlerCalled = { false };
         org.apache.sshd.client.global.OpenSshHostKeysHandler handler
                 = new org.apache.sshd.client.global.OpenSshHostKeysHandler() {
@@ -78,19 +77,19 @@ public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
                             Session session, Collection<? extends PublicKey> keys, boolean wantReply,
                             Buffer buffer) throws Exception {
                         handlerCalled[0] = true;
-                        assertEquals("Unexpected number of keys", 2, keys.size());
+                        assertEquals(2, keys.size(), "Unexpected number of keys");
                         for (PublicKey k : keys) {
-                            assertTrue("Unexpected public key", KeyUtils.compareKeys(key, k));
+                            assertTrue(KeyUtils.compareKeys(key, k), "Unexpected public key");
                         }
                         return Result.Replied;
                     }
                 };
         handler.process(connectionService, org.apache.sshd.client.global.OpenSshHostKeysHandler.REQUEST, false, buffer);
-        assertTrue("Handler should have been called", handlerCalled[0]);
+        assertTrue(handlerCalled[0], "Handler should have been called");
     }
 
     @Test
-    public void serverThrowsOnUnknownKeys() throws Exception {
+    void serverThrowsOnUnknownKeys() throws Exception {
         boolean[] handlerCalled = { false };
         org.apache.sshd.server.global.OpenSshHostKeysHandler handler
                 = new org.apache.sshd.server.global.OpenSshHostKeysHandler() {
@@ -104,7 +103,7 @@ public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
                 };
         SshException e = assertThrows(SshException.class, () -> handler.process(connectionService,
                 org.apache.sshd.server.global.OpenSshHostKeysHandler.REQUEST, false, buffer));
-        assertFalse("Handler should not have been called", handlerCalled[0]);
-        assertTrue("Expected exception cause", e.getCause() instanceof GeneralSecurityException);
+        assertFalse(handlerCalled[0], "Handler should not have been called");
+        assertInstanceOf(GeneralSecurityException.class, e.getCause(), "Expected exception cause");
     }
 }

@@ -51,21 +51,26 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test basic stuff on AbstractSession.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class AbstractSessionTest extends BaseTestSupport {
     private MySession session;
 
@@ -73,94 +78,103 @@ public class AbstractSessionTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         session = new MySession();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (session != null) {
             session.close();
         }
     }
 
     @Test
-    public void testReadIdentSimple() throws Exception {
+    void readIdentSimple() throws Exception {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithoutCR() throws Exception {
+    void readIdentWithoutCR() throws Exception {
         Buffer buf = new ByteArrayBuffer("SSH-2.0-software\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithHeaders() throws Exception {
+    void readIdentWithHeaders() throws Exception {
         Buffer buf = new ByteArrayBuffer("a header line\r\nSSH-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
     @Test
-    public void testReadIdentWithSplitPackets() throws Exception {
+    void readIdentWithSplitPackets() throws Exception {
         Buffer buf = new ByteArrayBuffer("header line\r\nSSH".getBytes(StandardCharsets.UTF_8));
         String ident = readIdentification(session, buf);
-        assertNull("Unexpected identification for header only", ident);
+        assertNull(ident, "Unexpected identification for header only");
 
         buf.putRawBytes("-2.0-software\r\n".getBytes(StandardCharsets.UTF_8));
         ident = readIdentification(session, buf);
         assertEquals("SSH-2.0-software", ident);
     }
 
-    @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentBadLineEnding() throws Exception {
-        Buffer buf = new ByteArrayBuffer("SSH-2.0-software\ra".getBytes(StandardCharsets.UTF_8));
-        String ident = readIdentification(session, buf);
-        fail("Unexpected success: " + ident);
+    @Test
+    void readIdentBadLineEnding() throws Exception {
+        assertThrows(StreamCorruptedException.class, () -> {
+            Buffer buf = new ByteArrayBuffer("SSH-2.0-software\ra".getBytes(StandardCharsets.UTF_8));
+            String ident = readIdentification(session, buf);
+            fail("Unexpected success: " + ident);
+        });
     }
 
-    @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentLongLine() throws Exception {
-        StringBuilder sb = new StringBuilder(SessionContext.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
-        sb.append("SSH-2.0-software");
-        do {
-            sb.append("01234567890123456789012345678901234567890123456789");
-        } while (sb.length() < SessionContext.MAX_VERSION_LINE_LENGTH);
+    @Test
+    void readIdentLongLine() throws Exception {
+        assertThrows(StreamCorruptedException.class, () -> {
+            StringBuilder sb = new StringBuilder(SessionContext.MAX_VERSION_LINE_LENGTH + Integer.SIZE);
+            sb.append("SSH-2.0-software");
+            do {
+                sb.append("01234567890123456789012345678901234567890123456789");
+            } while (sb.length() < SessionContext.MAX_VERSION_LINE_LENGTH);
 
-        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
-        String ident = readIdentification(session, buf);
-        fail("Unexpected success: " + ident);
+            Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
+            String ident = readIdentification(session, buf);
+            fail("Unexpected success: " + ident);
+        });
     }
 
-    @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentWithNullChar() throws Exception {
-        String id = "SSH-2.0" + '\0' + "-software\r\n";
-        Buffer buf = new ByteArrayBuffer(id.getBytes(StandardCharsets.UTF_8));
-        String ident = readIdentification(session, buf);
-        fail("Unexpected success: " + ident);
+    @Test
+    void readIdentWithNullChar() throws Exception {
+        assertThrows(StreamCorruptedException.class, () -> {
+            String id = "SSH-2.0" + '\0' + "-software\r\n";
+            Buffer buf = new ByteArrayBuffer(id.getBytes(StandardCharsets.UTF_8));
+            String ident = readIdentification(session, buf);
+            fail("Unexpected success: " + ident);
+        });
     }
 
-    @Test(expected = StreamCorruptedException.class)
-    public void testReadIdentLongHeader() throws Exception {
-        int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault();
-        StringBuilder sb = new StringBuilder(maxIdentSize + Integer.SIZE);
-        do {
-            sb.append("01234567890123456789012345678901234567890123456789\r\n");
-        } while (sb.length() < maxIdentSize);
-        sb.append("SSH-2.0-software\r\n");
+    @Test
+    void readIdentLongHeader() throws Exception {
+        assertThrows(StreamCorruptedException.class, () -> {
+            int maxIdentSize = CoreModuleProperties.MAX_IDENTIFICATION_SIZE.getRequiredDefault();
+            StringBuilder sb = new StringBuilder(maxIdentSize + Integer.SIZE);
+            do {
+                sb.append("01234567890123456789012345678901234567890123456789\r\n");
+            } while (sb.length() < maxIdentSize);
+            sb.append("SSH-2.0-software\r\n");
 
-        Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
-        String ident = readIdentification(session, buf);
-        fail("Unexpected success: " + ident);
+            Buffer buf = new ByteArrayBuffer(sb.toString().getBytes(StandardCharsets.UTF_8));
+            String ident = readIdentification(session, buf);
+            fail("Unexpected success: " + ident);
+        });
     }
 
-    @Test // see SSHD-619
-    public void testMsgIgnorePadding() throws Exception {
+    // see SSHD-619
+    @Test
+    void msgIgnorePadding() throws Exception {
         final long frequency = Byte.SIZE;
         CoreModuleProperties.IGNORE_MESSAGE_SIZE.set(session, Short.SIZE);
         CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.set(session, frequency);
@@ -182,33 +196,36 @@ public class AbstractSessionTest extends BaseTestSupport {
                 Buffer data = queue.remove();
                 if (data != msg) {
                     int cmd = data.getUByte();
-                    assertEquals("Mismatched buffer command at cycle " + cycle + "[" + index + "]", SshConstants.SSH_MSG_IGNORE,
-                            cmd);
+                    assertEquals(SshConstants.SSH_MSG_IGNORE,
+                            cmd,
+                            "Mismatched buffer command at cycle " + cycle + "[" + index + "]");
 
                     int len = data.getInt();
-                    assertTrue("Mismatched random padding data length at cycle " + cycle + "[" + index + "]: " + len,
-                            len >= Short.SIZE);
+                    assertTrue(len >= Short.SIZE,
+                            "Mismatched random padding data length at cycle " + cycle + "[" + index + "]: " + len);
                     numIgnores++;
                 }
             }
         }
 
-        assertEquals("Mismatched number of ignore messages", Byte.SIZE, numIgnores);
+        assertEquals(Byte.SIZE, numIgnores, "Mismatched number of ignore messages");
     }
 
-    @Test // see SSHD-652
-    public void testCloseFutureListenerRegistration() throws Exception {
+    // see SSHD-652
+    @Test
+    void closeFutureListenerRegistration() throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
         session.addCloseFutureListener(future -> {
-            assertTrue("Future not marked as closed", future.isClosed());
-            assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
+            assertTrue(future.isClosed(), "Future not marked as closed");
+            assertEquals(1, closeCount.incrementAndGet(), "Unexpected multiple call to callback");
         });
         session.close();
-        assertEquals("Close listener not called", 1, closeCount.get());
+        assertEquals(1, closeCount.get(), "Close listener not called");
     }
 
-    @Test // see SSHD-699
-    public void testMalformedUnimplementedMessage() throws Exception {
+    // see SSHD-699
+    @Test
+    void malformedUnimplementedMessage() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
             public boolean handleUnimplementedMessage(Session session, int cmd, Buffer buffer) throws Exception {
@@ -224,8 +241,9 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    @Test // see SSHD-699
-    public void testMalformedIgnoreMessageBadLength() throws Exception {
+    // see SSHD-699
+    @Test
+    void malformedIgnoreMessageBadLength() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
             public void handleIgnoreMessage(Session session, Buffer buffer) throws Exception {
@@ -240,8 +258,9 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    @Test // see SSHD-699
-    public void testMalformedIgnoreMessageCorruptedData() throws Exception {
+    // see SSHD-699
+    @Test
+    void malformedIgnoreMessageCorruptedData() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
             public void handleIgnoreMessage(Session session, Buffer buffer) throws Exception {
@@ -258,7 +277,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test
-    public void testMalformedDebugMessageContent() throws Exception {
+    void malformedDebugMessageContent() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
             public void handleDebugMessage(Session session, Buffer buffer) throws Exception {
@@ -280,7 +299,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     }
 
     @Test
-    public void testMalformedDebugMessageLanguage() throws Exception {
+    void malformedDebugMessageLanguage() throws Exception {
         session.setReservedSessionMessagesHandler(new ReservedSessionMessagesHandler() {
             @Override
             public void handleDebugMessage(Session session, Buffer buffer) throws Exception {

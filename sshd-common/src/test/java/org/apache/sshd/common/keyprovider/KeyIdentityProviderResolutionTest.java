@@ -22,40 +22,35 @@ package org.apache.sshd.common.keyprovider;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
-    private final KeyIdentityProvider p1;
-    private final KeyIdentityProvider p2;
-    private final KeyIdentityProvider expected;
+    private KeyIdentityProvider p1;
+    private KeyIdentityProvider p2;
+    private KeyIdentityProvider expected;
 
-    public KeyIdentityProviderResolutionTest(KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
+    public void initKeyIdentityProviderResolutionTest(
+            KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
         this.p1 = p1;
         this.p2 = p2;
         this.expected = expected;
     }
 
-    @Parameters(name = "p1={0}, p2={1}, expected={2}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
@@ -84,8 +79,10 @@ public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
         };
     }
 
-    @Test
-    public void testResolveKeyIdentityProvider() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "p1={0}, p2={1}, expected={2}")
+    public void resolveKeyIdentityProvider(KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
+        initKeyIdentityProviderResolutionTest(p1, p2, expected);
         assertSame(expected, KeyIdentityProvider.resolveKeyIdentityProvider(p1, p2));
     }
 }

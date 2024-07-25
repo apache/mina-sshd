@@ -22,18 +22,20 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class DefaultSshFutureTest extends JUnitTestSupport {
     public DefaultSshFutureTest() {
         super();
@@ -41,7 +43,7 @@ public class DefaultSshFutureTest extends JUnitTestSupport {
 
     @Test
     @SuppressWarnings("rawtypes")
-    public void testAwaitUninterrupted() {
+    void awaitUninterrupted() {
         DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
         Object expected = new Object();
         new Thread() {
@@ -57,18 +59,18 @@ public class DefaultSshFutureTest extends JUnitTestSupport {
         }.start();
 
         future.awaitUninterruptibly();
-        assertSame("Mismatched signalled value", expected, future.getValue());
+        assertSame(expected, future.getValue(), "Mismatched signalled value");
     }
 
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void testNotifyMultipleListeners() {
+    void notifyMultipleListeners() {
         DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
         AtomicInteger listenerCount = new AtomicInteger(0);
         Object expected = new Object();
         SshFutureListener listener = f -> {
-            assertSame("Mismatched future instance", future, f);
-            assertSame("Mismatched value object", expected, future.getValue());
+            assertSame(future, f, "Mismatched future instance");
+            assertSame(expected, future.getValue(), "Mismatched value object");
             listenerCount.incrementAndGet();
         };
 
@@ -78,60 +80,60 @@ public class DefaultSshFutureTest extends JUnitTestSupport {
         }
 
         future.setValue(expected);
-        assertEquals("Mismatched listeners invocation count", numListeners, listenerCount.get());
+        assertEquals(numListeners, listenerCount.get(), "Mismatched listeners invocation count");
     }
 
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void testListenerInvokedDirectlyAfterResultSet() {
+    void listenerInvokedDirectlyAfterResultSet() {
         DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
         AtomicInteger listenerCount = new AtomicInteger(0);
         Object expected = new Object();
         SshFutureListener listener = f -> {
-            assertSame("Mismatched future instance", future, f);
-            assertSame("Mismatched value object", expected, future.getValue());
+            assertSame(future, f, "Mismatched future instance");
+            assertSame(expected, future.getValue(), "Mismatched value object");
             listenerCount.incrementAndGet();
         };
         future.setValue(expected);
 
         future.addListener(listener);
-        assertEquals("Mismatched number of registered listeners", 0, future.getNumRegisteredListeners());
-        assertEquals("Listener not invoked", 1, listenerCount.get());
+        assertEquals(0, future.getNumRegisteredListeners(), "Mismatched number of registered listeners");
+        assertEquals(1, listenerCount.get(), "Listener not invoked");
     }
 
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void testAddAndRemoveRegisteredListenersBeforeResultSet() {
+    void addAndRemoveRegisteredListenersBeforeResultSet() {
         DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
         SshFutureListener listener = Mockito.mock(SshFutureListener.class);
         for (int index = 1; index <= Byte.SIZE; index++) {
             future.addListener(listener);
-            assertEquals("Mismatched number of added listeners", index, future.getNumRegisteredListeners());
+            assertEquals(index, future.getNumRegisteredListeners(), "Mismatched number of added listeners");
         }
 
         for (int index = future.getNumRegisteredListeners() - 1; index >= 0; index--) {
             future.removeListener(listener);
-            assertEquals("Mismatched number of remaining listeners", index, future.getNumRegisteredListeners());
+            assertEquals(index, future.getNumRegisteredListeners(), "Mismatched number of remaining listeners");
         }
     }
 
     @Test
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public void testListenerNotRemovedIfResultSet() {
+    void listenerNotRemovedIfResultSet() {
         DefaultSshFuture future = new DefaultSshFuture(getCurrentTestName(), null);
         AtomicInteger listenerCount = new AtomicInteger(0);
         Object expected = new Object();
         SshFutureListener listener = f -> {
-            assertSame("Mismatched future instance", future, f);
-            assertSame("Mismatched value object", expected, future.getValue());
+            assertSame(future, f, "Mismatched future instance");
+            assertSame(expected, future.getValue(), "Mismatched value object");
             listenerCount.incrementAndGet();
         };
         future.addListener(listener);
         future.setValue(expected);
-        assertEquals("Mismatched number of registered listeners", 1, future.getNumRegisteredListeners());
-        assertEquals("Listener not invoked", 1, listenerCount.get());
+        assertEquals(1, future.getNumRegisteredListeners(), "Mismatched number of registered listeners");
+        assertEquals(1, listenerCount.get(), "Listener not invoked");
 
         future.removeListener(listener);
-        assertEquals("Mismatched number of remaining listeners", 1, future.getNumRegisteredListeners());
+        assertEquals(1, future.getNumRegisteredListeners(), "Mismatched number of remaining listeners");
     }
 }

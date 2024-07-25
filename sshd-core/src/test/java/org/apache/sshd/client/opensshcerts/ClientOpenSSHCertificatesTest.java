@@ -41,20 +41,19 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.ContainerTestCase;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.BeforeClass;
-import org.junit.ClassRule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@Category(ContainerTestCase.class)
+@Tag("ContainerTestCase")
+@Testcontainers
 public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
 
     /**
@@ -78,8 +77,8 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
      * <li>Two available host keypairs host01 and host02 (selected by env var SSH_HOST_KEY)</li>
      * </ul>
      **/
-    @ClassRule
-    public static GenericContainer<?> sshdContainer = new GenericContainer<>(
+    @Container
+    static GenericContainer<?> sshdContainer = new GenericContainer<>(
             new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.13") //
                     .run("apk --update add supervisor openssh openssh-server bash") // Install
                     .run("rm -rf /var/cache/apk/*") // Clear cache
@@ -140,17 +139,16 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
 
     private String privateKeyName;
 
-    public ClientOpenSSHCertificatesTest(String keyName) {
+    public void initClientOpenSSHCertificatesTest(String keyName) {
         privateKeyName = keyName;
     }
 
-    @BeforeClass
-    public static void ensureBC() {
+    @BeforeAll
+    static void ensureBC() {
         Security.removeProvider(BouncyCastleProvider.PROVIDER_NAME);
         Security.addProvider(new BouncyCastleProvider());
     }
 
-    @Parameterized.Parameters(name = "key: {0}, cert: {0}-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
     public static Iterable<? extends String> privateKeyParams() {
         return Arrays.asList(
                 "user01_rsa_sha2_256_2048",
@@ -171,8 +169,11 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
         return getPrivateKeyResource() + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
-    @Test
-    public void clientCertAuth() throws Exception {
+    @MethodSource("privateKeyParams")
+    @ParameterizedTest(name = "key: {0}, cert: {0}-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX)
+    public void clientCertAuth(String keyName) throws Exception {
+
+        initClientOpenSSHCertificatesTest(keyName);
 
         try (InputStream certInputStream
                 = Thread.currentThread().getContextClassLoader().getResourceAsStream(getCertificateResource())) {

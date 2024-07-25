@@ -40,43 +40,44 @@ import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class TtyFilterInputStreamTest extends JUnitTestSupport {
     private static final List<PtyMode> MODES = Collections.unmodifiableList(
             Stream.concat(Stream.of(PtyMode.ECHO), TtyFilterInputStream.INPUT_OPTIONS.stream())
                     .collect(Collectors.toList()));
 
-    private final PtyMode mode;
+    private PtyMode mode;
 
-    public TtyFilterInputStreamTest(PtyMode mode) {
+    public TtyFilterInputStreamTest() {
+    }
+
+    public void initTtyFilterInputStreamTest(PtyMode mode) {
         this.mode = Objects.requireNonNull(mode, "No test modes");
     }
 
-    @Parameters(name = "mode={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(MODES);
     }
 
-    @Test
-    public void testCRLFHandling() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "mode={0}")
+    public void crlfHandling(PtyMode mode) throws IOException {
+        initTtyFilterInputStreamTest(mode);
         List<String> lines = Arrays.asList(getClass().getPackage().getName(),
                 getClass().getSimpleName(), getCurrentTestName(),
                 "(" + mode + ")", new Date(System.currentTimeMillis()).toString());
@@ -97,16 +98,18 @@ public class TtyFilterInputStreamTest extends JUnitTestSupport {
                 }
             }) {
                 long copySize = IoUtils.copy(tty, output);
-                assertTrue("Copy size (" + copySize + ") above total length (" + content.length() + ")",
-                        copySize <= content.length());
+                assertTrue(copySize <= content.length(),
+                        "Copy size (" + copySize + ") above total length (" + content.length() + ")");
             }
 
             assertCRLFCounts(mode, lines.size() - 1 /* last line has no NL */, crCount.get(), lfCount.get());
         }
     }
 
-    @Test
-    public void testInternalBufferSizeDoesNotGrow() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "mode={0}")
+    public void internalBufferSizeDoesNotGrow(PtyMode mode) throws Exception {
+        initTtyFilterInputStreamTest(mode);
         try (TtyFilterInputStream is = new TtyFilterInputStream(new InputStream() {
             int next;
 
@@ -140,20 +143,20 @@ public class TtyFilterInputStreamTest extends JUnitTestSupport {
             case ONLCR:
             case ONOCR:
                 // No modifications
-                assertEquals("Mismatched CR count", numLines, crCount);
-                assertEquals("Mismatched LF count", numLines, lfCount);
+                assertEquals(numLines, crCount, "Mismatched CR count");
+                assertEquals(numLines, lfCount, "Mismatched LF count");
                 break;
 
             case OCRNL:
                 // Translate carriage return to newline
-                assertEquals("Mismatched CR count", 0, crCount);
-                assertEquals("Mismatched LF count", 2 * numLines, lfCount);
+                assertEquals(0, crCount, "Mismatched CR count");
+                assertEquals(2 * numLines, lfCount, "Mismatched LF count");
                 break;
 
             case ONLRET:
                 // Newline performs a carriage return
-                assertEquals("Mismatched CR count", 2 * numLines, crCount);
-                assertEquals("Mismatched LF count", 0, lfCount);
+                assertEquals(2 * numLines, crCount, "Mismatched CR count");
+                assertEquals(0, lfCount, "Mismatched LF count");
                 break;
 
             default:

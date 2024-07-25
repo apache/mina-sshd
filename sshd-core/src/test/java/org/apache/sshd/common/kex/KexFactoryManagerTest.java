@@ -34,87 +34,89 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KexFactoryManagerTest extends BaseTestSupport {
     public KexFactoryManagerTest() {
         super();
     }
 
     @Test
-    public void testDefaultCompressionFactoriesMethods() {
+    void defaultCompressionFactoriesMethods() {
         KexFactoryManager manager = new TestKexFactoryManager();
-        assertEquals("Mismatched empty factories name list", "", manager.getCompressionFactoriesNameList());
+        assertEquals("", manager.getCompressionFactoriesNameList(), "Mismatched empty factories name list");
 
         String expected = NamedResource.getNames(BuiltinCompressions.VALUES);
         manager.setCompressionFactoriesNameList(expected);
-        assertEquals("Mismatched updated factories name list", expected, manager.getCompressionFactoriesNameList());
+        assertEquals(expected, manager.getCompressionFactoriesNameList(), "Mismatched updated factories name list");
 
         List<NamedFactory<Compression>> factories = manager.getCompressionFactories();
-        assertEquals("Mismatched updated factories count", BuiltinCompressions.VALUES.size(), GenericUtils.size(factories));
+        assertEquals(BuiltinCompressions.VALUES.size(), GenericUtils.size(factories), "Mismatched updated factories count");
 
         for (NamedFactory<Compression> f : BuiltinCompressions.VALUES) {
-            assertTrue("Factory not set: " + f, factories.contains(f));
+            assertTrue(factories.contains(f), "Factory not set: " + f);
         }
     }
 
     @Test
-    public void testDefaultCipherFactoriesMethods() {
+    void defaultCipherFactoriesMethods() {
         KexFactoryManager manager = new TestKexFactoryManager();
-        assertEquals("Mismatched empty factories name list", "", manager.getCipherFactoriesNameList());
+        assertEquals("", manager.getCipherFactoriesNameList(), "Mismatched empty factories name list");
 
         String expected = NamedResource.getNames(BuiltinCiphers.VALUES);
         manager.setCipherFactoriesNameList(expected);
-        assertEquals("Mismatched updated factories name list", expected, manager.getCipherFactoriesNameList());
+        assertEquals(expected, manager.getCipherFactoriesNameList(), "Mismatched updated factories name list");
 
         List<NamedFactory<Cipher>> factories = manager.getCipherFactories();
-        assertEquals("Mismatched updated factories count", BuiltinCiphers.VALUES.size(), GenericUtils.size(factories));
+        assertEquals(BuiltinCiphers.VALUES.size(), GenericUtils.size(factories), "Mismatched updated factories count");
 
         for (NamedFactory<Cipher> f : BuiltinCiphers.VALUES) {
-            assertTrue("Factory not set: " + f, factories.contains(f));
+            assertTrue(factories.contains(f), "Factory not set: " + f);
         }
     }
 
     @Test
-    public void testDefaultMacFactoriesMethods() {
+    void defaultMacFactoriesMethods() {
         KexFactoryManager manager = new TestKexFactoryManager();
-        assertEquals("Mismatched empty factories name list", "", manager.getMacFactoriesNameList());
+        assertEquals("", manager.getMacFactoriesNameList(), "Mismatched empty factories name list");
 
         String expected = NamedResource.getNames(BuiltinMacs.VALUES);
         manager.setMacFactoriesNameList(expected);
-        assertEquals("Mismatched updated factories name list", expected, manager.getMacFactoriesNameList());
+        assertEquals(expected, manager.getMacFactoriesNameList(), "Mismatched updated factories name list");
 
         List<NamedFactory<Mac>> factories = manager.getMacFactories();
-        assertEquals("Mismatched updated factories count", BuiltinMacs.VALUES.size(), GenericUtils.size(factories));
+        assertEquals(BuiltinMacs.VALUES.size(), GenericUtils.size(factories), "Mismatched updated factories count");
 
         for (NamedFactory<Mac> f : BuiltinMacs.VALUES) {
-            assertTrue("Factory not set: " + f, factories.contains(f));
+            assertTrue(factories.contains(f), "Factory not set: " + f);
         }
     }
 
     @Test
-    public void testDefaultSignatureFactoriesMethods() {
+    void defaultSignatureFactoriesMethods() {
         KexFactoryManager manager = new TestKexFactoryManager();
-        assertEquals("Mismatched empty factories name list", "", manager.getSignatureFactoriesNameList());
+        assertEquals("", manager.getSignatureFactoriesNameList(), "Mismatched empty factories name list");
 
         String expected = NamedResource.getNames(BuiltinSignatures.VALUES);
         manager.setSignatureFactoriesNameList(expected);
-        assertEquals("Mismatched updated factories name list", expected, manager.getSignatureFactoriesNameList());
+        assertEquals(expected, manager.getSignatureFactoriesNameList(), "Mismatched updated factories name list");
 
         List<NamedFactory<Signature>> factories = manager.getSignatureFactories();
-        assertEquals("Mismatched updated factories count", BuiltinSignatures.VALUES.size(), GenericUtils.size(factories));
+        assertEquals(BuiltinSignatures.VALUES.size(), GenericUtils.size(factories), "Mismatched updated factories count");
 
         for (NamedFactory<Signature> f : BuiltinSignatures.VALUES) {
-            assertTrue("Factory not set: " + f, factories.contains(f));
+            assertTrue(factories.contains(f), "Factory not set: " + f);
         }
     }
 

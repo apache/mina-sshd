@@ -53,22 +53,27 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.integration.file.remote.session.Session;
 import org.springframework.integration.file.remote.session.SessionFactory;
 import org.springframework.integration.sftp.session.DefaultSftpSessionFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     private static final Comparator<LsEntry> BY_CASE_INSENSITIVE_FILENAME = new Comparator<LsEntry>() {
         @Override
@@ -99,8 +104,8 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(ApacheSshdSftpSessionFactoryTest.class);
         sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
@@ -111,8 +116,8 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -130,41 +135,41 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         }
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd.setFileSystemFactory(fileSystemFactory); // just making sure
     }
 
     @Test
-    public void testOpenCloseStateReport() throws Exception {
+    void openCloseStateReport() throws Exception {
         SessionFactory<SftpClient.DirEntry> sshdFactory = getSshdSessionFactory();
         try (Session<SftpClient.DirEntry> sshdSession = sshdFactory.getSession()) {
-            assertTrue("Session not reported as open", sshdSession.isOpen());
+            assertTrue(sshdSession.isOpen(), "Session not reported as open");
             sshdSession.close();
-            assertFalse("Session not reported as closed", sshdSession.isOpen());
+            assertFalse(sshdSession.isOpen(), "Session not reported as closed");
         }
     }
 
     @Test
-    public void testSharedSessionInstance() throws Exception {
+    void sharedSessionInstance() throws Exception {
         ApacheSshdSftpSessionFactory sshdFactory = getSshdSessionFactory(true);
         ClientSession sessionInstance;
         try (Session<SftpClient.DirEntry> sshdSession = sshdFactory.getSession()) {
             SftpClient client = (SftpClient) sshdSession.getClientInstance();
             sessionInstance = client.getClientSession();
-            assertSame("Mismatched factory session instance", sshdFactory.getSharedClientSession(), sessionInstance);
+            assertSame(sshdFactory.getSharedClientSession(), sessionInstance, "Mismatched factory session instance");
         }
 
         for (int index = 1; index <= Byte.SIZE; index++) {
             try (Session<SftpClient.DirEntry> sshdSession = sshdFactory.getSession()) {
                 SftpClient client = (SftpClient) sshdSession.getClientInstance();
-                assertSame("Mismatched session #" + index + " session instance", sessionInstance, client.getClientSession());
+                assertSame(sessionInstance, client.getClientSession(), "Mismatched session #" + index + " session instance");
             }
         }
     }
 
     @Test
-    public void testWriteRemoteFileContents() throws Exception {
+    void writeRemoteFileContents() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -193,14 +198,14 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
         try (InputStream inputStream = Files.newInputStream(srcFile)) {
             session.write(inputStream, remotePath);
         }
-        assertTrue(type + ": destination file not created", Files.exists(dstFile));
+        assertTrue(Files.exists(dstFile), type + ": destination file not created");
 
         List<String> actualLines = Files.readAllLines(dstFile, StandardCharsets.UTF_8);
         assertListEquals(type, expectedLines, actualLines);
     }
 
     @Test
-    public void testRetrieveRemoteFileContents() throws Exception {
+    void retrieveRemoteFileContents() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -248,7 +253,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     }
 
     @Test
-    public void testListContents() throws Exception {
+    void listContents() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -340,12 +345,13 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     }
 
     private static void assertLocalEntriesEqual(List<Path> expected, List<SftpClient.DirEntry> actual, boolean dirs) {
-        assertEquals("Mismatched dir=" + dirs + " entries count", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Mismatched dir=" + dirs + " entries count");
         for (int index = 0; index < expected.size(); index++) {
             Path path = expected.get(index);
             SftpClient.DirEntry de = actual.get(index);
-            assertEquals("Mismatched filename at dirs=" + dirs + " index=" + index, Objects.toString(path.getFileName(), null),
-                    de.getFilename());
+            assertEquals(Objects.toString(path.getFileName(), null),
+                    de.getFilename(),
+                    "Mismatched filename at dirs=" + dirs + " index=" + index);
 
             Attributes deAttrs = de.getAttributes();
             assertEquals("Mismatched SSHD directory indicator for " + path, dirs, deAttrs.isDirectory());
@@ -353,11 +359,11 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     }
 
     private static void assertRemoteEntriesEqual(List<LsEntry> expected, List<SftpClient.DirEntry> actual, boolean dirs) {
-        assertEquals("Mismatched dir=" + dirs + " entries count", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Mismatched dir=" + dirs + " entries count");
         for (int index = 0; index < expected.size(); index++) {
             LsEntry lse = expected.get(index);
             SftpClient.DirEntry de = actual.get(index);
-            assertEquals("Mismatched filename at dirs=" + dirs + " index=" + index, lse.getFilename(), de.getFilename());
+            assertEquals(lse.getFilename(), de.getFilename(), "Mismatched filename at dirs=" + dirs + " index=" + index);
 
             SftpATTRS lsAttrs = lse.getAttrs();
             Attributes deAttrs = de.getAttributes();

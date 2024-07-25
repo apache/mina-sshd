@@ -25,29 +25,30 @@ import java.security.PublicKey;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class Ssh2PublicKeyEntryDecoderTest extends JUnitTestSupport {
     public Ssh2PublicKeyEntryDecoderTest() {
         super();
     }
 
     @Test
-    public void testMultiLineComment() throws Exception {
+    void multiLineComment() throws Exception {
         testDecoder("rfc4716-multi-line-comment.ssh2");
     }
 
     @Test
-    public void testMultipleHeaders() throws Exception {
+    void multipleHeaders() throws Exception {
         testDecoder("rfc4716-multiple-headers.ssh2");
     }
 
@@ -57,10 +58,10 @@ public class Ssh2PublicKeyEntryDecoderTest extends JUnitTestSupport {
                 getClass().getResourceAsStream(resourceName), "Missing test resource: %s", resourceName)) {
             key = Ssh2PublicKeyEntryDecoder.INSTANCE.readPublicKey(null, () -> resourceName, stream);
         }
-        assertNotNull("No key loaded from " + resourceName, key);
+        assertNotNull(key, "No key loaded from " + resourceName);
 
         String keyType = KeyUtils.getKeyType(key);
-        assertNotNull("Unknown key type loaded from " + resourceName, keyType);
+        assertNotNull(keyType, "Unknown key type loaded from " + resourceName);
         return key;
     }
 }

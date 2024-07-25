@@ -21,19 +21,18 @@ package org.apache.sshd.sftp.client.impl;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.sftp.common.SftpConstants;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for {@link SftpStatus}.
  */
-@Category(NoIoTestCase.class)
+@Tag("NoIoTestCase")
 public class SftpStatusTest {
 
     public SftpStatusTest() {
@@ -41,50 +40,50 @@ public class SftpStatusTest {
     }
 
     @Test
-    public void testOkStatus() {
+    void okStatus() {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(SftpConstants.SSH_FX_OK);
         buffer.putString("An error message");
         buffer.putString("en");
         SftpStatus status = SftpStatus.parse(buffer);
-        assertEquals("Unexpected status code", SftpConstants.SSH_FX_OK, status.getStatusCode());
-        assertEquals("Unexpected error message", "An error message", status.getMessage());
-        assertEquals("Unexpected language tag", "en", status.getLanguage());
-        assertTrue("Status should be OK", status.isOk());
+        assertEquals(SftpConstants.SSH_FX_OK, status.getStatusCode(), "Unexpected status code");
+        assertEquals("An error message", status.getMessage(), "Unexpected error message");
+        assertEquals("en", status.getLanguage(), "Unexpected language tag");
+        assertTrue(status.isOk(), "Status should be OK");
     }
 
     @Test
-    public void testOkStatusNoMessage() {
+    void okStatusNoMessage() {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(SftpConstants.SSH_FX_OK);
         SftpStatus status = SftpStatus.parse(buffer);
-        assertEquals("Unexpected status code", SftpConstants.SSH_FX_OK, status.getStatusCode());
-        assertNull("Unexpected error message", status.getMessage());
-        assertNull("Unexpected language tag", status.getLanguage());
-        assertTrue("Status should be OK", status.isOk());
+        assertEquals(SftpConstants.SSH_FX_OK, status.getStatusCode(), "Unexpected status code");
+        assertNull(status.getMessage(), "Unexpected error message");
+        assertNull(status.getLanguage(), "Unexpected language tag");
+        assertTrue(status.isOk(), "Status should be OK");
     }
 
     @Test
-    public void testNokStatus() {
+    void nokStatus() {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(SftpConstants.SSH_FX_EOF);
         buffer.putString("An error message");
         buffer.putString("en");
         SftpStatus status = SftpStatus.parse(buffer);
-        assertEquals("Unexpected status code", SftpConstants.SSH_FX_EOF, status.getStatusCode());
-        assertEquals("Unexpected error message", "An error message", status.getMessage());
-        assertEquals("Unexpected language tag", "en", status.getLanguage());
-        assertFalse("Status should be OK", status.isOk());
+        assertEquals(SftpConstants.SSH_FX_EOF, status.getStatusCode(), "Unexpected status code");
+        assertEquals("An error message", status.getMessage(), "Unexpected error message");
+        assertEquals("en", status.getLanguage(), "Unexpected language tag");
+        assertFalse(status.isOk(), "Status should be OK");
     }
 
     @Test
-    public void testNokStatusNoMessage() {
+    void nokStatusNoMessage() {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putInt(SftpConstants.SSH_FX_FAILURE);
         SftpStatus status = SftpStatus.parse(buffer);
-        assertEquals("Unexpected status code", SftpConstants.SSH_FX_FAILURE, status.getStatusCode());
-        assertNull("Unexpected error message", status.getMessage());
-        assertNull("Unexpected language tag", status.getLanguage());
-        assertFalse("Status should be OK", status.isOk());
+        assertEquals(SftpConstants.SSH_FX_FAILURE, status.getStatusCode(), "Unexpected status code");
+        assertNull(status.getMessage(), "Unexpected error message");
+        assertNull(status.getLanguage(), "Unexpected language tag");
+        assertFalse(status.isOk(), "Status should be OK");
     }
 }

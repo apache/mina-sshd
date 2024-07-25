@@ -24,35 +24,24 @@ import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-public class CliSupportSplitCommandLineArgumentsTest extends BaseTestSupport {
-    private final String line;
-    private final String[] expected;
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
+class CliSupportSplitCommandLineArgumentsTest extends BaseTestSupport {
 
-    public CliSupportSplitCommandLineArgumentsTest(String line, String[] expected) {
-        this.line = line;
-        this.expected = expected;
+    CliSupportSplitCommandLineArgumentsTest() {
+        super();
     }
 
-    @Parameters(name = "{0}")
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // not serializing it
             private static final long serialVersionUID = 1L;
@@ -86,8 +75,9 @@ public class CliSupportSplitCommandLineArgumentsTest extends BaseTestSupport {
         };
     }
 
-    @Test
-    public void testSplitCommandLineArguments() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "<{0}>")
+    void splitCommandLineArguments(String line, String[] expected) {
         String[] actual = CliSupport.splitCommandLineArguments(line);
         assertArrayEquals(expected, actual);
     }

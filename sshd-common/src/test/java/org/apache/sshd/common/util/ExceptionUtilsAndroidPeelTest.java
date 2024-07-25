@@ -25,39 +25,35 @@ import java.util.stream.Stream;
 
 import javax.management.ReflectionException;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class ExceptionUtilsAndroidPeelTest extends JUnitTestSupport {
-    private final boolean androidMode;
+    private boolean androidMode;
 
-    public ExceptionUtilsAndroidPeelTest(boolean androidMode) {
+    public void initExceptionUtilsAndroidPeelTest(boolean androidMode) {
         this.androidMode = androidMode;
     }
 
-    @Parameters(name = "android={0}")
     public static List<Object[]> parameters() {
         return Stream.of(Boolean.TRUE, Boolean.FALSE).map(v -> new Object[] { v }).collect(Collectors.toList());
     }
 
-    @Test
-    public void testPeelJavaxManagementException() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "android={0}")
+    public void peelJavaxManagementException(boolean androidMode) {
+        initExceptionUtilsAndroidPeelTest(androidMode);
         try {
             OsUtils.setAndroid(androidMode);
 

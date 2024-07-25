@@ -140,13 +140,13 @@ public final class CatBenchmark {
                     offset += n;
                     length -= n;
                     if (length == 0) {
-                        out.writeBuffer(new ByteArrayBuffer(buffer)).verify(1000);
+                        out.writeBuffer(new ByteArrayBuffer(buffer)).verify(5000);
                         offset = 0;
                         length = buffer.length;
                     }
                 }
                 if (offset > 0) {
-                    out.writeBuffer(new ByteArrayBuffer(buffer, 0, offset)).verify(1000);
+                    out.writeBuffer(new ByteArrayBuffer(buffer, 0, offset)).verify(5000);
                 }
                 out.close(false);
             }

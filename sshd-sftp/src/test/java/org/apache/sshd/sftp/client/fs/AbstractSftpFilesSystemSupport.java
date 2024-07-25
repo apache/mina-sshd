@@ -55,6 +55,13 @@ import org.apache.sshd.sftp.client.SftpVersionSelector;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -84,38 +91,40 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
         outputDebugMessage("Write initial data to %s", file1);
         Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
         String buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
-        assertEquals("Mismatched read test data", expected, buf);
+        assertEquals(expected, buf, "Mismatched read test data");
 
         try (OutputStream out = file1.getFileSystem().provider().newOutputStream(file1, StandardOpenOption.APPEND)) {
             out.write("xyz".getBytes(StandardCharsets.US_ASCII));
         }
         expected += "xyz";
         buf = new String(Files.readAllBytes(file1), StandardCharsets.UTF_8);
-        assertEquals("Mismatched read test data", expected, buf);
+        assertEquals(expected, buf, "Mismatched read test data");
 
         // Neither WRITE nor APPEND given: READ is default, and CREATE_NEW or TRUNCATE_EXISTING should be ignored.
-        assertEquals("Mismatched read test data", expected,
-                readFromChannel(file1, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING));
+        assertEquals(expected,
+                readFromChannel(file1, StandardOpenOption.CREATE_NEW, StandardOpenOption.TRUNCATE_EXISTING),
+                "Mismatched read test data");
 
         IllegalArgumentException ex = assertThrows(IllegalArgumentException.class,
                 () -> readFromChannel(file1, StandardOpenOption.APPEND, StandardOpenOption.TRUNCATE_EXISTING));
-        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("APPEND"));
-        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("TRUNCATE_EXISTING"));
+        assertTrue(ex.getMessage().contains("APPEND"), "unexpected exception message " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("TRUNCATE_EXISTING"), "unexpected exception message " + ex.getMessage());
 
         ex = assertThrows(IllegalArgumentException.class,
                 () -> readFromChannel(file1, StandardOpenOption.APPEND, StandardOpenOption.READ));
-        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("APPEND"));
-        assertTrue("unexpected exception message " + ex.getMessage(), ex.getMessage().contains("READ"));
+        assertTrue(ex.getMessage().contains("APPEND"), "unexpected exception message " + ex.getMessage());
+        assertTrue(ex.getMessage().contains("READ"), "unexpected exception message " + ex.getMessage());
 
-        assertEquals("Mismatched read test data", expected,
-                readFromChannel(file1, StandardOpenOption.READ, StandardOpenOption.WRITE));
+        assertEquals(expected,
+                readFromChannel(file1, StandardOpenOption.READ, StandardOpenOption.WRITE),
+                "Mismatched read test data");
 
         if (version >= SftpConstants.SFTP_V4) {
             testAclFileAttributeView(file1);
         }
 
-        assertEquals("Mismatched read test data", "", readFromChannel(file1, StandardOpenOption.READ, StandardOpenOption.WRITE,
-                StandardOpenOption.TRUNCATE_EXISTING));
+        assertEquals("", readFromChannel(file1, StandardOpenOption.READ, StandardOpenOption.WRITE,
+                StandardOpenOption.TRUNCATE_EXISTING), "Mismatched read test data");
 
         // Restore file contents, other tests need it.
         Files.write(file1, expected.getBytes(StandardCharsets.UTF_8));
@@ -160,7 +169,7 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
 
         attrs = Files.readAttributes(file1, "*", LinkOption.NOFOLLOW_LINKS);
         outputDebugMessage("%s no-follow attributes: %s", file1, attrs);
-        assertEquals("Mismatched symlink data", expected, new String(Files.readAllBytes(file1), StandardCharsets.UTF_8));
+        assertEquals(expected, new String(Files.readAllBytes(file1), StandardCharsets.UTF_8), "Mismatched symlink data");
 
         if (version == SftpConstants.SFTP_V6) {
             testFileChannelLock(file1);
@@ -194,8 +203,8 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(root)) {
                 for (Path child : ds) {
                     String name = child.getFileName().toString();
-                    assertNotEquals("Unexpected dot name", ".", name);
-                    assertNotEquals("Unexpected dotdot name", "..", name);
+                    assertNotEquals(".", name, "Unexpected dot name");
+                    assertNotEquals("..", name, "Unexpected dotdot name");
                     outputDebugMessage("[%s] %s", rootName, child);
                 }
             } catch (IOException | RuntimeException e) {
@@ -219,11 +228,11 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
         outputDebugMessage("getFileAttributeView(%s)", file);
         AclFileAttributeView aclView
                 = Files.getFileAttributeView(file, AclFileAttributeView.class, LinkOption.NOFOLLOW_LINKS);
-        assertNotNull("No ACL view for " + file, aclView);
+        assertNotNull(aclView, "No ACL view for " + file);
 
         Map<String, ?> attrs = Files.readAttributes(file, "acl:*", LinkOption.NOFOLLOW_LINKS);
         outputDebugMessage("readAttributes(%s) %s", file, attrs);
-        assertEquals("Mismatched owner for " + file, aclView.getOwner(), attrs.get(IoUtils.OWNER_VIEW_ATTR));
+        assertEquals(aclView.getOwner(), attrs.get(IoUtils.OWNER_VIEW_ATTR), "Mismatched owner for " + file);
 
         @SuppressWarnings("unchecked")
         List<AclEntry> acl = (List<AclEntry>) attrs.get(IoUtils.ACL_VIEW_ATTR);
@@ -236,10 +245,10 @@ public abstract class AbstractSftpFilesSystemSupport extends AbstractSftpClientT
     protected static void testSymbolicLinks(Path link, Path relPath) throws IOException {
         outputDebugMessage("Create symlink %s => %s", link, relPath);
         Files.createSymbolicLink(link, relPath);
-        assertTrue("Not a symbolic link: " + link, Files.isSymbolicLink(link));
+        assertTrue(Files.isSymbolicLink(link), "Not a symbolic link: " + link);
 
         Path symLink = Files.readSymbolicLink(link);
-        assertEquals("mismatched symbolic link name", relPath.toString(), symLink.toString());
+        assertEquals(relPath.toString(), symLink.toString(), "mismatched symbolic link name");
 
         outputDebugMessage("Delete symlink %s", link);
         Files.delete(link);

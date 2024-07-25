@@ -40,11 +40,11 @@ import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-public class MultiAuthTest extends BaseTestSupport {
+class MultiAuthTest extends BaseTestSupport {
 
     private static final String USER_NAME = "foo";
     private static final String PASSWORD = "pass";
@@ -56,7 +56,7 @@ public class MultiAuthTest extends BaseTestSupport {
     private KeyPair ecKeyUser;
     private KeyPair rsaKeyUser;
 
-    public MultiAuthTest() {
+    MultiAuthTest() {
         super();
     }
 
@@ -97,7 +97,7 @@ public class MultiAuthTest extends BaseTestSupport {
         return generator.generateKeyPair();
     }
 
-    @Before
+    @BeforeEach
     public void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(MultiAuthTest.class);
         sshd.setHostBasedAuthenticator(RejectAllHostBasedAuthenticator.INSTANCE);
@@ -115,7 +115,7 @@ public class MultiAuthTest extends BaseTestSupport {
         client.start();
     }
 
-    @After
+    @AfterEach
     public void teardownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
@@ -134,7 +134,7 @@ public class MultiAuthTest extends BaseTestSupport {
     }
 
     @Test
-    public void testConnect() throws Exception {
+    void testConnect() throws Exception {
         CoreModuleProperties.AUTH_METHODS.set(sshd, "publickey,password,publickey");
         StringBuilder sb = new StringBuilder();
         try (ClientSession session = createClientSession(USER_NAME, client, port)) {
@@ -161,7 +161,7 @@ public class MultiAuthTest extends BaseTestSupport {
     }
 
     @Test
-    public void testConnect2() throws Exception {
+    void testConnect2() throws Exception {
         CoreModuleProperties.AUTH_METHODS.set(sshd, "publickey,publickey");
         StringBuilder sb = new StringBuilder();
         try (ClientSession session = createClientSession(USER_NAME, client, port)) {
@@ -185,7 +185,7 @@ public class MultiAuthTest extends BaseTestSupport {
     }
 
     @Test
-    public void testConnect3() throws Exception {
+    void testConnect3() throws Exception {
         CoreModuleProperties.AUTH_METHODS.set(sshd, "publickey password");
         StringBuilder sb = new StringBuilder();
         try (ClientSession session = createClientSession(USER_NAME, client, port)) {
@@ -207,7 +207,7 @@ public class MultiAuthTest extends BaseTestSupport {
     }
 
     @Test
-    public void testConnect4() throws Exception {
+    void testConnect4() throws Exception {
         CoreModuleProperties.AUTH_METHODS.set(sshd, "password,publickey");
         StringBuilder sb = new StringBuilder();
         try (ClientSession session = createClientSession(USER_NAME, client, port)) {
@@ -232,7 +232,7 @@ public class MultiAuthTest extends BaseTestSupport {
     }
 
     @Test
-    public void testConnect5() throws Exception {
+    void testConnect5() throws Exception {
         CoreModuleProperties.AUTH_METHODS.set(sshd, "password,publickey,publickey");
         StringBuilder sb = new StringBuilder();
         try (ClientSession session = createClientSession(USER_NAME, client, port)) {

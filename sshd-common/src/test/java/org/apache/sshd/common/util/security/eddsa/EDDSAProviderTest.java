@@ -34,19 +34,22 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class EDDSAProviderTest extends JUnitTestSupport {
     private static KeyPair keyPair;
 
@@ -54,30 +57,30 @@ public class EDDSAProviderTest extends JUnitTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void checkProviderSupported() throws GeneralSecurityException {
-        Assume.assumeTrue(SecurityUtils.EDDSA + " not supported", SecurityUtils.isEDDSACurveSupported());
+    @BeforeAll
+    static void checkProviderSupported() throws GeneralSecurityException {
+        Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
         KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
-        assertNotNull("No generator instance", g);
+        assertNotNull(g, "No generator instance");
 
         keyPair = g.generateKeyPair();
-        assertNotNull("No key pair generated", keyPair);
+        assertNotNull(keyPair, "No key pair generated");
 
         PublicKey pubKey = keyPair.getPublic();
-        assertNotNull("No public key", pubKey);
-        assertEquals("Mismatched public key algorithm", SecurityUtils.EDDSA, pubKey.getAlgorithm());
-        assertEquals("Mismatched public key type", KeyPairProvider.SSH_ED25519, KeyUtils.getKeyType(pubKey));
+        assertNotNull(pubKey, "No public key");
+        assertEquals(SecurityUtils.EDDSA, pubKey.getAlgorithm(), "Mismatched public key algorithm");
+        assertEquals(KeyPairProvider.SSH_ED25519, KeyUtils.getKeyType(pubKey), "Mismatched public key type");
 
         PrivateKey prvKey = keyPair.getPrivate();
-        assertNotNull("No private key", prvKey);
-        assertEquals("Mismatched key-pair algorithm", pubKey.getAlgorithm(), prvKey.getAlgorithm());
-        assertEquals("Mismatched private key type", KeyPairProvider.SSH_ED25519, KeyUtils.getKeyType(prvKey));
+        assertNotNull(prvKey, "No private key");
+        assertEquals(pubKey.getAlgorithm(), prvKey.getAlgorithm(), "Mismatched key-pair algorithm");
+        assertEquals(KeyPairProvider.SSH_ED25519, KeyUtils.getKeyType(prvKey), "Mismatched private key type");
     }
 
     @Test
-    public void testSignature() throws GeneralSecurityException {
+    void signature() throws GeneralSecurityException {
         Signature s = SecurityUtils.getSignature(EdDSAEngine.SIGNATURE_ALGORITHM);
-        assertNotNull("No signature instance", s);
+        assertNotNull(s, "No signature instance");
         s.initSign(keyPair.getPrivate());
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
@@ -87,39 +90,39 @@ public class EDDSAProviderTest extends JUnitTestSupport {
         s = SecurityUtils.getSignature(EdDSAEngine.SIGNATURE_ALGORITHM);
         s.initVerify(keyPair.getPublic());
         s.update(data);
-        assertTrue("Failed to verify", s.verify(signed));
+        assertTrue(s.verify(signed), "Failed to verify");
     }
 
     @Test
-    public void testPublicKeyEntryDecoder() throws IOException, GeneralSecurityException {
+    void publicKeyEntryDecoder() throws IOException, GeneralSecurityException {
         String comment = getCurrentTestName() + "@" + getClass().getSimpleName();
         String expected = "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIGPKSUTyz1HwHReFVvD5obVsALAgJRNarH4TRpNePnAS " + comment;
         AuthorizedKeyEntry keyEntry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(expected);
-        assertNotNull("No extracted key entry", keyEntry);
+        assertNotNull(keyEntry, "No extracted key entry");
 
-        assertEquals("Mismatched key type", KeyPairProvider.SSH_ED25519, keyEntry.getKeyType());
-        assertEquals("Mismatched comment", comment, keyEntry.getComment());
+        assertEquals(KeyPairProvider.SSH_ED25519, keyEntry.getKeyType(), "Mismatched key type");
+        assertEquals(comment, keyEntry.getComment(), "Mismatched comment");
 
         StringBuilder sb = new StringBuilder(expected.length());
         PublicKey pubKey = keyEntry.appendPublicKey(null, sb, null);
-        assertEquals("Mismatched encoded result", expected, sb.toString());
+        assertEquals(expected, sb.toString(), "Mismatched encoded result");
 
         testPublicKeyRecovery(pubKey);
     }
 
     @Test
-    public void testGeneratedPublicKeyRecovery() throws IOException, GeneralSecurityException {
+    void generatedPublicKeyRecovery() throws IOException, GeneralSecurityException {
         testPublicKeyRecovery(keyPair.getPublic());
     }
 
     private void testPublicKeyRecovery(PublicKey pubKey) throws IOException, GeneralSecurityException {
-        assertNotNull("No public key generated", pubKey);
-        assertEquals("Mismatched public key algorithm", SecurityUtils.EDDSA, pubKey.getAlgorithm());
+        assertNotNull(pubKey, "No public key generated");
+        assertEquals(SecurityUtils.EDDSA, pubKey.getAlgorithm(), "Mismatched public key algorithm");
 
         ByteArrayBuffer buf = new ByteArrayBuffer();
         buf.putRawPublicKey(pubKey);
         PublicKey actual = buf.getRawPublicKey();
-        assertEquals("Mismatched key algorithm", pubKey.getAlgorithm(), actual.getAlgorithm());
-        assertEquals("Mismatched recovered key", pubKey, actual);
+        assertEquals(pubKey.getAlgorithm(), actual.getAlgorithm(), "Mismatched key algorithm");
+        assertEquals(pubKey, actual, "Mismatched recovered key");
     }
 }

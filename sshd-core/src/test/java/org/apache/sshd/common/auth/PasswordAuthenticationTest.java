@@ -48,21 +48,27 @@ import org.apache.sshd.server.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class PasswordAuthenticationTest extends AuthenticationTestSupport {
     public PasswordAuthenticationTest() {
         super();
     }
 
     @Test
-    public void testWrongPassword() throws Exception {
+    void wrongPassword() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.start();
             try (ClientSession s = client.connect("user", TEST_LOCALHOST, port)
@@ -75,7 +81,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
     }
 
     @Test
-    public void testChangeUser() throws Exception {
+    void changeUser() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.start();
 
@@ -85,8 +91,8 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                 Collection<ClientSession.ClientSessionEvent> mask
                         = EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
                 Collection<ClientSession.ClientSessionEvent> result = s.waitFor(mask, DEFAULT_TIMEOUT);
-                assertFalse("Timeout while waiting on session events",
-                        result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
+                assertFalse(result.contains(ClientSession.ClientSessionEvent.TIMEOUT),
+                        "Timeout while waiting on session events");
 
                 String password = "the-password";
                 for (String username : new String[] { "user1", "user2" }) {
@@ -100,15 +106,16 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                 // Note that WAIT_AUTH flag should be false, but since the internal
                 // authentication future is not updated, it's still returned
                 result = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), DEFAULT_TIMEOUT);
-                assertTrue("Mismatched client session close mask: " + result, result.containsAll(mask));
+                assertTrue(result.containsAll(mask), "Mismatched client session close mask: " + result);
             } finally {
                 client.stop();
             }
         }
     }
 
-    @Test // see SSHD-196
-    public void testChangePassword() throws Exception {
+    // see SSHD-196
+    @Test
+    void changePassword() throws Exception {
         PasswordAuthenticator delegate = sshd.getPasswordAuthenticator();
         AtomicInteger attemptsCount = new AtomicInteger(0);
         AtomicInteger changesCount = new AtomicInteger(0);
@@ -127,7 +134,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
             public boolean handleClientPasswordChangeRequest(
                     ServerSession session, String username, String oldPassword, String newPassword) {
                 if (changesCount.incrementAndGet() == 1) {
-                    assertNotEquals("Non-different passwords", oldPassword, newPassword);
+                    assertNotEquals(oldPassword, newPassword, "Non-different passwords");
                     return authenticate(username, newPassword, session);
                 } else {
                     return PasswordAuthenticator.super.handleClientPasswordChangeRequest(
@@ -154,10 +161,10 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
 
                 @Override
                 public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
-                    assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
-                    assertEquals("Mismatched language",
-                            CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault(), lang);
-                    assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
+                    assertEquals(getCurrentTestName(), prompt, "Mismatched prompt");
+                    assertEquals(CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault(), lang,
+                            "Mismatched language");
+                    assertEquals(1, updatesCount.incrementAndGet(), "Unexpected repeated call");
                     return getCurrentTestName();
                 }
             });
@@ -194,9 +201,9 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
                 s.auth().verify(AUTH_TIMEOUT);
-                assertEquals("No password change request generated", 2, attemptsCount.get());
-                assertEquals("No password change handled", 1, changesCount.get());
-                assertEquals("No user interaction invoked", 1, updatesCount.get());
+                assertEquals(2, attemptsCount.get(), "No password change request generated");
+                assertEquals(1, changesCount.get(), "No password change handled");
+                assertEquals(1, updatesCount.get(), "No user interaction invoked");
             } finally {
                 client.stop();
             }
@@ -204,7 +211,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
     }
 
     @Test
-    public void testAuthPasswordOnly() throws Exception {
+    void authPasswordOnly() throws Exception {
         try (SshClient client = setupTestClient()) {
             sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
 
@@ -215,7 +222,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                 Collection<ClientSession.ClientSessionEvent> result = s.waitFor(
                         EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
                         DEFAULT_TIMEOUT);
-                assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
+                assertFalse(result.contains(ClientSession.ClientSessionEvent.TIMEOUT), "Timeout while waiting for session");
 
                 String password = getCurrentTestName();
                 try {
@@ -231,7 +238,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
     }
 
     @Test
-    public void testAuthKeyPassword() throws Exception {
+    void authKeyPassword() throws Exception {
         try (SshClient client = setupTestClient()) {
             sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
             sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
@@ -244,7 +251,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                 Collection<ClientSession.ClientSessionEvent> result = s.waitFor(
                         EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
                         DEFAULT_TIMEOUT);
-                assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
+                assertFalse(result.contains(ClientSession.ClientSessionEvent.TIMEOUT), "Timeout while waiting for session");
 
                 KeyPairProvider provider = createTestHostKeyProvider();
                 KeyPair pair = provider.loadKey(s, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
@@ -268,8 +275,9 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @Test // see SSHD-196
-    public void testAuthPasswordChangeRequest() throws Exception {
+    // see SSHD-196
+    @Test
+    void authPasswordChangeRequest() throws Exception {
         PasswordAuthenticator delegate = Objects.requireNonNull(sshd.getPasswordAuthenticator(), "No password authenticator");
         AtomicInteger attemptsCount = new AtomicInteger(0);
         sshd.setPasswordAuthenticator((username, password, session) -> {
@@ -299,10 +307,10 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
 
                 @Override
                 public String getUpdatedPassword(ClientSession session, String prompt, String lang) {
-                    assertEquals("Mismatched prompt", getCurrentTestName(), prompt);
-                    assertEquals("Mismatched language",
-                            CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault(), lang);
-                    assertEquals("Unexpected repeated call", 1, updatesCount.incrementAndGet());
+                    assertEquals(getCurrentTestName(), prompt, "Mismatched prompt");
+                    assertEquals(CoreModuleProperties.WELCOME_BANNER_LANGUAGE.getRequiredDefault(), lang,
+                            "Mismatched language");
+                    assertEquals(1, updatesCount.incrementAndGet(), "Unexpected repeated call");
                     return getCurrentTestName();
                 }
             });
@@ -315,8 +323,8 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                     .getSession()) {
                 s.addPasswordIdentity(getCurrentTestName());
                 s.auth().verify(AUTH_TIMEOUT);
-                assertEquals("No password change request generated", 2, attemptsCount.get());
-                assertEquals("No user interaction invoked", 1, updatesCount.get());
+                assertEquals(2, attemptsCount.get(), "No password change request generated");
+                assertEquals(1, updatesCount.get(), "No user interaction invoked");
             } finally {
                 client.stop();
             }
@@ -324,7 +332,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
     }
 
     @Test
-    public void testPasswordIdentityProviderPropagation() throws Exception {
+    void passwordIdentityProviderPropagation() throws Exception {
         try (SshClient client = setupTestClient()) {
             List<String> passwords = Collections.singletonList(getCurrentTestName());
             AtomicInteger loadCount = new AtomicInteger(0);
@@ -340,16 +348,17 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                     .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.auth().verify(AUTH_TIMEOUT);
-                assertEquals("Mismatched load passwords count", 1, loadCount.get());
-                assertSame("Mismatched passwords identity provider", provider, s.getPasswordIdentityProvider());
+                assertEquals(1, loadCount.get(), "Mismatched load passwords count");
+                assertSame(provider, s.getPasswordIdentityProvider(), "Mismatched passwords identity provider");
             } finally {
                 client.stop();
             }
         }
     }
 
-    @Test // see SSHD-714
-    public void testPasswordIdentityWithSpacesPrefixOrSuffix() throws Exception {
+    // see SSHD-714
+    @Test
+    void passwordIdentityWithSpacesPrefixOrSuffix() throws Exception {
         sshd.setPasswordAuthenticator((username, password, session) -> {
             return (username != null) && (!username.trim().isEmpty())
                     && (password != null) && (!password.isEmpty())
@@ -369,9 +378,9 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
                         s.addPasswordIdentity(password);
 
                         AuthFuture auth = s.auth();
-                        assertTrue("No authentication result in time for password='" + password + "'",
-                                auth.await(AUTH_TIMEOUT));
-                        assertTrue("Failed to authenticate with password='" + password + "'", auth.isSuccess());
+                        assertTrue(auth.await(AUTH_TIMEOUT),
+                                "No authentication result in time for password='" + password + "'");
+                        assertTrue(auth.isSuccess(), "Failed to authenticate with password='" + password + "'");
                     }
                 }
             } finally {
@@ -380,8 +389,9 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @Test   // see SSHD-1114
-    public void testPasswordAuthenticationReporter() throws Exception {
+    // see SSHD-1114
+    @Test
+    void passwordAuthenticationReporter() throws Exception {
         String goodPassword = getCurrentTestName();
         String badPassword = getClass().getSimpleName();
         List<String> attempted = new ArrayList<>();
@@ -404,14 +414,14 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
             @Override
             public void signalAuthenticationSuccess(ClientSession session, String service, String password)
                     throws Exception {
-                assertEquals("Mismatched succesful password", goodPassword, password);
+                assertEquals(goodPassword, password, "Mismatched succesful password");
             }
 
             @Override
             public void signalAuthenticationFailure(
                     ClientSession session, String service, String password, boolean partial, List<String> serverMethods)
                     throws Exception {
-                assertEquals("Mismatched failed password", badPassword, password);
+                assertEquals(badPassword, password, "Mismatched failed password");
             }
         };
 
@@ -436,8 +446,9 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
         assertListEquals("Reported passwords", expected, reported);
     }
 
-    @Test   // see SSHD-1114
-    public void testAuthenticationAttemptsExhausted() throws Exception {
+    // see SSHD-1114
+    @Test
+    void authenticationAttemptsExhausted() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
@@ -494,7 +505,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
             }
         }
 
-        assertEquals("Mismatched invocation count", 1, exhaustedCount.getAndSet(0));
-        assertEquals("Mismatched retries count", 3, attemptsCount.getAndSet(0));
+        assertEquals(1, exhaustedCount.getAndSet(0), "Mismatched invocation count");
+        assertEquals(3, attemptsCount.getAndSet(0), "Mismatched retries count");
     }
 }

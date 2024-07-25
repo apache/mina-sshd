@@ -21,18 +21,21 @@ package org.apache.sshd.sftp.server;
 
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SftpSubsystemFactoryTest extends JUnitTestSupport {
     public SftpSubsystemFactoryTest() {
         super();
@@ -42,27 +45,28 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
      * Make sure that the builder returns a factory with the default values if no {@code withXXX} method is invoked
      */
     @Test
-    public void testBuilderDefaultFactoryValues() {
+    void builderDefaultFactoryValues() {
         SftpSubsystemFactory factory = new SftpSubsystemFactory.Builder().build();
-        assertNull("Mismatched executor", factory.resolveExecutorService());
-        assertSame("Mismatched unsupported attribute policy", SftpSubsystemFactory.DEFAULT_POLICY,
-                factory.getUnsupportedAttributePolicy());
+        assertNull(factory.resolveExecutorService(), "Mismatched executor");
+        assertSame(SftpSubsystemFactory.DEFAULT_POLICY,
+                factory.getUnsupportedAttributePolicy(),
+                "Mismatched unsupported attribute policy");
     }
 
     /**
      * Make sure that the builder initializes correctly the built factory
      */
     @Test
-    public void testBuilderCorrectlyInitializesFactory() {
+    void builderCorrectlyInitializesFactory() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         CloseableExecutorService service = dummyExecutor();
         SftpSubsystemFactory factory = builder.withExecutorServiceProvider(() -> service)
                 .build();
-        assertSame("Mismatched executor", service, factory.resolveExecutorService());
+        assertSame(service, factory.resolveExecutorService(), "Mismatched executor");
 
         for (UnsupportedAttributePolicy policy : UnsupportedAttributePolicy.VALUES) {
             SftpSubsystemFactory actual = builder.withUnsupportedAttributePolicy(policy).build();
-            assertSame("Mismatched unsupported attribute policy", policy, actual.getUnsupportedAttributePolicy());
+            assertSame(policy, actual.getUnsupportedAttributePolicy(), "Mismatched unsupported attribute policy");
         }
     }
 
@@ -75,17 +79,17 @@ public class SftpSubsystemFactoryTest extends JUnitTestSupport {
      * {@link SftpSubsystemFactory.Builder#build()} method</LI> </UL
      */
     @Test
-    public void testBuilderUniqueInstance() {
+    void builderUniqueInstance() {
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         CloseableExecutorService service1 = dummyExecutor();
         SftpSubsystemFactory f1 = builder.withExecutorServiceProvider(() -> service1).build();
         SftpSubsystemFactory f2 = builder.build();
-        assertNotSame("No new instance built", f1, f2);
-        assertSame("Mismatched executors", f1.resolveExecutorService(), f2.resolveExecutorService());
+        assertNotSame(f1, f2, "No new instance built");
+        assertSame(f1.resolveExecutorService(), f2.resolveExecutorService(), "Mismatched executors");
 
         CloseableExecutorService service2 = dummyExecutor();
         SftpSubsystemFactory f3 = builder.withExecutorServiceProvider(() -> service2).build();
-        assertNotSame("Executor service not changed", f1.resolveExecutorService(), f3.resolveExecutorService());
+        assertNotSame(f1.resolveExecutorService(), f3.resolveExecutorService(), "Executor service not changed");
     }
 
     private static CloseableExecutorService dummyExecutor() {

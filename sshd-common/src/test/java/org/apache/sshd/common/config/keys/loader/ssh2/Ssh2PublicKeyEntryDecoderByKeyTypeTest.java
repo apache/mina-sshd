@@ -33,33 +33,27 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class Ssh2PublicKeyEntryDecoderByKeyTypeTest extends JUnitTestSupport {
-    private final String keyType;
+    private String keyType;
 
-    public Ssh2PublicKeyEntryDecoderByKeyTypeTest(String keyType) {
+    public void initSsh2PublicKeyEntryDecoderByKeyTypeTest(String keyType) {
         this.keyType = keyType;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
@@ -87,13 +81,15 @@ public class Ssh2PublicKeyEntryDecoderByKeyTypeTest extends JUnitTestSupport {
         };
     }
 
-    @Test
-    public void testDecodePublicKey() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void decodePublicKey(String keyType) throws Exception {
+        initSsh2PublicKeyEntryDecoderByKeyTypeTest(keyType);
         PublicKey expected;
         try (InputStream keyData = getPublicKeyDataStream("pub")) {
             Collection<? extends PublicKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(keyData, true);
             List<PublicKey> keys = PublicKeyEntry.resolvePublicKeyEntries(null, entries, null);
-            assertEquals("Mismatched expected public entries count", 1, GenericUtils.size(keys));
+            assertEquals(1, GenericUtils.size(keys), "Mismatched expected public entries count");
 
             expected = keys.get(0);
         }

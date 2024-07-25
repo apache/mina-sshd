@@ -32,48 +32,54 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.mac.BuiltinMacs.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinMacsTest extends JUnitTestSupport {
     public BuiltinMacsTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (BuiltinMacs expected : BuiltinMacs.VALUES) {
             String name = expected.getName();
             BuiltinMacs actual = BuiltinMacs.fromFactoryName(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testAllConstantsCovered() throws Exception {
+    void allConstantsCovered() throws Exception {
         Set<BuiltinMacs> avail = EnumSet.noneOf(BuiltinMacs.class);
         Field[] fields = BuiltinMacs.Constants.class.getFields();
         for (Field f : fields) {
             String name = (String) f.get(null);
             BuiltinMacs value = BuiltinMacs.fromFactoryName(name);
-            assertNotNull("No match found for " + name, value);
-            assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull(value, "No match found for " + name);
+            assertTrue(avail.add(value), name + " re-specified");
         }
 
         assertEquals("Incomplete coverage", BuiltinMacs.VALUES, avail);
     }
 
     @Test
-    public void testParseMacsList() {
+    void parseMacsList() {
         List<String> builtin = NamedResource.getNameList(BuiltinMacs.VALUES);
         List<String> unknown
                 = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
@@ -110,52 +116,54 @@ public class BuiltinMacsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveFactoryOnBuiltinValues() {
+    void resolveFactoryOnBuiltinValues() {
         for (MacFactory expected : BuiltinMacs.VALUES) {
             String name = expected.getName();
             MacFactory actual = BuiltinMacs.resolveFactory(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testNotAllowedToRegisterBuiltinFactories() {
-        BuiltinMacs.VALUES.forEach(expected -> assertThrows("Unexpected success for " + expected.getName(),
-                IllegalArgumentException.class, () -> BuiltinMacs.registerExtension(expected)));
+    void notAllowedToRegisterBuiltinFactories() {
+        BuiltinMacs.VALUES.forEach(expected -> assertThrows(IllegalArgumentException.class,
+                () -> BuiltinMacs.registerExtension(expected), "Unexpected success for " + expected.getName()));
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testNotAllowedToOverrideRegisteredFactories() {
-        MacFactory expected = Mockito.mock(MacFactory.class);
-        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+    @Test
+    void notAllowedToOverrideRegisteredFactories() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            MacFactory expected = Mockito.mock(MacFactory.class);
+            Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String name = expected.getName();
-        try {
-            for (int index = 1; index <= Byte.SIZE; index++) {
-                BuiltinMacs.registerExtension(expected);
-                assertEquals("Unexpected success at attempt #" + index, 1, index);
+            String name = expected.getName();
+            try {
+                for (int index = 1; index <= Byte.SIZE; index++) {
+                    BuiltinMacs.registerExtension(expected);
+                    assertEquals(1, index, "Unexpected success at attempt #" + index);
+                }
+            } finally {
+                BuiltinMacs.unregisterExtension(name);
             }
-        } finally {
-            BuiltinMacs.unregisterExtension(name);
-        }
+        });
     }
 
     @Test
-    public void testResolveFactoryOnRegisteredExtension() {
+    void resolveFactoryOnRegisteredExtension() {
         MacFactory expected = Mockito.mock(MacFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
         String name = expected.getName();
         try {
-            assertNull("Extension already registered", BuiltinMacs.resolveFactory(name));
+            assertNull(BuiltinMacs.resolveFactory(name), "Extension already registered");
             BuiltinMacs.registerExtension(expected);
 
             MacFactory actual = BuiltinMacs.resolveFactory(name);
-            assertSame("Mismatched resolved instance", expected, actual);
+            assertSame(expected, actual, "Mismatched resolved instance");
         } finally {
             MacFactory actual = BuiltinMacs.unregisterExtension(name);
-            assertSame("Mismatched unregistered instance", expected, actual);
-            assertNull("Extension not un-registered", BuiltinMacs.resolveFactory(name));
+            assertSame(expected, actual, "Mismatched unregistered instance");
+            assertNull(BuiltinMacs.resolveFactory(name), "Extension not un-registered");
         }
     }
 }

@@ -35,13 +35,16 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Port forwarding test multiple clients connecting at once.
@@ -81,8 +84,8 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
      * Reads PAYLOAD_TO_SERVER from client and then sends PAYLOAD_TO_CLIENT to client. This server emulates a web
      * server, closely enough for thie test
      */
-    @Before
-    public void startTestServer() throws Exception {
+    @BeforeEach
+    void startTestServer() throws Exception {
         testServerThread = new Thread(this::serverAcceptLoop);
         testServerThread.setDaemon(true);
         testServerThread.setName("Server Acceptor");
@@ -126,14 +129,14 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
         LOG.debug("Active Servers: {}", activeServers.decrementAndGet());
     }
 
-    @After
-    public void stopTestServer() throws Exception {
+    @AfterEach
+    void stopTestServer() throws Exception {
         testServerSock.close();
         testServerThread.interrupt();
     }
 
-    @BeforeClass
-    public static void startSshServer() throws IOException {
+    @BeforeAll
+    static void startSshServer() throws IOException {
         LOG.debug("Starting SSHD...");
         server = SshServer.setUpDefaultServer();
         server.setPasswordAuthenticator((u, p, s) -> true);
@@ -145,15 +148,15 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
         LOG.debug("SSHD Running on port {}", server.getPort());
     }
 
-    @AfterClass
-    public static void stopServer() throws IOException {
+    @AfterAll
+    static void stopServer() throws IOException {
         if (!server.close(true).await(CLOSE_TIMEOUT)) {
             LOG.warn("Failed to close server within {} sec.", CLOSE_TIMEOUT.toMillis() / 1000);
         }
     }
 
-    @Before
-    public void createClient() throws IOException {
+    @BeforeEach
+    void createClient() throws IOException {
         final SshClient client = SshClient.setUpDefaultClient();
         client.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);
         client.start();
@@ -165,24 +168,24 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
         LOG.debug("Authenticated");
     }
 
-    @After
-    public void stopClient() throws Exception {
+    @AfterEach
+    void stopClient() throws Exception {
         LOG.debug("Disconnecting Client");
         try {
-            assertTrue("Failed to close session", session.close(true).await(CLOSE_TIMEOUT));
+            assertTrue(session.close(true).await(CLOSE_TIMEOUT), "Failed to close session");
         } finally {
             session = null;
         }
     }
 
-    @Test
     /*
      * Run PORT_FORWARD_CLIENT_COUNT simultaneous server threads.
      *
      * Emulates a web browser making a number of simultaneous requests on different connections to the same server HTTP
      * specifies no more than two, but most modern browsers do 6 or more.
      */
-    public void testConcurrentConnectionsToPortForward() throws Exception {
+    @Test
+    void concurrentConnectionsToPortForward() throws Exception {
         final SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, 0);
         final SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, testServerPort);
         final SshdSocketAddress bound = session.startRemotePortForwarding(remote, local);
@@ -216,14 +219,15 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
             t.start();
         }
 
-        assertTrue("All threads should be done after two minutes", threadsDone.await(2, TimeUnit.MINUTES));
+        assertTrue(threadsDone.await(2, TimeUnit.MINUTES), "All threads should be done after two minutes");
 
         for (int i = 0; i < PORT_FORWARD_CLIENT_COUNT; i++) {
-            assertEquals("Mismatched data length read from server for client " + i, PAYLOAD_TO_CLIENT.length,
-                    bytesRead[i]);
+            assertEquals(PAYLOAD_TO_CLIENT.length,
+                    bytesRead[i],
+                    "Mismatched data length read from server for client " + i);
         }
 
-        assertEquals("Not all clients succeeded", PORT_FORWARD_CLIENT_COUNT, success.get());
+        assertEquals(PORT_FORWARD_CLIENT_COUNT, success.get(), "Not all clients succeeded");
     }
 
     /*
@@ -247,7 +251,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
             final long r = s.getInputStream().read(buf);
             LOG.debug("Read {} payload from server", r);
 
-            assertEquals("Mismatched data length", PAYLOAD_TO_CLIENT.length, r);
+            assertEquals(PAYLOAD_TO_CLIENT.length, r, "Mismatched data length");
             return r;
         }
 

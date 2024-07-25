@@ -70,41 +70,40 @@ import org.apache.sshd.sftp.server.SftpSubsystem;
 import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class SftpVersionsTest extends AbstractSftpClientTestSupport {
     private static final List<Integer> VERSIONS = Collections.unmodifiableList(
             IntStream.rangeClosed(SftpSubsystemEnvironment.LOWER_SFTP_IMPL, SftpSubsystemEnvironment.HIGHER_SFTP_IMPL)
                     .boxed()
                     .collect(Collectors.toList()));
 
-    private final int testVersion;
+    private int testVersion;
 
-    public SftpVersionsTest(int version) throws IOException {
+    public void initSftpVersionsTest(int version) throws Exception {
         testVersion = version;
+        setUp();
     }
 
-    @Parameters(name = "version={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(VERSIONS);
     }
 
-    @Before
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         setupServer();
 
         Map<String, Object> props = sshd.getProperties();
@@ -118,8 +117,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         return testVersion;
     }
 
-    @Test // See SSHD-749
-    public void testSftpOpenFlags() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}") // See SSHD-749
+    public void sftpOpenFlags(int version) throws Exception {
+        initSftpVersionsTest(version);
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -134,13 +135,15 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
                 out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
             }
-            assertTrue("File should exist on disk: " + lclFile, Files.exists(lclFile));
+            assertTrue(Files.exists(lclFile), "File should exist on disk: " + lclFile);
             sftp.remove(remotePath);
         }
     }
 
-    @Test
-    public void testSftpCreateNew() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}")
+    public void sftpCreateNew(int version) throws Exception {
+        initSftpVersionsTest(version);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
@@ -161,8 +164,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test
-    public void testSftpRenameNoReplace() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}")
+    public void sftpRenameNoReplace(int version) throws Exception {
+        initSftpVersionsTest(version);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
@@ -196,16 +201,20 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test
-    public void testSftpVersionSelector() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}")
+    public void sftpVersionSelector(int version) throws Exception {
+        initSftpVersionsTest(version);
         try (ClientSession session = createAuthenticatedClientSession();
              SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-            assertEquals("Mismatched negotiated version", getTestedVersion(), sftp.getVersion());
+            assertEquals(getTestedVersion(), sftp.getVersion(), "Mismatched negotiated version");
         }
     }
 
-    @Test // see SSHD-572
-    public void testSftpFileTimesUpdate() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}") // see SSHD-572
+    public void sftpFileTimesUpdate(int version) throws Exception {
+        initSftpVersionsTest(version);
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -238,8 +247,10 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test // see SSHD-573
-    public void testSftpFileTypeAndPermissionsUpdate() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}") // see SSHD-573
+    public void sftpFileTypeAndPermissionsUpdate(int version) throws Exception {
+        initSftpVersionsTest(version);
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -262,18 +273,20 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
                 Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
                 if (subFolderName.equals(fileName)) {
-                    assertEquals("Mismatched sub-folder type", SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType());
-                    assertTrue("Sub-folder not marked as directory", attrs.isDirectory());
+                    assertEquals(SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType(), "Mismatched sub-folder type");
+                    assertTrue(attrs.isDirectory(), "Sub-folder not marked as directory");
                 } else if (lclFileName.equals(fileName)) {
-                    assertEquals("Mismatched sub-file type", SftpConstants.SSH_FILEXFER_TYPE_REGULAR, attrs.getType());
-                    assertTrue("Sub-folder not marked as directory", attrs.isRegularFile());
+                    assertEquals(SftpConstants.SSH_FILEXFER_TYPE_REGULAR, attrs.getType(), "Mismatched sub-file type");
+                    assertTrue(attrs.isRegularFile(), "Sub-folder not marked as directory");
                 }
             }
         }
     }
 
-    @Test // see SSHD-574
-    public void testSftpACLEncodeDecode() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}") // see SSHD-574
+    public void sftpACLEncodeDecode(int version) throws Exception {
+        initSftpVersionsTest(version);
         AclEntryType[] types = AclEntryType.values();
         final List<AclEntry> aclExpected = new ArrayList<>(types.length);
         for (AclEntryType t : types) {
@@ -337,7 +350,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modifying ACL for file=" + path, aclExpected, aclActual);
                 } else {
-                    assertNull("Unexpected modifying ACL for file=" + path, aclActual);
+                    assertNull(aclActual, "Unexpected modifying ACL for file=" + path);
                 }
             }
 
@@ -350,7 +363,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 if (getTestedVersion() > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modified ACL for file=" + path, aclExpected, aclActual);
                 } else {
-                    assertNull("Unexpected modified ACL for file=" + path, aclActual);
+                    assertNull(aclActual, "Unexpected modified ACL for file=" + path);
                 }
             }
         });
@@ -380,7 +393,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
                 List<AclEntry> aclActual = attrs.getAcl();
                 if (getTestedVersion() == SftpConstants.SFTP_V3) {
-                    assertNull("Unexpected ACL for entry=" + fileName, aclActual);
+                    assertNull(aclActual, "Unexpected ACL for entry=" + fileName);
                 } else {
                     assertListEquals("Mismatched ACL for entry=" + fileName, aclExpected, aclActual);
                 }
@@ -396,11 +409,13 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             sshd.setSubsystemFactories(factories);
         }
 
-        assertEquals("Mismatched invocations count", numInvoked, numInvocations.get());
+        assertEquals(numInvoked, numInvocations.get(), "Mismatched invocations count");
     }
 
-    @Test // see SSHD-575
-    public void testSftpExtensionsEncodeDecode() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}") // see SSHD-575
+    public void sftpExtensionsEncodeDecode(int version) throws Exception {
+        initSftpVersionsTest(version);
         Class<?> anchor = getClass();
         Map<String, String> expExtensions = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
                 .put("class", anchor.getSimpleName())
@@ -441,11 +456,11 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                         int currentVersion = getTestedVersion();
                         try {
                             super.setFileExtensions(file, extensions, options);
-                            assertFalse("Expected exception not generated for version=" + currentVersion,
-                                    currentVersion >= SftpConstants.SFTP_V6);
+                            assertFalse(currentVersion >= SftpConstants.SFTP_V6,
+                                    "Expected exception not generated for version=" + currentVersion);
                         } catch (UnsupportedOperationException e) {
-                            assertTrue("Unexpected exception for version=" + currentVersion,
-                                    currentVersion >= SftpConstants.SFTP_V6);
+                            assertTrue(currentVersion >= SftpConstants.SFTP_V6,
+                                    "Unexpected exception for version=" + currentVersion);
                         }
                     }
                 };
@@ -512,15 +527,16 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
             sshd.setSubsystemFactories(factories);
         }
 
-        assertEquals("Mismatched invocations count", numInvoked, numInvocations.get());
+        assertEquals(numInvoked, numInvocations.get(), "Mismatched invocations count");
     }
 
-    @Test // see SSHD-623
-    public void testEndOfListIndicator() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}") // see SSHD-623
+    public void endOfListIndicator(int version) throws Exception {
+        initSftpVersionsTest(version);
         try (ClientSession session = createAuthenticatedClientSession();
              SftpClient sftp = createSftpClient(session, getTestedVersion())) {
             AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
-            int version = sftp.getVersion();
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
             String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);
@@ -530,9 +546,9 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 for (int index = 1; entries != null; entries = sftp.readDir(handle, eolIndicator), index++) {
                     Boolean value = eolIndicator.get();
                     if (version < SftpConstants.SFTP_V6) {
-                        assertNull("Unexpected indicator value at iteration #" + index, value);
+                        assertNull(value, "Unexpected indicator value at iteration #" + index);
                     } else {
-                        assertNotNull("No indicator returned at iteration #" + index, value);
+                        assertNotNull(value, "No indicator returned at iteration #" + index);
                         if (value) {
                             break;
                         }
@@ -542,12 +558,12 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
                 Boolean value = eolIndicator.get();
                 if (version < SftpConstants.SFTP_V6) {
-                    assertNull("Unexpected end-of-list indication received at end of entries", value);
-                    assertNull("Unexpected no last entries indication", entries);
+                    assertNull(value, "Unexpected end-of-list indication received at end of entries");
+                    assertNull(entries, "Unexpected no last entries indication");
                 } else {
-                    assertNotNull("No end-of-list indication received at end of entries", value);
-                    assertNotNull("No last received entries", entries);
-                    assertTrue("Bad end-of-list value", value);
+                    assertNotNull(value, "No end-of-list indication received at end of entries");
+                    assertNotNull(entries, "No last received entries");
+                    assertTrue(value, "Bad end-of-list value");
                 }
             }
         }
@@ -566,12 +582,12 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         int actualPerms = attrs.getPermissions();
         if (version == SftpConstants.SFTP_V3) {
             int expected = SftpHelper.permissionsToFileType(actualPerms);
-            assertEquals(fileName + ": Mismatched file type", expected, attrs.getType());
+            assertEquals(expected, attrs.getType(), fileName + ": Mismatched file type");
         } else {
             int expected = SftpHelper.fileTypeToPermission(attrs.getType());
-            assertTrue(fileName + ": Missing permision=0x" + Integer.toHexString(expected) + " in 0x"
-                       + Integer.toHexString(actualPerms),
-                    (actualPerms & expected) == expected);
+            assertEquals((actualPerms & expected), expected,
+                    fileName + ": Missing permision=0x" + Integer.toHexString(expected) + " in 0x"
+                                                             + Integer.toHexString(actualPerms));
         }
 
         return attrs;

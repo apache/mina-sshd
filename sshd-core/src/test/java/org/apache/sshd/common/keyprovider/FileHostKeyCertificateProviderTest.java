@@ -20,7 +20,10 @@ package org.apache.sshd.common.keyprovider;
 
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class FileHostKeyCertificateProviderTest extends JUnitTestSupport {
 
@@ -29,12 +32,12 @@ public class FileHostKeyCertificateProviderTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testLoadingUserCertificateFails() {
+    void loadingUserCertificateFails() {
         FileHostKeyCertificateProvider provider = new FileHostKeyCertificateProvider(
                 getTestResourcesFolder().resolve("dummy_user-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX));
         Exception e = assertThrows(Exception.class, () -> provider.loadCertificates(null));
-        assertTrue("Expected error in line 1", e.getMessage().contains("line 1"));
-        assertTrue("Unexpected exception message: " + e.getMessage(),
-                e.getMessage().contains("host") || e.getMessage().contains("user"));
+        assertTrue(e.getMessage().contains("line 1"), "Expected error in line 1");
+        assertTrue(e.getMessage().contains("host") || e.getMessage().contains("user"),
+                "Unexpected exception message: " + e.getMessage());
     }
 }

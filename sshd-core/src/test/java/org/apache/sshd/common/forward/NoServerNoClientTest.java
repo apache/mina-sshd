@@ -19,13 +19,13 @@
 package org.apache.sshd.common.forward;
 
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * Port forwarding tests - Control, direct connect. No SSH
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class NoServerNoClientTest extends AbstractServerCloseTestSupport {
     public NoServerNoClientTest() {
         super();

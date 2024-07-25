@@ -40,44 +40,43 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryDataResolver;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
 import org.bouncycastle.openpgp.PGPException;
 import org.bouncycastle.openpgp.PGPPublicKey;
 import org.c02e.jpgpj.Key;
 import org.c02e.jpgpj.Subkey;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
-    private final String resourceName;
-    private final Key key;
+    private String resourceName;
+    private Key key;
 
-    public PGPUtilsKeyFingerprintTest(String resourceName) throws IOException, PGPException {
+    public void initPGPUtilsKeyFingerprintTest(String resourceName) throws IOException, PGPException {
         this.resourceName = resourceName;
 
         InputStream stream = getClass().getResourceAsStream(resourceName);
-        assertNotNull("Missing " + resourceName, stream);
+        assertNotNull(stream, "Missing " + resourceName);
 
         try {
             key = new Key(stream);
@@ -87,7 +86,6 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         }
     }
 
-    @Parameters(name = "{0}")
     public static String[] parameters() {
         return new String[] {
                 "EC-256-gpg2-public.asc",
@@ -99,43 +97,47 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
                 "DSA-2048-gpg4win-3.1.3.asc" };
     }
 
-    @BeforeClass
-    @AfterClass
-    public static void clearAllRegisteredPublicKeyEntryDataResolvers() {
+    @BeforeAll
+    @AfterAll
+    static void clearAllRegisteredPublicKeyEntryDataResolvers() {
         for (String keyType : PGPPublicKeyEntryDataResolver.PGP_KEY_TYPES) {
             PublicKeyEntry.unregisterKeyDataEntryResolver(keyType);
             KeyUtils.unregisterPublicKeyEntryDecoderForKeyType(keyType);
         }
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         clearAllRegisteredPublicKeyEntryDataResolvers();
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         clearAllRegisteredPublicKeyEntryDataResolvers();
     }
 
-    @Test
-    public void testFindSubKeyByFingerprint() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void findSubKeyByFingerprint(String resourceName) throws Exception {
+        initPGPUtilsKeyFingerprintTest(resourceName);
         Collection<? extends Subkey> subKeys = key.getSubkeys();
-        assertFalse("No sub keys available in " + resourceName, GenericUtils.isEmpty(subKeys));
+        assertFalse(GenericUtils.isEmpty(subKeys), "No sub keys available in " + resourceName);
 
         for (Subkey expected : subKeys) {
             String fingerprint = expected.getFingerprint();
             Subkey actual = PGPUtils.findSubkeyByFingerprint(key, fingerprint);
-            assertSame("Mismatched sub-key match for " + fingerprint, expected, actual);
+            assertSame(expected, actual, "Mismatched sub-key match for " + fingerprint);
         }
     }
 
-    @Test
-    public void testParseAuthorizedKeyEntry() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void parseAuthorizedKeyEntry(String resourceName) throws Exception {
+        initPGPUtilsKeyFingerprintTest(resourceName);
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         Path file = Files.createDirectories(dir).resolve(resourceName + ".authorized");
         Collection<? extends Subkey> subKeys = key.getSubkeys();
-        assertFalse("No sub keys available in " + resourceName, GenericUtils.isEmpty(subKeys));
+        assertFalse(GenericUtils.isEmpty(subKeys), "No sub keys available in " + resourceName);
 
         Collection<String> written = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         try (BufferedWriter out = Files.newBufferedWriter(file, StandardCharsets.UTF_8, IoUtils.EMPTY_OPEN_OPTIONS)) {
@@ -153,32 +155,34 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
                         .append(' ').append(resourceName)
                         .append(System.lineSeparator());
 
-                assertTrue("Non-unique fingerprint: " + fingerprint, written.add(fingerprint));
+                assertTrue(written.add(fingerprint), "Non-unique fingerprint: " + fingerprint);
             }
         }
         // Can happen for ECC or EDDSA keys
-        Assume.assumeFalse(resourceName + " - no fingerprints written", written.isEmpty());
+        Assumptions.assumeFalse(written.isEmpty(), resourceName + " - no fingerprints written");
 
         PGPPublicKeyEntryDataResolver.registerDefaultKeyEntryDataResolvers();
         Collection<? extends PublicKeyEntry> authKeys = AuthorizedKeyEntry.readAuthorizedKeys(file, IoUtils.EMPTY_OPEN_OPTIONS);
-        assertEquals("Mismatched key entries count", written.size(), authKeys.size());
+        assertEquals(written.size(), authKeys.size(), "Mismatched key entries count");
 
         for (PublicKeyEntry entry : authKeys) {
             PublicKeyEntryDataResolver resolver = entry.getKeyDataResolver();
-            assertSame("Mismatched key data resolver for " + entry, PGPPublicKeyEntryDataResolver.DEFAULT, resolver);
+            assertSame(PGPPublicKeyEntryDataResolver.DEFAULT, resolver, "Mismatched key data resolver for " + entry);
 
             String fingerprint = resolver.encodeEntryKeyData(entry.getKeyData());
-            assertTrue("Unknown fingerprint recovered: " + fingerprint, written.remove(fingerprint));
+            assertTrue(written.remove(fingerprint), "Unknown fingerprint recovered: " + fingerprint);
         }
 
-        assertTrue(resourceName + " - incomplete fingerprints: " + written, written.isEmpty());
+        assertTrue(written.isEmpty(), resourceName + " - incomplete fingerprints: " + written);
     }
 
-    @Test
-    public void testResolveAuthorizedEntries()
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void resolveAuthorizedEntries(String resourceName)
             throws IOException, GeneralSecurityException, PGPException {
+        initPGPUtilsKeyFingerprintTest(resourceName);
         Collection<? extends Subkey> subKeys = key.getSubkeys();
-        assertFalse("No sub keys available in " + resourceName, GenericUtils.isEmpty(subKeys));
+        assertFalse(GenericUtils.isEmpty(subKeys), "No sub keys available in " + resourceName);
 
         Collection<PublicKeyEntry> available = new ArrayList<>(subKeys.size());
         for (Subkey sk : subKeys) {
@@ -196,7 +200,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         }
 
         // Can happen for ECC or EDDSA keys
-        Assume.assumeFalse(resourceName + " - no fingerprints extracted", available.isEmpty());
+        Assumptions.assumeFalse(available.isEmpty(), resourceName + " - no fingerprints extracted");
 
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         Path file = Files.createDirectories(dir).resolve(resourceName + ".txt");
@@ -209,7 +213,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         SessionContext session = Mockito.mock(SessionContext.class);
         for (PublicKeyEntry pke : available) {
             Collection<PublicKey> keys = tracker.loadMatchingAuthorizedEntries(session, Collections.singletonList(pke));
-            assertEquals("Mismatched recovered keys count for " + pke, 1, GenericUtils.size(keys));
+            assertEquals(1, GenericUtils.size(keys), "Mismatched recovered keys count for " + pke);
 
             PublicKey expected = pke.resolvePublicKey(session, Collections.emptyMap(), tracker);
             PublicKey actual = GenericUtils.head(keys);

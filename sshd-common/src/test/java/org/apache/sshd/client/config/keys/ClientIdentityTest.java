@@ -35,24 +35,27 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ClientIdentityTest extends JUnitTestSupport {
     public ClientIdentityTest() {
         super();
     }
 
     @Test
-    public void testLoadClientIdentities() throws Exception {
+    void loadClientIdentities() throws Exception {
         Path resFolder = getTestResourcesFolder();
         LinkOption[] options = IoUtils.getLinkOptions(true);
         Collection<BuiltinIdentities> expected = EnumSet.noneOf(BuiltinIdentities.class);
@@ -77,25 +80,25 @@ public class ClientIdentityTest extends JUnitTestSupport {
                 false, // don't be strict
                 null, // none of the files is password protected
                 options);
-        assertEquals("Mismatched loaded ids count", GenericUtils.size(expected), MapEntryUtils.size(ids));
+        assertEquals(GenericUtils.size(expected), MapEntryUtils.size(ids), "Mismatched loaded ids count");
 
         Collection<KeyPair> pairs = new ArrayList<>(ids.size());
         for (BuiltinIdentities type : BuiltinIdentities.VALUES) {
             if (expected.contains(type)) {
                 KeyPair kp = ids.get(type.getName());
-                assertNotNull("No key pair loaded for " + type, kp);
+                assertNotNull(kp, "No key pair loaded for " + type);
                 pairs.add(kp);
             }
         }
 
         KeyIdentityProvider provider = IdentityUtils.createKeyPairProvider(ids, true /* supported only */);
-        assertNotNull("No provider generated", provider);
+        assertNotNull(provider, "No provider generated");
 
         Iterable<KeyPair> keys = provider.loadKeys(null);
         for (KeyPair kp : keys) {
-            assertTrue("Unexpected loaded key: " + kp, pairs.remove(kp));
+            assertTrue(pairs.remove(kp), "Unexpected loaded key: " + kp);
         }
 
-        assertEquals("Not all pairs listed", 0, pairs.size());
+        assertEquals(0, pairs.size(), "Not all pairs listed");
     }
 }

@@ -22,33 +22,37 @@ package org.apache.sshd.common.io;
 import java.util.Objects;
 
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
     public BuiltinIoServiceFactoryFactoriesTest() {
         super();
     }
 
     @Test
-    public void testFromFactoryName() {
+    void fromFactoryName() {
         for (String name : new String[] { null, "", getCurrentTestName() }) {
-            assertNull("Unexpected success for name='" + name + "'", BuiltinIoServiceFactoryFactories.fromFactoryName(name));
+            assertNull(BuiltinIoServiceFactoryFactories.fromFactoryName(name), "Unexpected success for name='" + name + "'");
         }
 
         for (BuiltinIoServiceFactoryFactories expected : BuiltinIoServiceFactoryFactories.VALUES) {
             String name = expected.getName();
-            assertSame(name, expected, BuiltinIoServiceFactoryFactories.fromFactoryName(name));
+            assertSame(expected, BuiltinIoServiceFactoryFactories.fromFactoryName(name), name);
         }
     }
 
     @Test
-    public void testFromFactoryClass() {
+    void fromFactoryClass() {
         IoServiceFactoryFactory ioServiceProvider = getIoServiceProvider();
         Class<?> providerClass = ioServiceProvider.getClass();
         String providerClassName = providerClass.getName();
@@ -65,12 +69,12 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
 
             outputDebugMessage("Testing: %s", expected);
             Class<?> clazz = expected.getFactoryClass();
-            assertSame(clazz.getSimpleName(), expected, BuiltinIoServiceFactoryFactories.fromFactoryClass(clazz));
+            assertSame(expected, BuiltinIoServiceFactoryFactories.fromFactoryClass(clazz), clazz.getSimpleName());
         }
     }
 
     @Test
-    public void testClassNames() {
+    void classNames() {
         IoServiceFactoryFactory ioServiceProvider = getIoServiceProvider();
         Class<?> providerClass = ioServiceProvider.getClass();
         String providerClassName = providerClass.getName();
@@ -81,6 +85,6 @@ public class BuiltinIoServiceFactoryFactoriesTest extends BaseTestSupport {
                 break;
             }
         }
-        assertTrue("No BuiltinIoServiceFactoryFactories match for class name " + providerClassName, found);
+        assertTrue(found, "No BuiltinIoServiceFactoryFactories match for class name " + providerClassName);
     }
 }

@@ -20,33 +20,34 @@
 package org.apache.sshd.common.util;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class VersionInfoTest extends JUnitTestSupport {
     public VersionInfoTest() {
         super();
     }
 
     @Test
-    public void testLessThan4Components() {
+    void lessThan4Components() {
         VersionInfo expected = new VersionInfo(73, 65);
         VersionInfo actual = VersionInfo.parse(NumberUtils.join('.', expected.getMajorVersion(), expected.getMinorVersion()));
-        assertEquals("Mismatched result", expected, actual);
+        assertEquals(expected, actual, "Mismatched result");
     }
 
     @Test
-    public void testMoreThan4Components() {
+    void moreThan4Components() {
         VersionInfo expected = new VersionInfo(7, 3, 6, 5);
         VersionInfo actual = VersionInfo.parse(expected.toString() + ".3.7.7.7.3.4.7");
-        assertEquals("Mismatched result", expected, actual);
+        assertEquals(expected, actual, "Mismatched result");
     }
 }

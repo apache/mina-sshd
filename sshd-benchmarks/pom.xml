@@ -118,15 +118,6 @@
             <groupId>com.github.mwiede</groupId>
             <artifactId>jsch</artifactId>
         </dependency>
-        <!--
-          We inherit JUnit with test scope from the parent POM. This causes trouble with testcontainers,
-          and we get compilation errors. Overriding the dependency with provided scope resolves that.
-        -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>

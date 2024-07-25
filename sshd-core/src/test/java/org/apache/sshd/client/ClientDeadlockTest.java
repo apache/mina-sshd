@@ -33,18 +33,21 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ClientDeadlockTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
@@ -54,8 +57,8 @@ public class ClientDeadlockTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setSessionFactory(new SessionFactory(sshd) {
             @Override
@@ -69,8 +72,8 @@ public class ClientDeadlockTest extends BaseTestSupport {
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -80,15 +83,15 @@ public class ClientDeadlockTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSimpleClient() throws Exception {
+    void simpleClient() throws Exception {
         client.start();
 
         ConnectFuture future = client.connect(getCurrentTestName(), TEST_LOCALHOST, port);
         try (ClientSession session = future.verify(CONNECT_TIMEOUT).getSession()) {
             Collection<ClientSessionEvent> events
                     = session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), TimeUnit.SECONDS.toMillis(7L));
-            assertTrue("Close event not signalled: " + events, events.contains(ClientSession.ClientSessionEvent.CLOSED));
-            assertFalse("Session not marked as closed", session.isOpen());
+            assertTrue(events.contains(ClientSession.ClientSessionEvent.CLOSED), "Close event not signalled: " + events);
+            assertFalse(session.isOpen(), "Session not marked as closed");
         } catch (SshException e) {
             Throwable cause = e.getCause();
             // Due to a race condition we might get this exception

@@ -46,18 +46,22 @@ import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 @SuppressWarnings("checkstyle:MethodCount")
 public class SecurityUtilsTest extends SecurityUtilsTestSupport {
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
@@ -68,12 +72,12 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
     }
 
     @Test
-    public void testLoadEncryptedDESPrivateKey() throws Exception {
+    void loadEncryptedDESPrivateKey() throws Exception {
         testLoadEncryptedRSAPrivateKey("DES-EDE3");
     }
 
     @Test
-    public void testLoadEncryptedAESPrivateKey() {
+    void loadEncryptedAESPrivateKey() {
         for (BuiltinCiphers c : new BuiltinCiphers[] {
                 BuiltinCiphers.aes128cbc, BuiltinCiphers.aes192cbc, BuiltinCiphers.aes256cbc
         }) {
@@ -95,12 +99,12 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
     }
 
     @Test
-    public void testLoadUnencryptedRSAPrivateKey() throws Exception {
+    void loadUnencryptedRSAPrivateKey() throws Exception {
         testLoadRSAPrivateKey(getClass().getSimpleName() + "-RSA-KeyPair");
     }
 
     @Test
-    public void testLoadUnencryptedDSSPrivateKey() throws Exception {
+    void loadUnencryptedDSSPrivateKey() throws Exception {
         testLoadDSSPrivateKey(getClass().getSimpleName() + "-DSA-KeyPair");
     }
 
@@ -109,8 +113,8 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
     }
 
     @Test
-    public void testLoadUnencryptedECPrivateKey() throws Exception {
-        Assume.assumeTrue("EC not supported", SecurityUtils.isECCSupported());
+    void loadUnencryptedECPrivateKey() throws Exception {
+        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "EC not supported");
         for (ECCurves c : ECCurves.VALUES) {
             if (!c.isSupported()) {
                 System.out.println("Skip unsupported curve: " + c.getName());
@@ -138,16 +142,16 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
         if (SecurityUtils.isBouncyCastleRegistered()) {
             KeyPairResourceLoader bcLoader = SecurityUtils.getBouncycastleKeyPairResourceParser();
             Collection<KeyPair> kpList = bcLoader.loadKeyPairs(null, file, TEST_PASSWORD_PROVIDER);
-            assertEquals(name + ": Mismatched loaded BouncyCastle keys count", 1, GenericUtils.size(kpList));
+            assertEquals(1, GenericUtils.size(kpList), name + ": Mismatched loaded BouncyCastle keys count");
 
             KeyPair kpBC = GenericUtils.head(kpList);
-            assertTrue(name + ": Mismatched BouncyCastle vs. file values", KeyUtils.compareKeyPairs(kpFile, kpBC));
+            assertTrue(KeyUtils.compareKeyPairs(kpFile, kpBC), name + ": Mismatched BouncyCastle vs. file values");
         }
 
         Class<?> clazz = getClass();
         Package pkg = clazz.getPackage();
         KeyPair kpResource = testLoadPrivateKeyResource(pkg.getName().replace('.', '/') + "/" + name, pubType, prvType);
-        assertTrue(name + ": Mismatched key file vs. resource values", KeyUtils.compareKeyPairs(kpFile, kpResource));
+        assertTrue(KeyUtils.compareKeyPairs(kpFile, kpResource), name + ": Mismatched key file vs. resource values");
         validateKeyPairSignable(name, kpResource);
         return kpResource;
     }
@@ -177,24 +181,24 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
             pairs.add(kp);
         }
 
-        assertEquals("Mismatched loaded pairs count for " + resourceKey, 1, pairs.size());
+        assertEquals(1, pairs.size(), "Mismatched loaded pairs count for " + resourceKey);
 
         KeyPair kp = pairs.get(0);
         PublicKey pub = kp.getPublic();
-        assertNotNull("No public key extracted", pub);
-        assertTrue("Not an " + pubType.getSimpleName() + " public key for " + resourceKey,
-                pubType.isAssignableFrom(pub.getClass()));
+        assertNotNull(pub, "No public key extracted");
+        assertTrue(pubType.isAssignableFrom(pub.getClass()),
+                "Not an " + pubType.getSimpleName() + " public key for " + resourceKey);
 
         PrivateKey prv = kp.getPrivate();
-        assertNotNull("No private key extracted", prv);
-        assertTrue("Not an " + prvType.getSimpleName() + " private key for " + resourceKey,
-                prvType.isAssignableFrom(prv.getClass()));
+        assertNotNull(prv, "No private key extracted");
+        assertTrue(prvType.isAssignableFrom(prv.getClass()),
+                "Not an " + prvType.getSimpleName() + " private key for " + resourceKey);
 
         return kp;
     }
 
     @Test
-    public void testSetMaxDHGroupExchangeKeySizeByProperty() {
+    void setMaxDHGroupExchangeKeySizeByProperty() {
         try {
             for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE;
                  expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE;
@@ -202,8 +206,8 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
                 SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
                 try {
                     System.setProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP, Integer.toString(expected));
-                    assertTrue("DH group not supported for key size=" + expected, SecurityUtils.isDHGroupExchangeSupported());
-                    assertEquals("Mismatched values", expected, SecurityUtils.getMaxDHGroupExchangeKeySize());
+                    assertTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH group not supported for key size=" + expected);
+                    assertEquals(expected, SecurityUtils.getMaxDHGroupExchangeKeySize(), "Mismatched values");
                 } finally {
                     System.clearProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP);
                 }
@@ -215,14 +219,14 @@ public class SecurityUtilsTest extends SecurityUtilsTestSupport {
     }
 
     @Test
-    public void testSetMaxDHGroupExchangeKeySizeProgrammatically() {
+    void setMaxDHGroupExchangeKeySizeProgrammatically() {
         try {
             for (int expected = SecurityUtils.MIN_DHGEX_KEY_SIZE;
                  expected <= SecurityUtils.MAX_DHGEX_KEY_SIZE;
                  expected += 1024) {
                 SecurityUtils.setMaxDHGroupExchangeKeySize(expected);
-                assertTrue("DH group not supported for key size=" + expected, SecurityUtils.isDHGroupExchangeSupported());
-                assertEquals("Mismatched values", expected, SecurityUtils.getMaxDHGroupExchangeKeySize());
+                assertTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH group not supported for key size=" + expected);
+                assertEquals(expected, SecurityUtils.getMaxDHGroupExchangeKeySize(), "Mismatched values");
             }
         } finally {
             SecurityUtils.setMinDHGroupExchangeKeySize(0); // force detection

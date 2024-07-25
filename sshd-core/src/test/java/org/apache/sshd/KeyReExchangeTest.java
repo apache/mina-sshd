@@ -67,19 +67,27 @@ import org.apache.sshd.util.test.JSchLogger;
 import org.apache.sshd.util.test.OutputCountTrackingOutputStream;
 import org.apache.sshd.util.test.SimpleUserInfo;
 import org.apache.sshd.util.test.TeeOutputStream;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Test key exchange algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class KeyReExchangeTest extends BaseTestSupport {
 
     private SshServer sshd;
@@ -89,13 +97,13 @@ public class KeyReExchangeTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void jschInit() {
+    @BeforeAll
+    static void jschInit() {
         JSchLogger.init();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -119,7 +127,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSwitchToNoneCipher() throws Exception {
+    void switchToNoneCipher() throws Exception {
         setUp(0L, Duration.ZERO, 0L);
 
         sshd.getCipherFactories().add(BuiltinCiphers.none);
@@ -144,8 +152,9 @@ public class KeyReExchangeTest extends BaseTestSupport {
         }
     }
 
-    @Test // see SSHD-558
-    public void testKexFutureExceptionPropagation() throws Exception {
+    // see SSHD-558
+    @Test
+    void kexFutureExceptionPropagation() throws Exception {
         setUp(0L, Duration.ZERO, 0L);
         sshd.getCipherFactories().add(BuiltinCiphers.none);
 
@@ -209,14 +218,14 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
             successFlag.set(false);
             KeyExchangeFuture kexFuture = session.switchToNoneCipher();
-            assertTrue(failureType + ": failed to complete KEX on time", kexFuture.await(DEFAULT_TIMEOUT));
-            assertNotNull(failureType + ": unexpected success", kexFuture.getException());
+            assertTrue(kexFuture.await(DEFAULT_TIMEOUT), failureType + ": failed to complete KEX on time");
+            assertNotNull(kexFuture.getException(), failureType + ": unexpected success");
         }
     }
 
     @Test
-    public void testReExchangeFromJschClient() throws Exception {
-        Assume.assumeTrue("DH Group Exchange not supported", SecurityUtils.isDHGroupExchangeSupported());
+    void reExchangeFromJschClient() throws Exception {
+        Assumptions.assumeTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH Group Exchange not supported");
         setUp(0L, Duration.ZERO, 0L);
 
         JSch.setConfig("kex", BuiltinDHFactories.Constants.DIFFIE_HELLMAN_GROUP_EXCHANGE_SHA1);
@@ -240,7 +249,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                     int len = is.read(data);
                     String str = new String(data, 0, len, StandardCharsets.UTF_8);
-                    assertEquals("Mismatched data at iteration " + i, expected, str);
+                    assertEquals(expected, str, "Mismatched data at iteration " + i);
 
                     outputDebugMessage("Request re-key #%d", i);
                     s.rekey();
@@ -254,7 +263,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReExchangeFromSshdClient() throws Exception {
+    void reExchangeFromSshdClient() throws Exception {
         setUp(0L, Duration.ZERO, 0L);
 
         try (SshClient client = setupTestClient()) {
@@ -315,15 +324,15 @@ public class KeyReExchangeTest extends BaseTestSupport {
                         teeOut.flush();
 
                         KeyExchangeFuture kexFuture = session.reExchangeKeys();
-                        assertTrue("Failed to complete KEX on time at iteration " + i, kexFuture.await(DEFAULT_TIMEOUT));
-                        assertNull("KEX exception signalled at iteration " + i, kexFuture.getException());
+                        assertTrue(kexFuture.await(DEFAULT_TIMEOUT), "Failed to complete KEX on time at iteration " + i);
+                        assertNull(kexFuture.getException(), "KEX exception signalled at iteration " + i);
                     }
                     teeOut.write("exit\n".getBytes(StandardCharsets.UTF_8));
                     teeOut.flush();
 
                     Collection<ClientChannelEvent> result
                             = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), DEFAULT_TIMEOUT);
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
 
                     byte[] expected = sent.toByteArray();
                     if (!pipedCount.tryAcquire(expected.length, DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
@@ -331,7 +340,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                              + pipedCount.availablePermits() + ")");
                     }
 
-                    assertArrayEquals("Mismatched sent data content", expected, out.toByteArray());
+                    assertArrayEquals(expected, out.toByteArray(), "Mismatched sent data content");
                 }
             } finally {
                 client.stop();
@@ -340,7 +349,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReExchangeFromServerBySize() throws Exception {
+    void reExchangeFromServerBySize() throws Exception {
         final long bytesLImit = 10 * 1024L;
         setUp(bytesLImit, Duration.ZERO, 0L);
 
@@ -424,19 +433,19 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                     Collection<ClientChannelEvent> result
                             = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), DEFAULT_TIMEOUT);
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
 
                     sentData = sent.toByteArray();
                     if (!pipedCount.tryAcquire(sentData.length, DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
                         fail("Failed to await sent data signal for len=" + sentData.length + " (available="
                              + pipedCount.availablePermits() + ")");
                     }
-                    assertTrue("Expected rekeying", exchanges.get() > 0);
+                    assertTrue(exchanges.get() > 0, "Expected rekeying");
                 }
 
                 byte[] outData = out.toByteArray();
-                assertEquals("Mismatched sent data length", sentData.length, outData.length);
-                assertArrayEquals("Mismatched sent data content", sentData, outData);
+                assertEquals(sentData.length, outData.length, "Mismatched sent data length");
+                assertArrayEquals(sentData, outData, "Mismatched sent data content");
             } finally {
                 client.stop();
             }
@@ -444,7 +453,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReExchangeFromServerByTime() throws Exception {
+    void reExchangeFromServerByTime() throws Exception {
         final Duration timeLimit = Duration.ofSeconds(2L);
         setUp(0L, timeLimit, 0L);
 
@@ -539,7 +548,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
 
                     Collection<ClientChannelEvent> result
                             = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), DEFAULT_TIMEOUT);
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
 
                     sentData = sent.toByteArray();
                     if (!pipedCount.tryAcquire(sentData.length, DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS)) {
@@ -547,20 +556,21 @@ public class KeyReExchangeTest extends BaseTestSupport {
                              + pipedCount.availablePermits() + ")");
                     }
 
-                    assertTrue("Expected rekeying", exchanges.get() > 0);
+                    assertTrue(exchanges.get() > 0, "Expected rekeying");
                 }
 
                 byte[] outData = out.toByteArray();
-                assertEquals("Mismatched sent data length", sentData.length, outData.length);
-                assertArrayEquals("Mismatched sent data content", sentData, outData);
+                assertEquals(sentData.length, outData.length, "Mismatched sent data length");
+                assertArrayEquals(sentData, outData, "Mismatched sent data content");
             } finally {
                 client.stop();
             }
         }
     }
 
-    @Test // see SSHD-601
-    public void testReExchangeFromServerByPackets() throws Exception {
+    // see SSHD-601
+    @Test
+    void reExchangeFromServerByPackets() throws Exception {
         final int packetsLimit = 135;
         setUp(0L, Duration.ZERO, packetsLimit);
 
@@ -657,7 +667,7 @@ public class KeyReExchangeTest extends BaseTestSupport {
                     Duration timeout = CoreTestSupportUtils.getTimeout("KeyReExchangeTest", Duration.ofSeconds(15));
 
                     Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), timeout);
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
 
                     sentData = sent.toByteArray();
                     if (!pipedCount.tryAcquire(sentData.length, timeout.toMillis(), TimeUnit.MILLISECONDS)) {
@@ -665,12 +675,12 @@ public class KeyReExchangeTest extends BaseTestSupport {
                              + pipedCount.availablePermits() + ")");
                     }
 
-                    assertTrue("Expected rekeying", exchanges.get() > 0);
+                    assertTrue(exchanges.get() > 0, "Expected rekeying");
                 }
 
                 byte[] outData = out.toByteArray();
-                assertEquals("Mismatched sent data length", sentData.length, outData.length);
-                assertArrayEquals("Mismatched sent data content", sentData, outData);
+                assertEquals(sentData.length, outData.length, "Mismatched sent data length");
+                assertArrayEquals(sentData, outData, "Mismatched sent data content");
             } finally {
                 client.stop();
             }

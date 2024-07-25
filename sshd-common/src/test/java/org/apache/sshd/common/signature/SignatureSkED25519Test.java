@@ -23,17 +23,18 @@ import java.util.Base64;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SignatureSkED25519Test extends JUnitTestSupport {
 
     @SuppressWarnings("checkstyle:linelength")
@@ -59,22 +60,22 @@ public class SignatureSkED25519Test extends JUnitTestSupport {
     }
 
     @Test
-    public void testValidSignatureWithTouch() throws Exception {
+    void validSignatureWithTouch() throws Exception {
         testSignature(AUTHORIZED_KEY_ENTRY, MSG1, SIG_FOR_MSG1_WITH_TOUCH, true);
     }
 
     @Test
-    public void testValidSignatureWithNoTouch() throws Exception {
+    void validSignatureWithNoTouch() throws Exception {
         testSignature("no-touch-required " + AUTHORIZED_KEY_ENTRY, MSG2, SIG_FOR_MSG2_WITH_NO_TOUCH, true);
     }
 
     @Test
-    public void testValidSignatureWithMissingTouch() throws Exception {
+    void validSignatureWithMissingTouch() throws Exception {
         testSignature(AUTHORIZED_KEY_ENTRY, MSG2, SIG_FOR_MSG2_WITH_NO_TOUCH, false);
     }
 
     @Test
-    public void testInvalidSignatureWithTouch() throws Exception {
+    void invalidSignatureWithTouch() throws Exception {
         testSignature(AUTHORIZED_KEY_ENTRY, MSG2, SIG_FOR_MSG1_WITH_TOUCH, false);
     }
 

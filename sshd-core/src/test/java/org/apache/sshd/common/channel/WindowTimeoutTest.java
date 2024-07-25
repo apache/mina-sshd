@@ -29,20 +29,25 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://issues.apache.org/jira/browse/SSHD-565">SSHD-565</A>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class WindowTimeoutTest extends BaseTestSupport {
     public static final Duration MAX_WAIT_TIME = Duration.ofSeconds(2L);
 
@@ -52,8 +57,8 @@ public class WindowTimeoutTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         channel = new AbstractChannel(getCurrentTestName(), true) {
             @Override
             public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
@@ -82,21 +87,21 @@ public class WindowTimeoutTest extends BaseTestSupport {
         };
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (channel != null) {
             channel.close();
         }
     }
 
     @Test
-    public void testWindowWaitForSpaceTimeout() throws Exception {
+    void windowWaitForSpaceTimeout() throws Exception {
         try (RemoteWindow window = channel.getRemoteWindow()) {
             window.init(CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
                     CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault(),
                     PropertyResolver.EMPTY);
             window.consume(window.getSize());
-            assertEquals("Window not empty", 0, window.getSize());
+            assertEquals(0, window.getSize(), "Window not empty");
 
             long waitStart = System.nanoTime();
             try {
@@ -106,11 +111,11 @@ public class WindowTimeoutTest extends BaseTestSupport {
                 long waitEnd = System.nanoTime();
                 long waitDuration = TimeUnit.NANOSECONDS.toMillis(waitEnd - waitStart);
                 // we allow ~100 millis variance to compensate for O/S wait time granularity
-                assertTrue("Timeout too soon: " + waitDuration, waitDuration >= (MAX_WAIT_TIME.toMillis() - 100L));
+                assertTrue(waitDuration >= (MAX_WAIT_TIME.toMillis() - 100L), "Timeout too soon: " + waitDuration);
             }
 
             window.close();
-            assertFalse("Window not closed", window.isOpen());
+            assertFalse(window.isOpen(), "Window not closed");
             try {
                 long len = window.waitForSpace(MAX_WAIT_TIME);
                 fail("Unexpected closed wait success - len=" + len);
@@ -121,7 +126,7 @@ public class WindowTimeoutTest extends BaseTestSupport {
     }
 
     @Test
-    public void testWindowWaitAndConsumeTimeout() throws Exception {
+    void windowWaitAndConsumeTimeout() throws Exception {
         try (RemoteWindow window = channel.getRemoteWindow()) {
             window.init(CoreModuleProperties.WINDOW_SIZE.getRequiredDefault(),
                     CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault(),
@@ -135,13 +140,14 @@ public class WindowTimeoutTest extends BaseTestSupport {
                 long waitEnd = System.nanoTime();
                 long waitDuration = TimeUnit.NANOSECONDS.toMillis(waitEnd - waitStart);
                 // we allow ~100 millis variance to compensate for O/S wait time granularity
-                assertTrue("Timeout too soon: " + waitDuration, waitDuration >= (MAX_WAIT_TIME.toMillis() - 100L));
+                assertTrue(waitDuration >= (MAX_WAIT_TIME.toMillis() - 100L), "Timeout too soon: " + waitDuration);
             }
 
             window.close();
-            assertFalse("Window not closed", window.isOpen());
-            assertThrows("Unexpected closed wait success", WindowClosedException.class,
-                    () -> window.waitAndConsume(2 * window.getSize(), MAX_WAIT_TIME));
+            assertFalse(window.isOpen(), "Window not closed");
+            assertThrows(WindowClosedException.class,
+                    () -> window.waitAndConsume(2 * window.getSize(), MAX_WAIT_TIME),
+                    "Unexpected closed wait success");
         }
     }
 }

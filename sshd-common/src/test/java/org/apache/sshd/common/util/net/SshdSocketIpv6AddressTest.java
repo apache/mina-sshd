@@ -24,25 +24,18 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SshdSocketIpv6AddressTest extends JUnitTestSupport {
     public static final List<String> VALID_ADDRESSES = Collections.unmodifiableList(
             Arrays.asList(
@@ -56,15 +49,14 @@ public class SshdSocketIpv6AddressTest extends JUnitTestSupport {
                     "fe80::1ff:fe23:4567:890a%3", "fe80:3::1ff:fe23:4567:890a",
                     "::ffff:c000:0280", "::ffff:192.0.2.128"));
 
-    private final String address;
-    private final boolean matches;
+    private String address;
+    private boolean matches;
 
-    public SshdSocketIpv6AddressTest(String address, boolean matches) {
+    public void initSshdSocketIpv6AddressTest(String address, boolean matches) {
         this.address = address;
         this.matches = matches;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return Stream
                 .concat(SshdSocketAddress.WELL_KNOWN_IPV6_ADDRESSES.stream(), VALID_ADDRESSES.stream())
@@ -72,8 +64,10 @@ public class SshdSocketIpv6AddressTest extends JUnitTestSupport {
                 .collect(Collectors.toList());
     }
 
-    @Test
-    public void testIPv6AddressValidity() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void iPv6AddressValidity(String address, boolean matches) {
+        initSshdSocketIpv6AddressTest(address, matches);
         assertEquals(address, matches, SshdSocketAddress.isIPv6Address(address));
     }
 

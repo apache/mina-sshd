@@ -42,18 +42,22 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SinglePublicKeyAuthTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
@@ -72,13 +76,13 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         kpGood = badKeys.loadKey(null, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
     }
 
-    @BeforeClass    // FIXME inexplicably these tests fail without BC since SSHD-1004
-    public static void ensureBouncycastleRegistered() {
-        Assume.assumeTrue("Requires BC security provider", SecurityUtils.isBouncyCastleRegistered());
+    @BeforeAll // FIXME inexplicably these tests fail without BC since SSHD-1004
+    static void ensureBouncycastleRegistered() {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "Requires BC security provider");
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestFullSupportServer();
         CoreModuleProperties.AUTH_METHODS.set(sshd, UserAuthPublicKeyFactory.NAME);
         sshd.setPublickeyAuthenticator((username, key, session) -> delegate.authenticate(username, key, session));
@@ -86,15 +90,15 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         port = sshd.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
     }
 
     @Test
-    public void testPublicKeyAuthWithCache() throws Exception {
+    void publicKeyAuthWithCache() throws Exception {
         ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
         TestCachingPublicKeyAuthenticator auth = new TestCachingPublicKeyAuthenticator((username, key, session) -> {
             String fp = KeyUtils.getFingerPrint(key);
@@ -113,20 +117,20 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
                 session.addPublicKeyIdentity(kpGood);
                 session.auth().verify(AUTH_TIMEOUT);
 
-                assertEquals("Mismatched authentication invocations count", 2, count.size());
+                assertEquals(2, count.size(), "Mismatched authentication invocations count");
 
                 Map<Session, Map<PublicKey, Boolean>> cache = auth.getCache();
-                assertEquals("Mismatched cache size", 1, cache.size());
+                assertEquals(1, cache.size(), "Mismatched cache size");
 
                 String fpBad = KeyUtils.getFingerPrint(kpBad.getPublic());
                 AtomicInteger badCounter = count.get(fpBad);
-                assertNotNull("Missing bad public key", badCounter);
-                assertEquals("Mismatched bad key authentication attempts", 1, badCounter.get());
+                assertNotNull(badCounter, "Missing bad public key");
+                assertEquals(1, badCounter.get(), "Mismatched bad key authentication attempts");
 
                 String fpGood = KeyUtils.getFingerPrint(kpGood.getPublic());
                 AtomicInteger goodCounter = count.get(fpGood);
-                assertNotNull("Missing good public key", goodCounter);
-                assertEquals("Mismatched good key authentication attempts", 1, goodCounter.get());
+                assertNotNull(goodCounter, "Missing good public key");
+                assertEquals(1, goodCounter.get(), "Mismatched good key authentication attempts");
             } finally {
                 client.stop();
             }
@@ -134,7 +138,7 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
     }
 
     @Test
-    public void testPublicKeyAuthWithoutCache() throws Exception {
+    void publicKeyAuthWithoutCache() throws Exception {
         ConcurrentHashMap<String, AtomicInteger> count = new ConcurrentHashMap<>();
         delegate = (username, key, session) -> {
             String fp = KeyUtils.getFingerPrint(key);
@@ -152,24 +156,24 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
                 session.addPublicKeyIdentity(kpGood);
 
                 AuthFuture auth = session.auth();
-                assertTrue("Failed to authenticate on time", auth.await(AUTH_TIMEOUT));
-                assertTrue("Authentication failed", auth.isSuccess());
+                assertTrue(auth.await(AUTH_TIMEOUT), "Failed to authenticate on time");
+                assertTrue(auth.isSuccess(), "Authentication failed");
             } finally {
                 client.stop();
             }
         }
 
-        assertEquals("Mismatched attempted keys count", 2, count.size());
+        assertEquals(2, count.size(), "Mismatched attempted keys count");
 
         String badFingerPrint = KeyUtils.getFingerPrint(kpBad.getPublic());
         Number badIndex = count.get(badFingerPrint);
-        assertNotNull("Missing bad key", badIndex);
-        assertEquals("Mismatched attempt index for bad key", 1, badIndex.intValue());
+        assertNotNull(badIndex, "Missing bad key");
+        assertEquals(1, badIndex.intValue(), "Mismatched attempt index for bad key");
 
         String goodFingerPrint = KeyUtils.getFingerPrint(kpGood.getPublic());
         Number goodIndex = count.get(goodFingerPrint);
-        assertNotNull("Missing good key", goodIndex);
-        assertEquals("Mismatched attempt index for good key", 2, goodIndex.intValue());
+        assertNotNull(goodIndex, "Missing good key");
+        assertEquals(2, goodIndex.intValue(), "Mismatched attempt index for good key");
     }
 
     public static class TestCachingPublicKeyAuthenticator extends CachingPublicKeyAuthenticator {

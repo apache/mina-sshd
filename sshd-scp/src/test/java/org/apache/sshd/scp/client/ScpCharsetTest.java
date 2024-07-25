@@ -31,18 +31,21 @@ import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpException;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.ContainerTestCase;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Tests transferring a file named "äöü.txt" via SCP from a container that uses ISO-8859-15 as locale. The UTF-8 and
@@ -51,15 +54,16 @@ import org.testcontainers.utility.MountableFile;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Category(ContainerTestCase.class)
+@Tag("ContainerTestCase")
+@Testcontainers
 public class ScpCharsetTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScpCharsetTest.class);
 
     private static final String TEST_RESOURCES = "org/apache/sshd/scp/client";
 
-    @Rule
-    public GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
+    @Container
+    GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
             // Alpine would be smaller and start faster, but it has no locales.
             .withDockerfileFromBuilder(builder -> builder.from("ubuntu:20.04") //
                     .run("apt-get update && apt-get install -y locales openssh-server") //
@@ -78,15 +82,15 @@ public class ScpCharsetTest extends BaseTestSupport {
             .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1)).withExposedPorts(22) //
             .withLogConsumer(new Slf4jLogConsumer(LOG));
 
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
+    @TempDir
+    File tmp;
 
     public ScpCharsetTest() {
         super();
     }
 
     @Test
-    public void testIsoLatin1() throws Exception {
+    void isoLatin1() throws Exception {
         FileKeyPairProvider keyPairProvider = CommonTestSupportUtils.createTestKeyPairProvider(TEST_RESOURCES + "/bob_key");
         SshClient client = setupTestClient();
         client.setKeyIdentityProvider(keyPairProvider);
@@ -99,25 +103,27 @@ public class ScpCharsetTest extends BaseTestSupport {
                 session.auth().verify(AUTH_TIMEOUT);
                 ScpClientCreator.instance();
                 ScpClient scpClient = ScpClientCreator.instance().createScpClient(session);
-                File file1 = new File(tmp.getRoot(), "file1.txt");
+                File file1 = new File(tmp, "file1.txt");
                 scpClient.download("file1.txt", file1.getAbsolutePath());
-                assertEquals("Unexpected content in file1.txt -> file1.txt", "test1\n",
-                        new String(Files.readAllBytes(file1.toPath()), StandardCharsets.UTF_8));
-                File file2 = new File(tmp.getRoot(), "file2.txt");
+                assertEquals("test1\n",
+                        new String(Files.readAllBytes(file1.toPath()), StandardCharsets.UTF_8),
+                        "Unexpected content in file1.txt -> file1.txt");
+                File file2 = new File(tmp, "file2.txt");
                 // Somehow there's only a WARNING in the log? Maybe the exit code is handled wrongly... (1 is taken as a
                 // warning, but for exit codes, probably any non-zero value is an error?) In any case this should fail;
                 // we should not have a "file2" afterwards.
                 try {
                     scpClient.download("äöü.txt", file2.getAbsolutePath());
-                    assertFalse("No file2.txt expected", file2.exists());
+                    assertFalse(file2.exists(), "No file2.txt expected");
                 } catch (NoSuchFileException | FileNotFoundException | ScpException e) {
                     LOG.info("Expected failure for UTF-8 äöü: {}", e.toString());
                 }
                 // But this should work: (The container uses ISO-8859-15, but the only difference is the Euro sign.)
                 ScpModuleProperties.SCP_OUTGOING_ENCODING.set(session, StandardCharsets.ISO_8859_1);
                 scpClient.download("äöü.txt", file2.getAbsolutePath());
-                assertEquals("Unexpected content in file äöü.txt -> file2.txt", "test2\n",
-                        new String(Files.readAllBytes(file2.toPath()), StandardCharsets.UTF_8));
+                assertEquals("test2\n",
+                        new String(Files.readAllBytes(file2.toPath()), StandardCharsets.UTF_8),
+                        "Unexpected content in file äöü.txt -> file2.txt");
             }
         } finally {
             client.stop();

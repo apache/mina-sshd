@@ -57,18 +57,22 @@ import org.apache.sshd.util.test.AsyncEchoShellFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class WindowTest extends BaseTestSupport {
 
     private SshServer sshd;
@@ -81,8 +85,8 @@ public class WindowTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
 
@@ -133,8 +137,8 @@ public class WindowTest extends BaseTestSupport {
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -144,7 +148,7 @@ public class WindowTest extends BaseTestSupport {
     }
 
     @Test
-    public void testWindowConsumptionWithInvertedStreams() throws Exception {
+    void windowConsumptionWithInvertedStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
         CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
         CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
@@ -179,13 +183,13 @@ public class WindowTest extends BaseTestSupport {
                             writer.write("\n");
                             writer.flush();
 
-                            assertTrue("Client remote window should have changed",
-                                    clientRemote.getSize() != clientRemoteSize);
+                            assertTrue(clientRemote.getSize() != clientRemoteSize,
+                                    "Client remote window should have changed");
                             waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
                                     TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
-                            assertEquals("Mismatched message at line #" + i, message, line);
+                            assertEquals(message, line, "Mismatched message at line #" + i);
 
                             waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
                                     TimeUnit.SECONDS.toMillis(3L));
@@ -201,7 +205,7 @@ public class WindowTest extends BaseTestSupport {
     }
 
     @Test
-    public void testWindowConsumptionWithDirectStreams() throws Exception {
+    void windowConsumptionWithDirectStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
         CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
         CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
@@ -246,7 +250,7 @@ public class WindowTest extends BaseTestSupport {
                                     TimeUnit.SECONDS.toMillis(3L));
 
                             String line = reader.readLine();
-                            assertEquals("Mismatched message at line #" + i, message, line);
+                            assertEquals(message, line, "Mismatched message at line #" + i);
 
                             waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
                                     TimeUnit.SECONDS.toMillis(3L));
@@ -262,7 +266,7 @@ public class WindowTest extends BaseTestSupport {
     }
 
     @Test
-    public void testWindowConsumptionWithAsyncStreams() throws Exception {
+    void windowConsumptionWithAsyncStreams() throws Exception {
         sshd.setShellFactory(new AsyncEchoShellFactory());
         CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
         CoreModuleProperties.WINDOW_SIZE.set(client, 1024L);
@@ -295,17 +299,18 @@ public class WindowTest extends BaseTestSupport {
                         Buffer buffer = new ByteArrayBuffer(bytes);
                         output.writeBuffer(buffer).verify(DEFAULT_TIMEOUT);
 
-                        assertTrue("Client remote window should have changed",
-                                clientRemote.getSize() != clientRemoteSize);
+                        assertTrue(clientRemote.getSize() != clientRemoteSize,
+                                "Client remote window should have changed");
                         waitForWindowEquals(clientRemote, serverLocal, "client remote", "server local",
                                 TimeUnit.SECONDS.toMillis(3L));
 
                         Buffer buf = new ByteArrayBuffer(16);
                         IoReadFuture future = input.read(buf);
                         future.verify(DEFAULT_TIMEOUT);
-                        assertEquals("Mismatched available data at line #" + i, message.length(), buf.available());
-                        assertEquals("Mismatched data at line #" + i, message,
-                                new String(buf.array(), buf.rpos(), buf.available(), StandardCharsets.UTF_8));
+                        assertEquals(message.length(), buf.available(), "Mismatched available data at line #" + i);
+                        assertEquals(message,
+                                new String(buf.array(), buf.rpos(), buf.available(), StandardCharsets.UTF_8),
+                                "Mismatched data at line #" + i);
 
                         waitForWindowEquals(clientLocal, serverRemote, "client local", "server remote",
                                 TimeUnit.SECONDS.toMillis(3L));
@@ -334,7 +339,7 @@ public class WindowTest extends BaseTestSupport {
         }
 
         // one last chance ...
-        assertNotEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
+        assertNotEquals(w1.getSize(), w2.getSize(), n1 + " and " + n2);
     }
 
     private static void waitForWindowEquals(Window w1, Window w2, String n1, String n2, long maxWait)
@@ -352,7 +357,7 @@ public class WindowTest extends BaseTestSupport {
         }
 
         // one last chance ...
-        assertEquals(n1 + " and " + n2, w1.getSize(), w2.getSize());
+        assertEquals(w1.getSize(), w2.getSize(), n1 + " and " + n2);
     }
 
     public static class TestEchoShellFactory extends EchoShellFactory {

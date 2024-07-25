@@ -35,23 +35,26 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class LazyMatchingTypeIteratorTest extends JUnitTestSupport {
     public LazyMatchingTypeIteratorTest() {
         super();
     }
 
     @Test
-    public void testLazySelectMatchingTypes() {
+    void lazySelectMatchingTypes() {
         Collection<String> strings = Arrays.asList(
                 getCurrentTestName(),
                 getClass().getSimpleName(),
@@ -90,8 +93,8 @@ public class LazyMatchingTypeIteratorTest extends JUnitTestSupport {
             Set<?> expected = (type == String.class) ? new HashSet<>(strings) : new HashSet<>(times);
             for (int c = 1; lazy.hasNext(); c++) {
                 Object o = lazy.next();
-                assertEquals("Mismatched match count for " + o, c, matchCount.get());
-                assertTrue("Unexpected value: " + o, expected.remove(o));
+                assertEquals(c, matchCount.get(), "Mismatched match count for " + o);
+                assertTrue(expected.remove(o), "Unexpected value: " + o);
             }
         }
     }

@@ -31,24 +31,27 @@ import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class CloseableUtilsTest extends JUnitTestSupport {
     public CloseableUtilsTest() {
         super();
     }
 
     @Test
-    public void testCloseImmediateNotCalledIfAlreadyClosed() throws IOException {
+    void closeImmediateNotCalledIfAlreadyClosed() throws IOException {
         Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
@@ -80,7 +83,7 @@ public class CloseableUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCloseImmediateNotCalledIfIsClosing() throws IOException {
+    void closeImmediateNotCalledIfIsClosing() throws IOException {
         Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
@@ -112,14 +115,14 @@ public class CloseableUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCloseImmediateCalledAndWait() throws Exception {
+    void closeImmediateCalledAndWait() throws Exception {
         DefaultCloseFuture future = new DefaultCloseFuture(this, this);
         AtomicInteger callsCount = new AtomicInteger(0);
         Closeable closeable = new IoBaseCloseable() {
             @Override
             public CloseFuture close(boolean immediately) {
-                assertTrue("Closure is not immediate", immediately);
-                assertEquals("Multiple close immediate calls", 1, callsCount.incrementAndGet());
+                assertTrue(immediately, "Closure is not immediate");
+                assertEquals(1, callsCount.incrementAndGet(), "Multiple close immediate calls");
                 return future;
             }
 
@@ -155,7 +158,7 @@ public class CloseableUtilsTest extends JUnitTestSupport {
             });
             future.setClosed(); // signal close complete
             task.get(5L, TimeUnit.SECONDS); // make sure #await call terminated
-            assertEquals("Close immediate not called", 1, callsCount.get());
+            assertEquals(1, callsCount.get(), "Close immediate not called");
         } finally {
             service.shutdownNow();
         }

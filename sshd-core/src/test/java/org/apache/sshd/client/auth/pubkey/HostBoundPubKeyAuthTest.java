@@ -28,22 +28,21 @@ import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.ContainerTestCase;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@Category(ContainerTestCase.class)
+@Tag("ContainerTestCase")
+@Testcontainers
 public class HostBoundPubKeyAuthTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(HostBoundPubKeyAuthTest.class);
@@ -57,8 +56,8 @@ public class HostBoundPubKeyAuthTest extends BaseTestSupport {
             Pattern.compile("\n.*debug2: userauth_pubkey: valid user bob attempting public key.*"
                             + "\r?\n.*debug3: userauth_pubkey: publickey-hostbound-v00@openssh.com have");
 
-    @Rule
-    public GenericContainer<?> sshdContainer = new GenericContainer<>(
+    @Container
+    GenericContainer<?> sshdContainer = new GenericContainer<>(
             new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.16")
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.0
                     .run("ssh-keygen -A") // Generate multiple host keys
@@ -78,13 +77,12 @@ public class HostBoundPubKeyAuthTest extends BaseTestSupport {
             .withExposedPorts(22) //
             .withLogConsumer(new Slf4jLogConsumer(LOG));
 
-    private final String privateKeyName;
+    private String privateKeyName;
 
-    public HostBoundPubKeyAuthTest(String privateKeyName) {
+    public void initHostBoundPubKeyAuthTest(String privateKeyName) {
         this.privateKeyName = privateKeyName;
     }
 
-    @Parameterized.Parameters(name = "{0}")
     public static Iterable<? extends String> privateKeyParams() {
         return Arrays.asList( //
                 "user01_rsa_sha2_512_2048", //
@@ -101,11 +99,13 @@ public class HostBoundPubKeyAuthTest extends BaseTestSupport {
 
     private void checkLog(String logs) {
         Matcher m = EXPECTED_LOG_ENTRY.matcher(logs);
-        assertTrue("Expected server log message not found", m.find());
+        assertTrue(m.find(), "Expected server log message not found");
     }
 
-    @Test
-    public void testPubkeyAuth() throws Exception {
+    @MethodSource("privateKeyParams")
+    @ParameterizedTest(name = "{0}")
+    public void pubkeyAuth(String privateKeyName) throws Exception {
+        initHostBoundPubKeyAuthTest(privateKeyName);
         FileKeyPairProvider keyPairProvider = CommonTestSupportUtils.createTestKeyPairProvider(getPrivateKeyResource());
         SshClient client = setupTestClient();
         client.setKeyIdentityProvider(keyPairProvider);

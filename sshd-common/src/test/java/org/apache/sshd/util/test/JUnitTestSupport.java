@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.LinkOption;
@@ -62,11 +63,10 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Rule;
-import org.junit.rules.TestName;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.TestInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -76,8 +76,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@RunWith(JUnit4SingleInstanceClassRunner.class)
-public abstract class JUnitTestSupport extends Assert {
+public abstract class JUnitTestSupport extends Assertions {
     public static final String TEMP_SUBFOLDER_NAME = "temp";
     public static final boolean OUTPUT_DEBUG_MESSAGES
             = Boolean.parseBoolean(System.getProperty("org.apache.sshd.test.outputDebugMessages", "false"));
@@ -92,8 +91,7 @@ public abstract class JUnitTestSupport extends Assert {
     public static final List<Integer> RSA_SIZES = Collections.unmodifiableList(Arrays.asList(1024, 2048, 3072, 4096));
     public static final List<Integer> ED25519_SIZES = Collections.unmodifiableList(Arrays.asList(256));
 
-    @Rule
-    public final TestName testNameHolder = new TestName();
+    protected String testNameHolder;
 
     private Path targetFolder;
     private Path tempFolder;
@@ -102,7 +100,7 @@ public abstract class JUnitTestSupport extends Assert {
         replaceJULLoggers();
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setupRootLoggerLevel() {
         String levelName = System.getProperty(
                 "org.apache.sshd.test.root.log.level", DEFAULT_LOGGING_LEVEL.toString());
@@ -140,7 +138,7 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     public final String getCurrentTestName() {
-        return testNameHolder.getMethodName();
+        return testNameHolder;
     }
 
     /**
@@ -324,7 +322,7 @@ public abstract class JUnitTestSupport extends Assert {
     /* ----------------------- Useful extra assertions --------------------- */
 
     public static void assertEquals(String message, boolean expected, boolean actual) {
-        assertEquals(message, Boolean.valueOf(expected), Boolean.valueOf(actual));
+        assertEquals(Boolean.valueOf(expected), Boolean.valueOf(actual), message);
     }
 
     public static <T> void assertEquals(String message, Iterable<? extends T> expected, Iterable<? extends T> actual) {
@@ -339,15 +337,15 @@ public abstract class JUnitTestSupport extends Assert {
         }
 
         for (int index = 0; expected.hasNext(); index++) {
-            assertTrue(message + "[next actual index=" + index + "]", actual.hasNext());
+            assertTrue(actual.hasNext(), message + "[next actual index=" + index + "]");
 
             T expValue = expected.next();
             T actValue = actual.next();
-            assertEquals(message + "[iterator index=" + index + "]", expValue, actValue);
+            assertEquals(expValue, actValue, message + "[iterator index=" + index + "]");
         }
 
         // once expected is exhausted make sure no more actual items left
-        assertFalse(message + "[non-empty-actual]", actual.hasNext());
+        assertFalse(actual.hasNext(), message + "[non-empty-actual]");
     }
 
     public static <T> void assertFieldsEqual(String extension, T expected, T actual) throws Exception {
@@ -361,13 +359,13 @@ public abstract class JUnitTestSupport extends Assert {
 
             Object expValue = f.get(expected);
             Object actValue = f.get(actual);
-            assertEquals(extension + "[" + name + "]", expValue, actValue);
+            assertEquals(expValue, actValue, extension + "[" + name + "]");
         }
     }
 
     public static Path assertHierarchyTargetFolderExists(Path folder, LinkOption... options) throws IOException {
         if (Files.exists(folder, options)) {
-            assertTrue("Target is an existing file instead of a folder: " + folder, Files.isDirectory(folder, options));
+            assertTrue(Files.isDirectory(folder, options), "Target is an existing file instead of a folder: " + folder);
         } else {
             Files.createDirectories(folder);
         }
@@ -377,7 +375,7 @@ public abstract class JUnitTestSupport extends Assert {
 
     public static void assertFileContentsEquals(String prefix, Path expected, Path actual) throws IOException {
         long cmpSize = Files.size(expected);
-        assertEquals(prefix + ": Mismatched file size", cmpSize, Files.size(expected));
+        assertEquals(cmpSize, Files.size(expected), prefix + ": Mismatched file size");
 
         try (InputStream expStream = Files.newInputStream(expected);
              InputStream actStream = Files.newInputStream(actual)) {
@@ -389,8 +387,8 @@ public abstract class JUnitTestSupport extends Assert {
                 int expLen = expStream.read(expData);
                 Arrays.fill(actData, (byte) 0);
                 int actLen = actStream.read(actData);
-                assertEquals(prefix + ": Mismatched read size at offset=" + offset, expLen, actLen);
-                assertArrayEquals(prefix + ": Mismatched data at offset=" + offset, expData, actData);
+                assertEquals(expLen, actLen, prefix + ": Mismatched read size at offset=" + offset);
+                assertArrayEquals(expData, actData, prefix + ": Mismatched data at offset=" + offset);
 
                 offset += expLen;
             }
@@ -399,16 +397,16 @@ public abstract class JUnitTestSupport extends Assert {
 
     public static File assertHierarchyTargetFolderExists(File folder) {
         if (folder.exists()) {
-            assertTrue("Target is an existing file instead of a folder: " + folder.getAbsolutePath(), folder.isDirectory());
+            assertTrue(folder.isDirectory(), "Target is an existing file instead of a folder: " + folder.getAbsolutePath());
         } else {
-            assertTrue("Failed to create hierarchy of " + folder.getAbsolutePath(), folder.mkdirs());
+            assertTrue(folder.mkdirs(), "Failed to create hierarchy of " + folder.getAbsolutePath());
         }
 
         return folder;
     }
 
     public static <T> T assertObjectInstanceOf(String message, Class<? extends T> expected, Object obj) {
-        assertNotNull(message + " - no actual object", obj);
+        assertNotNull(obj, message + " - no actual object");
 
         Class<?> actual = obj.getClass();
         if (!expected.isAssignableFrom(actual)) {
@@ -427,7 +425,7 @@ public abstract class JUnitTestSupport extends Assert {
             String message, List<? extends E> expected, List<? extends E> actual, BiPredicate<? super E, ? super E> equator) {
         int expSize = GenericUtils.size(expected);
         int actSize = GenericUtils.size(actual);
-        assertEquals(message + "[size]", expSize, actSize);
+        assertEquals(expSize, actSize, message + "[size]");
 
         for (int index = 0; index < expSize; index++) {
             E expValue = expected.get(index);
@@ -447,7 +445,7 @@ public abstract class JUnitTestSupport extends Assert {
             String message, Map<? extends K, ? extends V> expected, Map<? super K, ? extends V> actual,
             BiPredicate<? super V, ? super V> equator) {
         int numItems = MapEntryUtils.size(expected);
-        assertEquals(message + "[size]", numItems, MapEntryUtils.size(actual));
+        assertEquals(numItems, MapEntryUtils.size(actual), message + "[size]");
 
         if (numItems > 0) {
             expected.forEach((key, expValue) -> {
@@ -469,14 +467,14 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[format]", expected.getFormat(), actual.getFormat());
-        assertArrayEquals(message + "[encoded-data]", expected.getEncoded(), actual.getEncoded());
+        assertEquals(expected.getFormat(), actual.getFormat(), message + "[format]");
+        assertArrayEquals(expected.getEncoded(), actual.getEncoded(), message + "[encoded-data]");
     }
 
     public static <T extends Key> void assertKeyListEquals(
             String message, List<? extends T> expected, List<? extends T> actual) {
         int numKeys = GenericUtils.size(expected);
-        assertEquals(message + "[size]", numKeys, GenericUtils.size(actual));
+        assertEquals(numKeys, GenericUtils.size(actual), message + "[size]");
         if (numKeys <= 0) {
             return;
         }
@@ -491,9 +489,9 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[algorithm]",
-                resolveEffectiveAlgorithm(expected.getAlgorithm()),
-                resolveEffectiveAlgorithm(actual.getAlgorithm()));
+        assertEquals(resolveEffectiveAlgorithm(expected.getAlgorithm()),
+                resolveEffectiveAlgorithm(actual.getAlgorithm()),
+                message + "[algorithm]");
 
         if (expected instanceof RSAPublicKey) {
             assertRSAPublicKeyEquals(message, RSAPublicKey.class.cast(expected), RSAPublicKey.class.cast(actual));
@@ -511,10 +509,10 @@ public abstract class JUnitTestSupport extends Assert {
     }
 
     public static KeyPair validateKeyPairSignable(Object hint, KeyPair kp) throws Exception {
-        assertNotNull(hint + ": no key pair provided", kp);
+        assertNotNull(kp, hint + ": no key pair provided");
         Optional<Boolean> signable = CommonTestSupportUtils.verifySignatureMatch(kp);
         // if no result then assume "OK"
-        assertTrue(hint + ": Failed to validate signature", signable.orElse(Boolean.TRUE));
+        assertTrue(signable.orElse(Boolean.TRUE), hint + ": Failed to validate signature");
         return kp;
     }
 
@@ -533,8 +531,8 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[e]", expected.getPublicExponent(), actual.getPublicExponent());
-        assertEquals(message + "[n]", expected.getModulus(), actual.getModulus());
+        assertEquals(expected.getPublicExponent(), actual.getPublicExponent(), message + "[e]");
+        assertEquals(expected.getModulus(), actual.getModulus(), message + "[n]");
     }
 
     public static void assertDSAPublicKeyEquals(String message, DSAPublicKey expected, DSAPublicKey actual) {
@@ -542,7 +540,7 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[y]", expected.getY(), actual.getY());
+        assertEquals(expected.getY(), actual.getY(), message + "[y]");
         assertDSAParamsEquals(message + "[params]", expected.getParams(), actual.getParams());
     }
 
@@ -560,8 +558,8 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[d]", expected.getPrivateExponent(), actual.getPrivateExponent());
-        assertEquals(message + "[n]", expected.getModulus(), actual.getModulus());
+        assertEquals(expected.getPrivateExponent(), actual.getPrivateExponent(), message + "[d]");
+        assertEquals(expected.getModulus(), actual.getModulus(), message + "[n]");
     }
 
     public static void assertDSAPrivateKeyEquals(String message, DSAPrivateKey expected, DSAPrivateKey actual) {
@@ -569,7 +567,7 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[x]", expected.getX(), actual.getX());
+        assertEquals(expected.getX(), actual.getX(), message + "[x]");
         assertDSAParamsEquals(message + "[params]", expected.getParams(), actual.getParams());
     }
 
@@ -578,9 +576,9 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[g]", expected.getG(), actual.getG());
-        assertEquals(message + "[p]", expected.getP(), actual.getP());
-        assertEquals(message + "[q]", expected.getQ(), actual.getQ());
+        assertEquals(expected.getG(), actual.getG(), message + "[g]");
+        assertEquals(expected.getP(), actual.getP(), message + "[p]");
+        assertEquals(expected.getQ(), actual.getQ(), message + "[q]");
     }
 
     public static void assertECPrivateKeyEquals(String message, ECPrivateKey expected, ECPrivateKey actual) {
@@ -588,7 +586,7 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[S]", expected.getS(), actual.getS());
+        assertEquals(expected.getS(), actual.getS(), message + "[S]");
         assertECParameterSpecEquals(message, expected, actual);
     }
 
@@ -604,8 +602,8 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[order]", expected.getOrder(), actual.getOrder());
-        assertEquals(message + "[cofactor]", expected.getCofactor(), actual.getCofactor());
+        assertEquals(expected.getOrder(), actual.getOrder(), message + "[order]");
+        assertEquals(expected.getCofactor(), actual.getCofactor(), message + "[cofactor]");
         assertECPointEquals(message + "[generator]", expected.getGenerator(), actual.getGenerator());
         assertCurveEquals(message + "[curve]", expected.getCurve(), actual.getCurve());
     }
@@ -615,9 +613,9 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[A]", expected.getA(), actual.getA());
-        assertEquals(message + "[B]", expected.getB(), actual.getB());
-        assertArrayEquals(message + "[seed]", expected.getSeed(), actual.getSeed());
+        assertEquals(expected.getA(), actual.getA(), message + "[A]");
+        assertEquals(expected.getB(), actual.getB(), message + "[B]");
+        assertArrayEquals(expected.getSeed(), actual.getSeed(), message + "[seed]");
         assertECFieldEquals(message + "[field]", expected.getField(), actual.getField());
     }
 
@@ -626,7 +624,7 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[size]", expected.getFieldSize(), actual.getFieldSize());
+        assertEquals(expected.getFieldSize(), actual.getFieldSize(), message + "[size]");
     }
 
     public static void assertECPointEquals(String message, ECPoint expected, ECPoint actual) {
@@ -634,8 +632,8 @@ public abstract class JUnitTestSupport extends Assert {
             return;
         }
 
-        assertEquals(message + "[x]", expected.getAffineX(), actual.getAffineX());
-        assertEquals(message + "[y]", expected.getAffineY(), actual.getAffineY());
+        assertEquals(expected.getAffineX(), actual.getAffineX(), message + "[x]");
+        assertEquals(expected.getAffineY(), actual.getAffineY(), message + "[y]");
     }
 
     public static void assertFileLength(File file, long length, long timeout) throws Exception {
@@ -662,8 +660,8 @@ public abstract class JUnitTestSupport extends Assert {
         if (waitForFile(file, length, timeout)) {
             return;
         }
-        assertTrue("File not found: " + file, Files.exists(file));
-        assertEquals("Mismatched file size for " + file, length, Files.size(file));
+        assertTrue(Files.exists(file), "File not found: " + file);
+        assertEquals(length, Files.size(file), "Mismatched file size for " + file);
     }
 
     public static boolean waitForFile(Path file, long length, Duration timeout) throws Exception {
@@ -723,6 +721,14 @@ public abstract class JUnitTestSupport extends Assert {
             // add SLF4JBridgeHandler to j.u.l's root logger, should be done once during
             // the initialization phase of your application
             SLF4JBridgeHandler.install();
+        }
+    }
+
+    @BeforeEach
+    public void setup(TestInfo testInfo) {
+        Optional<Method> testMethod = testInfo.getTestMethod();
+        if (testMethod.isPresent()) {
+            this.testNameHolder = testMethod.get().getName();
         }
     }
 }

@@ -37,35 +37,34 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeRes
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
     public static final String PASSWORD = "super secret passphrase";
 
-    private final String resourceName;
-    private final ResourceDecodeResult result;
-    private final FilePasswordProvider passwordProvider;
+    private String resourceName;
+    private ResourceDecodeResult result;
+    private FilePasswordProvider passwordProvider;
     private final AtomicInteger retriesCount = new AtomicInteger(0);
     private final int maxRetries = 3;
 
-    public PGPKeyPairResourceParserTest(String resourceName, ResourceDecodeResult result, String password) {
+    public void initPGPKeyPairResourceParserTest(String resourceName, ResourceDecodeResult result, String password) {
         this.resourceName = resourceName;
         this.result = result;
         this.passwordProvider = new FilePasswordProvider() {
@@ -75,12 +74,12 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
                 switch (result) {
                     case IGNORE:
                     case TERMINATE:
-                        assertEquals("Mismatched retries invocation count", 0, retryIndex);
-                        assertEquals("Mismatched retries tracking count", retryIndex, retriesCount.get());
+                        assertEquals(0, retryIndex, "Mismatched retries invocation count");
+                        assertEquals(retryIndex, retriesCount.get(), "Mismatched retries tracking count");
                         return "qwertyuiop123456!@#$%^";
                     case RETRY: {
                         int count = retriesCount.incrementAndGet();
-                        assertEquals("Mismatched retries count", count, retryIndex + 1);
+                        assertEquals(count, retryIndex + 1, "Mismatched retries count");
                         if (count == maxRetries) {
                             return PASSWORD;
                         } else {
@@ -117,7 +116,6 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         };
     }
 
-    @Parameters(name = "{0} / {1}")
     public static List<Object[]> parameters() {
         return Collections.unmodifiableList(new ArrayList<Object[]>() {
             // Not serializing it
@@ -138,10 +136,12 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         });
     }
 
-    @Test
-    public void testDecodePrivateKeyPair() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0} / {1}")
+    public void decodePrivateKeyPair(String resourceName, ResourceDecodeResult result, String password) throws IOException {
+        initPGPKeyPairResourceParserTest(resourceName, result, password);
         InputStream stream = getClass().getResourceAsStream(resourceName);
-        assertNotNull("Missing " + resourceName, stream);
+        assertNotNull(stream, "Missing " + resourceName);
 
         Collection<KeyPair> keys;
         try {
@@ -158,11 +158,11 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
 
         switch (result) {
             case IGNORE:
-                assertTrue("Unexpected keys recovered", GenericUtils.isEmpty(keys));
+                assertTrue(GenericUtils.isEmpty(keys), "Unexpected keys recovered");
                 return;
 
             case RETRY:
-                assertFalse("No keys recovered", GenericUtils.isEmpty(keys));
+                assertFalse(GenericUtils.isEmpty(keys), "No keys recovered");
                 break;
 
             case TERMINATE: // fall through...
@@ -173,16 +173,16 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         for (KeyPair kp : keys) {
             PublicKey pubKey = kp.getPublic();
             PrivateKey prvKey = kp.getPrivate();
-            assertNotNull("No public key for private=" + prvKey, pubKey);
-            assertNotNull("No private key for public=" + pubKey, prvKey);
+            assertNotNull(pubKey, "No public key for private=" + prvKey);
+            assertNotNull(prvKey, "No private key for public=" + pubKey);
 
             String pubType = KeyUtils.getKeyType(pubKey);
             String prvType = KeyUtils.getKeyType(prvKey);
-            assertEquals("Mismatched public/private key types", pubType, prvType);
+            assertEquals(pubType, prvType, "Mismatched public/private key types");
 
             int pubSize = KeyUtils.getKeySize(pubKey);
             int prvSize = KeyUtils.getKeySize(prvKey);
-            assertEquals("Mismatched public/private key size", pubSize, prvSize);
+            assertEquals(pubSize, prvSize, "Mismatched public/private key size");
         }
     }
 

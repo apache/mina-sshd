@@ -23,31 +23,33 @@ import java.io.File;
 import java.nio.file.Path;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PathUtilsTest extends JUnitTestSupport {
     public PathUtilsTest() {
         super();
     }
 
     @Test
-    public void testNormalizeUserHomeOnlyPath() {
+    void normalizeUserHomeOnlyPath() {
         Path expected = PathUtils.getUserHomeFolder();
         String actual = PathUtils.normalizePath(Character.toString(PathUtils.HOME_TILDE_CHAR));
         assertEquals(expected.toString(), actual);
     }
 
     @Test
-    public void testNormalizeLeadingUserHomePath() {
+    void normalizeLeadingUserHomePath() {
         Path expected = PathUtils.getUserHomeFolder()
                 .resolve(getClass().getSimpleName())
                 .resolve(getCurrentTestName());
@@ -58,14 +60,14 @@ public class PathUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testNormalizeStandardPath() {
+    void normalizeStandardPath() {
         String expected = detectTargetFolder().toString();
         String actual = PathUtils.normalizePath(expected);
         assertSame(expected, actual);
     }
 
     @Test
-    public void testNormalizeForwardSlash() {
+    void normalizeForwardSlash() {
         String expected = detectTargetFolder().toString();
         String actual = PathUtils.normalizePath(expected.replace(File.separatorChar, '/'));
         if (File.separatorChar == '/') {

@@ -34,7 +34,10 @@ import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.Assume;
+import org.junit.jupiter.api.Assumptions;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * TODO Add javadoc
@@ -47,14 +50,14 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
     protected static final FilePasswordProvider DEFAULT_PASSWORD_PROVIDER = FilePasswordProvider.of(PASSWORD);
     protected static final String ENCRYPTED_RESOURCE_PREFIX = "encrypted";
 
-    protected final BuiltinIdentities identity;
+    protected BuiltinIdentities identity;
 
-    protected OpenSSHKeyPairResourceParserTestSupport(BuiltinIdentities identity) {
+    protected void setIdentity(BuiltinIdentities identity) {
         this.identity = identity;
     }
 
     protected void testLoadKeyPairs(boolean encrypted, FilePasswordProvider passwordProvider) throws Exception {
-        Assume.assumeTrue(identity + " not supported", identity.isSupported());
+        Assumptions.assumeTrue(identity.isSupported(), identity + " not supported");
 
         String resourceKey = identity.getName().toUpperCase() + "-" + KeyPair.class.getSimpleName();
         if (encrypted) {
@@ -63,10 +66,11 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
 
         URL urlKeyPair = getClass().getResource(resourceKey);
         if (encrypted) {
-            Assume.assumeTrue(identity + " no encrypted test data", urlKeyPair != null);
-            Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
+            Assumptions.assumeTrue(urlKeyPair != null, identity + " no encrypted test data");
+            Assumptions.assumeTrue(BuiltinCiphers.aes256cbc.isSupported(),
+                    BuiltinCiphers.aes256cbc.getTransformation() + " N/A");
         } else {
-            assertNotNull("Missing key-pair resource: " + resourceKey, urlKeyPair);
+            assertNotNull(urlKeyPair, "Missing key-pair resource: " + resourceKey);
         }
 
         Collection<KeyPair> pairs;
@@ -82,15 +86,15 @@ public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestS
         }
 
         URL urlPubKey = getClass().getResource(resourceKey + PublicKeyEntry.PUBKEY_FILE_SUFFIX);
-        assertNotNull("Missing public key resource: " + resourceKey, urlPubKey);
+        assertNotNull(urlPubKey, "Missing public key resource: " + resourceKey);
 
         List<AuthorizedKeyEntry> entries = AuthorizedKeyEntry.readAuthorizedKeys(urlPubKey);
-        assertEquals("Mismatched public keys count", 1, GenericUtils.size(entries));
+        assertEquals(1, GenericUtils.size(entries), "Mismatched public keys count");
 
         AuthorizedKeyEntry entry = entries.get(0);
         PublicKey pubEntry = entry.resolvePublicKey(
                 null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
-        assertNotNull("Cannot retrieve public key", pubEntry);
+        assertNotNull(pubEntry, "Cannot retrieve public key");
 
         testLoadKeyPairs(encrypted, resourceKey, pairs, pubEntry);
     }

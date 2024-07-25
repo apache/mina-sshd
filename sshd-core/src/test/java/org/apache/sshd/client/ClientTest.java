@@ -129,20 +129,31 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ClientTest extends BaseTestSupport {
 
     private SshServer sshd;
@@ -158,31 +169,31 @@ public class ClientTest extends BaseTestSupport {
         @Override
         public void sessionCreated(Session session) {
             assertObjectInstanceOf("Non client session creation notification", ClientSession.class, session);
-            assertNull("Multiple creation notifications", clientSessionHolder.getAndSet((ClientSession) session));
+            assertNull(clientSessionHolder.getAndSet((ClientSession) session), "Multiple creation notifications");
         }
 
         @Override
         public void sessionEvent(Session session, Event event) {
             assertObjectInstanceOf("Non client session event notification: " + event, ClientSession.class, session);
-            assertSame("Mismatched client session event instance: " + event, clientSessionHolder.get(), session);
+            assertSame(clientSessionHolder.get(), session, "Mismatched client session event instance: " + event);
         }
 
         @Override
         public void sessionException(Session session, Throwable t) {
             assertObjectInstanceOf("Non client session exception notification", ClientSession.class, session);
-            assertNotNull("No session exception data", t);
+            assertNotNull(t, "No session exception data");
         }
 
         @Override
         public void sessionDisconnect(Session session, int reason, String msg, String language, boolean initiator) {
             assertObjectInstanceOf("Non client session exception notification", ClientSession.class, session);
-            assertTrue("Invalid reason code: " + reason, reason >= 0);
+            assertTrue(reason >= 0, "Invalid reason code: " + reason);
         }
 
         @Override
         public void sessionClosed(Session session) {
             assertObjectInstanceOf("Non client session closure notification", ClientSession.class, session);
-            assertSame("Mismatched client session closure instance", clientSessionHolder.getAndSet(null), session);
+            assertSame(clientSessionHolder.getAndSet(null), session, "Mismatched client session closure instance");
             sessionCloseLatch.countDown();
         }
     };
@@ -191,8 +202,8 @@ public class ClientTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         authLatch = new CountDownLatch(0);
         channelLatch = new CountDownLatch(0);
         sessionCloseLatch = new CountDownLatch(1);
@@ -246,8 +257,8 @@ public class ClientTest extends BaseTestSupport {
         client.addSessionListener(clientSessionListener);
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -258,19 +269,19 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientStartedIndicator() throws Exception {
+    void clientStartedIndicator() throws Exception {
         client.start();
         try {
-            assertTrue("Client not marked as started", client.isStarted());
+            assertTrue(client.isStarted(), "Client not marked as started");
         } finally {
             client.stop();
         }
 
-        assertFalse("Client not marked as stopped", client.isStarted());
+        assertFalse(client.isStarted(), "Client not marked as stopped");
     }
 
     @Test
-    public void testPropertyResolutionHierarchy() throws Exception {
+    void propertyResolutionHierarchy() throws Exception {
         String sessionPropName = getCurrentTestName() + "-session";
         AtomicReference<Object> sessionConfigValueHolder = new AtomicReference<>(null);
         client.addSessionListener(new SessionListener() {
@@ -327,22 +338,22 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertSame("Session established",
-                    sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName));
+            assertSame(sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName),
+                    "Session established");
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
-            assertSame("Session authenticated",
-                    sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName));
+            assertSame(sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(session, sessionPropName),
+                    "Session authenticated");
 
             try (ChannelExec channel = session.createExecChannel(getCurrentTestName());
                  OutputStream stdout = new NoCloseOutputStream(System.out);
                  OutputStream stderr = new NoCloseOutputStream(System.err)) {
-                assertSame("Channel created",
-                        channelConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, channelPropName));
-                assertNull("Direct channel created session prop",
-                        PropertyResolverUtils.getObject(channel.getProperties(), sessionPropName));
-                assertSame("Indirect channel created session prop",
-                        sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, sessionPropName));
+                assertSame(channelConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, channelPropName),
+                        "Channel created");
+                assertNull(PropertyResolverUtils.getObject(channel.getProperties(), sessionPropName),
+                        "Direct channel created session prop");
+                assertSame(sessionConfigValueHolder.get(), PropertyResolverUtils.getObject(channel, sessionPropName),
+                        "Indirect channel created session prop");
 
                 channel.setOut(stdout);
                 channel.setErr(stderr);
@@ -354,7 +365,7 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testClientStillActiveIfListenerExceptions() throws Exception {
+    void clientStillActiveIfListenerExceptions() throws Exception {
         Map<String, Long> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         Collection<String> failuresSet = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         Logger log = LoggerFactory.getLogger(getClass());
@@ -375,7 +386,7 @@ public class ClientTest extends BaseTestSupport {
 
                 String name = ((NamedResource) reason).getName();
                 synchronized (failuresSet) {
-                    assertTrue("Re-signalled failure location: " + name, failuresSet.add(name));
+                    assertTrue(failuresSet.add(name), "Re-signalled failure location: " + name);
                 }
             }
 
@@ -432,14 +443,14 @@ public class ClientTest extends BaseTestSupport {
                     outputDebugMessage("%s at retry #%d: %s", e.getClass().getSimpleName(), retryCount, e.getMessage());
                     synchronized (eventsMap) {
                         eventsMap.remove("Closed"); // since it is called anyway but does not cause an IOException
-                        assertTrue("Unexpected failure at retry #" + retryCount, eventsMap.size() < 3);
+                        assertTrue(eventsMap.size() < 3, "Unexpected failure at retry #" + retryCount);
                     }
                 } catch (ChannelFailureException e) {
-                    assertEquals("Mismatched failure reason", "Initialized", e.getMessage());
+                    assertEquals("Initialized", e.getMessage(), "Mismatched failure reason");
                 } catch (IllegalStateException e) {
                     // sometimes due to timing issues we get this problem
-                    assertTrue("Premature exception phase - count=" + retryCount, retryCount > 0);
-                    assertTrue("Session not closing", session.isClosing() || session.isClosed());
+                    assertTrue(retryCount > 0, "Premature exception phase - count=" + retryCount);
+                    assertTrue(session.isClosing() || session.isClosed(), "Session not closing");
                     log.warn("Session closing prematurely: " + session);
                     return;
                 }
@@ -448,27 +459,27 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
 
-        assertEquals("Mismatched total failures count on test end", 2, eventsMap.size());
-        assertEquals("Mismatched open failures count on test end: " + failuresSet, 1, failuresSet.size());
+        assertEquals(2, eventsMap.size(), "Mismatched total failures count on test end");
+        assertEquals(1, failuresSet.size(), "Mismatched open failures count on test end: " + failuresSet);
     }
 
     @Test
-    public void testSimpleClientListener() throws Exception {
+    void simpleClientListener() throws Exception {
         AtomicReference<Channel> channelHolder = new AtomicReference<>(null);
         client.addChannelListener(new ChannelListener() {
             @Override
             public void channelOpenSuccess(Channel channel) {
-                assertSame("Mismatched opened channel instances", channel, channelHolder.get());
+                assertSame(channel, channelHolder.get(), "Mismatched opened channel instances");
             }
 
             @Override
             public void channelOpenFailure(Channel channel, Throwable reason) {
-                assertSame("Mismatched failed open channel instances", channel, channelHolder.get());
+                assertSame(channel, channelHolder.get(), "Mismatched failed open channel instances");
             }
 
             @Override
             public void channelInitialized(Channel channel) {
-                assertNull("Multiple channel initialization notifications", channelHolder.getAndSet(channel));
+                assertNull(channelHolder.getAndSet(channel), "Multiple channel initialization notifications");
             }
 
             @Override
@@ -478,7 +489,7 @@ public class ClientTest extends BaseTestSupport {
 
             @Override
             public void channelClosed(Channel channel, Throwable reason) {
-                assertSame("Mismatched closed channel instances", channel, channelHolder.getAndSet(null));
+                assertSame(channel, channelHolder.getAndSet(null), "Mismatched closed channel instances");
             }
         });
 
@@ -507,7 +518,7 @@ public class ClientTest extends BaseTestSupport {
     private <C extends Closeable> void testClientListener(
             AtomicReference<Channel> channelHolder, Class<C> channelType, Factory<? extends C> factory)
             throws Exception {
-        assertNull(channelType.getSimpleName() + ": Unexpected currently active channel", channelHolder.get());
+        assertNull(channelHolder.get(), channelType.getSimpleName() + ": Unexpected currently active channel");
 
         try (C instance = factory.create()) {
             Channel expectedChannel;
@@ -520,14 +531,14 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Channel actualChannel = channelHolder.get();
-            assertSame("Mismatched listener " + channelType.getSimpleName() + " instances", expectedChannel, actualChannel);
+            assertSame(expectedChannel, actualChannel, "Mismatched listener " + channelType.getSimpleName() + " instances");
         }
 
-        assertNull(channelType.getSimpleName() + ": Active channel closure not signalled", channelHolder.get());
+        assertNull(channelHolder.get(), channelType.getSimpleName() + ": Active channel closure not signalled");
     }
 
     @Test
-    public void testAsyncClient() throws Exception {
+    void asyncClient() throws Exception {
         CoreModuleProperties.WINDOW_SIZE.set(sshd, 1024L);
         sshd.setShellFactory(new AsyncEchoShellFactory());
 
@@ -615,9 +626,9 @@ public class ClientTest extends BaseTestSupport {
                 Collection<ClientChannelEvent> result
                         = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
                 long waitEnd = System.currentTimeMillis();
-                assertFalse("Timeout after " + (waitEnd - waitStart) + " ms. while waiting for channel closure",
-                        result.contains(ClientChannelEvent.TIMEOUT));
-                assertEquals("Mismatched sent and received data size", nbMessages * message.length, baosOut.size());
+                assertFalse(result.contains(ClientChannelEvent.TIMEOUT),
+                        "Timeout after " + (waitEnd - waitStart) + " ms. while waiting for channel closure");
+                assertEquals(nbMessages * message.length, baosOut.size(), "Mismatched sent and received data size");
             }
 
             client.close(true);
@@ -628,13 +639,13 @@ public class ClientTest extends BaseTestSupport {
         // sessions get closed "bottom-up": the IO channel closes and notifies the SshSession about it, which then
         // closes itself. This is an asynchronous process, so we can't just synchronously test
         // clientSessionHolder.get()!
-        assertTrue("Asynchronous session closure took too long",
-                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertTrue(sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS),
+                "Asynchronous session closure took too long");
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testExecAsyncClient() throws Exception {
+    void execAsyncClient() throws Exception {
         Logger log = LoggerFactory.getLogger(getClass());
         client.start();
         try (ClientSession session = createTestClientSession()) {
@@ -702,7 +713,7 @@ public class ClientTest extends BaseTestSupport {
     }
 
     @Test
-    public void testCommandDeadlock() throws Exception {
+    void commandDeadlock() throws Exception {
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -729,18 +740,18 @@ public class ClientTest extends BaseTestSupport {
 
             Collection<ClientChannelEvent> mask = EnumSet.of(ClientChannelEvent.CLOSED);
             Collection<ClientChannelEvent> result = channel.waitFor(mask, CLOSE_TIMEOUT);
-            assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
-            assertTrue("Missing close event: " + result, result.containsAll(mask));
-            assertTrue("Failed to close session on time", session.close(false).await(CLOSE_TIMEOUT));
+            assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
+            assertTrue(result.containsAll(mask), "Missing close event: " + result);
+            assertTrue(session.close(false).await(CLOSE_TIMEOUT), "Failed to close session on time");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testClient() throws Exception {
+    void client() throws Exception {
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -773,22 +784,22 @@ public class ClientTest extends BaseTestSupport {
                 teeOut.flush();
 
                 Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
-                assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
+                assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting on channel close");
 
                 channel.close(false);
                 client.stop();
 
-                assertArrayEquals("Mismatched sent and received data", sent.toByteArray(), out.toByteArray());
+                assertArrayEquals(sent.toByteArray(), out.toByteArray(), "Mismatched sent and received data");
             }
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testClientInverted() throws Exception {
+    void clientInverted() throws Exception {
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -817,23 +828,23 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
+            assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting on channel close");
 
             channel.close(false);
             client.stop();
 
-            assertArrayEquals("Mismatched sent and received data", sent.toByteArray(), out.toByteArray());
+            assertArrayEquals(sent.toByteArray(), out.toByteArray(), "Mismatched sent and received data");
         } finally {
             client.stop();
         }
 
-        assertTrue("Asynchronous session closure took too long",
-                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertTrue(sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS),
+                "Asynchronous session closure took too long");
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testClientWithCustomChannel() throws Exception {
+    void clientWithCustomChannel() throws Exception {
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -846,16 +857,16 @@ public class ClientTest extends BaseTestSupport {
             channel.setOut(out);
             channel.setErr(err);
             channel.open().verify(OPEN_TIMEOUT);
-            assertTrue("Failed to close channel on time", channel.close(false).await(CLOSE_TIMEOUT));
+            assertTrue(channel.close(false).await(CLOSE_TIMEOUT), "Failed to close channel on time");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testClientClosingStream() throws Exception {
+    void clientClosingStream() throws Exception {
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -884,23 +895,23 @@ public class ClientTest extends BaseTestSupport {
             }
 
             Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
+            assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting on channel close");
 
             channel.close(false);
             client.stop();
 
-            assertArrayEquals("Mismatched sent and received data", sent.toByteArray(), out.toByteArray());
+            assertArrayEquals(sent.toByteArray(), out.toByteArray(), "Mismatched sent and received data");
         } finally {
             client.stop();
         }
 
-        assertTrue("Asynchronous session closure took too long",
-                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertTrue(sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS),
+                "Asynchronous session closure took too long");
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testClientWithLengthyDialog() throws Exception {
+    void clientWithLengthyDialog() throws Exception {
         // Reduce window size and packet size
         //        FactoryManagerUtils.updateProperty(client, SshClient.WINDOW_SIZE, 0x20000);
         //        FactoryManagerUtils.updateProperty(client, SshClient.MAX_PACKET_SIZE, 0x1000);
@@ -943,72 +954,74 @@ public class ClientTest extends BaseTestSupport {
             outputDebugMessage("Waiting for channel to be closed");
             Collection<ClientChannelEvent> result
                     = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT.multipliedBy(2));
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientChannelEvent.TIMEOUT));
+            assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting on channel close");
             channel.close(false);
             client.stop();
 
-            assertArrayEquals("Mismatched sent and received data", sent.toByteArray(), out.toByteArray());
+            assertArrayEquals(sent.toByteArray(), out.toByteArray(), "Mismatched sent and received data");
         } finally {
             client.stop();
         }
 
-        assertTrue("Asynchronous session closure took too long",
-                sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
-        assertNull("Session closure not signalled", clientSessionHolder.get());
-    }
-
-    @Test(expected = SshException.class)
-    public void testOpenChannelOnClosedSession() throws Exception {
-        client.start();
-
-        try (ClientSession session = createTestClientSession();
-             ClientChannel channel = session.createShellChannel()) {
-
-            session.close(false);
-            assertNull("Session closure not signalled", clientSessionHolder.get());
-
-            try (PipedOutputStream pipedIn = new PipedOutputStream();
-                 InputStream inPipe = new PipedInputStream(pipedIn);
-                 ByteArrayOutputStream out = new ByteArrayOutputStream();
-                 ByteArrayOutputStream err = new ByteArrayOutputStream()) {
-
-                channel.setIn(inPipe);
-                channel.setOut(out);
-                channel.setErr(err);
-                channel.open();
-            }
-        } finally {
-            client.stop();
-        }
+        assertTrue(sessionCloseLatch.await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS),
+                "Asynchronous session closure took too long");
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testCloseBeforeAuthSucceed() throws Exception {
+    void openChannelOnClosedSession() throws Exception {
+        assertThrows(SshException.class, () -> {
+            client.start();
+
+            try (ClientSession session = createTestClientSession();
+                 ClientChannel channel = session.createShellChannel()) {
+
+                session.close(false);
+                assertNull(clientSessionHolder.get(), "Session closure not signalled");
+
+                try (PipedOutputStream pipedIn = new PipedOutputStream();
+                     InputStream inPipe = new PipedInputStream(pipedIn);
+                     ByteArrayOutputStream out = new ByteArrayOutputStream();
+                     ByteArrayOutputStream err = new ByteArrayOutputStream()) {
+
+                    channel.setIn(inPipe);
+                    channel.setOut(out);
+                    channel.setErr(err);
+                    channel.open();
+                }
+            } finally {
+                client.stop();
+            }
+        });
+    }
+
+    @Test
+    void closeBeforeAuthSucceed() throws Exception {
         authLatch = new CountDownLatch(1);
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.addPasswordIdentity(getCurrentTestName());
 
             AuthFuture authFuture = session.auth();
             CloseFuture closeFuture = session.close(false);
 
             authLatch.countDown();
-            assertTrue("Authentication writing not completed in time", authFuture.await(AUTH_TIMEOUT));
-            assertTrue("Session closing not complete in time", closeFuture.await(CLOSE_TIMEOUT));
-            assertNotNull("No authentication exception", authFuture.getException());
-            assertTrue("Future not closed", closeFuture.isClosed());
+            assertTrue(authFuture.await(AUTH_TIMEOUT), "Authentication writing not completed in time");
+            assertTrue(closeFuture.await(CLOSE_TIMEOUT), "Session closing not complete in time");
+            assertNotNull(authFuture.getException(), "No authentication exception");
+            assertTrue(closeFuture.isClosed(), "Future not closed");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testCloseCleanBeforeChannelOpened() throws Exception {
+    void closeCleanBeforeChannelOpened() throws Exception {
         client.start();
 
         try (ClientSession session = createTestClientSession();
@@ -1023,19 +1036,19 @@ public class ClientTest extends BaseTestSupport {
 
             OpenFuture openFuture = channel.open();
             CloseFuture closeFuture = session.close(false);
-            assertTrue("Channel not open in time", openFuture.await(DEFAULT_TIMEOUT));
-            assertTrue("Session closing not complete in time", closeFuture.await(DEFAULT_TIMEOUT));
-            assertTrue("Not open", openFuture.isOpened());
-            assertTrue("Not closed", closeFuture.isClosed());
+            assertTrue(openFuture.await(DEFAULT_TIMEOUT), "Channel not open in time");
+            assertTrue(closeFuture.await(DEFAULT_TIMEOUT), "Session closing not complete in time");
+            assertTrue(openFuture.isOpened(), "Not open");
+            assertTrue(closeFuture.isClosed(), "Not closed");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testCloseImmediateBeforeChannelOpened() throws Exception {
+    void closeImmediateBeforeChannelOpened() throws Exception {
         channelLatch = new CountDownLatch(1);
         client.start();
 
@@ -1051,20 +1064,20 @@ public class ClientTest extends BaseTestSupport {
 
             OpenFuture openFuture = channel.open();
             CloseFuture closeFuture = session.close(true);
-            assertNull("Session closure not signalled", clientSessionHolder.get());
+            assertNull(clientSessionHolder.get(), "Session closure not signalled");
 
             channelLatch.countDown();
-            assertTrue("Channel not open in time", openFuture.await(DEFAULT_TIMEOUT));
-            assertTrue("Session closing not complete in time", closeFuture.await(DEFAULT_TIMEOUT));
-            assertNotNull("No open exception", openFuture.getException());
-            assertTrue("Not closed", closeFuture.isClosed());
+            assertTrue(openFuture.await(DEFAULT_TIMEOUT), "Channel not open in time");
+            assertTrue(closeFuture.await(DEFAULT_TIMEOUT), "Session closing not complete in time");
+            assertNotNull(openFuture.getException(), "No open exception");
+            assertTrue(closeFuture.isClosed(), "Not closed");
         } finally {
             client.stop();
         }
     }
 
     @Test
-    public void testPublicKeyAuth() throws Exception {
+    void publicKeyAuth() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
@@ -1072,18 +1085,18 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             KeyPairProvider keys = createTestHostKeyProvider();
             session.addPublicKeyIdentity(keys.loadKey(session, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE));
             session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testPublicKeyAuthWithEncryptedKey() throws Exception {
+    void publicKeyAuthWithEncryptedKey() throws Exception {
         // Create an encrypted private key file
         KeyPair pair = SecurityUtils.getKeyPairGenerator("RSA").generateKeyPair();
         Path keyFile = getTestResourcesFolder().resolve("userKey");
@@ -1112,17 +1125,17 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
                 .getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.auth().verify(AUTH_TIMEOUT);
-            assertTrue("Password provider should have been called", passwordProvided.get());
+            assertTrue(passwordProvided.get(), "Password provider should have been called");
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testPublicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
+    void publicKeyAuthNewWithFailureOnFirstIdentity() throws Exception {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
         provider.setKeySize(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
@@ -1135,18 +1148,18 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.addPublicKeyIdentity(provider.loadKey(session, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE));
             session.addPublicKeyIdentity(pair);
             session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testPasswordAuthNew() throws Exception {
+    void passwordAuthNew() throws Exception {
         client.setUserAuthFactories(Collections.singletonList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
@@ -1156,28 +1169,28 @@ public class ClientTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testPasswordAuthNewWithFailureOnFirstIdentity() throws Exception {
+    void passwordAuthNewWithFailureOnFirstIdentity() throws Exception {
         client.setUserAuthFactories(Collections.singletonList(UserAuthPasswordFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testKeyboardInteractiveAuthNew() throws Exception {
+    void keyboardInteractiveAuthNew() throws Exception {
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
@@ -1187,28 +1200,29 @@ public class ClientTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testKeyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
+    void keyboardInteractiveAuthNewWithFailureOnFirstIdentity() throws Exception {
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
         client.start();
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.addPasswordIdentity(getClass().getSimpleName());
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
-    @Test // see SSHD-504
-    public void testDefaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
+    // see SSHD-504
+    @Test
+    void defaultKeyboardInteractivePasswordPromptLocationIndependence() throws Exception {
         Collection<String> mismatchedPrompts = new LinkedList<>();
         client.setUserAuthFactories(
                 Collections.singletonList(
@@ -1271,31 +1285,31 @@ public class ClientTest extends BaseTestSupport {
                 try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                         .verify(CONNECT_TIMEOUT)
                         .getSession()) {
-                    assertNotNull("Client session creation not signalled at iteration #" + index, clientSessionHolder.get());
+                    assertNotNull(clientSessionHolder.get(), "Client session creation not signalled at iteration #" + index);
                     String password = "bad-" + getCurrentTestName() + "-" + index;
                     session.addPasswordIdentity(password);
 
                     AuthFuture future = session.auth();
-                    assertTrue("Failed to verify password=" + password + " in time", future.await(AUTH_TIMEOUT));
-                    assertFalse("Unexpected success for password=" + password, future.isSuccess());
+                    assertTrue(future.await(AUTH_TIMEOUT), "Failed to verify password=" + password + " in time");
+                    assertFalse(future.isSuccess(), "Unexpected success for password=" + password);
                     session.removePasswordIdentity(password);
                 }
 
-                assertNull("Session closure not signalled at iteration #" + index, clientSessionHolder.get());
+                assertNull(clientSessionHolder.get(), "Session closure not signalled at iteration #" + index);
             }
 
             try (ClientSession session = createTestClientSession()) {
-                assertTrue("Mismatched prompts evaluation results", mismatchedPrompts.isEmpty());
+                assertTrue(mismatchedPrompts.isEmpty(), "Mismatched prompts evaluation results");
             }
 
-            assertNull("Final session closure not signalled", clientSessionHolder.get());
+            assertNull(clientSessionHolder.get(), "Final session closure not signalled");
         } finally {
             client.stop();
         }
     }
 
     @Test
-    public void testDefaultKeyboardInteractiveWithFailures() throws Exception {
+    void defaultKeyboardInteractiveWithFailures() throws Exception {
         client.setUserAuthFactories(Collections.singletonList(UserAuthKeyboardInteractiveFactory.INSTANCE));
 
         AtomicInteger count = new AtomicInteger();
@@ -1335,7 +1349,7 @@ public class ClientTest extends BaseTestSupport {
             private void validateSession(String phase, ClientSession session) {
                 ClientSession prev = interactionSessionHolder.getAndSet(session);
                 if (prev != null) {
-                    assertSame("Mismatched " + phase + " client session", prev, session);
+                    assertSame(prev, session, "Mismatched " + phase + " client session");
                 }
             }
         });
@@ -1347,21 +1361,21 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
 
             AuthFuture future = session.auth();
-            assertTrue("Failed to complete authentication on time", future.await(DEFAULT_TIMEOUT));
-            assertTrue("Unexpected authentication success", future.isFailure());
-            assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
+            assertTrue(future.await(DEFAULT_TIMEOUT), "Failed to complete authentication on time");
+            assertTrue(future.isFailure(), "Unexpected authentication success");
+            assertEquals(maxPrompts, count.get(), "Mismatched authentication retry count");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testDefaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
+    void defaultKeyboardInteractiveInSessionUserInteractive() throws Exception {
         final int maxPrompts = 3;
         CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
 
@@ -1370,7 +1384,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
                 @Override
@@ -1380,19 +1394,19 @@ public class ClientTest extends BaseTestSupport {
 
                 @Override
                 public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
-                    assertSame("Mismatched server version info session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched server version info session");
                 }
 
                 @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
-                    assertSame("Mismatched welcome session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched welcome session");
                 }
 
                 @Override
                 public String[] interactive(
                         ClientSession clientSession, String name, String instruction,
                         String lang, String[] prompt, boolean[] echo) {
-                    assertSame("Mismatched interactive session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched interactive session");
                     count.incrementAndGet();
                     return new String[] { getCurrentTestName() };
                 }
@@ -1404,19 +1418,20 @@ public class ClientTest extends BaseTestSupport {
             });
 
             AuthFuture future = session.auth();
-            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
-            assertTrue("Authentication not marked as success", future.isSuccess());
-            assertFalse("Authentication marked as failure", future.isFailure());
-            assertEquals("Mismatched authentication attempts count", 1, count.get());
+            assertTrue(future.await(CLOSE_TIMEOUT), "Failed to complete authentication on time");
+            assertTrue(future.isSuccess(), "Authentication not marked as success");
+            assertFalse(future.isFailure(), "Authentication marked as failure");
+            assertEquals(1, count.get(), "Mismatched authentication attempts count");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
-    @Test // See GH-283
-    public void testPasswordPrompts() throws Exception {
+    // See GH-283
+    @Test
+    void passwordPrompts() throws Exception {
         CoreModuleProperties.PASSWORD_PROMPTS.set(client, 1);
 
         AtomicInteger numberOfRequests = new AtomicInteger();
@@ -1443,7 +1458,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
                 .getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
                 @Override
@@ -1453,19 +1468,19 @@ public class ClientTest extends BaseTestSupport {
 
                 @Override
                 public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
-                    assertSame("Mismatched server version info session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched server version info session");
                 }
 
                 @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
-                    assertSame("Mismatched welcome session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched welcome session");
                 }
 
                 @Override
                 public String[] interactive(
                         ClientSession clientSession, String name, String instruction, String lang,
                         String[] prompt, boolean[] echo) {
-                    assertSame("Mismatched interactive session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched interactive session");
                     int n = count.incrementAndGet();
                     if (n == 1) {
                         return new String[] { "bogus" };
@@ -1480,10 +1495,10 @@ public class ClientTest extends BaseTestSupport {
             });
 
             AuthFuture future = session.auth();
-            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
-            assertTrue("Authentication should have failed", future.isFailure());
-            assertEquals("Mismatched authentication attempts count", 1, count.get());
-            assertEquals("Mismatched authentication request count", 1, numberOfRequests.get());
+            assertTrue(future.await(CLOSE_TIMEOUT), "Failed to complete authentication on time");
+            assertTrue(future.isFailure(), "Authentication should have failed");
+            assertEquals(1, count.get(), "Mismatched authentication attempts count");
+            assertEquals(1, numberOfRequests.get(), "Mismatched authentication request count");
             count.set(0);
             numberOfRequests.set(0);
             // Also set a password on the session: this should be a non-interactive request, so we should have four
@@ -1492,20 +1507,20 @@ public class ClientTest extends BaseTestSupport {
             session.addPasswordIdentity("anotherwrongpassword");
             CoreModuleProperties.PASSWORD_PROMPTS.set(client, 2);
             future = session.auth();
-            assertTrue("Failed to complete authentication on time", future.await(CLOSE_TIMEOUT));
-            assertFalse("Authentication should not have failed", future.isFailure());
-            assertTrue("Authentication should have succeeded", future.isSuccess());
-            assertEquals("Mismatched authentication attempts count", 2, count.get());
-            assertEquals("Mismatched authentication request count", 4, numberOfRequests.get());
+            assertTrue(future.await(CLOSE_TIMEOUT), "Failed to complete authentication on time");
+            assertFalse(future.isFailure(), "Authentication should not have failed");
+            assertTrue(future.isSuccess(), "Authentication should have succeeded");
+            assertEquals(2, count.get(), "Mismatched authentication attempts count");
+            assertEquals(4, numberOfRequests.get(), "Mismatched authentication request count");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testKeyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
+    void keyboardInteractiveInSessionUserInteractiveFailure() throws Exception {
         final int maxPrompts = 3;
         CoreModuleProperties.PASSWORD_PROMPTS.set(client, maxPrompts);
         AtomicInteger numberOfRequests = new AtomicInteger();
@@ -1532,7 +1547,7 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             AtomicInteger count = new AtomicInteger();
             session.setUserInteraction(new UserInteraction() {
                 @Override
@@ -1542,19 +1557,19 @@ public class ClientTest extends BaseTestSupport {
 
                 @Override
                 public void serverVersionInfo(ClientSession clientSession, List<String> lines) {
-                    assertSame("Mismatched server version info session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched server version info session");
                 }
 
                 @Override
                 public void welcome(ClientSession clientSession, String banner, String lang) {
-                    assertSame("Mismatched welcome session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched welcome session");
                 }
 
                 @Override
                 public String[] interactive(
                         ClientSession clientSession, String name, String instruction,
                         String lang, String[] prompt, boolean[] echo) {
-                    assertSame("Mismatched interactive session", session, clientSession);
+                    assertSame(session, clientSession, "Mismatched interactive session");
                     int attemptId = count.incrementAndGet();
                     return new String[] { "bad#" + attemptId };
                 }
@@ -1566,19 +1581,19 @@ public class ClientTest extends BaseTestSupport {
             });
 
             AuthFuture future = session.auth();
-            assertTrue("Authentication not completed in time", future.await(AUTH_TIMEOUT));
-            assertTrue("Authentication not, marked as failure", future.isFailure());
-            assertEquals("Mismatched authentication retry count", maxPrompts, count.get());
-            assertEquals("Mismatched authentication request count", maxPrompts, numberOfRequests.get());
+            assertTrue(future.await(AUTH_TIMEOUT), "Authentication not completed in time");
+            assertTrue(future.isFailure(), "Authentication not, marked as failure");
+            assertEquals(maxPrompts, count.get(), "Mismatched authentication retry count");
+            assertEquals(maxPrompts, numberOfRequests.get(), "Mismatched authentication request count");
         } finally {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testClientDisconnect() throws Exception {
+    void clientDisconnect() throws Exception {
         TestEchoShell.latch = new CountDownLatch(1);
         try {
             client.start();
@@ -1602,21 +1617,21 @@ public class ClientTest extends BaseTestSupport {
 
                 IoWriteFuture f = session.writePacket(buffer);
                 f.addListener(f1 -> suspend(session.getIoSession()));
-                assertTrue("Packet writing not completed in time", f.await(DEFAULT_TIMEOUT));
+                assertTrue(f.await(DEFAULT_TIMEOUT), "Packet writing not completed in time");
 
                 TestEchoShell.latch.await();
             } finally {
                 client.stop();
             }
 
-            assertNull("Session closure not signalled", clientSessionHolder.get());
+            assertNull(clientSessionHolder.get(), "Session closure not signalled");
         } finally {
             TestEchoShell.latch = null;
         }
     }
 
     @Test
-    public void testWaitAuth() throws Exception {
+    void waitAuth() throws Exception {
         AtomicBoolean ok = new AtomicBoolean();
         client.setServerKeyVerifier(
                 (sshClientSession, remoteAddress, serverKey) -> {
@@ -1628,19 +1643,19 @@ public class ClientTest extends BaseTestSupport {
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             Collection<ClientSession.ClientSessionEvent> result
                     = session.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH), TimeUnit.SECONDS.toMillis(10L));
-            assertFalse("Timeout while waiting on channel close", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
-            assertTrue("Server key verifier invoked ?", ok.get());
+            assertFalse(result.contains(ClientSession.ClientSessionEvent.TIMEOUT), "Timeout while waiting on channel close");
+            assertTrue(ok.get(), "Server key verifier invoked ?");
         } finally {
             client.stop();
         }
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
-    public void testCreateChannelByType() throws Exception {
+    void createChannelByType() throws Exception {
         client.start();
 
         Collection<ClientChannel> channels = new LinkedList<>();
@@ -1653,7 +1668,7 @@ public class ClientTest extends BaseTestSupport {
             Set<Long> ids = new HashSet<>(channels.size());
             for (ClientChannel c : channels) {
                 long id = c.getChannelId();
-                assertTrue("Channel ID repeated: " + id, ids.add(id));
+                assertTrue(ids.add(id), "Channel ID repeated: " + id);
             }
         } finally {
             for (Closeable c : channels) {
@@ -1666,11 +1681,12 @@ public class ClientTest extends BaseTestSupport {
             client.stop();
         }
 
-        assertNull("Session closure not signalled", clientSessionHolder.get());
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
-    @Test // see SSHD-1295
-    public void testConnectTimeout() throws Exception {
+    // see SSHD-1295
+    @Test
+    void connectTimeout() throws Exception {
         List<Session> sessions = new CopyOnWriteArrayList<>();
         client.addSessionListener(new SessionListener() {
 
@@ -1693,27 +1709,28 @@ public class ClientTest extends BaseTestSupport {
                 future.verify(1);
                 fail("Timeout expected");
             } catch (InterruptedIOException | SshException e) {
-                assertTrue("Expected a timeout, got " + e, e.getCause() instanceof TimeoutException);
+                assertTrue(e.getCause() instanceof TimeoutException, "Expected a timeout, got " + e);
                 ClientSession session = null;
                 try {
                     session = future.verify(CONNECT_TIMEOUT).getSession();
                 } catch (SshException e2) {
-                    assertTrue("Expected a timeout, got " + e2, e2.getCause() instanceof TimeoutException);
+                    assertTrue(e2.getCause() instanceof TimeoutException, "Expected a timeout, got " + e2);
                 }
 
                 for (Session created : sessions) {
-                    assertTrue("Created session should be closed", created.isClosed() || created.isClosing());
+                    assertTrue(created.isClosed() || created.isClosing(), "Created session should be closed");
                 }
 
-                assertNull("Session should not set since client timed out", session);
+                assertNull(session, "Session should not set since client timed out");
             }
         } finally {
             client.stop();
         }
     }
 
-    @Test // see SSHD-1295
-    public void testConnectCancellation() throws Exception {
+    // see SSHD-1295
+    @Test
+    void connectCancellation() throws Exception {
         List<Session> sessions = new CopyOnWriteArrayList<>();
         AtomicReference<ConnectFuture> future = new AtomicReference<>();
         AtomicReference<CancelFuture> cancellation = new AtomicReference<>();
@@ -1746,33 +1763,34 @@ public class ClientTest extends BaseTestSupport {
                 future.get().verify(CONNECT_TIMEOUT);
                 fail("Cancellation  expected");
             } catch (InterruptedIOException | SshException e) {
-                assertTrue("Expected a cancellation, got " + e, e.getCause() instanceof CancellationException);
+                assertTrue(e.getCause() instanceof CancellationException, "Expected a cancellation, got " + e);
                 ClientSession session = null;
                 try {
                     session = future.get().verify(CONNECT_TIMEOUT).getSession();
                     fail("Cancellation expected");
                 } catch (SshException e2) {
-                    assertTrue("Expected a cancellation, got " + e2, e2.getCause() instanceof CancellationException);
+                    assertTrue(e2.getCause() instanceof CancellationException, "Expected a cancellation, got " + e2);
                 }
 
                 cancellationSet.await(3, TimeUnit.SECONDS);
                 CancelFuture canceled = future.get().getCancellation();
                 assertSame(cancellation.get(), canceled);
-                assertTrue("Future should be done", canceled.verify(5 * 1000));
+                assertTrue(canceled.verify(5 * 1000), "Future should be done");
                 for (Session createdSession : sessions) {
-                    assertTrue("Created session should be closed", createdSession.isClosed() || createdSession.isClosing());
+                    assertTrue(createdSession.isClosed() || createdSession.isClosing(), "Created session should be closed");
                 }
 
-                assertNull("Session should not set since client cancelled", session);
-                assertTrue("Cancellation should have been successful", canceled.isCanceled());
+                assertNull(session, "Session should not set since client cancelled");
+                assertTrue(canceled.isCanceled(), "Cancellation should have been successful");
             }
         } finally {
             client.stop();
         }
     }
 
-    @Test // see SSHD-1295
-    public void testConnectTimeoutIgnore() throws Exception {
+    // see SSHD-1295
+    @Test
+    void connectTimeoutIgnore() throws Exception {
         List<Session> sessions = new CopyOnWriteArrayList<>();
         client.addSessionListener(new SessionListener() {
 
@@ -1795,9 +1813,9 @@ public class ClientTest extends BaseTestSupport {
                 future.verify(1, CancelOption.NO_CANCELLATION);
                 fail("Timeout expected");
             } catch (InterruptedIOException | SshException e) {
-                assertTrue("Expected a timeout, got " + e, e.getCause() instanceof TimeoutException);
+                assertTrue(e.getCause() instanceof TimeoutException, "Expected a timeout, got " + e);
                 ClientSession session = future.verify(CONNECT_TIMEOUT).getSession();
-                assertNotNull("Session expected", session);
+                assertNotNull(session, "Session expected");
                 session.close(false);
             }
         } finally {
@@ -1805,10 +1823,11 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
-    @Test // see SSHD-1295
-    public void testConnectNoListenerIoTimeout() throws Exception {
+    // see SSHD-1295
+    @Test
+    void connectNoListenerIoTimeout() throws Exception {
         // Connect to a port where nothing listens.
-        Assume.assumeFalse(InetAddress.getByName("1.2.3.4").isReachable(5 * 1000));
+        Assumptions.assumeFalse(InetAddress.getByName("1.2.3.4").isReachable(5 * 1000));
         List<Session> sessions = new CopyOnWriteArrayList<>();
         client.addSessionListener(new SessionListener() {
 
@@ -1828,24 +1847,25 @@ public class ClientTest extends BaseTestSupport {
                 fail("Timeout expected");
             } catch (InterruptedIOException | SshException e) {
                 time = System.currentTimeMillis() - time;
-                assertTrue("Expected an I/O timeout, got " + e, e.getCause() instanceof ConnectException);
+                assertTrue(e.getCause() instanceof ConnectException, "Expected an I/O timeout, got " + e);
                 try {
                     future.verify(CONNECT_TIMEOUT).getSession();
                 } catch (SshException e2) {
-                    assertTrue("Expected a timeout, got " + e2, e2.getCause() instanceof ConnectException);
+                    assertTrue(e2.getCause() instanceof ConnectException, "Expected a timeout, got " + e2);
                 }
             }
-            assertTrue("No session should have been created", sessions.isEmpty());
-            assertTrue("Timeout should have occurred after 1 second", time < 10 * 1000); // Be generous
+            assertTrue(sessions.isEmpty(), "No session should have been created");
+            assertTrue(time < 10 * 1000, "Timeout should have occurred after 1 second"); // Be generous
         } finally {
             client.stop();
         }
     }
 
-    @Test // see SSHD-1295
-    public void testConnectNoListenerApplicationTimeout() throws Exception {
+    // see SSHD-1295
+    @Test
+    void connectNoListenerApplicationTimeout() throws Exception {
         // Connect to a port where nothing listens.
-        Assume.assumeFalse(InetAddress.getByName("1.2.3.4").isReachable(5 * 1000));
+        Assumptions.assumeFalse(InetAddress.getByName("1.2.3.4").isReachable(5 * 1000));
         List<Session> sessions = new CopyOnWriteArrayList<>();
         client.addSessionListener(new SessionListener() {
 
@@ -1865,23 +1885,23 @@ public class ClientTest extends BaseTestSupport {
                 fail("Timeout expected");
             } catch (InterruptedIOException | SshException e) {
                 time = System.currentTimeMillis() - time;
-                assertTrue("Expected an I/O timeout, got " + e, e.getCause() instanceof TimeoutException);
+                assertTrue(e.getCause() instanceof TimeoutException, "Expected an I/O timeout, got " + e);
                 try {
                     future.verify(CONNECT_TIMEOUT).getSession();
                 } catch (SshException e2) {
-                    assertTrue("Expected a timeout, got " + e2, e2.getCause() instanceof TimeoutException);
+                    assertTrue(e2.getCause() instanceof TimeoutException, "Expected a timeout, got " + e2);
                 }
             }
-            assertTrue("No session should have been created", sessions.isEmpty());
-            assertTrue("Timeout should have occurred after 1 second", time < 10 * 1000); // Be generous
+            assertTrue(sessions.isEmpty(), "No session should have been created");
+            assertTrue(time < 10 * 1000, "Timeout should have occurred after 1 second"); // Be generous
         } finally {
             client.stop();
         }
     }
 
     @Test
-    @Ignore
-    public void testConnectUsingIPv6Address() throws IOException {
+    @Disabled
+    void connectUsingIPv6Address() throws IOException {
         client.start();
 
         try {
@@ -1924,7 +1944,7 @@ public class ClientTest extends BaseTestSupport {
         ClientSession session = createTestClientSession(TEST_LOCALHOST);
         try {
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
-            assertEquals("Mismatched connect host", TEST_LOCALHOST, addr.getHostString());
+            assertEquals(TEST_LOCALHOST, addr.getHostString(), "Mismatched connect host");
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close
@@ -1940,13 +1960,13 @@ public class ClientTest extends BaseTestSupport {
         ClientSession session = client.connect(getCurrentTestName(), host, port)
                 .verify(CONNECT_TIMEOUT).getSession();
         try {
-            assertNotNull("Client session creation not signalled", clientSessionHolder.get());
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
 
             InetSocketAddress addr = SshdSocketAddress.toInetSocketAddress(session.getConnectAddress());
-            assertNotNull("No reported connect address", addr);
-            assertEquals("Mismatched connect port", port, addr.getPort());
+            assertNotNull(addr, "No reported connect address");
+            assertEquals(port, addr.getPort(), "Mismatched connect port");
 
             ClientSession returnValue = session;
             session = null; // avoid 'finally' close

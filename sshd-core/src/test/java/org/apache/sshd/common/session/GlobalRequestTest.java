@@ -44,9 +44,14 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests for sending global requests.
@@ -60,8 +65,8 @@ public class GlobalRequestTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.start();
         port = sshd.getPort();
@@ -69,8 +74,8 @@ public class GlobalRequestTest extends BaseTestSupport {
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -80,7 +85,7 @@ public class GlobalRequestTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSingleRequestNoReply() throws Exception {
+    void singleRequestNoReply() throws Exception {
         AtomicBoolean wrongWantReply = new AtomicBoolean(false);
         CountDownLatch latch = new CountDownLatch(1);
         List<RequestHandler<ConnectionService>> globalHandlers = new ArrayList<>(sshd.getGlobalRequestHandlers());
@@ -111,16 +116,16 @@ public class GlobalRequestTest extends BaseTestSupport {
             buffer.putString(testRequest);
             buffer.putBoolean(false); // want-reply false
             Buffer reply = session.request(testRequest, buffer, DEFAULT_TIMEOUT);
-            assertNotNull("Expected a (fake) reply", reply);
-            assertEquals("Expected a (fake) success", 0, reply.available());
+            assertNotNull(reply, "Expected a (fake) reply");
+            assertEquals(0, reply.available(), "Expected a (fake) success");
             // Check that the server got it. Should take much less than 5 seconds.
-            assertTrue("Server did not get request", latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS), "Server did not get request");
         }
-        assertFalse("Had a wrong want-reply", wrongWantReply.get());
+        assertFalse(wrongWantReply.get(), "Had a wrong want-reply");
     }
 
     @Test
-    public void testOverlappedRequests() throws Exception {
+    void overlappedRequests() throws Exception {
         final int numberOfRequests = 6;
         CountDownLatch latch = new CountDownLatch(numberOfRequests);
         List<RequestHandler<ConnectionService>> globalHandlers = new ArrayList<>(sshd.getGlobalRequestHandlers());
@@ -186,10 +191,10 @@ public class GlobalRequestTest extends BaseTestSupport {
             for (int i = 0; i < numberOfRequests; i++) {
                 GlobalRequestFuture request = requests[i];
                 request.await(DEFAULT_TIMEOUT);
-                assertTrue("Unexpected timeout after " + DEFAULT_TIMEOUT + "on request " + i, request.isDone());
+                assertTrue(request.isDone(), "Unexpected timeout after " + DEFAULT_TIMEOUT + "on request " + i);
             }
             // Check that the server got it. Should take much less than 5 seconds.
-            assertTrue("Server did not get all requests", latch.await(5, TimeUnit.SECONDS));
+            assertTrue(latch.await(5, TimeUnit.SECONDS), "Server did not get all requests");
             int j = 0;
             for (int i = 0; i < numberOfRequests; i++) {
                 GlobalRequestFuture request = requests[i];
@@ -198,28 +203,30 @@ public class GlobalRequestTest extends BaseTestSupport {
                     case 0: {
                         j++;
                         Buffer reply = request.getBuffer();
-                        assertNotNull("Expected success for request " + i, reply);
-                        assertEquals("Expected a success", (byte) ('1' + j - 1), reply.getByte());
+                        assertNotNull(reply, "Expected success for request " + i);
+                        assertEquals((byte) ('1' + j - 1), reply.getByte(), "Expected a success");
                         break;
                     }
                     case 1:
                         j++;
                         failure = request.getException();
-                        assertNotNull("Expected failure for request " + i, failure);
-                        assertTrue("Unexpected failure type", failure instanceof GlobalRequestException);
-                        assertEquals("Unexpected failure reason for request " + i, SshConstants.SSH_MSG_REQUEST_FAILURE,
-                                ((GlobalRequestException) failure).getCode());
-                        assertTrue("Unexpected failure message for request " + i,
-                                failure.getMessage().contains("SSH_MSG_REQUEST_FAILURE"));
+                        assertNotNull(failure, "Expected failure for request " + i);
+                        assertTrue(failure instanceof GlobalRequestException, "Unexpected failure type");
+                        assertEquals(SshConstants.SSH_MSG_REQUEST_FAILURE,
+                                ((GlobalRequestException) failure).getCode(),
+                                "Unexpected failure reason for request " + i);
+                        assertTrue(failure.getMessage().contains("SSH_MSG_REQUEST_FAILURE"),
+                                "Unexpected failure message for request " + i);
                         break;
                     default:
                         failure = request.getException();
-                        assertNotNull("Expected failure for request " + i, failure);
-                        assertTrue("Unexpected failure type", failure instanceof GlobalRequestException);
-                        assertEquals("Unexpected failure reason for request " + i, SshConstants.SSH_MSG_UNIMPLEMENTED,
-                                ((GlobalRequestException) failure).getCode());
-                        assertTrue("Unexpected failure message for request " + i,
-                                failure.getMessage().contains("SSH_MSG_UNIMPLEMENTED"));
+                        assertNotNull(failure, "Expected failure for request " + i);
+                        assertTrue(failure instanceof GlobalRequestException, "Unexpected failure type");
+                        assertEquals(SshConstants.SSH_MSG_UNIMPLEMENTED,
+                                ((GlobalRequestException) failure).getCode(),
+                                "Unexpected failure reason for request " + i);
+                        assertTrue(failure.getMessage().contains("SSH_MSG_UNIMPLEMENTED"),
+                                "Unexpected failure message for request " + i);
                         break;
                 }
             }
@@ -228,12 +235,12 @@ public class GlobalRequestTest extends BaseTestSupport {
             buffer.putString(testRequest);
             buffer.putBoolean(true); // want-reply true
             Buffer reply = session.request(testRequest, buffer, DEFAULT_TIMEOUT);
-            assertNotNull("Expected a success", reply);
+            assertNotNull(reply, "Expected a success");
         }
     }
 
     @Test
-    public void testGlobalRequestWithReplyInMessageHandling() throws Exception {
+    void globalRequestWithReplyInMessageHandling() throws Exception {
         // Use a crude implementation of the hostkey rotation OpenSSH extension. Note that the implementation in
         // Apache MINA sshd server is incomplete, and for RSA keys does not match the OpenSSH implementation.
         List<RequestHandler<ConnectionService>> globalHandlers = new ArrayList<>(sshd.getGlobalRequestHandlers());
@@ -303,12 +310,12 @@ public class GlobalRequestTest extends BaseTestSupport {
             // For once use session.request() instead of session.writePacket() to make the request.
             session.request(testRequest, buffer, DEFAULT_TIMEOUT);
             // Wait until we've received the hostkeys-00 message, and have made our hostkeys-prove-00 request.
-            assertTrue("Did not get hostkeys-00 message in time", latch.await(5, TimeUnit.SECONDS));
-            assertNotNull("Did not make hostkeys-prove-00 request", req[0]);
+            assertTrue(latch.await(5, TimeUnit.SECONDS), "Did not get hostkeys-00 message in time");
+            assertNotNull(req[0], "Did not make hostkeys-prove-00 request");
             // Wait until we have the server's hostkeys-prove-00 reply.
-            assertTrue("Did not get hostkeys-prove-00 reply in time", req[0].await(DEFAULT_TIMEOUT));
+            assertTrue(req[0].await(DEFAULT_TIMEOUT), "Did not get hostkeys-prove-00 reply in time");
             Buffer reply = req[0].getBuffer();
-            assertNotNull("Got a null hostkeys-prove-00 reply", req[0]);
+            assertNotNull(req[0], "Got a null hostkeys-prove-00 reply");
             // We should have as many signatures as we had gotten keys.
             Collection<NamedFactory<Signature>> factories = client.getSignatureFactories();
             keysFromServer.forEach(k -> {
@@ -327,17 +334,17 @@ public class GlobalRequestTest extends BaseTestSupport {
                 try {
                     verifier.initVerifier(session, k);
                     verifier.update(session, expected.array(), expected.rpos(), expected.available());
-                    assertTrue("Signature does not match", verifier.verify(session, signature));
+                    assertTrue(verifier.verify(session, signature), "Signature does not match");
                 } catch (Exception e) {
                     throw new RuntimeException("Signature verification failed", e);
                 }
             });
-            assertEquals("Did not consume all bytes from the reply", 0, reply.available());
+            assertEquals(0, reply.available(), "Did not consume all bytes from the reply");
         }
     }
 
     @Test
-    public void testGlobalRequestWithReplyHandler() throws Exception {
+    void globalRequestWithReplyHandler() throws Exception {
         // This is the same as above, but using a ReplyHandler. The whole key rotation exchange can be done completely
         // inside the OpenSshHostKeysHandler without any need for any extra threads. The framework's thread handling the
         // reply message will invoke the handler.
@@ -420,8 +427,8 @@ public class GlobalRequestTest extends BaseTestSupport {
             buffer.putBoolean(false); // want-reply
             session.request(testRequest, buffer, DEFAULT_TIMEOUT);
             // Wait until all keys verified.
-            assertTrue("Did not handle hostkeys-prove-00 message in time", replyHandled.await(10, TimeUnit.SECONDS));
-            assertEquals("Test failures", "", String.join(System.lineSeparator(), testFailures));
+            assertTrue(replyHandled.await(10, TimeUnit.SECONDS), "Did not handle hostkeys-prove-00 message in time");
+            assertEquals("", String.join(System.lineSeparator(), testFailures), "Test failures");
         }
     }
 }

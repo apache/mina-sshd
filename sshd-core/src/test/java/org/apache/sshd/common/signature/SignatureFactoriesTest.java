@@ -46,37 +46,32 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator, KeySizeIndicator, OptionalFeature {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
 
-    private final String keyType;
-    private final int keySize;
-    private final boolean supported;
-    private final NamedFactory<Signature> factory;
-    private final PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
+    private String keyType;
+    private int keySize;
+    private boolean supported;
+    private NamedFactory<Signature> factory;
+    private PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
 
-    public SignatureFactoriesTest(String keyType, NamedFactory<Signature> factory,
-                                  int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
+    public void initSignatureFactoriesTest(
+            String keyType, NamedFactory<Signature> factory,
+            int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
         this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         this.factory = supported ? Objects.requireNonNull(factory, "No signature factory provided") : factory;
         if (supported) {
@@ -87,7 +82,6 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
         this.pubKeyDecoder = supported ? Objects.requireNonNull(decoder, "No public key decoder provided") : null;
     }
 
-    @Parameters(name = "type={0}, size={2}")
     @SuppressWarnings("deprecation")
     public static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
@@ -119,8 +113,8 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
         }
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(SignatureFactoriesTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -129,8 +123,8 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -163,9 +157,13 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
         return keyType;
     }
 
-    @Test
-    public void testPublicKeyAuth() throws Exception {
-        Assume.assumeTrue(isSupported());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={0}, size={2}")
+    public void publicKeyAuth(
+            String keyType, NamedFactory<Signature> factory, int keySize, boolean supported,
+            PublicKeyEntryDecoder<?, ?> decoder) throws Exception {
+        initSignatureFactoriesTest(keyType, factory, keySize, supported, decoder);
+        Assumptions.assumeTrue(isSupported());
         testKeyPairProvider(getKeyType(), getKeySize(), pubKeyDecoder, Collections.singletonList(factory));
     }
 

@@ -33,38 +33,32 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 
 /**
  * @see    <A HREF="https://tools.ietf.org/html/rfc4231">RFC 4321</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class MacVectorsTest extends JUnitTestSupport {
-    private final VectorSeed seed;
-    private final Factory<? extends Mac> macFactory;
-    private final byte[] expected;
+    private VectorSeed seed;
+    private Factory<? extends Mac> macFactory;
+    private byte[] expected;
 
-    public MacVectorsTest(VectorSeed seed, String factoryName, String expected) {
+    public void initMacVectorsTest(VectorSeed seed, String factoryName, String expected) {
         this.seed = Objects.requireNonNull(seed, "No seed");
         this.macFactory = ValidateUtils.checkNotNull(BuiltinMacs.fromFactoryName(factoryName), "Unknown MAC: %s", factoryName);
         this.expected = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, expected);
     }
 
-    @Parameters(name = "factory={1}, expected={2}, seed={0}")
     @SuppressWarnings("checkstyle:MethodLength")
     public static Collection<Object[]> parameters() {
         List<Object[]> ret = new ArrayList<>();
@@ -255,16 +249,18 @@ public class MacVectorsTest extends JUnitTestSupport {
         return ret;
     }
 
-    @Test
-    public void testStandardVectorMac() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "factory={1}, expected={2}, seed={0}")
+    public void standardVectorMac(VectorSeed seed, String factoryName, String expected) throws Exception {
+        initMacVectorsTest(seed, factoryName, expected);
         Mac mac = macFactory.create();
         mac.init(seed.getKey());
         mac.update(seed.getData());
 
         byte[] actual = new byte[mac.getBlockSize()];
         mac.doFinal(actual);
-        assertArrayEquals("Mismatched results for actual=" + BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, actual),
-                expected, actual);
+        assertArrayEquals(this.expected, actual,
+                "Mismatched results for actual=" + BufferUtils.toHex(BufferUtils.EMPTY_HEX_SEPARATOR, actual));
     }
 
     private static class VectorSeed {
@@ -337,7 +333,8 @@ public class MacVectorsTest extends JUnitTestSupport {
             this.results = results;
         }
 
-        VectorTestData(String key, boolean useKeyString, String data, boolean useDataString,
+        VectorTestData(
+                       String key, boolean useKeyString, String data, boolean useDataString,
                        Collection<Map.Entry<String, String>> results) {
             super(key, useKeyString, data, useDataString);
             this.results = results;

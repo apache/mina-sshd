@@ -26,19 +26,23 @@ import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
-import org.apache.directory.server.core.integ.CreateLdapServerRule;
+import org.apache.directory.server.core.integ.ApacheDSTestExtension;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.server.session.ServerSession;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@ExtendWith(ApacheDSTestExtension.class)
+@TestMethodOrder(MethodName.class)
 @CreateDS(name = "myDS",
           partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
 @CreateLdapServer(allowAnonymousAccess = true,
@@ -46,31 +50,29 @@ import org.mockito.Mockito;
 @ApplyLdifFiles({ "auth-users.ldif" })
 public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
-    @ClassRule
-    public static CreateLdapServerRule serverRule = new CreateLdapServerRule();
-
     private static Map<String, String> usersMap;
 
     public LdapPasswordAuthenticatorTest() {
         super();
     }
 
-    @Test // the user's password is compared with the LDAP stored one
-    public void testPasswordComparison() throws Exception {
-        usersMap = populateUsers(serverRule.getLdapServer().getDirectoryService(),
+    // the user's password is compared with the LDAP stored one
+    @Test
+    void passwordComparison() throws Exception {
+        usersMap = populateUsers(classLdapServer.getDirectoryService(),
                 LdapPasswordAuthenticatorTest.class, LdapPasswordAuthenticator.DEFAULT_PASSWORD_ATTR_NAME);
-        assertFalse("No users retrieved", MapEntryUtils.isEmpty(usersMap));
+        assertFalse(MapEntryUtils.isEmpty(usersMap), "No users retrieved");
 
         LdapPasswordAuthenticator auth = new LdapPasswordAuthenticator();
-        auth.setHost(getHost(serverRule.getLdapServer()));
-        auth.setPort(getPort(serverRule.getLdapServer()));
+        auth.setHost(getHost(classLdapServer));
+        auth.setPort(getPort(classLdapServer));
         auth.setBaseDN(BASE_DN_TEST);
 
         ServerSession session = Mockito.mock(ServerSession.class);
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
         usersMap.forEach((username, password) -> {
             outputDebugMessage("Authenticate: user=%s, password=%s", username, password);
-            assertTrue("Failed to authenticate " + username, auth.authenticate(username, password, session));
+            assertTrue(auth.authenticate(username, password, session), "Failed to authenticate " + username);
         });
     }
 }

@@ -111,20 +111,26 @@ import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.sftp.server.SftpSubsystemProxy;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.SimpleUserInfo;
-import org.junit.After;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)
+@TestMethodOrder(MethodName.class)
 @SuppressWarnings("checkstyle:MethodCount")
 public class SftpTest extends AbstractSftpClientTestSupport {
     private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS
@@ -132,13 +138,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     private com.jcraft.jsch.Session session;
 
-    private final int sftpHandleSize;
+    private int sftpHandleSize;
 
-    public SftpTest(int handleSize) throws IOException {
+    public void initSftpTest(int handleSize) throws Exception {
         sftpHandleSize = handleSize;
+        setUp();
     }
 
-    @Parameterized.Parameters(name = "FILE_HANDLE_SIZE {0}")
     public static List<Integer> getParameters() {
         List<Integer> result = new ArrayList<>();
         result.add(Integer.valueOf(4));
@@ -146,8 +152,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         return result;
     }
 
-    @Before
-    public void setUp() throws Exception {
+    void setUp() throws Exception {
         setupServer();
 
         Map<String, Object> props = sshd.getProperties();
@@ -163,15 +168,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         session.connect();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (session != null) {
             session.disconnect();
         }
     }
 
-    @Test // see SSHD-547
-    public void testWriteOffsetIgnoredForAppendMode() throws IOException {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-547
+    public void writeOffsetIgnoredForAppendMode(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -200,29 +207,30 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             // Read the full random data
             byte[] actualRandom = new byte[expectedRandom.length];
             readLen = sftp.read(handle, 0L, actualRandom);
-            assertEquals("Incomplete random data read", expectedRandom.length, readLen);
-            assertArrayEquals("Mismatched read random data", expectedRandom, actualRandom);
+            assertEquals(expectedRandom.length, readLen, "Incomplete random data read");
+            assertArrayEquals(expectedRandom, actualRandom, "Mismatched read random data");
 
             // Read the data from the second write
             byte[] actualText = new byte[expectedText.length];
             readLen = sftp.read(handle, actualRandom.length, actualText);
-            assertEquals("Incomplete text data read", actualText.length, readLen);
-            assertArrayEquals("Mismatched read text data", expectedText, actualText);
+            assertEquals(actualText.length, readLen, "Incomplete text data read");
+            assertArrayEquals(expectedText, actualText, "Mismatched read text data");
         }
 
         byte[] actualBytes = Files.readAllBytes(testFile);
-        assertEquals("Mismatched result file size",
-                expectedRandom.length + expectedText.length, actualBytes.length);
+        assertEquals(expectedRandom.length + expectedText.length, actualBytes.length, "Mismatched result file size");
 
         byte[] actualRandom = Arrays.copyOfRange(actualBytes, 0, expectedRandom.length);
-        assertArrayEquals("Mismatched random part", expectedRandom, actualRandom);
+        assertArrayEquals(expectedRandom, actualRandom, "Mismatched random part");
 
         byte[] actualText = Arrays.copyOfRange(actualBytes, expectedRandom.length, actualBytes.length);
-        assertArrayEquals("Mismatched text part", expectedText, actualText);
+        assertArrayEquals(expectedText, actualText, "Mismatched text part");
     }
 
-    @Test // see SSHD-545
-    public void testReadBufferLimit() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-545
+    public void readBufferLimit(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -243,21 +251,24 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         try (SftpClient sftp = createSingleSessionClient();
              CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
             int readLen = sftp.read(handle, 0L, actual);
-            assertEquals("Mismatched read len", maxAllowed, readLen);
+            assertEquals(maxAllowed, readLen, "Mismatched read len");
 
             for (int index = 0; index < readLen; index++) {
                 byte expByte = expected[index];
                 byte actByte = actual[index];
-                assertEquals("Mismatched values at index=" + index, Integer.toHexString(expByte & 0xFF),
-                        Integer.toHexString(actByte & 0xFF));
+                assertEquals(Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF),
+                        "Mismatched values at index=" + index);
             }
         } finally {
             SftpModuleProperties.MAX_READDATA_PACKET_LENGTH.remove(sshd);
         }
     }
 
-    @Test // see SSHD-1287
-    public void testReadWithLargeBuffer() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1287
+    public void readWithLargeBuffer(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -284,23 +295,26 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     }
                     off += n;
                 }
-                assertEquals("Short read", actual.length, off);
+                assertEquals(actual.length, off, "Short read");
                 if (n >= 0) {
                     n = in.read();
-                    assertTrue("Stream not at eof", n < 0);
+                    assertTrue(n < 0, "Stream not at eof");
                 }
             }
             for (int index = 0; index < actual.length; index++) {
                 byte expByte = expected[index];
                 byte actByte = actual[index];
-                assertEquals("Mismatched values at index=" + index, Integer.toHexString(expByte & 0xFF),
-                        Integer.toHexString(actByte & 0xFF));
+                assertEquals(Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF),
+                        "Mismatched values at index=" + index);
             }
         }
     }
 
-    @Test // see SSHD-1287
-    public void testZeroRead() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1287
+    public void zeroRead(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -329,25 +343,28 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         break;
                     }
                 }
-                assertEquals("Short read", actual.length, off);
+                assertEquals(actual.length, off, "Short read");
                 if (n >= 0) {
                     n = in.read();
-                    assertTrue("Stream not at eof", n < 0);
+                    assertTrue(n < 0, "Stream not at eof");
                 }
             }
             for (int index = 0; index < actual.length; index++) {
                 byte expByte = expected[index];
                 byte actByte = actual[index];
-                assertEquals("Mismatched values at index=" + index, Integer.toHexString(expByte & 0xFF),
-                        Integer.toHexString(actByte & 0xFF));
+                assertEquals(Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF),
+                        "Mismatched values at index=" + index);
             }
         }
     }
 
-    @Test // see SSHD-1288
-    public void testReadWriteDownload() throws Exception {
-        Assume.assumeTrue("Not sure appending to a file opened for reading works on Windows",
-                OsUtils.isUNIX() || OsUtils.isOSX());
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1288
+    public void readWriteDownload(int handleSize) throws Exception {
+        initSftpTest(handleSize);
+        Assumptions.assumeTrue(OsUtils.isUNIX() || OsUtils.isOSX(),
+                "Not sure appending to a file opened for reading works on Windows");
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -374,23 +391,26 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
                 actual = buf.toByteArray();
             }
-            assertEquals("Short read", 2 * expected.length, actual.length);
+            assertEquals(2 * expected.length, actual.length, "Short read");
             for (int i = 0, j = 0; i < actual.length; i++, j++) {
                 if (j >= expected.length) {
                     j = 0;
                 }
                 byte expByte = expected[j];
                 byte actByte = actual[i];
-                assertEquals("Mismatched values at index=" + i, Integer.toHexString(expByte & 0xFF),
-                        Integer.toHexString(actByte & 0xFF));
+                assertEquals(Integer.toHexString(expByte & 0xFF),
+                        Integer.toHexString(actByte & 0xFF),
+                        "Mismatched values at index=" + i);
             }
         }
     }
 
-    @Test
-    public void testEmptyFileDownload() throws Exception {
-        Assume.assumeTrue("Not sure appending to a file opened for reading works on Windows",
-                OsUtils.isUNIX() || OsUtils.isOSX());
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void emptyFileDownload(int handleSize) throws Exception {
+        initSftpTest(handleSize);
+        Assumptions.assumeTrue(OsUtils.isUNIX() || OsUtils.isOSX(),
+                "Not sure appending to a file opened for reading works on Windows");
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -408,8 +428,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test // see extra fix for SSHD-538
-    public void testNavigateBeyondRootFolder() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see extra fix for SSHD-538
+    public void navigateBeyondRootFolder(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
         FileSystem fsRoot = rootLocation.getFileSystem();
         sshd.setFileSystemFactory(new FileSystemFactory() {
@@ -427,17 +449,21 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         try (SftpClient sftp = createSingleSessionClient()) {
             String rootDir = sftp.canonicalPath("/");
             String upDir = sftp.canonicalPath(rootDir + "/..");
-            assertEquals("Mismatched root dir parent", rootDir, upDir);
+            assertEquals(rootDir, upDir, "Mismatched root dir parent");
         }
     }
 
-    @Test // see SSHD-605
-    public void testCannotEscapeUserAbsoluteRoot() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-605
+    public void cannotEscapeUserAbsoluteRoot(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         testCannotEscapeRoot(true);
     }
 
-    @Test // see SSHD-605
-    public void testCannotEscapeUserRelativeRoot() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-605
+    public void cannotEscapeUserRelativeRoot(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         testCannotEscapeRoot(false);
     }
 
@@ -467,14 +493,16 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             int expected = OsUtils.isWin32() && useAbsolutePath
                     ? SftpConstants.SSH_FX_INVALID_FILENAME
                     : SftpConstants.SSH_FX_NO_SUCH_FILE;
-            assertEquals("Mismatched status for " + escapePath,
-                    SftpConstants.getStatusName(expected),
-                    SftpConstants.getStatusName(e.getStatus()));
+            assertEquals(SftpConstants.getStatusName(expected),
+                    SftpConstants.getStatusName(e.getStatus()),
+                    "Mismatched status for " + escapePath);
         }
     }
 
-    @Test
-    public void testNormalizeRemoteRootValues() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void normalizeRemoteRootValues(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         try (SftpClient sftp = createSingleSessionClient()) {
             String expected = sftp.canonicalPath("/");
             StringBuilder sb = new StringBuilder(Long.SIZE + 1);
@@ -489,13 +517,15 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 String remotePath = sb.toString();
                 String actual = sftp.canonicalPath(remotePath);
-                assertEquals("Mismatched roots for " + remotePath.length() + " slashes", expected, actual);
+                assertEquals(expected, actual, "Mismatched roots for " + remotePath.length() + " slashes");
             }
         }
     }
 
-    @Test
-    public void testNormalizeRemotePathsValues() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void normalizeRemotePathsValues(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -528,7 +558,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
                 String remotePath = sb.toString();
                 String actual = sftp.canonicalPath(remotePath);
-                assertEquals("Mismatched canonical value for " + remotePath, expected, actual);
+                assertEquals(expected, actual, "Mismatched canonical value for " + remotePath);
             }
         }
     }
@@ -542,8 +572,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         return slashes;
     }
 
-    @Test
-    public void testOpen() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void open(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -565,7 +597,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 // NOTE: on Windows files are always readable
                 // see https://svn.apache.org/repos/asf/harmony/enhanced/java/branches/java6/classlib/modules/
                 // luni/src/test/api/windows/org/apache/harmony/luni/tests/java/io/WinFileTest.java
-                assertTrue("Empty read should have failed on " + file, isWindows);
+                assertTrue(isWindows, "Empty read should have failed on " + file);
             } catch (IOException e) {
                 if (isWindows) {
                     throw e;
@@ -580,7 +612,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             try (SftpClient.CloseableHandle h = sftp.open(file, EnumSet.of(SftpClient.OpenMode.Truncate))) {
                 // NOTE: on Windows files are always readable
-                assertTrue("Empty truncate should have failed on " + file, isWindows);
+                assertTrue(isWindows, "Empty truncate should have failed on " + file);
             } catch (IOException e) {
                 // ok
             }
@@ -589,14 +621,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             int perms = sftp.stat(file).getPermissions();
             int readMask = isWindows ? 0 : SftpConstants.S_IRUSR;
             int permsMask = SftpConstants.S_IWUSR | readMask;
-            assertEquals("Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms), 0, perms & permsMask);
+            assertEquals(0, perms & permsMask, "Mismatched permissions for " + file + ": 0x" + Integer.toHexString(perms));
 
             javaFile.setWritable(true, false);
 
             try (SftpClient.CloseableHandle h = sftp.open(
                     file, EnumSet.of(SftpClient.OpenMode.Truncate, SftpClient.OpenMode.Write))) {
                 // OK should succeed
-                assertTrue("Handle not marked as open for file=" + file, h.isOpen());
+                assertTrue(h.isOpen(), "Handle not marked as open for file=" + file);
             }
 
             byte[] d = "0123456789\n".getBytes(StandardCharsets.UTF_8);
@@ -617,7 +649,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             try (SftpClient.CloseableHandle h = sftp.open(file /* no mode == read */)) {
                 // NOTE: on Windows files are always readable
-                assertTrue("Data read should have failed on " + file, isWindows);
+                assertTrue(isWindows, "Data read should have failed on " + file);
             } catch (IOException e) {
                 if (isWindows) {
                     throw e;
@@ -631,13 +663,15 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 int l = sftp.read(h, 2L, buf, 0, buf.length);
                 String expected = new String(d, 2, l, StandardCharsets.UTF_8);
                 String actual = new String(buf, 0, l, StandardCharsets.UTF_8);
-                assertEquals("Mismatched read data", expected, actual);
+                assertEquals(expected, actual, "Mismatched read data");
             }
         }
     }
 
-    @Test // SSHD-899
-    public void testNoAttributeImpactOnOpen() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // SSHD-899
+    public void noAttributeImpactOnOpen(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -652,19 +686,19 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         try (SftpClient sftp = createSingleSessionClient()) {
             Collection<PosixFilePermission> initialPermissions = IoUtils.getPermissions(testFile);
-            assertTrue("File does not have enough initial permissions: " + initialPermissions,
-                    initialPermissions.containsAll(
-                            EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)));
+            assertTrue(initialPermissions.containsAll(
+                    EnumSet.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE)),
+                    "File does not have enough initial permissions: " + initialPermissions);
 
             try (CloseableHandle handle = sendRawAttributeImpactOpen(file, sftp)) {
                 outputDebugMessage("%s - handle=%s", getCurrentTestName(), handle);
             }
 
             Collection<PosixFilePermission> updatedPermissions = IoUtils.getPermissions(testFile);
-            assertEquals("Mismatched updated permissions count", initialPermissions.size(), updatedPermissions.size());
-            assertTrue("File does not preserve initial permissions: expected=" + initialPermissions + ", actual="
-                       + updatedPermissions,
-                    updatedPermissions.containsAll(initialPermissions));
+            assertEquals(initialPermissions.size(), updatedPermissions.size(), "Mismatched updated permissions count");
+            assertTrue(updatedPermissions.containsAll(initialPermissions),
+                    "File does not preserve initial permissions: expected=" + initialPermissions + ", actual="
+                                                                           + updatedPermissions);
         } finally {
             Files.delete(testFile);
         }
@@ -694,14 +728,16 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     private byte[] getRawFileHandle(Buffer buffer) {
         buffer.getUInt(); // length
         int type = buffer.getUByte();
-        assertEquals("Mismatched response type", SftpConstants.SSH_FXP_HANDLE, type);
+        assertEquals(SftpConstants.SSH_FXP_HANDLE, type, "Mismatched response type");
         buffer.getInt(); // id
         return ValidateUtils.checkNotNullAndNotEmpty(
                 buffer.getBytes(), "Null/empty handle in buffer", GenericUtils.EMPTY_OBJECT_ARRAY);
     }
 
-    @Test
-    public void testInputStreamSkipAndReset() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void inputStreamSkipAndReset(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path localFile = CommonTestSupportUtils.resolve(
@@ -719,25 +755,27 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             byte[] actual = new byte[readLen];
             readLen = stream.read(actual);
-            assertEquals("Failed to read fully reset data", actual.length, readLen);
-            assertArrayEquals("Mismatched re-read data contents", expected, actual);
+            assertEquals(actual.length, readLen, "Failed to read fully reset data");
+            assertArrayEquals(expected, actual, "Mismatched re-read data contents");
 
             System.arraycopy(data, 0, expected, 0, expected.length);
-            assertArrayEquals("Mismatched original data contents", expected, actual);
+            assertArrayEquals(expected, actual, "Mismatched original data contents");
 
             long skipped = stream.skip(readLen);
-            assertEquals("Mismatched skipped forward size", readLen, skipped);
+            assertEquals(readLen, skipped, "Mismatched skipped forward size");
 
             readLen = stream.read(actual);
-            assertEquals("Failed to read fully skipped forward data", actual.length, readLen);
+            assertEquals(actual.length, readLen, "Failed to read fully skipped forward data");
 
             System.arraycopy(data, expected.length + readLen, expected, 0, expected.length);
-            assertArrayEquals("Mismatched skipped forward data contents", expected, actual);
+            assertArrayEquals(expected, actual, "Mismatched skipped forward data contents");
         }
     }
 
-    @Test // see SSHD-1182
-    public void testInputStreamSkipBeforeRead() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1182
+    public void inputStreamSkipBeforeRead(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path localFile = CommonTestSupportUtils.resolve(
@@ -757,19 +795,21 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             System.arraycopy(data, toSkip, expected, 0, readLen);
 
             long skipped = stream.skip(toSkip);
-            assertEquals("Mismatched skipped forward size", toSkip, skipped);
+            assertEquals(toSkip, skipped, "Mismatched skipped forward size");
 
             int actuallyRead = IoUtils.read(stream, actual);
-            assertEquals("Failed to read fully skipped forward data", readLen, actuallyRead);
+            assertEquals(readLen, actuallyRead, "Failed to read fully skipped forward data");
 
-            assertArrayEquals("Unexpected data read after skipping", expected, actual);
+            assertArrayEquals(expected, actual, "Unexpected data read after skipping");
         }
     }
 
-    @Test
-    public void testSftpFileSystemAccessor() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void sftpFileSystemAccessor(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
-        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+        assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
 
         SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
@@ -821,9 +861,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
 
                 Path remoteFile = fileHolder.getAndSet(null);
-                assertNotNull("No remote file holder value", remoteFile);
-                assertEquals("Mismatched opened local files", localFile.toFile(), remoteFile.toFile());
-                assertArrayEquals("Mismatched retrieved file contents", expected, actual);
+                assertNotNull(remoteFile, "No remote file holder value");
+                assertEquals(localFile.toFile(), remoteFile.toFile(), "Mismatched opened local files");
+                assertArrayEquals(expected, actual, "Mismatched retrieved file contents");
 
                 Path localParent = localFile.getParent();
                 String localName = Objects.toString(localFile.getFileName(), null);
@@ -831,9 +871,9 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                         CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, localParent))) {
                     List<DirEntry> entries = sftp.readDir(handle);
                     Path remoteParent = dirHolder.getAndSet(null);
-                    assertNotNull("No remote folder holder value", remoteParent);
-                    assertEquals("Mismatched opened folder", localParent.toFile(), remoteParent.toFile());
-                    assertFalse("No dir entries", GenericUtils.isEmpty(entries));
+                    assertNotNull(remoteParent, "No remote folder holder value");
+                    assertEquals(localParent.toFile(), remoteParent.toFile(), "Mismatched opened folder");
+                    assertFalse(GenericUtils.isEmpty(entries), "No dir entries");
 
                     for (DirEntry de : entries) {
                         Attributes attrs = de.getAttributes();
@@ -854,11 +894,13 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
     @SuppressWarnings({ "checkstyle:anoninnerlength", "checkstyle:methodlength" })
-    public void testClient() throws Exception {
+    public void client(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
-        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+        assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
 
         SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
@@ -882,15 +924,15 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             @Override
             public void initialized(ServerSession session, int version) {
                 log.info("initialized(" + session + ") version: " + version);
-                assertTrue("Initialized version below minimum", version >= SftpSubsystemEnvironment.LOWER_SFTP_IMPL);
-                assertTrue("Initialized version above maximum", version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL);
-                assertTrue("Initializion re-called", versionHolder.getAndSet(version) < 0);
+                assertTrue(version >= SftpSubsystemEnvironment.LOWER_SFTP_IMPL, "Initialized version below minimum");
+                assertTrue(version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL, "Initialized version above maximum");
+                assertTrue(versionHolder.getAndSet(version) < 0, "Initializion re-called");
             }
 
             @Override
             public void destroying(ServerSession session) {
                 log.info("destroying(" + session + ")");
-                assertTrue("Initialization method not called", versionHolder.get() > 0);
+                assertTrue(versionHolder.get() > 0, "Initialization method not called");
             }
 
             @Override
@@ -1052,20 +1094,20 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         factory.addSftpEventListener(listener);
 
         try (SftpClient sftp = createSingleSessionClient()) {
-            assertEquals("Mismatched negotiated version", sftp.getVersion(), versionHolder.get());
+            assertEquals(sftp.getVersion(), versionHolder.get(), "Mismatched negotiated version");
             testClient(client, sftp);
 
-            assertEquals("Mismatched open/close count", openCount.get(), closeCount.get());
-            assertTrue("No entries read", entriesCount.get() > 0);
-            assertTrue("No data read", readSize.get() > 0L);
-            assertTrue("No data written", writeSize.get() > 0L);
-            assertEquals("Mismatched removal counts", removingFileCount.get(), removedFileCount.get());
-            assertEquals("Mismatched directory removal counts", removingDirectoryCount.get(), removedDirectoryCount.get());
-            assertTrue("No removals signalled", removedFileCount.get() > 0);
-            assertEquals("Mismatched creation counts", creatingCount.get(), createdCount.get());
-            assertTrue("No creations signalled", creatingCount.get() > 0);
-            assertEquals("Mismatched modification counts", modifyingCount.get(), modifiedCount.get());
-            assertTrue("No modifications signalled", modifiedCount.get() > 0);
+            assertEquals(openCount.get(), closeCount.get(), "Mismatched open/close count");
+            assertTrue(entriesCount.get() > 0, "No entries read");
+            assertTrue(readSize.get() > 0L, "No data read");
+            assertTrue(writeSize.get() > 0L, "No data written");
+            assertEquals(removingFileCount.get(), removedFileCount.get(), "Mismatched removal counts");
+            assertEquals(removingDirectoryCount.get(), removedDirectoryCount.get(), "Mismatched directory removal counts");
+            assertTrue(removedFileCount.get() > 0, "No removals signalled");
+            assertEquals(creatingCount.get(), createdCount.get(), "Mismatched creation counts");
+            assertTrue(creatingCount.get() > 0, "No creations signalled");
+            assertEquals(modifyingCount.get(), modifiedCount.get(), "Mismatched modification counts");
+            assertTrue(modifiedCount.get() > 0, "No modifications signalled");
         } finally {
             factory.removeSftpEventListener(listener);
         }
@@ -1078,8 +1120,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
      *
      * @throws Exception upon any uncaught exception or failure
      */
-    @Test
-    public void testWriteChunking() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void writeChunking(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -1126,8 +1170,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test // SSHD-1215
-    public void testWriteCreateAppend() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // SSHD-1215
+    public void writeCreateAppend(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -1149,10 +1195,12 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test
-    public void testHandleSize() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void handleSize(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
-        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+        assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
 
         SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
@@ -1167,7 +1215,6 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             }
         };
         factory.addSftpEventListener(listener);
-        int handleSize = SftpModuleProperties.FILE_HANDLE_SIZE.getRequired(sshd).intValue();
         try {
             Path targetPath = detectTargetFolder();
             Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
@@ -1184,54 +1231,56 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 // Write some files
                 byte[] data = "something".getBytes(StandardCharsets.US_ASCII);
                 try (CloseableHandle handle = sftp.open(dir + "/first.bin", OpenMode.Write, OpenMode.Create)) {
-                    assertEquals("Unexpected handle size", handleSize, handle.getIdentifier().length);
+                    assertEquals(handleSize, handle.getIdentifier().length, "Unexpected handle size");
                     sftp.write(handle, 0, data, 0, data.length);
                 }
-                assertEquals("Unexpected number of handles", 1, handles.size());
+                assertEquals(1, handles.size(), "Unexpected number of handles");
                 try (CloseableHandle handle1 = sftp.open(dir + "/second.bin", OpenMode.Write, OpenMode.Create);
                      CloseableHandle handle2 = sftp.open(dir + "/third.bin", OpenMode.Write, OpenMode.Create)) {
-                    assertEquals("Unexpected handle size", handleSize, handle1.getIdentifier().length);
-                    assertEquals("Unexpected handle size", handleSize, handle2.getIdentifier().length);
+                    assertEquals(handleSize, handle1.getIdentifier().length, "Unexpected handle size");
+                    assertEquals(handleSize, handle2.getIdentifier().length, "Unexpected handle size");
                     sftp.write(handle1, 0, data, 0, data.length);
                     sftp.write(handle2, 0, data, 0, data.length);
                 }
                 if (handleSize == Integer.BYTES) {
-                    assertEquals("Unexpected number of handles", 2, handles.size());
+                    assertEquals(2, handles.size(), "Unexpected number of handles");
                 } else {
-                    assertTrue("Unexpected number of handles", handles.size() <= 3);
+                    assertTrue(handles.size() <= 3, "Unexpected number of handles");
                 }
                 try (CloseableHandle handle1 = sftp.open(dir + "/fourth.bin", OpenMode.Write, OpenMode.Create)) {
-                    assertEquals("Unexpected handle size", handleSize, handle1.getIdentifier().length);
+                    assertEquals(handleSize, handle1.getIdentifier().length, "Unexpected handle size");
                     byte[] id2;
                     try (CloseableHandle handle2 = sftp.open(dir + "/fifth.bin", OpenMode.Write, OpenMode.Create)) {
                         id2 = handle2.getIdentifier();
-                        assertEquals("Unexpected handle size", handleSize, id2.length);
+                        assertEquals(handleSize, id2.length, "Unexpected handle size");
                         sftp.write(handle2, 0, data, 0, data.length);
                     }
                     byte[] id3;
                     try (CloseableHandle handle3 = sftp.open(dir + "/sixth.bin", OpenMode.Write, OpenMode.Create)) {
                         id3 = handle3.getIdentifier();
-                        assertEquals("Unexpected handle size", handleSize, id3.length);
+                        assertEquals(handleSize, id3.length, "Unexpected handle size");
                         if (handleSize == Integer.BYTES) {
                             // Should have been re-used
-                            assertArrayEquals("Expected handles to be the same", id2, id3);
+                            assertArrayEquals(id2, id3, "Expected handles to be the same");
                         }
                         sftp.write(handle3, 0, data, 0, data.length);
                     }
                     sftp.write(handle1, 0, data, 0, data.length);
                 }
-                assertArrayEquals("Unexpected data in first.bin", data, Files.readAllBytes(clientFolder.resolve("first.bin")));
-                assertArrayEquals("Unexpected data in second.bin", data,
-                        Files.readAllBytes(clientFolder.resolve("second.bin")));
-                assertArrayEquals("Unexpected data in third.bin", data, Files.readAllBytes(clientFolder.resolve("third.bin")));
-                assertArrayEquals("Unexpected data in fourth.bin", data,
-                        Files.readAllBytes(clientFolder.resolve("fourth.bin")));
-                assertArrayEquals("Unexpected data in fifth.bin", data, Files.readAllBytes(clientFolder.resolve("fifth.bin")));
-                assertArrayEquals("Unexpected data in sixth.bin", data, Files.readAllBytes(clientFolder.resolve("sixth.bin")));
+                assertArrayEquals(data, Files.readAllBytes(clientFolder.resolve("first.bin")), "Unexpected data in first.bin");
+                assertArrayEquals(data,
+                        Files.readAllBytes(clientFolder.resolve("second.bin")),
+                        "Unexpected data in second.bin");
+                assertArrayEquals(data, Files.readAllBytes(clientFolder.resolve("third.bin")), "Unexpected data in third.bin");
+                assertArrayEquals(data,
+                        Files.readAllBytes(clientFolder.resolve("fourth.bin")),
+                        "Unexpected data in fourth.bin");
+                assertArrayEquals(data, Files.readAllBytes(clientFolder.resolve("fifth.bin")), "Unexpected data in fifth.bin");
+                assertArrayEquals(data, Files.readAllBytes(clientFolder.resolve("sixth.bin")), "Unexpected data in sixth.bin");
                 if (handleSize == Integer.BYTES) {
-                    assertEquals("Unexpected number of handles", 2, handles.size());
+                    assertEquals(2, handles.size(), "Unexpected number of handles");
                 } else {
-                    assertTrue("Unexpected number of handles", handles.size() <= 6);
+                    assertTrue(handles.size() <= 6, "Unexpected number of handles");
                 }
             }
         } finally {
@@ -1280,7 +1329,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
 
         sftp.remove(filePath);
-        assertFalse("File should not be there: " + file.toString(), Files.exists(file));
+        assertFalse(Files.exists(file), "File should not be there: " + file.toString());
     }
 
     private void uploadAndVerifyFile(
@@ -1309,16 +1358,18 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         // verify results
         Path resultPath = clientFolder.resolve(filename);
-        assertTrue("File should exist on disk: " + resultPath, Files.exists(resultPath));
-        assertEquals("Mismatched file contents: " + resultPath, expectedData, readFile(remotePath));
+        assertTrue(Files.exists(resultPath), "File should exist on disk: " + resultPath);
+        assertEquals(expectedData, readFile(remotePath), "Mismatched file contents: " + resultPath);
 
         // cleanup
         sftp.remove(remotePath);
-        assertFalse("File should have been removed: " + resultPath, Files.exists(resultPath));
+        assertFalse(Files.exists(resultPath), "File should have been removed: " + resultPath);
     }
 
-    @Test
-    public void testSftp() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void sftp(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         String d = getCurrentTestName() + "\n";
 
         Path targetPath = detectTargetFolder();
@@ -1346,8 +1397,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    @Test
-    public void testReadWriteWithOffset() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void readWriteWithOffset(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -1364,8 +1417,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         try {
             c.put(new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8)), remotePath);
 
-            assertTrue("Remote file not created after initial write: " + localPath, Files.exists(localPath));
-            assertEquals("Mismatched data read from " + remotePath, data, readFile(remotePath));
+            assertTrue(Files.exists(localPath), "Remote file not created after initial write: " + localPath);
+            assertEquals(data, readFile(remotePath), "Mismatched data read from " + remotePath);
 
             try (OutputStream os = c.put(remotePath, null, ChannelSftp.APPEND, appendOffset)) {
                 os.write(extraData.getBytes(StandardCharsets.UTF_8));
@@ -1374,15 +1427,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             c.disconnect();
         }
 
-        assertTrue("Remote file not created after data update: " + localPath, Files.exists(localPath));
+        assertTrue(Files.exists(localPath), "Remote file not created after data update: " + localPath);
 
         String expected = data.substring(0, data.length() + appendOffset) + extraData;
         String actual = readFile(remotePath);
-        assertEquals("Mismatched final file data in " + remotePath, expected, actual);
+        assertEquals(expected, actual, "Mismatched final file data in " + remotePath);
     }
 
-    @Test
-    public void testReadDir() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void readDir(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path cwdPath = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
         Path tgtPath = detectTargetFolder();
         Collection<String> expNames = OsUtils.isUNIX()
@@ -1395,7 +1450,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     continue;
                 }
 
-                assertTrue("Failed to accumulate " + n, expNames.add(n));
+                assertTrue(expNames.add(n), "Failed to accumulate " + n);
             }
         }
 
@@ -1416,17 +1471,19 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     continue;
                 }
 
-                assertTrue("Entry not found: " + name, expNames.remove(name));
+                assertTrue(expNames.remove(name), "Entry not found: " + name);
             }
 
-            assertTrue("Un-listed names: " + expNames, GenericUtils.isEmpty(expNames));
+            assertTrue(GenericUtils.isEmpty(expNames), "Un-listed names: " + expNames);
         } finally {
             c.disconnect();
         }
     }
 
-    @Test
-    public void testRename() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void rename(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -1449,8 +1506,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 sftp.rename(file2Path, file3Path);
                 fail("Unxpected rename success of " + file2Path + " => " + file3Path);
             } catch (SftpException e) {
-                assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path,
-                        SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus());
+                assertEquals(SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus(),
+                        "Mismatched status for failed rename of " + file2Path + " => " + file3Path);
             }
 
             try (OutputStream os = sftp.write(file2Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
@@ -1461,16 +1518,18 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 sftp.rename(file1Path, file2Path);
                 fail("Unxpected rename success of " + file1Path + " => " + file2Path);
             } catch (SftpException e) {
-                assertEquals("Mismatched status for failed rename of " + file1Path + " => " + file2Path,
-                        SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, e.getStatus());
+                assertEquals(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, e.getStatus(),
+                        "Mismatched status for failed rename of " + file1Path + " => " + file2Path);
             }
 
             sftp.rename(file1Path, file2Path, SftpClient.CopyMode.Overwrite);
         }
     }
 
-    @Test
-    public void testServerExtensionsDeclarations() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void serverExtensionsDeclarations(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         try (SftpClient sftp = createSingleSessionClient()) {
             Map<String, byte[]> extensions = sftp.getServerExtensions();
             for (String name : new String[] {
@@ -1478,7 +1537,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                     SftpConstants.EXT_VENDOR_ID, SftpConstants.EXT_ACL_SUPPORTED,
                     SftpConstants.EXT_SUPPORTED, SftpConstants.EXT_SUPPORTED2
             }) {
-                assertTrue("Missing extension=" + name, extensions.containsKey(name));
+                assertTrue(extensions.containsKey(name), "Missing extension=" + name);
             }
 
             Map<String, ?> data = ParserUtils.parse(extensions);
@@ -1506,11 +1565,12 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             for (OpenSSHExtension expected : AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS) {
                 String name = expected.getName();
                 Object value = data.get(name);
-                assertNotNull("OpenSSH extension not declared: " + name, value);
+                assertNotNull(value, "OpenSSH extension not declared: " + name);
 
                 OpenSSHExtension actual = (OpenSSHExtension) value;
-                assertEquals("Mismatched version for OpenSSH extension=" + name, expected.getVersion(),
-                        actual.getVersion());
+                assertEquals(expected.getVersion(),
+                        actual.getVersion(),
+                        "Mismatched version for OpenSSH extension=" + name);
             }
 
             for (BuiltinSftpClientExtensions type : BuiltinSftpClientExtensions.VALUES) {
@@ -1518,66 +1578,69 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 boolean isOpenSSHExtension = extensionName.endsWith("@openssh.com");
                 SftpClientExtension instance = sftp.getExtension(extensionName);
 
-                assertNotNull("Extension not implemented:" + extensionName, instance);
-                assertEquals("Mismatched instance name", extensionName, instance.getName());
+                assertNotNull(instance, "Extension not implemented:" + extensionName);
+                assertEquals(extensionName, instance.getName(), "Mismatched instance name");
 
                 if (instance.isSupported()) {
                     if (isOpenSSHExtension) {
-                        assertTrue("Unlisted default OpenSSH extension: " + extensionName,
-                                AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
+                        assertTrue(AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName),
+                                "Unlisted default OpenSSH extension: " + extensionName);
                     }
                 } else {
-                    assertTrue("Unsupported non-OpenSSH extension: " + extensionName, isOpenSSHExtension);
-                    assertFalse("Unsupported default OpenSSH extension: " + extensionName,
-                            AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName));
+                    assertTrue(isOpenSSHExtension, "Unsupported non-OpenSSH extension: " + extensionName);
+                    assertFalse(AbstractSftpSubsystemHelper.DEFAULT_OPEN_SSH_EXTENSIONS_NAMES.contains(extensionName),
+                            "Unsupported default OpenSSH extension: " + extensionName);
                 }
             }
         }
     }
 
     private static void assertSupportedExtensions(String extName, Collection<String> extensionNames) {
-        assertEquals(extName + "[count]", EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames));
+        assertEquals(EXPECTED_EXTENSIONS.size(), GenericUtils.size(extensionNames), extName + "[count]");
 
         EXPECTED_EXTENSIONS.forEach((name, f) -> {
             if (!f.isSupported()) {
-                assertFalse(extName + " - unsupported feature reported: " + name, extensionNames.contains(name));
+                assertFalse(extensionNames.contains(name), extName + " - unsupported feature reported: " + name);
             } else {
-                assertTrue(extName + " - missing " + name, extensionNames.contains(name));
+                assertTrue(extensionNames.contains(name), extName + " - missing " + name);
             }
         });
     }
 
     private static void assertSupportedVersions(Versions vers) {
         List<String> values = vers.getVersions();
-        assertEquals("Mismatched reported versions size: " + values,
-                1 + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL - SftpSubsystemEnvironment.LOWER_SFTP_IMPL,
-                GenericUtils.size(values));
+        assertEquals(1 + SftpSubsystemEnvironment.HIGHER_SFTP_IMPL - SftpSubsystemEnvironment.LOWER_SFTP_IMPL,
+                GenericUtils.size(values),
+                "Mismatched reported versions size: " + values);
         for (int expected = SftpSubsystemEnvironment.LOWER_SFTP_IMPL, index = 0;
              expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
              expected++, index++) {
             String e = Integer.toString(expected);
             String a = values.get(index);
-            assertEquals("Missing value at index=" + index + ": " + values, e, a);
+            assertEquals(e, a, "Missing value at index=" + index + ": " + values);
         }
     }
 
     private static void assertNewlineValue(Newline nl) {
-        assertEquals("Mismatched NL value",
-                BufferUtils.toHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
-                BufferUtils.toHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)));
+        assertEquals(BufferUtils.toHex(':', IoUtils.EOL.getBytes(StandardCharsets.UTF_8)),
+                BufferUtils.toHex(':', nl.getNewline().getBytes(StandardCharsets.UTF_8)),
+                "Mismatched NL value");
     }
 
     private static void assertSupportedAclCapabilities(AclCapabilities caps) {
         Set<Integer> actual = AclCapabilities.deconstructAclCapabilities(caps.getCapabilities());
-        assertEquals("Mismatched ACL capabilities count", AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK.size(),
-                actual.size());
-        assertTrue("Missing capabilities - expected=" + AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK + ", actual="
-                   + actual,
-                actual.containsAll(AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK));
+        assertEquals(AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK.size(),
+                actual.size(),
+                "Mismatched ACL capabilities count");
+        assertTrue(actual.containsAll(AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK),
+                "Missing capabilities - expected=" + AbstractSftpSubsystemHelper.DEFAULT_ACL_SUPPORTED_MASK + ", actual="
+                                                                                               + actual);
     }
 
-    @Test
-    public void testSftpVersionSelector() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void sftpVersionSelector(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = (session, initial, current, available) -> {
             int value = initial
@@ -1592,15 +1655,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
         try (ClientSession session = createAuthenticatedClientSession();
              SftpClient sftp = SftpClientFactory.instance().createSftpClient(session, selector)) {
-            assertEquals("Mismatched negotiated version", selected.get(), sftp.getVersion());
+            assertEquals(selected.get(), sftp.getVersion(), "Mismatched negotiated version");
             testClient(client, sftp);
         }
     }
 
-    @Test // see SSHD-621
-    public void testServerDoesNotSupportSftp() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-621
+    public void serverDoesNotSupportSftp(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
-        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+        assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
 
         sshd.setSubsystemFactories(null);
         try (ClientSession session = createAuthenticatedClientSession()) {
@@ -1636,7 +1701,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             sftp.write(h, d.length, d, 0, d.length);
 
             SftpClient.Attributes attrs = sftp.stat(h);
-            assertNotNull("No handle attributes", attrs);
+            assertNotNull(attrs, "No handle attributes");
         }
 
         try (SftpClient.CloseableHandle h = sftp.openDir(dir)) {
@@ -1655,10 +1720,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 }
             }
 
-            assertTrue("Dot entry not listed", dotFiltered);
-            assertTrue("Dot-dot entry not listed", dotdotFiltered);
-            assertEquals("Mismatched number of listed entries", 1, dirEntries.size());
-            assertNull("Unexpected extra entry read after listing ended", sftp.readDir(h));
+            assertTrue(dotFiltered, "Dot entry not listed");
+            assertTrue(dotdotFiltered, "Dot-dot entry not listed");
+            assertEquals(1, dirEntries.size(), "Mismatched number of listed entries");
+            assertNull(sftp.readDir(h), "Unexpected extra entry read after listing ended");
         }
 
         sftp.remove(file);
@@ -1669,11 +1734,11 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         }
         try (InputStream is = sftp.read(file)) {
             int readLen = is.read(smallBuf);
-            assertEquals("Mismatched read data length", smallBuf.length, readLen);
+            assertEquals(smallBuf.length, readLen, "Mismatched read data length");
             assertEquals("Hello world", new String(smallBuf, StandardCharsets.UTF_8));
 
             int i = is.read();
-            assertEquals("Unexpected read past EOF", -1, i);
+            assertEquals(-1, i, "Unexpected read past EOF");
         }
 
         final int sizeFactor = Short.SIZE;
@@ -1689,23 +1754,23 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         // force several internal read cycles to satisfy the full read
         try (InputStream is = sftp.read(file, workBuf.length / sizeFactor)) {
             int readLen = is.read(workBuf);
-            assertEquals("Mismatched read data length", workBuf.length, readLen);
+            assertEquals(workBuf.length, readLen, "Mismatched read data length");
 
             int i = is.read();
-            assertEquals("Unexpected read past EOF", -1, i);
+            assertEquals(-1, i, "Unexpected read past EOF");
         }
 
         SftpClient.Attributes attributes = sftp.stat(file);
-        assertTrue("Test file not detected as regular", attributes.isRegularFile());
+        assertTrue(attributes.isRegularFile(), "Test file not detected as regular");
 
         attributes = sftp.stat(dir);
-        assertTrue("Test directory not reported as such", attributes.isDirectory());
+        assertTrue(attributes.isDirectory(), "Test directory not reported as such");
 
         int nb = 0;
         boolean dotFiltered = false;
         boolean dotdotFiltered = false;
         for (SftpClient.DirEntry entry : sftp.readDir(dir)) {
-            assertNotNull("Unexpected null entry", entry);
+            assertNotNull(entry, "Unexpected null entry");
             String name = entry.getFilename();
             outputDebugMessage("readDir(%s) overwritten file: %s", dir, name);
 
@@ -1717,19 +1782,21 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 nb++;
             }
         }
-        assertTrue("Dot entry not read", dotFiltered);
-        assertTrue("Dot-dot entry not read", dotdotFiltered);
-        assertEquals("Mismatched read dir entries", 1, nb);
+        assertTrue(dotFiltered, "Dot entry not read");
+        assertTrue(dotdotFiltered, "Dot-dot entry not read");
+        assertEquals(1, nb, "Mismatched read dir entries");
         sftp.remove(file);
         sftp.rmdir(dir);
     }
 
-    @Test
-    public void testCreateSymbolicLink() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
+    public void createSymbolicLink(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         // Do not execute on windows as the file system does not support symlinks
-        Assume.assumeTrue("Skip non-Unix O/S", OsUtils.isUNIX() || OsUtils.isOSX());
+        Assumptions.assumeTrue(OsUtils.isUNIX() || OsUtils.isOSX(), "Skip non-Unix O/S");
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
-        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+        assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
 
         SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
@@ -1739,18 +1806,18 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         SftpEventListener listener = new AbstractSftpEventListenerAdapter() {
             @Override
             public void linking(ServerSession session, Path src, Path target, boolean symLink) {
-                assertNull("Multiple linking calls", linkDataHolder.getAndSet(new LinkData(src, target, symLink)));
+                assertNull(linkDataHolder.getAndSet(new LinkData(src, target, symLink)), "Multiple linking calls");
             }
 
             @Override
             public void linked(
                     ServerSession session, Path src, Path target, boolean symLink, Throwable thrown) {
                 LinkData data = linkDataHolder.get();
-                assertNotNull("No previous linking call", data);
-                assertSame("Mismatched source", data.getSource(), src);
-                assertSame("Mismatched target", data.getTarget(), target);
+                assertNotNull(data, "No previous linking call");
+                assertSame(data.getSource(), src, "Mismatched source");
+                assertSame(data.getTarget(), target, "Mismatched target");
                 assertEquals("Mismatched link type", data.isSymLink(), symLink);
-                assertNull("Unexpected failure", thrown);
+                assertNull(thrown, "Unexpected failure");
             }
         };
 
@@ -1784,8 +1851,8 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 try (InputStream dataStream = new ByteArrayInputStream(data.getBytes(StandardCharsets.UTF_8))) {
                     c.put(dataStream, remSrcPath);
                 }
-                assertTrue("Source file not created: " + sourcePath, Files.exists(sourcePath));
-                assertEquals("Mismatched stored data in " + remSrcPath, data, readFile(remSrcPath));
+                assertTrue(Files.exists(sourcePath), "Source file not created: " + sourcePath);
+                assertEquals(data, readFile(remSrcPath), "Mismatched stored data in " + remSrcPath);
 
                 Path linkPath = lclSftp.resolve("link-" + sourcePath.getFileName());
                 String remLinkPath = "/" + CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, linkPath);
@@ -1793,17 +1860,17 @@ public class SftpTest extends AbstractSftpClientTestSupport {
                 if (Files.exists(linkPath, options)) {
                     Files.delete(linkPath);
                 }
-                assertFalse("Target link exists before linking: " + linkPath, Files.exists(linkPath, options));
+                assertFalse(Files.exists(linkPath, options), "Target link exists before linking: " + linkPath);
 
                 outputDebugMessage("Symlink %s => %s", remLinkPath, remSrcPath);
                 c.symlink(remSrcPath, remLinkPath);
 
-                assertTrue("Symlink not created: " + linkPath, Files.exists(linkPath, options));
-                assertEquals("Mismatched link data in " + remLinkPath, data, readFile(remLinkPath));
+                assertTrue(Files.exists(linkPath, options), "Symlink not created: " + linkPath);
+                assertEquals(data, readFile(remLinkPath), "Mismatched link data in " + remLinkPath);
 
                 String str1 = c.readlink(remLinkPath);
                 String str2 = c.realpath(remSrcPath);
-                assertEquals("Mismatched link vs. real path", str1, str2);
+                assertEquals(str1, str2, "Mismatched link vs. real path");
             } finally {
                 c.disconnect();
             }
@@ -1811,14 +1878,16 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             factory.removeSftpEventListener(listener);
         }
 
-        assertNotNull("No symlink signalled", linkDataHolder.getAndSet(null));
+        assertNotNull(linkDataHolder.getAndSet(null), "No symlink signalled");
     }
 
-    @Test // see SSHD-903
-    public void testForcedVersionNegotiation() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-903
+    public void forcedVersionNegotiation(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         SftpModuleProperties.SFTP_VERSION.set(sshd, SftpConstants.SFTP_V3);
         try (SftpClient sftp = createSingleSessionClient()) {
-            assertEquals("Mismatched negotiated version", SftpConstants.SFTP_V3, sftp.getVersion());
+            assertEquals(SftpConstants.SFTP_V3, sftp.getVersion(), "Mismatched negotiated version");
         }
     }
 
@@ -1857,8 +1926,10 @@ public class SftpTest extends AbstractSftpClientTestSupport {
         return sb.toString();
     }
 
-    @Test   // see SSHD-1022
-    public void testFlushOutputStreamWithoutWrite() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")   // see SSHD-1022
+    public void flushOutputStreamWithoutWrite(int handleSize) throws Exception {
+        initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());

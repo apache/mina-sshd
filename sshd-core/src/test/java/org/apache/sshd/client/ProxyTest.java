@@ -49,25 +49,29 @@ import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.StaticDecisionForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ProxyTest extends BaseTestSupport {
 
-    @Rule
-    public TemporaryFolder tmpClientDir = new TemporaryFolder();
-
     protected final Logger logger = LoggerFactory.getLogger(getClass());
+
+    @TempDir
+    private File tmpClientDir;
 
     private ClientSession proxySession;
 
@@ -76,7 +80,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxy() throws Exception {
+    void proxy() throws Exception {
         try (SshServer server = setupTestServer();
              SshServer proxy = setupTestServer();
              SshClient client = setupTestClient()) {
@@ -114,7 +118,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testDirectWithHostKeyVerification() throws Exception {
+    void directWithHostKeyVerification() throws Exception {
         // This test exists only to show that the knownhosts setup is correct
         try (SshServer server = setupTestServer();
              SshServer proxy = setupTestServer();
@@ -148,7 +152,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxyWithHostKeyVerification() throws Exception {
+    void proxyWithHostKeyVerification() throws Exception {
         try (SshServer server = setupTestServer();
              SshServer proxy = setupTestServer();
              SshClient client = setupTestClient()) {
@@ -176,7 +180,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxyWithHostKeyVerificationAndCustomConfig() throws Exception {
+    void proxyWithHostKeyVerificationAndCustomConfig() throws Exception {
         try (SshServer server = setupTestServer();
              SshServer proxy = setupTestServer();
              SshClient client = setupTestClient()) {
@@ -208,7 +212,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxyChain() throws Exception {
+    void proxyChain() throws Exception {
         try (SshServer target = setupTestServer();
              SshServer proxy1 = setupTestServer();
              SshServer proxy2 = setupTestServer();
@@ -268,7 +272,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxyCascade() throws Exception {
+    void proxyCascade() throws Exception {
         try (SshServer target = setupTestServer();
              SshServer proxy1 = setupTestServer();
              SshServer proxy2 = setupTestServer();
@@ -328,7 +332,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxyInfinite() throws Exception {
+    void proxyInfinite() throws Exception {
         try (SshServer target = setupTestServer();
              SshServer proxy1 = setupTestServer();
              SshServer proxy2 = setupTestServer();
@@ -394,7 +398,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testProxyOverride() throws Exception {
+    void proxyOverride() throws Exception {
         try (SshServer target = setupTestServer();
              SshServer proxy1 = setupTestServer();
              SshServer proxy2 = setupTestServer();
@@ -455,8 +459,8 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    @Ignore
-    public void testExternal() throws Exception {
+    @Disabled
+    void external() throws Exception {
         try (SshServer server = setupTestServer();
              SshServer proxy = setupTestServer()) {
 
@@ -501,7 +505,7 @@ public class ProxyTest extends BaseTestSupport {
         });
 
         server.start();
-        File knownHosts = tmpClientDir.newFile("knownhosts");
+        File knownHosts = File.createTempFile("knownhosts", null, tmpClientDir);
         writeKnownHosts(server, knownHosts);
         // setup proxy with a forwarding filter to allow the local port forwarding
         proxy.setForwardingFilter(AcceptAllForwardingFilter.INSTANCE);

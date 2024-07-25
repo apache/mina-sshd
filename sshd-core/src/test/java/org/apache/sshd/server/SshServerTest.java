@@ -22,22 +22,26 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author Kohsuke Kawaguchi
  * @author Michael Heemskerk
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SshServerTest extends BaseTestSupport {
     public SshServerTest() {
         super();
     }
 
     @Test
-    public void stopMethodShouldBeIdempotent() throws Exception {
+    void stopMethodShouldBeIdempotent() throws Exception {
         try (SshServer sshd = new SshServer()) {
             sshd.stop();
             sshd.stop();
@@ -46,7 +50,7 @@ public class SshServerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testExecutorShutdownFalse() throws Exception {
+    void executorShutdownFalse() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
         try (SshServer sshd = setupTestServer()) {
@@ -61,7 +65,7 @@ public class SshServerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testExecutorShutdownTrue() throws Exception {
+    void executorShutdownTrue() throws Exception {
         ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor();
 
         try (SshServer sshd = setupTestServer()) {
@@ -75,7 +79,7 @@ public class SshServerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testDynamicPort() throws Exception {
+    void dynamicPort() throws Exception {
         try (SshServer sshd = setupTestServer()) {
             sshd.setHost(TEST_LOCALHOST);
             sshd.start();

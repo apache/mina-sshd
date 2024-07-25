@@ -34,34 +34,33 @@ import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProvider.ResourceDecodeResult;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairResourceParserTestSupport {
     private static final int MAX_RETRIES = 3;
 
-    private final ResourceDecodeResult decodeResult;
+    private ResourceDecodeResult decodeResult;
     private final AtomicInteger retriesCount = new AtomicInteger(0);
-    private final FilePasswordProvider passwordProvider;
+    private FilePasswordProvider passwordProvider;
 
-    public OpenSSHKeyPairResourceParserPasswordTest(BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
-        super(identity);
+    public void initOpenSSHKeyPairResourceParserPasswordTest(BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
+        setIdentity(identity);
         this.decodeResult = reportedResult;
         this.passwordProvider = new FilePasswordProvider() {
             @Override
@@ -89,17 +88,17 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
                 switch (reportedResult) {
                     case IGNORE:
                     case TERMINATE:
-                        assertNotNull("No error reported", err);
-                        assertEquals("Mismatched retry index", 0, retryIndex);
+                        assertNotNull(err, "No error reported");
+                        assertEquals(0, retryIndex, "Mismatched retry index");
                         break;
                     case RETRY:
                         if (err != null) {
                             @SuppressWarnings("synthetic-access")
                             int curRetry = retriesCount.getAndIncrement();
-                            assertEquals("Mismatched retry index", curRetry, retryIndex);
-                            assertTrue("Too many retries: " + retryIndex, retryIndex < MAX_RETRIES);
+                            assertEquals(curRetry, retryIndex, "Mismatched retry index");
+                            assertTrue(retryIndex < MAX_RETRIES, "Too many retries: " + retryIndex);
                         } else {
-                            assertEquals("Mismatched success retries count", MAX_RETRIES, retryIndex);
+                            assertEquals(MAX_RETRIES, retryIndex, "Mismatched success retries count");
                         }
                         break;
                     default:
@@ -111,7 +110,6 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
         };
     }
 
-    @Parameters(name = "{0} / {1}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
@@ -127,16 +125,19 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
         };
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         retriesCount.set(0);
     }
 
-    @Test
-    public void testLoadEncryptedFileWithPasswordRetry() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0} / {1}")
+    public void loadEncryptedFileWithPasswordRetry(BuiltinIdentities identity, ResourceDecodeResult reportedResult)
+            throws Exception {
+        initOpenSSHKeyPairResourceParserPasswordTest(identity, reportedResult);
         try {
             testLoadKeyPairs(true, passwordProvider);
-            assertNotSame("Unexpected success", ResourceDecodeResult.TERMINATE, decodeResult);
+            assertNotSame(ResourceDecodeResult.TERMINATE, decodeResult, "Unexpected success");
         } catch (Exception e) {
             if (decodeResult != ResourceDecodeResult.TERMINATE) {
                 throw e;
@@ -155,13 +156,13 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
             throws Exception {
         switch (decodeResult) {
             case IGNORE:
-                assertTrue("Unexpected key pairs recovered", GenericUtils.isEmpty(pairs));
-                assertEquals("Mismatched retries count", 0, retriesCount.getAndSet(0));
+                assertTrue(GenericUtils.isEmpty(pairs), "Unexpected key pairs recovered");
+                assertEquals(0, retriesCount.getAndSet(0), "Mismatched retries count");
                 break;
 
             case RETRY:
-                assertEquals("Mismatched pairs count", 1, GenericUtils.size(pairs));
-                assertEquals("Mismatched retries count", MAX_RETRIES, retriesCount.getAndSet(0));
+                assertEquals(1, GenericUtils.size(pairs), "Mismatched pairs count");
+                assertEquals(MAX_RETRIES, retriesCount.getAndSet(0), "Mismatched retries count");
                 validateKeyPairSignable(resourceKey, GenericUtils.head(pairs));
                 break;
 

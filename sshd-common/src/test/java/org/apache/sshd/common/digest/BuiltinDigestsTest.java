@@ -24,40 +24,43 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinDigestsTest extends JUnitTestSupport {
     public BuiltinDigestsTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (BuiltinDigests expected : BuiltinDigests.VALUES) {
             String name = expected.getName();
             BuiltinDigests actual = BuiltinDigests.fromFactoryName(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testAllConstantsCovered() throws Exception {
+    void allConstantsCovered() throws Exception {
         Set<BuiltinDigests> avail = EnumSet.noneOf(BuiltinDigests.class);
         Field[] fields = BuiltinDigests.Constants.class.getFields();
         for (Field f : fields) {
             String name = (String) f.get(null);
             BuiltinDigests value = BuiltinDigests.fromFactoryName(name);
-            assertNotNull("No match found for " + name, value);
-            assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull(value, "No match found for " + name);
+            assertTrue(avail.add(value), name + " re-specified");
         }
 
         assertEquals("Incomplete coverage", BuiltinDigests.VALUES, avail);

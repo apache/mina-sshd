@@ -36,13 +36,16 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+
+@TestMethodOrder(MethodName.class)
 public class LoadTest extends BaseTestSupport {
 
     private SshServer sshd;
@@ -52,25 +55,25 @@ public class LoadTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestFullSupportServer();
         sshd.start();
         port = sshd.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         sshd.stop(true);
     }
 
     @Test
-    public void testLoad() throws Exception {
+    void load() throws Exception {
         test("this is my command", 4, 4);
     }
 
     @Test
-    public void testHighLoad() throws Exception {
+    void highLoad() throws Exception {
         final StringBuilder response = new StringBuilder(1000000);
         for (int i = 0; i < 100000; i++) {
             response.append("0123456789");
@@ -79,7 +82,7 @@ public class LoadTest extends BaseTestSupport {
     }
 
     @Test
-    public void testBigResponse() throws Exception {
+    void bigResponse() throws Exception {
         final StringBuilder response = new StringBuilder(1000000);
         for (int i = 0; i < 100000; i++) {
             response.append("0123456789");
@@ -137,12 +140,12 @@ public class LoadTest extends BaseTestSupport {
 
                         Collection<ClientChannelEvent> result
                                 = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(15L));
-                        assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                        assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
                     } finally {
                         channel.close(false);
                     }
 
-                    assertArrayEquals("Mismatched message data", msg.getBytes(StandardCharsets.UTF_8), out.toByteArray());
+                    assertArrayEquals(msg.getBytes(StandardCharsets.UTF_8), out.toByteArray(), "Mismatched message data");
                 }
             } finally {
                 client.stop();

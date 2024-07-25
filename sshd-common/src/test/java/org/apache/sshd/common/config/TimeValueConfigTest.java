@@ -22,24 +22,25 @@ package org.apache.sshd.common.config;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class TimeValueConfigTest extends JUnitTestSupport {
     public TimeValueConfigTest() {
         super();
     }
 
     @Test
-    public void testDurationOf() {
+    void durationOf() {
         Object[] values = {
                 "600", TimeUnit.SECONDS.toMillis(600L),
                 "10m", TimeUnit.MINUTES.toMillis(10L),
@@ -51,7 +52,7 @@ public class TimeValueConfigTest extends JUnitTestSupport {
             String s = (String) values[index];
             Number expected = (Number) values[index + 1];
             long actual = TimeValueConfig.durationOf(s);
-            assertEquals(s, expected.longValue(), actual);
+            assertEquals(expected.longValue(), actual, s);
         }
     }
 }

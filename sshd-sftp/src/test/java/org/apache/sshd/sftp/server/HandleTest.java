@@ -23,13 +23,12 @@ import java.nio.charset.StandardCharsets;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@Category({ NoIoTestCase.class })
+@Tag("NoIoTestCase")
 public class HandleTest {
 
     public HandleTest() {
@@ -44,15 +43,15 @@ public class HandleTest {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putString(s, StandardCharsets.ISO_8859_1);
         String t = buffer.getString(StandardCharsets.ISO_8859_1);
-        assertEquals("Hash for " + x + " different", h, t.hashCode());
-        assertEquals("String for " + x + " different", s, t);
+        assertEquals(h, t.hashCode(), "Hash for " + x + " different");
+        assertEquals(s, t, "String for " + x + " different");
         byte[] b = t.getBytes(StandardCharsets.ISO_8859_1);
         long j = BufferUtils.getUInt(b);
-        assertEquals("Values different", x, j);
+        assertEquals(x, j, "Values different");
     }
 
     @Test
-    public void testIntegerStringRoundtrip() {
+    void integerStringRoundtrip() {
         final int limit = 100_000;
         for (long i = 0; i <= limit; i++) {
             roundtrip(i);

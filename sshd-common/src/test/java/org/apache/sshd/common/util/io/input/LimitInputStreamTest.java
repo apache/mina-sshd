@@ -26,24 +26,30 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class LimitInputStreamTest extends JUnitTestSupport {
     public LimitInputStreamTest() {
         super();
     }
 
     @Test
-    public void testReadLimit() throws IOException {
+    void readLimit() throws IOException {
         Path targetPath = detectTargetFolder();
         Path rootFolder = assertHierarchyTargetFolderExists(targetPath.resolve(getClass().getSimpleName()));
         Path inputFile = rootFolder.resolve(getCurrentTestName() + ".bin");
@@ -57,24 +63,24 @@ public class LimitInputStreamTest extends JUnitTestSupport {
 
             byte[] actual = new byte[expected.length];
             try (LimitInputStream limited = new LimitInputStream(in, expected.length)) {
-                assertTrue("Limited stream not marked as open", limited.isOpen());
-                assertEquals("Mismatched initial available data size", expected.length, limited.available());
+                assertTrue(limited.isOpen(), "Limited stream not marked as open");
+                assertEquals(expected.length, limited.available(), "Mismatched initial available data size");
 
                 int readLen = limited.read(actual);
-                assertEquals("Incomplete actual data read", actual.length, readLen);
-                assertArrayEquals("Mismatched read data", expected, actual);
-                assertEquals("Mismatched remaining available data size", 0, limited.available());
+                assertEquals(actual.length, readLen, "Incomplete actual data read");
+                assertArrayEquals(expected, actual, "Mismatched read data");
+                assertEquals(0, limited.available(), "Mismatched remaining available data size");
 
                 readLen = limited.read();
-                assertTrue("Unexpected success to read one more byte: " + readLen, readLen < 0);
+                assertTrue(readLen < 0, "Unexpected success to read one more byte: " + readLen);
 
                 readLen = limited.read(actual);
-                assertTrue("Unexpected success to read extra buffer: " + readLen, readLen < 0);
+                assertTrue(readLen < 0, "Unexpected success to read extra buffer: " + readLen);
 
                 limited.close();
-                assertFalse("Limited stream still marked as open", limited.isOpen());
+                assertFalse(limited.isOpen(), "Limited stream still marked as open");
 
-                assertThrows("Unexpected one byte read success after close", IOException.class, limited::read);
+                assertThrows(IOException.class, limited::read, "Unexpected one byte read success after close");
 
                 try {
                     readLen = limited.read(actual);
@@ -107,7 +113,7 @@ public class LimitInputStreamTest extends JUnitTestSupport {
 
             // make sure underlying stream not closed
             int readLen = in.read(actual);
-            assertEquals("Incomplete extra data read", Math.min(actual.length, data.length - expected.length), readLen);
+            assertEquals(Math.min(actual.length, data.length - expected.length), readLen, "Incomplete extra data read");
         }
     }
 }

@@ -29,6 +29,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Date;
 import java.util.EnumSet;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.io.IoSession;
@@ -44,31 +45,37 @@ import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Ignore;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 @SuppressWarnings("checkstyle:MethodCount")
 public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
     public SftpRemotePathChannelTest() throws IOException {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
-    @Test // see SSHD-697
-    public void testFileChannel() throws IOException {
+    // see SSHD-697
+    @Test
+    void fileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -85,23 +92,24 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
                      remFilePath, EnumSet.of(
                              StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
             int writeLen = fc.write(ByteBuffer.wrap(expected));
-            assertEquals("Mismatched written length", expected.length, writeLen);
+            assertEquals(expected.length, writeLen, "Mismatched written length");
 
             FileChannel fcPos = fc.position(0L);
-            assertSame("Mismatched positioned file channel", fc, fcPos);
+            assertSame(fc, fcPos, "Mismatched positioned file channel");
 
             byte[] actual = new byte[expected.length];
             int readLen = fc.read(ByteBuffer.wrap(actual));
-            assertEquals("Mismatched read len", writeLen, readLen);
-            assertArrayEquals("Mismatched read data", expected, actual);
+            assertEquals(writeLen, readLen, "Mismatched read len");
+            assertArrayEquals(expected, actual, "Mismatched read data");
         }
 
         byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
+        assertArrayEquals(expected, actual, "Mismatched persisted data");
     }
 
-    @Test // see SSHD-967
-    public void testTransferToFileChannel() throws IOException {
+    // see SSHD-967
+    @Test
+    void transferToFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -129,16 +137,17 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
              FileChannel dstChannel = FileChannel.open(dstFile,
                      StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             long numXfered = srcChannel.transferTo(0L, expected.length, dstChannel);
-            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
+            assertEquals(expected.length, numXfered, "Mismatched reported transfer count");
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transferred size", expected.length, actual.length);
-        assertArrayEquals("Mismatched transferred data", expected, actual);
+        assertEquals(expected.length, actual.length, "Mismatched transferred size");
+        assertArrayEquals(expected, actual, "Mismatched transferred data");
     }
 
-    @Test // see SSHD-1182
-    public void testTransferToFileChannelWithOffset() throws IOException {
+    // see SSHD-1182
+    @Test
+    void transferToFileChannelWithOffset() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -170,16 +179,18 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
              FileChannel dstChannel = FileChannel.open(dstFile,
                      StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
             long numXfered = srcChannel.transferTo(offset, expected.length, dstChannel);
-            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
+            assertEquals(expected.length, numXfered, "Mismatched reported transfer count");
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transferred size", expected.length, actual.length);
-        assertArrayEquals("Mismatched transferred data", expected, actual);
+        assertEquals(expected.length, actual.length, "Mismatched transferred size");
+        assertArrayEquals(expected, actual, "Mismatched transferred data");
     }
 
-    @Test(timeout = 10000) // see SSHD-970
-    public void testTransferToFileChannelLoopFile() throws IOException {
+    // see SSHD-970
+    @Test
+    @Timeout(value = 10000, unit = TimeUnit.MILLISECONDS)
+    void transferToFileChannelLoopFile() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -205,16 +216,17 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
             // SftpRemotePathChannel.DEFAULT_TRANSFER_BUFFER_SIZE > expected.length => Infinite loop
             long numXfered
                     = srcChannel.transferTo(0L, SftpModuleProperties.COPY_BUF_SIZE.getRequiredDefault(), dstChannel);
-            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
+            assertEquals(expected.length, numXfered, "Mismatched reported transfer count");
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transferred size", expected.length, actual.length);
-        assertArrayEquals("Mismatched transferred data", expected, actual);
+        assertEquals(expected.length, actual.length, "Mismatched transferred size");
+        assertArrayEquals(expected, actual, "Mismatched transferred data");
     }
 
-    @Test // see SSHD-967
-    public void testTransferFromFileChannel() throws IOException {
+    // see SSHD-967
+    @Test
+    void transferFromFileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -241,16 +253,16 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
                      remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
              FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {
             long numXfered = dstChannel.transferFrom(srcChannel, 0L, expected.length);
-            assertEquals("Mismatched reported transfer count", expected.length, numXfered);
+            assertEquals(expected.length, numXfered, "Mismatched reported transfer count");
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transferred size", expected.length, actual.length);
-        assertArrayEquals("Mismatched transferred data", expected, actual);
+        assertEquals(expected.length, actual.length, "Mismatched transferred size");
+        assertArrayEquals(expected, actual, "Mismatched transferred data");
     }
 
     @Test
-    public void testTransferFromFileChannelWithOffset() throws IOException {
+    void transferFromFileChannelWithOffset() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -281,12 +293,12 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
                      remFilePath, EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE));
              FileChannel srcChannel = FileChannel.open(srcFile, StandardOpenOption.READ)) {
             long numXfered = dstChannel.transferFrom(srcChannel, offset, expected.length - offset);
-            assertEquals("Mismatched reported transfer count", expected.length - offset, numXfered);
+            assertEquals(expected.length - offset, numXfered, "Mismatched reported transfer count");
         }
 
         byte[] actual = Files.readAllBytes(dstFile);
-        assertEquals("Mismatched transferred size", expected.length, actual.length);
-        assertArrayEquals("Mismatched transferred data", expected, actual);
+        assertEquals(expected.length, actual.length, "Mismatched transferred size");
+        assertArrayEquals(expected, actual, "Mismatched transferred data");
     }
 
     /*
@@ -296,9 +308,10 @@ public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
      * To test, the available heap memory of the server must be below the value set in requested_data_volume
      * limit the available heap memory of the junit execution by passing "-Xmx256m" to the VM.
      */
-    @Test(timeout = 5L * 60L * 1000L)   // see SSHD-1125
-    @Ignore("Used only for debugging SSHD-1125")
-    public void testReadRequestsOutOfMemory() throws Exception {
+    @Test
+    @Timeout(value = 5L * 60L * 1000L, unit = TimeUnit.MILLISECONDS)   // see SSHD-1125
+    @Disabled("Used only for debugging SSHD-1125")
+    void readRequestsOutOfMemory() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(

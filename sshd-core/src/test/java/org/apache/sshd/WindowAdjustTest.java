@@ -51,15 +51,16 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.AsyncCommand;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.rules.Timeout;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * <p>
@@ -69,14 +70,11 @@ import org.slf4j.LoggerFactory;
  * {@link AsyncInPendingWrapper} in this test serves as a handler for {@link WritePendingException}, which can occur
  * when sending too many messages one after another.
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class WindowAdjustTest extends BaseTestSupport {
 
     public static final byte END_FILE = '#';
     public static final int BIG_MSG_SEND_COUNT = 10000;
-
-    @Rule
-    public Timeout timeout = Timeout.seconds(TimeUnit.MINUTES.toSeconds(6));
 
     private SshServer sshServer;
     private int port;
@@ -85,8 +83,8 @@ public class WindowAdjustTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshServer = setupTestServer();
 
         byte[] msg = IoUtils.toByteArray(getClass().getResourceAsStream("/big-msg.txt"));
@@ -98,8 +96,8 @@ public class WindowAdjustTest extends BaseTestSupport {
         port = sshServer.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshServer != null) {
             sshServer.stop();
             sshServer.close(true);
@@ -107,7 +105,8 @@ public class WindowAdjustTest extends BaseTestSupport {
     }
 
     @Test
-    public void testTrafficHeavyLoad() throws Exception {
+    @Timeout(value = 6, unit = TimeUnit.MINUTES)
+    void trafficHeavyLoad() throws Exception {
         try (SshClient client = setupTestClient()) {
             client.start();
 
@@ -123,7 +122,7 @@ public class WindowAdjustTest extends BaseTestSupport {
 
                     Collection<ClientChannelEvent> result
                             = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(2L));
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
                 }
             } finally {
                 client.stop();

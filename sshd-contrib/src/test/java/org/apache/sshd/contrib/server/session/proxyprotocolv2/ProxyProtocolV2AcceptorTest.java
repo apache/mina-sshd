@@ -26,18 +26,18 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.contrib.server.session.proxyprotocol.ProxyProtocolAcceptor;
 import org.apache.sshd.contrib.server.session.proxyprotocolv2.exception.ProxyProtocolException;
 import org.apache.sshd.server.session.AbstractServerSession;
-import org.junit.Test;
-import org.junit.runner.RunWith;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
-import org.mockito.junit.MockitoJUnitRunner;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
 import static org.assertj.core.api.InstanceOfAssertFactories.type;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThrows;
-import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.verify;
  *
  * @author Oodrive - François HERBRETEAU (f.herbreteau@oodrive.com)
  */
-@RunWith(MockitoJUnitRunner.class)
+@ExtendWith(MockitoExtension.class)
 public class ProxyProtocolV2AcceptorTest {
 
     private final ProxyProtocolAcceptor acceptor = new ProxyProtocolV2Acceptor();
@@ -63,7 +63,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV1Tcp4() throws Exception {
+    void handlingProxyProtocolV1Tcp4() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer("PROXY TCP4 172.19.0.1 172.19.0.3 42272 80\r\n".getBytes());
 
@@ -86,7 +86,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV1Tpc6() throws Exception {
+    void handlingProxyProtocolV1Tpc6() throws Exception {
         // Given
         ByteArrayBuffer buffer
                 = new ByteArrayBuffer("PROXY TCP6 fe80::a00:27ff:fe9f:4016 fe80::a089:a3ff:fe15:e992 42272 80\r\n".getBytes());
@@ -110,7 +110,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2Tcp4() throws Exception {
+    void handlingProxyProtocolV2Tcp4() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -135,7 +135,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2Tcp6() throws Exception {
+    void handlingProxyProtocolV2Tcp6() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -163,7 +163,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2UnixSocket() throws Exception {
+    void handlingProxyProtocolV2UnixSocket() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -179,7 +179,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2Udp4() throws Exception {
+    void handlingProxyProtocolV2Udp4() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -196,7 +196,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2Udp6() throws Exception {
+    void handlingProxyProtocolV2Udp6() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -215,7 +215,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingOtherProtocolHeader() throws Exception {
+    void handlingOtherProtocolHeader() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer("SSH-2.0-OpenSSH_9.3".getBytes());
 
@@ -229,7 +229,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithLocalCommand() throws Exception {
+    void handlingProxyProtocolV2WithLocalCommand() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -245,7 +245,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithExtendedData() throws Exception {
+    void handlingProxyProtocolV2WithExtendedData() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -261,7 +261,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithInvalidVersion() {
+    void handlingProxyProtocolV2WithInvalidVersion() {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -279,7 +279,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithUnassignedCommand() {
+    void handlingProxyProtocolV2WithUnassignedCommand() {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -297,7 +297,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithUnexpectedFamily() {
+    void handlingProxyProtocolV2WithUnexpectedFamily() {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -315,7 +315,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithUnexpectedTransport() {
+    void handlingProxyProtocolV2WithUnexpectedTransport() {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] {
                 0x0d, 0x0a, 0x0d, 0x0a, 0x00, 0x0d, 0x0a, 0x51, 0x55, 0x49, 0x54, 0x0a,
@@ -333,7 +333,7 @@ public class ProxyProtocolV2AcceptorTest {
     }
 
     @Test
-    public void testHandlingProxyProtocolV2WithInvalidSize() throws Exception {
+    void handlingProxyProtocolV2WithInvalidSize() throws Exception {
         // Given
         ByteArrayBuffer buffer = new ByteArrayBuffer(new byte[] { 0x00, 0x00, 0x00, 0x00 });
 

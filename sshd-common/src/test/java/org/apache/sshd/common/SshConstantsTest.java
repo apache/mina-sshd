@@ -23,58 +23,61 @@ import java.util.Collection;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SshConstantsTest extends JUnitTestSupport {
     public SshConstantsTest() {
         super();
     }
 
     @Test
-    public void testGetDisconnectReason() {
+    void getDisconnectReason() {
         for (int reason = SshConstants.SSH2_DISCONNECT_HOST_NOT_ALLOWED_TO_CONNECT;
              reason <= SshConstants.SSH2_DISCONNECT_ILLEGAL_USER_NAME;
              reason++) {
             String name = SshConstants.getDisconnectReasonName(reason);
-            assertTrue("Mismatched name for reason=" + reason + ": " + name, name.startsWith("SSH2_DISCONNECT_"));
+            assertTrue(name.startsWith("SSH2_DISCONNECT_"), "Mismatched name for reason=" + reason + ": " + name);
         }
     }
 
     @Test
-    public void testGetOpenErrorName() {
+    void getOpenErrorName() {
         for (int code = SshConstants.SSH_OPEN_ADMINISTRATIVELY_PROHIBITED;
              code <= SshConstants.SSH_OPEN_RESOURCE_SHORTAGE;
              code++) {
             String name = SshConstants.getOpenErrorCodeName(code);
-            assertTrue("Mismatched name for code=" + code + ": " + name, name.startsWith("SSH_OPEN_"));
+            assertTrue(name.startsWith("SSH_OPEN_"), "Mismatched name for code=" + code + ": " + name);
         }
     }
 
     @Test
-    public void testAmbiguousOpcodes() throws Exception {
+    void ambiguousOpcodes() throws Exception {
         int[] knownAmbiguities = { 30, 31, 60 };
         Collection<Integer> opcodes = SshConstants.getAmbiguousOpcodes();
-        assertTrue("Not enough ambiguities found", GenericUtils.size(opcodes) >= knownAmbiguities.length);
+        assertTrue(GenericUtils.size(opcodes) >= knownAmbiguities.length, "Not enough ambiguities found");
 
         for (int cmd : knownAmbiguities) {
-            assertEquals("Mismatched mnemonic for known ambiguity=" + cmd, Integer.toString(cmd),
-                    SshConstants.getCommandMessageName(cmd));
-            assertTrue("Known ambiguity not reported as such: " + cmd, SshConstants.isAmbiguousOpcode(cmd));
-            assertTrue("Known ambiguity=" + cmd + " not listed: " + opcodes, opcodes.contains(cmd));
+            assertEquals(Integer.toString(cmd),
+                    SshConstants.getCommandMessageName(cmd),
+                    "Mismatched mnemonic for known ambiguity=" + cmd);
+            assertTrue(SshConstants.isAmbiguousOpcode(cmd), "Known ambiguity not reported as such: " + cmd);
+            assertTrue(opcodes.contains(cmd), "Known ambiguity=" + cmd + " not listed: " + opcodes);
         }
 
         for (Integer cmd : opcodes) {
-            assertEquals("Mismatched mnemonic for " + cmd, cmd.toString(), SshConstants.getCommandMessageName(cmd));
-            assertTrue("Opcode not detected as ambiguous: " + cmd, SshConstants.isAmbiguousOpcode(cmd));
+            assertEquals(cmd.toString(), SshConstants.getCommandMessageName(cmd), "Mismatched mnemonic for " + cmd);
+            assertTrue(SshConstants.isAmbiguousOpcode(cmd), "Opcode not detected as ambiguous: " + cmd);
         }
     }
 }

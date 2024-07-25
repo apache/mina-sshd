@@ -43,18 +43,26 @@ import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Port forwarding tests
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ProxyTest extends BaseTestSupport {
     private SshServer sshd;
     private int sshPort;
@@ -136,8 +144,8 @@ public class ProxyTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         CoreModuleProperties.WINDOW_SIZE.set(sshd, 2048L);
         CoreModuleProperties.MAX_PACKET_SIZE.set(sshd, 256L);
@@ -163,8 +171,8 @@ public class ProxyTest extends BaseTestSupport {
         this.acceptor = acceptor;
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -177,7 +185,7 @@ public class ProxyTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSocksProxy() throws Exception {
+    void socksProxy() throws Exception {
         final AtomicReference<SshdSocketAddress> localAddressHolder = new AtomicReference<>();
         final AtomicReference<SshdSocketAddress> boundAddressHolder = new AtomicReference<>();
         final AtomicInteger tearDownSignal = new AtomicInteger(0);
@@ -196,9 +204,9 @@ public class ProxyTest extends BaseTestSupport {
             public void tornDownDynamicTunnel(
                     org.apache.sshd.common.session.Session session, SshdSocketAddress address, Throwable reason)
                     throws IOException {
-                assertNotNull("Establishment (local) indication not invoked for address=" + address, localAddressHolder.get());
-                assertNotNull("Establishment (bound) indication not invoked for address=" + address, boundAddressHolder.get());
-                assertEquals("No tear down indication", 1, tearDownSignal.get());
+                assertNotNull(localAddressHolder.get(), "Establishment (local) indication not invoked for address=" + address);
+                assertNotNull(boundAddressHolder.get(), "Establishment (bound) indication not invoked for address=" + address);
+                assertEquals(1, tearDownSignal.get(), "No tear down indication");
             }
 
             @Override
@@ -213,9 +221,9 @@ public class ProxyTest extends BaseTestSupport {
             @Override
             public void tearingDownDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress address)
                     throws IOException {
-                assertNotNull("Establishment (local) indication not invoked for address=" + address, localAddressHolder.get());
-                assertNotNull("Establishment (bound) indication not invoked for address=" + address, boundAddressHolder.get());
-                assertEquals("Multiple tearing down indications", 1, tearDownSignal.incrementAndGet());
+                assertNotNull(localAddressHolder.get(), "Establishment (local) indication not invoked for address=" + address);
+                assertNotNull(boundAddressHolder.get(), "Establishment (bound) indication not invoked for address=" + address);
+                assertEquals(1, tearDownSignal.incrementAndGet(), "Multiple tearing down indications");
             }
 
             @Override
@@ -230,7 +238,7 @@ public class ProxyTest extends BaseTestSupport {
             @Override
             public void establishingDynamicTunnel(org.apache.sshd.common.session.Session session, SshdSocketAddress local)
                     throws IOException {
-                assertNull("Multiple calls to establishment indicator", localAddressHolder.getAndSet(local));
+                assertNull(localAddressHolder.getAndSet(local), "Multiple calls to establishment indicator");
             }
 
             @Override
@@ -247,8 +255,8 @@ public class ProxyTest extends BaseTestSupport {
                     org.apache.sshd.common.session.Session session, SshdSocketAddress local, SshdSocketAddress boundAddress,
                     Throwable reason)
                     throws IOException {
-                assertSame("Establishment indication not invoked", local, localAddressHolder.get());
-                assertNull("Multiple calls to establishment indicator", boundAddressHolder.getAndSet(boundAddress));
+                assertSame(local, localAddressHolder.get(), "Establishment indication not invoked");
+                assertNull(boundAddressHolder.getAndSet(boundAddress), "Multiple calls to establishment indicator");
             }
 
             @Override
@@ -266,7 +274,7 @@ public class ProxyTest extends BaseTestSupport {
             try (DynamicPortForwardingTracker tracker
                     = session.createDynamicPortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, 0))) {
                 dynamic = tracker.getBoundAddress();
-                assertTrue("Tracker not marked as open", tracker.isOpen());
+                assertTrue(tracker.isOpen(), "Tracker not marked as open");
 
                 for (int i = 0; i < 10; i++) {
                     try (Socket s = new Socket(
@@ -281,20 +289,21 @@ public class ProxyTest extends BaseTestSupport {
                             sockOut.flush();
 
                             int l = sockIn.read(buf);
-                            assertEquals("Mismatched data at iteration " + i, expected,
-                                    new String(buf, 0, l, StandardCharsets.UTF_8));
+                            assertEquals(expected,
+                                    new String(buf, 0, l, StandardCharsets.UTF_8),
+                                    "Mismatched data at iteration " + i);
                         }
                     }
                 }
 
                 tracker.close();
-                assertFalse("Tracker not marked as closed", tracker.isOpen());
+                assertFalse(tracker.isOpen(), "Tracker not marked as closed");
             } finally {
                 client.removePortForwardingEventListener(listener);
             }
 
-            assertNotNull("Local tunnel address not indicated", localAddressHolder.getAndSet(null));
-            assertNotNull("Bound tunnel address not indicated", boundAddressHolder.getAndSet(null));
+            assertNotNull(localAddressHolder.getAndSet(null), "Local tunnel address not indicated");
+            assertNotNull(boundAddressHolder.getAndSet(null), "Bound tunnel address not indicated");
 
             try {
                 try (Socket s

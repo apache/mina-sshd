@@ -30,31 +30,31 @@ import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.ContainerTestCase;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.junit.jupiter.Container;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test ciphers against OpenSSH. Force resetting ciphers every time to verify that they are res-initialized correctly.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@RunWith(Parameterized.class)
-@Category(ContainerTestCase.class)
+@Tag("ContainerTestCase")
+@Testcontainers
 public class OpenSshCipherTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenSshCipherTest.class);
@@ -62,8 +62,8 @@ public class OpenSshCipherTest extends BaseTestSupport {
     // Re-use an already defined key
     private static final String TEST_RESOURCES = "org/apache/sshd/common/kex/extensions/client";
 
-    @Rule
-    public GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
+    @Container
+    GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
             .withDockerfileFromBuilder(builder -> builder.from("alpine:3.19") //
                     .run("apk --update add openssh-server") // Installs OpenSSH
                     // Enable deprecated ciphers
@@ -83,11 +83,11 @@ public class OpenSshCipherTest extends BaseTestSupport {
             .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1)).withExposedPorts(22) //
             .withLogConsumer(new Slf4jLogConsumer(LOG));
 
-    private final String providerName;
+    private String providerName;
 
-    private final BuiltinCiphers builtIn;
+    private BuiltinCiphers builtIn;
 
-    public OpenSshCipherTest(String providerName, BuiltinCiphers factory, String name) {
+    public void initOpenSshCipherTest(String providerName, BuiltinCiphers factory, String name) {
         this.providerName = providerName;
         this.builtIn = factory;
         if ("BC".equals(providerName)) {
@@ -95,14 +95,14 @@ public class OpenSshCipherTest extends BaseTestSupport {
         }
     }
 
-    @Before
-    public void changeCipher() {
+    @BeforeEach
+    void changeCipher() {
         BaseCipher.factory = t -> javax.crypto.Cipher.getInstance(t, providerName);
         BaseCipher.alwaysReInit = true;
     }
 
-    @After
-    public void resetCipher() {
+    @AfterEach
+    void resetCipher() {
         BaseCipher.factory = SecurityUtils::getCipher;
         BaseCipher.alwaysReInit = false;
     }
@@ -119,7 +119,6 @@ public class OpenSshCipherTest extends BaseTestSupport {
     }
 
     @SuppressWarnings("deprecation")
-    @Parameters(name = "{2} - {0}")
     public static List<Object[]> getParameters() {
         List<Object[]> items = new ArrayList<>();
         addCipher(BuiltinCiphers.tripledescbc, items);
@@ -135,8 +134,10 @@ public class OpenSshCipherTest extends BaseTestSupport {
         return items;
     }
 
-    @Test
-    public void testConnection() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "{2} - {0}")
+    public void connection(String providerName, BuiltinCiphers factory, String name) throws Exception {
+        initOpenSshCipherTest(providerName, factory, name);
         FileKeyPairProvider keyPairProvider = CommonTestSupportUtils.createTestKeyPairProvider(TEST_RESOURCES + "/bob_key");
         SshClient client = setupTestClient();
         client.setKeyIdentityProvider(keyPairProvider);

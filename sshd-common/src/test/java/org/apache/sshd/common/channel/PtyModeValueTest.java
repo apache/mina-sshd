@@ -23,71 +23,75 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class PtyModeValueTest extends JUnitTestSupport {
-    private final PtyMode expected;
+    private PtyMode expected;
 
-    public PtyModeValueTest(PtyMode expected) {
+    public void initPtyModeValueTest(PtyMode expected) {
         this.expected = expected;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(PtyMode.MODES);
     }
 
-    @Test
-    public void testOpcodeExtractor() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void opcodeExtractor(PtyMode expected) {
+        initPtyModeValueTest(expected);
         assertEquals(expected.toInt(), PtyMode.OPCODE_EXTRACTOR.applyAsInt(expected));
     }
 
-    @Test
-    public void testByOpcodeComparator() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void byOpcodeComparator(PtyMode expected) {
+        initPtyModeValueTest(expected);
         int v1 = expected.toInt();
         for (PtyMode actual : PtyMode.MODES) {
             int v2 = actual.toInt();
             int cmpExpected = Integer.signum(Integer.compare(v1, v2));
             int cmpActual = Integer.signum(PtyMode.BY_OPCODE.compare(expected, actual));
-            assertEquals(expected + " vs. " + actual, cmpExpected, cmpActual);
+            assertEquals(cmpExpected, cmpActual, expected + " vs. " + actual);
         }
     }
 
-    @Test
-    public void testFromName() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void fromName(PtyMode expected) {
+        initPtyModeValueTest(expected);
         String name = expected.name();
         for (int index = 0; index < Byte.SIZE; index++) {
             PtyMode actual = PtyMode.fromName(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
             name = shuffleCase(name);
         }
     }
 
-    @Test
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
     @SuppressWarnings("unchecked")
-    public void testGetBooleanSettingValueOnNullOrEmptyValues() {
+    public void getBooleanSettingValueOnNullOrEmptyValues(PtyMode expected) {
+        initPtyModeValueTest(expected);
         for (Map<PtyMode, ?> modes : new Map[] { null, Collections.emptyMap() }) {
             String s = (modes == null) ? "null" : "empty";
-            assertFalse("Map is " + s, PtyMode.getBooleanSettingValue(modes, expected));
+            assertFalse(PtyMode.getBooleanSettingValue(modes, expected), "Map is " + s);
         }
     }
 
