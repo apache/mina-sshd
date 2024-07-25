@@ -32,6 +32,7 @@ import java.util.function.BiConsumer;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.kex.extension.parser.GlobalRequestsOk;
 import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
@@ -92,6 +93,8 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             } else {
                 session.setAttribute(HOSTBOUND_AUTHENTICATION, version);
             }
+        } else if (GlobalRequestsOk.NAME.equals(name)) {
+            GlobalRequestsOk.INSTANCE.parseExtension(data);
         }
         return true;
     }
@@ -157,7 +160,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      * Collects extension info records, handing them off to the given {@code marshaller} for writing into an
      * {@link KexExtensions#SSH_MSG_EXT_INFO} message.
      * <p>
-     * This default implementation does not marshal any extension.
+     * This default implementation marshals a {@link GlobalRequestsOk} extension}.
      * </p>
      *
      * @param session    {@link Session} to send the KEX extension information for
@@ -165,5 +168,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      * @param marshaller {@link BiConsumer} writing the extensions into an SSH message
      */
     public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
+        // global-requests-ok
+        marshaller.accept(GlobalRequestsOk.NAME, "");
     }
 }
