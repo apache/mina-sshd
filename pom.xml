@@ -27,7 +27,7 @@
 
     <groupId>org.apache.sshd</groupId>
     <artifactId>sshd</artifactId>
-    <version>2.13.2-SNAPSHOT</version>
+    <version>2.14.0-SNAPSHOT</version>
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
@@ -75,13 +75,13 @@
         <connection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</connection>
         <developerConnection>scm:git:https://gitbox.apache.org/repos/asf/mina-sshd.git</developerConnection>
         <url>https://github.com/apache/mina-sshd/tree/${project.scm.tag}</url>
-        <tag>sshd-2.13.1</tag>
+        <tag>sshd-2.13.2</tag>
     </scm>
 
     <properties>
         <projectRoot>${project.basedir}</projectRoot>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <project.build.outputTimestamp>2024-06-20T20:44:27Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2024-07-23T13:00:38Z</project.build.outputTimestamp>
 
         <!-- NOTE: actual workspace root dir value updated by gmavenplus-plugin on initialization phase -->
         <!-- workspace.root.dir>${project.basedir}</workspace.root.dir -->
