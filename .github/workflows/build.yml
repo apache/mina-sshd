@@ -28,8 +28,8 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
-        java: [ '8' ]
+        os: [ ubuntu-latest ]
+        java: [ '17' ]
     steps:
       - uses: actions/checkout@v4
 
@@ -45,6 +45,11 @@ jobs:
           key: ${{ matrix.os }}-maven-${{ hashFiles('**/pom.xml') }}
           restore-keys: |
             ${{ matrix.os }}-maven-
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.9.8'
 
       - name: Build with maven
         run: mvn -B --errors --activate-profiles ci --no-transfer-progress package -DskipTests
@@ -63,7 +68,9 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: ${{ matrix.java }}
+          java-version: |
+            ${{ matrix.java }} 
+            17
 
       - uses: actions/cache@v4
         with:
@@ -72,9 +79,30 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-maven-
 
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.9.8'
+
       - name: Build and test with maven
         # Skip all static checks, they were already done in the compile jobs
-        run: mvn -B --errors --activate-profiles ci --no-transfer-progress package
+        run: mvn -B --errors --activate-profiles ci,jdk8 "-DjdkToolchainVersion=[,9)" --no-transfer-progress package
+        if: matrix.java == '8'
+
+      - name: Build and test with maven
+        # Skip all static checks, they were already done in the compile jobs
+        run: mvn -B --errors --activate-profiles ci "-DjdkToolchainVersion=[11,12)" --no-transfer-progress package
+        if: matrix.java == '11'
+
+      - name: Build and test with maven
+        # Skip all static checks, they were already done in the compile jobs
+        run: mvn -B --errors --activate-profiles ci "-DjdkToolchainVersion=[17,18)" --no-transfer-progress package
+        if: matrix.java == '17'
+
+      - name: Build and test with maven
+        # Skip all static checks, they were already done in the compile jobs
+        run: mvn -B --errors --activate-profiles ci "-DjdkToolchainVersion=[21,22)" --no-transfer-progress package
+        if: matrix.java == '21'
 
       - name: Archive test results and logs
         # if: success() || failure() to also get the test results on successful runs.
