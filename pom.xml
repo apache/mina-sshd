@@ -174,6 +174,7 @@
                 </plugins>
             </build>
         </profile>
+
         <profile>
             <id>jdk8</id>
             <properties>
@@ -203,6 +204,15 @@
                 </plugin>
             </plugins>
             </build>
+        </profile>
+        <profile>
+            <id>jdk11</id>
+        </profile>
+        <profile>
+            <id>jdk17</id>
+        </profile>
+        <profile>
+            <id>jdk21</id>
         </profile>
 
         <profile>

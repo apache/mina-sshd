@@ -33,6 +33,7 @@
     <properties>
         <projectRoot>${project.basedir}/..</projectRoot>
         <apacheds.version>2.0.0.AM26</apacheds.version>
+        <surefire.argLine>--add-opens=java.base/sun.security.util=ALL-UNNAMED --add-opens=java.base/sun.security.x509=ALL-UNNAMED</surefire.argLine>
     </properties>
 
     <dependencyManagement>
@@ -127,6 +128,9 @@
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <useModulePath>false</useModulePath>
+                    <!-- See https://issues.apache.org/jira/browse/DIRSTUDIO-1277 -->
+                    <argLine>${surefire.argLine}</argLine>
                 </configuration>
             </plugin>
             <plugin>
@@ -141,23 +145,10 @@
     
     <profiles>
         <profile>
-            <id>test-on-java16+</id>
-            <activation>
-                <jdk>[16,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <configuration>
-                            <useModulePath>false</useModulePath>
-                            <!-- See https://issues.apache.org/jira/browse/DIRSTUDIO-1277 -->
-                            <argLine>--add-opens=java.base/sun.security.util=ALL-UNNAMED --add-opens=java.base/sun.security.x509=ALL-UNNAMED</argLine>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
+            <id>jdk8</id>
+            <properties>
+                <surefire.argLine />
+            </properties>
         </profile>
     </profiles>
 </project>
