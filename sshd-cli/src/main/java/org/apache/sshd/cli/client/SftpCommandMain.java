@@ -34,6 +34,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 import java.util.ServiceLoader;
@@ -47,6 +48,7 @@ import org.apache.sshd.cli.client.helper.SftpFileTransferProgressOutputStream;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.cipher.CipherFactory;
@@ -71,6 +73,7 @@ import org.apache.sshd.common.util.io.output.LineLevelAppender;
 import org.apache.sshd.common.util.io.output.LineLevelAppenderStream;
 import org.apache.sshd.common.util.io.output.NullOutputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.config.SshServerConfigFileReader;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
@@ -90,6 +93,8 @@ import org.apache.sshd.sftp.common.extensions.ParserUtils;
 import org.apache.sshd.sftp.common.extensions.openssh.LimitsExtensionParser;
 import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
 import org.slf4j.Logger;
+
+import static org.apache.sshd.common.PropertyResolverUtils.toPropertyResolver;
 
 /**
  * TODO Add javadoc
@@ -366,9 +371,13 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
                 setupLogging(level, stdout, stderr, logStream);
             }
 
+            PropertyResolver defaultOptions = toPropertyResolver(new HashMap<>());
+            CoreModuleProperties.NO_FLOW_CONTROL.set(defaultOptions, Boolean.TRUE);
+            CoreModuleProperties.WINDOW_SIZE.set(defaultOptions, 1024L * 1024L * 1024L);
+
             ClientSession session = (logStream == null)
                     ? null
-                    : setupClientSession(SFTP_PORT_OPTION, stdin, level, stdout, stderr, args);
+                    : setupClientSession(SFTP_PORT_OPTION, stdin, level, stdout, stderr, args, defaultOptions);
             if (session == null) {
                 System.err.println("usage: sftp [-v[v][v]] [-E logoutput] [-i identity] [-io nio2|mina|netty]"
                                    + " [-J proxyJump] [-l login] [" + SFTP_PORT_OPTION + " port] [-o option=value]"

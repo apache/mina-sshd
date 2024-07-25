@@ -757,6 +757,13 @@ public abstract class AbstractConnectionService
             return;
         }
 
+        if (getSession().isNoFlowControl() && !channels.isEmpty()) {
+            // TODO add language tag configurable control
+            sendChannelOpenFailure(buffer, sender, SshConstants.SSH_OPEN_CONNECT_FAILED,
+                    "Only a single channel can be opened when using no-flow-control", "");
+            return;
+        }
+
         Session session = getSession();
         FactoryManager manager = Objects.requireNonNull(session.getFactoryManager(), "No factory manager");
         Channel channel = ChannelFactory.createChannel(session, manager.getChannelFactories(), type);

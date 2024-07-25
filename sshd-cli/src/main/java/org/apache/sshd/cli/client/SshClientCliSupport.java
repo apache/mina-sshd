@@ -119,7 +119,15 @@ public abstract class SshClientCliSupport extends CliSupport {
     // CHECKSTYLE:OFF
     public static ClientSession setupClientSession(
             String portOption, BufferedReader stdin, Level level,
-            PrintStream stdout, PrintStream stderr, String... args)
+            PrintStream stdout, PrintStream stderr, String[] args)
+            throws Exception {
+        return setupClientSession(portOption, stdin, level, stdout, stderr, args, null);
+    }
+
+    public static ClientSession setupClientSession(
+            String portOption, BufferedReader stdin, Level level,
+            PrintStream stdout, PrintStream stderr, String[] args,
+            PropertyResolver defaultOptions)
             throws Exception {
         int port = -1;
         String host = null;
@@ -240,7 +248,8 @@ public abstract class SshClientCliSupport extends CliSupport {
             return null;
         }
 
-        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options);
+        PropertyResolver resolver = PropertyResolverUtils.toPropertyResolver(options,
+                defaultOptions);
         SshClient client = setupClient(
                 resolver, ciphers, macs, compressions, identities,
                 stdin, stdout, stderr, level, args);

@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -42,12 +43,14 @@ import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.auth.AuthenticationIdentitiesProvider;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ReflectionUtils;
 import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.threads.ThreadUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.scp.client.ScpClient;
 import org.apache.sshd.scp.client.ScpClient.Option;
 import org.apache.sshd.scp.client.ScpClientCreator;
@@ -60,6 +63,8 @@ import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpReceiveFileCommandDetails;
 import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 import org.slf4j.Logger;
+
+import static org.apache.sshd.common.PropertyResolverUtils.toPropertyResolver;
 
 /**
  * @see    <A HREF="https://man7.org/linux/man-pages/man1/scp.1.html">SCP(1) - manual page</A>
@@ -151,7 +156,7 @@ public class ScpCommandMain extends SshClientCliSupport {
             return null;
         }
 
-        return effective.toArray(new String[effective.size()]);
+        return effective.toArray(new String[0]);
     }
 
     /* -------------------------------------------------------------------------------- */
@@ -248,11 +253,11 @@ public class ScpCommandMain extends SshClientCliSupport {
     public static void xferLocalToRemote(
             BufferedReader stdin, PrintStream stdout, PrintStream stderr, String[] args,
             ScpLocation source, ScpLocation target, Collection<Option> options,
-            OutputStream logStream, Level level, boolean quiet)
+            OutputStream logStream, Level level, boolean quiet, PropertyResolver defaultOptions)
             throws Exception {
         ScpClientCreator creator = resolveScpClientCreator(stderr, args);
         ClientSession session = ((logStream == null) || (creator == null) || GenericUtils.isEmpty(args))
-                ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args);
+                ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args, defaultOptions);
         if (session == null) {
             showUsageMessage(stderr);
             System.exit(-1);
@@ -330,10 +335,10 @@ public class ScpCommandMain extends SshClientCliSupport {
     public static void xferRemoteToRemote(
             BufferedReader stdin, PrintStream stdout, PrintStream stderr, String[] args,
             ScpLocation source, ScpLocation target, Collection<Option> options,
-            OutputStream logStream, Level level, boolean quiet)
+            OutputStream logStream, Level level, boolean quiet, PropertyResolver defaultOptions)
             throws Exception {
         ClientSession srcSession = ((logStream == null) || GenericUtils.isEmpty(args))
-                ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args);
+                ? null : setupClientSession(SCP_PORT_OPTION, stdin, level, stdout, stderr, args, defaultOptions);
         if (srcSession == null) {
             showUsageMessage(stderr);
             System.exit(-1);
@@ -444,6 +449,10 @@ public class ScpCommandMain extends SshClientCliSupport {
                 new InputStreamReader(new NoCloseInputStream(System.in), Charset.defaultCharset()))) {
             args = normalizeCommandArguments(stdout, stderr, args);
 
+            PropertyResolver defaultOptions = toPropertyResolver(new HashMap<>());
+            CoreModuleProperties.NO_FLOW_CONTROL.set(defaultOptions, Boolean.TRUE);
+            CoreModuleProperties.WINDOW_SIZE.set(defaultOptions, 1024L * 1024L * 1024L);
+
             Level level = Level.SEVERE;
             int numArgs = GenericUtils.length(args);
             // see the way normalizeCommandArguments works...
@@ -472,9 +481,11 @@ public class ScpCommandMain extends SshClientCliSupport {
             }
 
             if (threeWay) {
-                xferRemoteToRemote(stdin, stdout, stderr, args, source, target, options, logStream, level, quiet);
+                xferRemoteToRemote(stdin, stdout, stderr, args, source, target, options, logStream, level, quiet,
+                        defaultOptions);
             } else {
-                xferLocalToRemote(stdin, stdout, stderr, args, source, target, options, logStream, level, quiet);
+                xferLocalToRemote(stdin, stdout, stderr, args, source, target, options, logStream, level, quiet,
+                        defaultOptions);
             }
         } finally {
             if ((logStream != stdout) && (logStream != stderr)) {

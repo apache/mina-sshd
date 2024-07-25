@@ -70,6 +70,11 @@ public class LocalWindow extends Window {
         BufferUtils.validateUint32Value(len, "Invalid consumption length: %d");
         checkInitialized("consume");
 
+        if (noFlowControl) {
+            // flow control is disabled, so just bail out
+            return;
+        }
+
         long remainLen;
         synchronized (lock) {
             remainLen = getSize() - len;

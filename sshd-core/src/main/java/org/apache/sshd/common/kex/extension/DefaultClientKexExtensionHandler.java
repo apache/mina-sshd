@@ -26,6 +26,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.function.BiConsumer;
@@ -33,11 +34,15 @@ import java.util.function.BiConsumer;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
+import org.apache.sshd.common.kex.extension.parser.NoFlowControl;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Detects if the server sends a
@@ -91,6 +96,15 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
                 }
             } else {
                 session.setAttribute(HOSTBOUND_AUTHENTICATION, version);
+            }
+        } else if (NoFlowControl.NAME.equals(name)) {
+            String o = NoFlowControl.INSTANCE.parseExtension(data);
+            Optional<Boolean> nfc = CoreModuleProperties.NO_FLOW_CONTROL.get(session);
+            if (NoFlowControl.PREFERRED.equals(o) && nfc.orElse(Boolean.TRUE)
+                    || NoFlowControl.SUPPORTED.equals(o) && nfc.orElse(Boolean.FALSE)) {
+                AbstractSession abstractSession
+                        = ValidateUtils.checkInstanceOf(session, AbstractSession.class, "Not a supported session: %s", session);
+                abstractSession.activateNoFlowControl();
             }
         }
         return true;
@@ -157,7 +171,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      * Collects extension info records, handing them off to the given {@code marshaller} for writing into an
      * {@link KexExtensions#SSH_MSG_EXT_INFO} message.
      * <p>
-     * This default implementation does not marshal any extension.
+     * This default implementation marshals a {@link NoFlowControl} extension}.
      * </p>
      *
      * @param session    {@link Session} to send the KEX extension information for
@@ -165,5 +179,11 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      * @param marshaller {@link BiConsumer} writing the extensions into an SSH message
      */
     public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
+        // no-flow-control
+        Boolean nfc = CoreModuleProperties.NO_FLOW_CONTROL.get(session).orElse(null);
+        if (nfc == null || nfc) {
+            marshaller.accept(NoFlowControl.NAME,
+                    nfc != null ? NoFlowControl.PREFERRED : NoFlowControl.SUPPORTED);
+        }
     }
 }

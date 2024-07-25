@@ -382,4 +382,10 @@ public interface Session
         T value = session.getAttribute(key);
         return (value != null) ? value : FactoryManager.resolveAttribute(session.getFactoryManager(), key);
     }
+
+    /**
+     * Check if the no-flow-control KEX extension has been activated.
+     */
+    boolean isNoFlowControl();
+
 }
