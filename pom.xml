@@ -81,7 +81,7 @@
     <properties>
         <minimalJavaBuildVersion>17</minimalJavaBuildVersion>
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
-        <minimalMavenBuildVersion>3.9.8</minimalMavenBuildVersion>
+        <minimalMavenBuildVersion>3.9</minimalMavenBuildVersion>
 
         <format.impsort.action>sort</format.impsort.action>
         <format.formatter.action>format</format.formatter.action>
@@ -104,7 +104,6 @@
         <maven.compiler.target>${javac.target}</maven.compiler.target>
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
-        <min.required.maven.version>3.5.0</min.required.maven.version>
         <groovy.version>4.0.17</groovy.version>
         <bouncycastle.version>1.78.1</bouncycastle.version>
             <!-- NOTE: upgrading slf4j beyond this version causes
@@ -1114,10 +1113,10 @@
                         <configuration>
                             <rules>
                                 <requireMavenVersion>
-                                    <version>${min.required.maven.version}</version>
+                                    <version>${minimalMavenBuildVersion}</version>
                                 </requireMavenVersion>
                                 <requireJavaVersion>
-                                    <version>${required.java.version}</version>
+                                    <version>${minimalJavaBuildVersion}</version>
                                 </requireJavaVersion>
                                 <requireReleaseDeps>
                                     <onlyWhenRelease>true</onlyWhenRelease>
@@ -1133,7 +1132,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-clean-plugin</artifactId>
                 <executions>
-                        <!-- Delete temporary serialized key files generated during tests run -->
+                    <!-- Delete temporary serialized key files generated during tests run -->
                     <execution>
                         <id>auto-clean-key-files</id>
                         <phase>initialize</phase>
