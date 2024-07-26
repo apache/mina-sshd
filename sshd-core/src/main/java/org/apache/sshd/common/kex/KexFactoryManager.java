@@ -39,7 +39,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 
 /**
  * Holds KEX negotiation stage configuration
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface KexFactoryManager extends SignatureFactoriesManager, KexExtensionHandlerManager {

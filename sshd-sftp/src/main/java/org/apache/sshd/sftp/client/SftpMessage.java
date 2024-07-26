@@ -51,7 +51,7 @@ public class SftpMessage {
 
     /**
      * Retrieves the SFTP message id.
-     * 
+     *
      * @return the SFTP message id
      */
     public int getId() {
@@ -69,7 +69,7 @@ public class SftpMessage {
 
     /**
      * Retrieves the write timeout configured when the message was sent.
-     * 
+     *
      * @return the timeout, never {@code null}
      */
     public Duration getTimeout() {
@@ -78,7 +78,7 @@ public class SftpMessage {
 
     /**
      * Waits with the configured timeout until the message has been sent.
-     * 
+     *
      * @throws IOException if the message could not be sent, or waiting is interrupted.
      */
     public void waitUntilSent() throws IOException {

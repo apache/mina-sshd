@@ -190,16 +190,16 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
                         .run("mkdir -p /root/.ssh") // Create the SSH config directory
                         .entryPoint("/entrypoint.sh") //
                         .build())) //
-                                .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_KEYS + "/user01_ed25519"),
-                                        "/root/.ssh/id_ed25519")
-                                .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_KEYS + "/user01_ed25519.pub"),
-                                        "/root/.ssh/id_ed25519.pub")
-                                // Spotbugs doesn't like 0777, so use hex
-                                .withCopyFileToContainer(MountableFile.forHostPath(entryPoint.getPath(), 0x1ff),
-                                        "/entrypoint.sh")
-                                .withAccessToHost(true) //
-                                .waitingFor(Wait.forLogMessage(".*forwarding_success.*\n", 1))
-                                .withLogConsumer(new Slf4jLogConsumer(LOG));
+                .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_KEYS + "/user01_ed25519"),
+                        "/root/.ssh/id_ed25519")
+                .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_KEYS + "/user01_ed25519.pub"),
+                        "/root/.ssh/id_ed25519.pub")
+                // Spotbugs doesn't like 0777, so use hex
+                .withCopyFileToContainer(MountableFile.forHostPath(entryPoint.getPath(), 0x1ff),
+                        "/entrypoint.sh")
+                .withAccessToHost(true) //
+                .waitingFor(Wait.forLogMessage(".*forwarding_success.*\n", 1))
+                .withLogConsumer(new Slf4jLogConsumer(LOG));
         try {
             Testcontainers.exposeHostPorts(sshPort, gRpcPort);
             sshdContainer.start();

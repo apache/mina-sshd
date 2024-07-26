@@ -123,7 +123,7 @@ public abstract class BaseFileSystem<T extends Path> extends FileSystem {
 
     /**
      * In case we are running on Windows, accept "\\" as a file separator. Ignore in *nix as "\\" is a valid filename
-     * 
+     *
      * @param  name the name to fix the separator for if running on Windows
      * @return      the fixed name
      */

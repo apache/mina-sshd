@@ -69,14 +69,14 @@ public class ScpCharsetTest extends BaseTestSupport {
                     .run("mkdir -p /home/bob/.ssh") // Create the SSH config directory
                     .entryPoint("/entrypoint.sh") // Prepare environment, set locale, and launch
                     .build())) //
-                            .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_RESOURCES + "/bob_key.pub"),
-                                    "/home/bob/.ssh/authorized_keys")
-                            // entrypoint must be executable. Spotbugs doesn't like 0777, so use hex
-                            .withCopyFileToContainer(
-                                    MountableFile.forClasspathResource(TEST_RESOURCES + "/entrypoint.sh", 0x1ff),
-                                    "/entrypoint.sh")
-                            .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1)).withExposedPorts(22) //
-                            .withLogConsumer(new Slf4jLogConsumer(LOG));
+            .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_RESOURCES + "/bob_key.pub"),
+                    "/home/bob/.ssh/authorized_keys")
+            // entrypoint must be executable. Spotbugs doesn't like 0777, so use hex
+            .withCopyFileToContainer(
+                    MountableFile.forClasspathResource(TEST_RESOURCES + "/entrypoint.sh", 0x1ff),
+                    "/entrypoint.sh")
+            .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1)).withExposedPorts(22) //
+            .withLogConsumer(new Slf4jLogConsumer(LOG));
 
     @Rule
     public TemporaryFolder tmp = new TemporaryFolder();

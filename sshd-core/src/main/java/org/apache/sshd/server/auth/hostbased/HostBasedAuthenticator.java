@@ -27,7 +27,7 @@ import org.apache.sshd.server.session.ServerSession;
 
 /**
  * Invoked when &quot;hostbased&quot; authentication is used
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://tools.ietf.org/html/rfc4252#section-9">RFC 4252 - section 9</A>
  */

@@ -222,7 +222,7 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                     } catch (InterruptedException e) {
                         throw (IOException) new InterruptedIOException(
                                 "Interrupted while waiting for remote space on write len=" + l + " to " + this)
-                                        .initCause(e);
+                                .initCause(e);
                     }
                     session.resetIdleTimeout();
                     break;

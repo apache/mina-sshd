@@ -601,7 +601,7 @@ public final class IoUtils {
 
         StringBuilder sb = new StringBuilder(
                 prefix.length() + component.length() + File.separator.length())
-                        .append(prefix);
+                .append(prefix);
 
         if (sb.charAt(prefix.length() - 1) == File.separatorChar) {
             if (component.charAt(0) == File.separatorChar) {
@@ -743,7 +743,7 @@ public final class IoUtils {
 
     /**
      * Build a path from the list of path parts
-     * 
+     *
      * @param  root      the root path
      * @param  fs        the filesystem
      * @param  namesList the parts of the path to build
