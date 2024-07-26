@@ -37,11 +37,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -109,6 +104,6 @@ public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
         SshException e = assertThrows(SshException.class, () -> handler.process(connectionService,
                 org.apache.sshd.server.global.OpenSshHostKeysHandler.REQUEST, false, buffer));
         assertFalse(handlerCalled[0], "Handler should not have been called");
-        assertTrue(e.getCause() instanceof GeneralSecurityException, "Expected exception cause");
+        assertInstanceOf(GeneralSecurityException.class, e.getCause(), "Expected exception cause");
     }
 }
