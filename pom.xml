@@ -126,7 +126,7 @@
         <maven.archiver.version>3.6.2</maven.archiver.version>
         <plexus.archiver.version>4.8.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.47.0</pmd.version>
+        <pmd.version>7.4.0</pmd.version>
 
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -930,7 +930,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.17.0</version>
+                   <version>3.24.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
