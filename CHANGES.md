@@ -44,3 +44,8 @@
 
 ## Major Code Re-factoring
 
+### JDK requirements
+
+The project now requires JDK 17 at build time 
+[GH-536](https://github.com/apache/mina-sshd/issues/536), while the target runtime
+still remains unchanged to support JDK 8.
