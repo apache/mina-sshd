@@ -123,7 +123,7 @@
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
 
-        <maven.archiver.version>3.6.1</maven.archiver.version>
+        <maven.archiver.version>3.6.2</maven.archiver.version>
         <plexus.archiver.version>4.8.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>6.47.0</pmd.version>
