@@ -47,7 +47,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '8'
+          java-version: '17'
           # Create a ~/.m2/settings.xml referencing these environment variable names
           server-id: 'apache.snapshots.https'
           server-username: NEXUS_USERNAME
