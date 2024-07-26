@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @Tag("NoIoTestCase")
+@SuppressWarnings("checkstyle:VisibilityModifier")
 public abstract class BaseAuthenticatorTest extends BaseTestSupport {
 
     public static final String BASE_DN_TEST = "ou=People,dc=sshd,dc=apache,dc=org";
@@ -70,7 +71,7 @@ public abstract class BaseAuthenticatorTest extends BaseTestSupport {
     public static LdapConnectionTemplate ldapConnectionTemplate;
 
     /** The current revision */
-    public static long revision = 0L;
+    public static long revision;
 
     protected BaseAuthenticatorTest() {
         super();
