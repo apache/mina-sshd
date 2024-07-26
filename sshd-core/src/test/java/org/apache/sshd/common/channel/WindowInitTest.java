@@ -28,24 +28,19 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class WindowInitTest extends BaseTestSupport {
     private static final AbstractChannel MOCK_CHANNEL = new AbstractChannel(true) {
         @Override
@@ -77,12 +72,11 @@ public class WindowInitTest extends BaseTestSupport {
     private long initialSize;
     private long packetSize;
 
-    public WindowInitTest(long initialSize, long packetSize) {
+    public void initWindowInitTest(long initialSize, long packetSize) {
         this.initialSize = initialSize;
         this.packetSize = packetSize;
     }
 
-    @Parameters(name = "initial-size={0}, packet-size={1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         params.add(new Object[] { -128L, CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault() });
@@ -97,8 +91,10 @@ public class WindowInitTest extends BaseTestSupport {
         return params;
     }
 
-    @Test
-    public void testInitializationFailure() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "initial-size={0}, packet-size={1}")
+    public void initializationFailure(long initialSize, long packetSize) throws IOException {
+        initWindowInitTest(initialSize, packetSize);
         try (RemoteWindow w = new RemoteWindow(MOCK_CHANNEL, true)) {
             assertThrows(IllegalArgumentException.class, () -> w.init(initialSize, packetSize, PropertyResolver.EMPTY));
         }

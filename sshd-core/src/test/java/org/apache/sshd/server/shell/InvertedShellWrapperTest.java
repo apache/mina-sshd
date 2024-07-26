@@ -33,22 +33,23 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusEnvironment;
 import org.apache.sshd.util.test.BogusExitCallback;
 import org.apache.sshd.util.test.BogusInvertedShell;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class InvertedShellWrapperTest extends BaseTestSupport {
     public InvertedShellWrapperTest() {
         super();
     }
 
     @Test
-    public void testStreamsAreFlushedBeforeClosing() throws Exception {
+    void streamsAreFlushedBeforeClosing() throws Exception {
         BogusInvertedShell shell = newShell("out", "err");
         shell.setAlive(false);
 
@@ -68,17 +69,18 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 wrapper.pumpStreams();
 
                 // check the streams were flushed before exiting
-                assertEquals("stdin", "in", shell.getInputStream().toString());
-                assertEquals("stdout", "out", out.toString());
-                assertEquals("stderr", "err", err.toString());
+                assertEquals("in", shell.getInputStream().toString(), "stdin");
+                assertEquals("out", out.toString(), "stdout");
+                assertEquals("err", err.toString(), "stderr");
             } finally {
                 wrapper.destroy(channel);
             }
         }
     }
 
-    @Test // see SSHD-570
-    public void testExceptionWhilePumpStreams() throws Exception {
+    // see SSHD-570
+    @Test
+    void exceptionWhilePumpStreams() throws Exception {
         BogusInvertedShell bogusShell = newShell("out", "err");
         bogusShell.setAlive(false);
 
@@ -177,13 +179,14 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 wrapper.destroy(channel);
             }
 
-            assertEquals("Mismatched exit value", destroyedExitValue, exitCallback.getExitValue());
-            assertEquals("Mismatched exit message", EOFException.class.getSimpleName(), exitCallback.getExitMessage());
+            assertEquals(destroyedExitValue, exitCallback.getExitValue(), "Mismatched exit value");
+            assertEquals(EOFException.class.getSimpleName(), exitCallback.getExitMessage(), "Mismatched exit message");
         }
     }
 
-    @Test // see SSHD-576
-    public void testShellDiesBeforeAllDataExhausted() throws Exception {
+    // see SSHD-576
+    @Test
+    void shellDiesBeforeAllDataExhausted() throws Exception {
         final String inputContent = "shellInput";
         final String outputContent = "shellOutput";
         final String errorContent = "shellError";
@@ -271,9 +274,9 @@ public class InvertedShellWrapperTest extends BaseTestSupport {
                 wrapper.destroy(channel);
             }
 
-            assertEquals("Mismatched STDIN value", inputContent, shellIn.toString(StandardCharsets.UTF_8.name()));
-            assertEquals("Mismatched STDOUT value", outputContent, stdout.toString(StandardCharsets.UTF_8.name()));
-            assertEquals("Mismatched STDERR value", errorContent, stderr.toString(StandardCharsets.UTF_8.name()));
+            assertEquals(inputContent, shellIn.toString(StandardCharsets.UTF_8.name()), "Mismatched STDIN value");
+            assertEquals(outputContent, stdout.toString(StandardCharsets.UTF_8.name()), "Mismatched STDOUT value");
+            assertEquals(errorContent, stderr.toString(StandardCharsets.UTF_8.name()), "Mismatched STDERR value");
         }
     }
 

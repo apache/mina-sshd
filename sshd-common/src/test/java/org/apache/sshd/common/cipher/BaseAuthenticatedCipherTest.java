@@ -25,6 +25,10 @@ import javax.crypto.AEADBadTagException;
 
 import org.apache.sshd.common.NamedFactory;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
+
 public abstract class BaseAuthenticatedCipherTest extends BaseCipherTest {
 
     protected BaseAuthenticatedCipherTest() {

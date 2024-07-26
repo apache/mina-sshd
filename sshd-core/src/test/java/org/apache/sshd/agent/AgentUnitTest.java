@@ -35,37 +35,38 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Simple short-circuited test for {@link AbstractAgentClient} and {@link AbstractAgentProxy}.
  */
-@Category(NoIoTestCase.class)
-@RunWith(Parameterized.class)
+@Tag("NoIoTestCase")
 public class AgentUnitTest extends BaseTestSupport {
 
     private String algorithm;
 
     private BuiltinSignatures factory;
 
-    public AgentUnitTest(String algorithm, BuiltinSignatures factory) {
+    public void initAgentUnitTest(String algorithm, BuiltinSignatures factory) {
         this.algorithm = algorithm;
         this.factory = factory;
     }
 
-    @Parameterized.Parameters(name = "{0}")
     public static List<Object[]> getParameters() {
         return Arrays.asList(new Object[] { KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS, BuiltinSignatures.rsaSHA512 },
                 new Object[] { KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS, BuiltinSignatures.rsaSHA256 },
                 new Object[] { KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa });
     }
 
-    @Test
-    public void testRsaSignature() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "{0}")
+    public void rsaSignature(String algorithm, BuiltinSignatures factory) throws Exception {
+        initAgentUnitTest(algorithm, factory);
         SshAgent agent = new AgentImpl();
         KeyPair pair = SecurityUtils.getKeyPairGenerator(KeyUtils.RSA_ALGORITHM).generateKeyPair();
         agent.addIdentity(pair, "test key");
@@ -74,12 +75,12 @@ public class AgentUnitTest extends BaseTestSupport {
         server.setClient(client);
         byte[] data = { 'd', 'a', 't', 'a' };
         Map.Entry<String, byte[]> result = client.sign(null, pair.getPublic(), algorithm, data);
-        assertEquals("Unexpected signature algorithm", algorithm, result.getKey());
+        assertEquals(algorithm, result.getKey(), "Unexpected signature algorithm");
         byte[] signature = result.getValue();
         Signature verifier = factory.get();
         verifier.initVerifier(null, pair.getPublic());
         verifier.update(null, data);
-        assertTrue("Signature should validate", verifier.verify(null, signature));
+        assertTrue(verifier.verify(null, signature), "Signature should validate");
     }
 
     private static class Server extends AbstractAgentClient {

@@ -30,23 +30,23 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class LazyIterablesConcatenatorTest extends JUnitTestSupport {
     public LazyIterablesConcatenatorTest() {
         super();
     }
 
     @Test
-    public void testLazyConcatenateIterables() {
+    void lazyConcatenateIterables() {
         Collection<String> l1 = Arrays.asList(
                 getCurrentTestName(),
                 getClass().getSimpleName(),

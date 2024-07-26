@@ -42,22 +42,19 @@ import org.apache.sshd.sftp.client.SftpClient.CloseableHandle;
 import org.apache.sshd.sftp.client.extensions.CopyDataExtension;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private static final List<Object[]> PARAMETERS = Collections.unmodifiableList(
             Arrays.asList(
@@ -91,25 +88,26 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private int length;
     private long dstOffset;
 
-    public CopyDataExtensionImplTest(int size, int srcOffset, int length, long dstOffset) throws IOException {
+    public void initCopyDataExtensionImplTest(int size, int srcOffset, int length, long dstOffset) throws IOException {
         this.size = size;
         this.srcOffset = srcOffset;
         this.length = length;
         this.dstOffset = dstOffset;
     }
 
-    @Parameters(name = "size={0}, readOffset={1}, readLength={2}, writeOffset={3}")
     public static Collection<Object[]> parameters() {
         return PARAMETERS;
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
-    @Test
-    public void testCopyDataExtension() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "size={0}, readOffset={1}, readLength={2}, writeOffset={3}")
+    public void copyDataExtension(int size, int srcOffset, int length, long dstOffset) throws Exception {
+        initCopyDataExtensionImplTest(size, srcOffset, length, dstOffset);
         testCopyDataExtension(size, srcOffset, length, dstOffset);
     }
 
@@ -177,8 +175,8 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
         byte[] actual = new byte[expected.length];
         try (FileChannel channel = FileChannel.open(dstFile, IoUtils.EMPTY_OPEN_OPTIONS)) {
             int readLen = channel.read(ByteBuffer.wrap(actual), writeOffset);
-            assertEquals("Mismatched read data size", expected.length, readLen);
+            assertEquals(expected.length, readLen, "Mismatched read data size");
         }
-        assertArrayEquals("Mismatched copy data", expected, actual);
+        assertArrayEquals(expected, actual, "Mismatched copy data");
     }
 }

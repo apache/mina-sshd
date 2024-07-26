@@ -41,21 +41,24 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSessionImpl;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class Nio2ServiceTest extends BaseTestSupport {
     public Nio2ServiceTest() {
         super();
     }
 
-    @Test // see SSHD-554, SSHD-722
-    public void testSetSocketOptions() throws Exception {
+    // see SSHD-554, SSHD-722
+    @Test
+    void setSocketOptions() throws Exception {
         try (SshServer sshd = setupTestServer()) {
             Map<Property<?>, Object> expectedOptions = new LinkedHashMap<>();
             expectedOptions.put(CoreModuleProperties.SOCKET_KEEPALIVE, true);
@@ -109,8 +112,8 @@ public class Nio2ServiceTest extends BaseTestSupport {
             try (Socket s = new Socket(TEST_LOCALHOST, port)) {
                 long endTime = System.nanoTime();
                 long duration = endTime - startTime;
-                assertTrue("Connect duration is too high: " + duration, duration <= TimeUnit.SECONDS.toNanos(15L));
-                assertTrue("Validation not completed on time", sigSem.tryAcquire(15L, TimeUnit.SECONDS));
+                assertTrue(duration <= TimeUnit.SECONDS.toNanos(15L), "Connect duration is too high: " + duration);
+                assertTrue(sigSem.tryAcquire(15L, TimeUnit.SECONDS), "Validation not completed on time");
             } finally {
                 sshd.stop();
             }

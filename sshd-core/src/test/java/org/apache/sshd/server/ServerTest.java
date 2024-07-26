@@ -86,18 +86,26 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TestChannelListener;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ServerTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
@@ -106,15 +114,15 @@ public class ServerTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setShellFactory(new TestEchoShellFactory());
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -124,22 +132,22 @@ public class ServerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testServerStartedIndicator() throws Exception {
+    void serverStartedIndicator() throws Exception {
         sshd.start();
         try {
-            assertTrue("Server not marked as started", sshd.isStarted());
+            assertTrue(sshd.isStarted(), "Server not marked as started");
         } finally {
             sshd.stop();
         }
 
-        assertFalse("Server not marked as stopped", sshd.isStarted());
+        assertFalse(sshd.isStarted(), "Server not marked as stopped");
     }
 
     /*
      * Send bad password. The server should disconnect after a few attempts
      */
     @Test
-    public void testFailAuthenticationWithWaitFor() throws Exception {
+    void failAuthenticationWithWaitFor() throws Exception {
         final int maxAllowedAuths = 10;
         CoreModuleProperties.MAX_AUTH_REQUESTS.set(sshd, maxAllowedAuths);
 
@@ -160,16 +168,16 @@ public class ServerTest extends BaseTestSupport {
                 s.getService(ClientUserAuthServiceOld.class)
                         .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
                 res = s.waitFor(mask, TimeUnit.SECONDS.toMillis(5L));
-                assertFalse("Timeout signalled", res.contains(ClientSession.ClientSessionEvent.TIMEOUT));
+                assertFalse(res.contains(ClientSession.ClientSessionEvent.TIMEOUT), "Timeout signalled");
             }
-            assertTrue("Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths, nbTrials > maxAllowedAuths);
+            assertTrue(nbTrials > maxAllowedAuths, "Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths);
         } finally {
             client.stop();
         }
     }
 
     @Test
-    public void testFailAuthenticationWithFuture() throws Exception {
+    void failAuthenticationWithFuture() throws Exception {
         final int maxAllowedAuths = 10;
         CoreModuleProperties.MAX_AUTH_REQUESTS.set(sshd, maxAllowedAuths);
 
@@ -185,24 +193,24 @@ public class ServerTest extends BaseTestSupport {
             AuthFuture authFuture;
             do {
                 nbTrials++;
-                assertTrue("Number of trials below max.", nbTrials < 100);
+                assertTrue(nbTrials < 100, "Number of trials below max.");
                 authFuture = s.getService(ClientUserAuthServiceOld.class)
                         .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
-                assertTrue("Authentication wait failed", authFuture.await(AUTH_TIMEOUT));
-                assertTrue("Authentication not done", authFuture.isDone());
-                assertFalse("Authentication unexpectedly successful", authFuture.isSuccess());
+                assertTrue(authFuture.await(AUTH_TIMEOUT), "Authentication wait failed");
+                assertTrue(authFuture.isDone(), "Authentication not done");
+                assertFalse(authFuture.isSuccess(), "Authentication unexpectedly successful");
             } while (authFuture.getException() == null);
 
             Throwable t = authFuture.getException();
-            assertNotNull("Missing auth future exception", t);
-            assertTrue("Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths, nbTrials > maxAllowedAuths);
+            assertNotNull(t, "Missing auth future exception");
+            assertTrue(nbTrials > maxAllowedAuths, "Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths);
         } finally {
             client.stop();
         }
     }
 
     @Test
-    public void testAuthenticationTimeout() throws Exception {
+    void authenticationTimeout() throws Exception {
         Duration testAuthTimeout = Duration.ofSeconds(4L);
         CoreModuleProperties.AUTH_TIMEOUT.set(sshd, testAuthTimeout);
 
@@ -234,19 +242,18 @@ public class ServerTest extends BaseTestSupport {
             Collection<ClientSession.ClientSessionEvent> res
                     = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), testAuthTimeout.multipliedBy(3L));
             long waitEnd = System.currentTimeMillis();
-            assertTrue("Invalid session state after " + (waitEnd - waitStart) + " ms: " + res,
-                    res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH)));
+            assertTrue(res.containsAll(EnumSet.of(ClientSession.ClientSessionEvent.WAIT_AUTH)),
+                    "Invalid session state after " + (waitEnd - waitStart) + " ms: " + res);
         } finally {
             client.stop();
         }
 
         TimeoutIndicator status = timeoutHolder.getAndSet(null);
-        assertSame("Mismatched timeout status reported",
-                TimeoutIndicator.TimeoutStatus.AuthTimeout, status.getStatus());
+        assertSame(TimeoutIndicator.TimeoutStatus.AuthTimeout, status.getStatus(), "Mismatched timeout status reported");
     }
 
     @Test
-    public void testIdleTimeout() throws Exception {
+    void idleTimeout() throws Exception {
         final long testIdleTimeout = 2500L;
         CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofMillis(testIdleTimeout));
         AtomicReference<TimeoutIndicator> timeoutHolder = new AtomicReference<>(TimeoutIndicator.NONE);
@@ -319,29 +326,29 @@ public class ServerTest extends BaseTestSupport {
             shell.setErr(err);
             shell.open().verify(OPEN_TIMEOUT);
 
-            assertTrue("No changes in activated channels",
-                    channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
-            assertTrue("No changes in open channels",
-                    channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue(channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS),
+                    "No changes in activated channels");
+            assertTrue(channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS),
+                    "No changes in open channels");
 
             long waitStart = System.currentTimeMillis();
             Collection<ClientSession.ClientSessionEvent> res
                     = s.waitFor(EnumSet.of(ClientSession.ClientSessionEvent.CLOSED), 3L * testIdleTimeout);
             long waitEnd = System.currentTimeMillis();
-            assertTrue("Invalid session state after " + (waitEnd - waitStart) + " ms: " + res,
-                    res.containsAll(
-                            EnumSet.of(
-                                    ClientSession.ClientSessionEvent.CLOSED,
-                                    ClientSession.ClientSessionEvent.AUTHED)));
+            assertTrue(res.containsAll(
+                    EnumSet.of(
+                            ClientSession.ClientSessionEvent.CLOSED,
+                            ClientSession.ClientSessionEvent.AUTHED)),
+                    "Invalid session state after " + (waitEnd - waitStart) + " ms: " + res);
         } finally {
             client.stop();
         }
 
-        assertTrue("Session latch not signalled in time", latch.await(1L, TimeUnit.SECONDS));
-        assertTrue("Shell latch not signalled in time", TestEchoShell.latch.await(1L, TimeUnit.SECONDS));
+        assertTrue(latch.await(1L, TimeUnit.SECONDS), "Session latch not signalled in time");
+        assertTrue(TestEchoShell.latch.await(1L, TimeUnit.SECONDS), "Shell latch not signalled in time");
 
         TimeoutIndicator status = timeoutHolder.getAndSet(null);
-        assertSame("Mismatched timeout status", TimeoutStatus.IdleTimeout, status.getStatus());
+        assertSame(TimeoutStatus.IdleTimeout, status.getStatus(), "Mismatched timeout status");
     }
 
     /*
@@ -350,7 +357,7 @@ public class ServerTest extends BaseTestSupport {
      * disconnect message can't be written - the server session is forcibly closed
      */
     @Test
-    public void testServerIdleTimeoutWithForce() throws Exception {
+    void serverIdleTimeoutWithForce() throws Exception {
         final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
         CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofMillis(idleTimeoutValue));
 
@@ -402,10 +409,10 @@ public class ServerTest extends BaseTestSupport {
             shell.setOut(pos);
             shell.open().verify(OPEN_TIMEOUT);
 
-            assertTrue("No changes in activated channels",
-                    channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
-            assertTrue("No changes in open channels",
-                    channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue(channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS),
+                    "No changes in activated channels");
+            assertTrue(channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS),
+                    "No changes in open channels");
 
             try (AbstractSession serverSession = GenericUtils.head(sshd.getActiveSessions())) {
                 AbstractConnectionService service = serverSession.getService(AbstractConnectionService.class);
@@ -422,7 +429,7 @@ public class ServerTest extends BaseTestSupport {
                         long nanoDuration = nanoEnd - nanoStart;
 
                         totalNanoTime += nanoDuration;
-                        assertTrue("Waiting for too long on remote window size to reach zero", totalNanoTime < maxWaitNanos);
+                        assertTrue(totalNanoTime < maxWaitNanos, "Waiting for too long on remote window size to reach zero");
                     }
 
                     Logger logger = LoggerFactory.getLogger(getClass());
@@ -432,8 +439,8 @@ public class ServerTest extends BaseTestSupport {
                     latch.await(1L, TimeUnit.MINUTES);
                     long t1 = System.currentTimeMillis();
                     long diff = t1 - t0;
-                    assertTrue("Wait time too low: " + diff, diff > idleTimeoutValue);
-                    assertTrue("Wait time too high: " + diff, diff < maxTimeoutValue);
+                    assertTrue(diff > idleTimeoutValue, "Wait time too low: " + diff);
+                    assertTrue(diff < maxTimeoutValue, "Wait time too high: " + diff);
                 }
             }
         } finally {
@@ -442,7 +449,7 @@ public class ServerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testLanguageNegotiation() throws Exception {
+    void languageNegotiation() throws Exception {
         sshd.start();
 
         client.setSessionFactory(new org.apache.sshd.client.session.SessionFactory(client) {
@@ -473,7 +480,7 @@ public class ServerTest extends BaseTestSupport {
                     for (KexProposalOption option : new KexProposalOption[] {
                             KexProposalOption.S2CLANG, KexProposalOption.C2SLANG
                     }) {
-                        assertNull("Unexpected negotiated language for " + option, session.getNegotiatedKexParameter(option));
+                        assertNull(session.getNegotiatedKexParameter(option), "Unexpected negotiated language for " + option);
                     }
 
                     sigSem.release();
@@ -499,14 +506,15 @@ public class ServerTest extends BaseTestSupport {
         client.start();
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
                 .verify(CONNECT_TIMEOUT).getSession()) {
-            assertTrue("Failed to receive signal on time", sigSem.tryAcquire(11L, TimeUnit.SECONDS));
+            assertTrue(sigSem.tryAcquire(11L, TimeUnit.SECONDS), "Failed to receive signal on time");
         } finally {
             client.stop();
         }
     }
 
-    @Test // see SSHD-609
-    public void testCompressionNegotiation() throws Exception {
+    // see SSHD-609
+    @Test
+    void compressionNegotiation() throws Exception {
         sshd.setSessionFactory(new org.apache.sshd.server.session.SessionFactory(sshd) {
             @Override
             protected ServerSessionImpl doCreateSession(IoSession ioSession) throws Exception {
@@ -547,7 +555,7 @@ public class ServerTest extends BaseTestSupport {
 
             @Override
             public void sessionEvent(Session session, Event event) {
-                assertNotEquals("Unexpected key establishment success", Event.KeyEstablished, event);
+                assertNotEquals(Event.KeyEstablished, event, "Unexpected key establishment success");
             }
 
             @Override
@@ -570,12 +578,12 @@ public class ServerTest extends BaseTestSupport {
         try {
             try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
                     .verify(CONNECT_TIMEOUT).getSession()) {
-                assertTrue("Session closing not signalled on time", sigSem.tryAcquire(5L, TimeUnit.SECONDS));
+                assertTrue(sigSem.tryAcquire(5L, TimeUnit.SECONDS), "Session closing not signalled on time");
                 for (boolean incoming : new boolean[] { true, false }) {
-                    assertNull("Unexpected compression information for incoming=" + incoming,
-                            s.getCompressionInformation(incoming));
+                    assertNull(s.getCompressionInformation(incoming),
+                            "Unexpected compression information for incoming=" + incoming);
                 }
-                assertFalse("Session unexpectedly still open", s.isOpen());
+                assertFalse(s.isOpen(), "Session unexpectedly still open");
             }
         } finally {
             client.stop();
@@ -583,7 +591,7 @@ public class ServerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testKexCompletedEvent() throws Exception {
+    void kexCompletedEvent() throws Exception {
         AtomicInteger serverEventCount = new AtomicInteger(0);
         sshd.addSessionListener(new SessionListener() {
             @Override
@@ -617,16 +625,17 @@ public class ServerTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession s = createTestClientSession(sshd)) {
-            assertEquals("Mismatched client events count", 1, clientEventCount.get());
-            assertEquals("Mismatched server events count", 1, serverEventCount.get());
+            assertEquals(1, clientEventCount.get(), "Mismatched client events count");
+            assertEquals(1, serverEventCount.get(), "Mismatched server events count");
             s.close(false);
         } finally {
             client.stop();
         }
     }
 
-    @Test // see SSHD-645
-    public void testChannelStateChangeNotifications() throws Exception {
+    // see SSHD-645
+    @Test
+    void channelStateChangeNotifications() throws Exception {
         Semaphore exitSignal = new Semaphore(0);
         sshd.setCommandFactory((session, command) -> new Command() {
             private ExitCallback cb;
@@ -671,31 +680,31 @@ public class ServerTest extends BaseTestSupport {
             shell.addChannelListener(new ChannelListener() {
                 @Override
                 public void channelStateChanged(Channel channel, String hint) {
-                    assertNotNull("No hint for channel", hint);
+                    assertNotNull(hint, "No hint for channel");
                     outputDebugMessage("channelStateChanged(%s): %s", channel, hint);
                     stateChangeHints.add(hint);
                 }
             });
             shell.open().verify(OPEN_TIMEOUT);
 
-            assertTrue("Timeout while wait for exit signal", exitSignal.tryAcquire(15L, TimeUnit.SECONDS));
+            assertTrue(exitSignal.tryAcquire(15L, TimeUnit.SECONDS), "Timeout while wait for exit signal");
             Collection<ClientChannelEvent> result
                     = shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(13L));
-            assertFalse("Channel close timeout", result.contains(ClientChannelEvent.TIMEOUT));
+            assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Channel close timeout");
 
             Integer status = shell.getExitStatus();
-            assertNotNull("No exit status", status);
+            assertNotNull(status, "No exit status");
         } finally {
             client.stop();
         }
 
         for (String h : new String[] { "exit-status" }) {
-            assertTrue("Missing hint=" + h + " in " + stateChangeHints, stateChangeHints.contains(h));
+            assertTrue(stateChangeHints.contains(h), "Missing hint=" + h + " in " + stateChangeHints);
         }
     }
 
     @Test
-    public void testServerHeartbeat() throws Exception {
+    void serverHeartbeat() throws Exception {
         sshd.setSessionHeartbeat(HeartbeatType.IGNORE, Duration.ofMillis(500));
         sshd.start();
         AtomicInteger ignoreMessageCount = new AtomicInteger(0);
@@ -711,11 +720,11 @@ public class ServerTest extends BaseTestSupport {
             Thread.sleep(2000);
         }
         long ignoreMessages = ignoreMessageCount.get();
-        assertTrue("Epected some ignore messages (server-side heartbeat)", ignoreMessages > 0 && ignoreMessages <= 5);
+        assertTrue(ignoreMessages > 0 && ignoreMessages <= 5, "Epected some ignore messages (server-side heartbeat)");
     }
 
     @Test
-    public void testEnvironmentVariablesPropagationToServer() throws Exception {
+    void environmentVariablesPropagationToServer() throws Exception {
         AtomicReference<Environment> envHolder = new AtomicReference<>(null);
         sshd.setCommandFactory((session, command) -> new Command() {
             private ExitCallback cb;
@@ -775,36 +784,37 @@ public class ServerTest extends BaseTestSupport {
 
             shell.open().verify(OPEN_TIMEOUT);
 
-            assertTrue("No changes in activated channels", channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS));
-            assertTrue("No changes in open channels", channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS));
+            assertTrue(channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS), "No changes in activated channels");
+            assertTrue(channelListener.waitForOpenChannelsChange(5L, TimeUnit.SECONDS), "No changes in open channels");
 
             Collection<ClientChannelEvent> result
                     = shell.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(17L));
-            assertFalse("Channel close timeout", result.contains(ClientChannelEvent.TIMEOUT));
+            assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Channel close timeout");
 
             Integer status = shell.getExitStatus();
-            assertNotNull("No exit status", status);
-            assertEquals("Bad exit status", 0, status.intValue());
+            assertNotNull(status, "No exit status");
+            assertEquals(0, status.intValue(), "Bad exit status");
         } finally {
             client.stop();
         }
 
-        assertTrue("No changes in closed channels", channelListener.waitForClosedChannelsChange(5L, TimeUnit.SECONDS));
-        assertTrue("Still activated server side channels", GenericUtils.isEmpty(channelListener.getActiveChannels()));
+        assertTrue(channelListener.waitForClosedChannelsChange(5L, TimeUnit.SECONDS), "No changes in closed channels");
+        assertTrue(GenericUtils.isEmpty(channelListener.getActiveChannels()), "Still activated server side channels");
 
         Environment cmdEnv = envHolder.get();
-        assertNotNull("No environment set", cmdEnv);
+        assertNotNull(cmdEnv, "No environment set");
 
         Map<String, String> vars = cmdEnv.getEnv();
-        assertTrue("Mismatched vars count", MapEntryUtils.size(vars) >= MapEntryUtils.size(expected));
+        assertTrue(MapEntryUtils.size(vars) >= MapEntryUtils.size(expected), "Mismatched vars count");
         expected.forEach((key, expValue) -> {
             String actValue = vars.get(key);
-            assertEquals("Mismatched value for " + key, expValue, actValue);
+            assertEquals(expValue, actValue, "Mismatched value for " + key);
         });
     }
 
-    @Test // see SSHD-611
-    public void testImmediateAuthFailureOpcode() throws Exception {
+    // see SSHD-611
+    @Test
+    void immediateAuthFailureOpcode() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
         AtomicInteger challengeCount = new AtomicInteger(0);
@@ -838,16 +848,16 @@ public class ServerTest extends BaseTestSupport {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
                 .verify(CONNECT_TIMEOUT).getSession()) {
             AuthFuture auth = session.auth();
-            assertTrue("Failed to complete authentication on time", auth.await(CLOSE_TIMEOUT));
-            assertFalse("Unexpected authentication success", auth.isSuccess());
-            assertEquals("Mismatched interactive challenge calls", 1, challengeCount.get());
+            assertTrue(auth.await(CLOSE_TIMEOUT), "Failed to complete authentication on time");
+            assertFalse(auth.isSuccess(), "Unexpected authentication success");
+            assertEquals(1, challengeCount.get(), "Mismatched interactive challenge calls");
         } finally {
             client.stop();
         }
     }
 
     @Test
-    public void testMaxKeyboardInteractiveTrialsSetting() throws Exception {
+    void maxKeyboardInteractiveTrialsSetting() throws Exception {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
 
@@ -909,19 +919,19 @@ public class ServerTest extends BaseTestSupport {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort())
                 .verify(CONNECT_TIMEOUT).getSession()) {
             AuthFuture auth = session.auth();
-            assertTrue("Failed to complete authentication on time", auth.await(AUTH_TIMEOUT));
-            assertFalse("Unexpected authentication success", auth.isSuccess());
-            assertEquals("Mismatched interactive server challenge calls",
-                    CoreModuleProperties.PASSWORD_PROMPTS.getRequiredDefault().intValue(), serverCount.get());
-            assertEquals("Mismatched interactive client challenge calls",
-                    CoreModuleProperties.PASSWORD_PROMPTS.getRequiredDefault().intValue(), clientCount.get());
+            assertTrue(auth.await(AUTH_TIMEOUT), "Failed to complete authentication on time");
+            assertFalse(auth.isSuccess(), "Unexpected authentication success");
+            assertEquals(CoreModuleProperties.PASSWORD_PROMPTS.getRequiredDefault().intValue(), serverCount.get(),
+                    "Mismatched interactive server challenge calls");
+            assertEquals(CoreModuleProperties.PASSWORD_PROMPTS.getRequiredDefault().intValue(), clientCount.get(),
+                    "Mismatched interactive client challenge calls");
         } finally {
             client.stop();
         }
     }
 
     @Test
-    public void testIdentificationStringsOverrides() throws Exception {
+    void identificationStringsOverrides() throws Exception {
         String clientIdent = getCurrentTestName() + "-client";
         CoreModuleProperties.CLIENT_IDENTIFICATION.set(client, clientIdent);
         String expClientIdent = SessionContext.DEFAULT_SSH_VERSION_PREFIX + clientIdent;
@@ -937,8 +947,8 @@ public class ServerTest extends BaseTestSupport {
             @Override
             public void sessionEvent(Session session, Event event) {
                 if (Event.KexCompleted.equals(event)) {
-                    assertEquals("Mismatched client listener identification", expClientIdent, session.getClientVersion());
-                    assertEquals("Mismatched server listener identification", expServerIdent, session.getServerVersion());
+                    assertEquals(expClientIdent, session.getClientVersion(), "Mismatched client listener identification");
+                    assertEquals(expServerIdent, session.getServerVersion(), "Mismatched server listener identification");
                 }
             }
 
@@ -965,15 +975,16 @@ public class ServerTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = createTestClientSession(sshd)) {
-            assertEquals("Mismatched client identification", expClientIdent, session.getClientVersion());
-            assertEquals("Mismatched server identification", expServerIdent, session.getServerVersion());
+            assertEquals(expClientIdent, session.getClientVersion(), "Mismatched client identification");
+            assertEquals(expServerIdent, session.getServerVersion(), "Mismatched server identification");
         } finally {
             client.stop();
         }
     }
 
-    @Test // see SSHD-659
-    public void testMultiLineServerIdentification() throws Exception {
+    // see SSHD-659
+    @Test
+    void multiLineServerIdentification() throws Exception {
         List<String> expected = Arrays.asList(
                 getClass().getPackage().getName(),
                 getClass().getSimpleName(),
@@ -987,7 +998,7 @@ public class ServerTest extends BaseTestSupport {
         client.setUserInteraction(new UserInteraction() {
             @Override
             public void serverVersionInfo(ClientSession session, List<String> lines) {
-                assertNull("Unexpected extra call", actualHolder.getAndSet(lines));
+                assertNull(actualHolder.getAndSet(lines), "Unexpected extra call");
                 signal.release();
             }
 
@@ -1010,18 +1021,19 @@ public class ServerTest extends BaseTestSupport {
         client.start();
 
         try (ClientSession session = createTestClientSession(sshd)) {
-            assertTrue("No signal received in time", signal.tryAcquire(11L, TimeUnit.SECONDS));
+            assertTrue(signal.tryAcquire(11L, TimeUnit.SECONDS), "No signal received in time");
         } finally {
             client.stop();
         }
 
         List<String> actual = actualHolder.get();
-        assertNotNull("Information not signalled", actual);
+        assertNotNull(actual, "Information not signalled");
         assertListEquals("Server information", expected, actual);
     }
 
-    @Test // see SSHD-930
-    public void testDelayClientIdentification() throws Exception {
+    // see SSHD-930
+    @Test
+    void delayClientIdentification() throws Exception {
         sshd.start();
 
         CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION.set(client, false);
@@ -1044,7 +1056,7 @@ public class ServerTest extends BaseTestSupport {
 
         try (ClientSession session = createTestClientSession(sshd)) {
             String version = peerVersion.getAndSet(null);
-            assertTrue("Peer version not signalled", GenericUtils.isNotEmpty(version));
+            assertTrue(GenericUtils.isNotEmpty(version), "Peer version not signalled");
         } finally {
             client.stop();
         }

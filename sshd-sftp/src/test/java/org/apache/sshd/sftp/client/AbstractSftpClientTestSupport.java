@@ -33,8 +33,11 @@ import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -46,13 +49,13 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
 
     protected final FileSystemFactory fileSystemFactory;
 
-    protected AbstractSftpClientTestSupport() throws IOException {
+    protected AbstractSftpClientTestSupport() {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
-    @BeforeClass
+    @BeforeAll
     public static void setupClientAndServer() throws Exception {
         JSchLogger.init();
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(AbstractSftpClientTestSupport.class);
@@ -64,7 +67,7 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
+    @AfterAll
     public static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
@@ -123,8 +126,8 @@ public abstract class AbstractSftpClientTestSupport extends BaseTestSupport {
 
     protected static <E extends SftpClientExtension> E assertExtensionCreated(SftpClient sftp, Class<E> type) {
         E instance = sftp.getExtension(type);
-        assertNotNull("Extension not created: " + type.getSimpleName(), instance);
-        assertTrue("Extension not supported: " + instance.getName(), instance.isSupported());
+        assertNotNull(instance, "Extension not created: " + type.getSimpleName());
+        assertTrue(instance.isSupported(), "Extension not supported: " + instance.getName());
         return instance;
     }
 }

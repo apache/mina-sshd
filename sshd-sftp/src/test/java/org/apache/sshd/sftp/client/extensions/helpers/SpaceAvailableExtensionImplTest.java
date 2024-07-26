@@ -38,27 +38,29 @@ import org.apache.sshd.sftp.common.extensions.SpaceAvailableExtensionInfo;
 import org.apache.sshd.sftp.server.SftpSubsystem;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSupport {
     public SpaceAvailableExtensionImplTest() throws IOException {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
     @Test
-    public void testFileStoreReport() throws Exception {
+    void fileStoreReport() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -88,7 +90,7 @@ public class SpaceAvailableExtensionImplTest extends AbstractSftpClientTestSuppo
         try (SftpClient sftp = createSingleSessionClient()) {
             SpaceAvailableExtension ext = assertExtensionCreated(sftp, SpaceAvailableExtension.class);
             SpaceAvailableExtensionInfo actual = ext.available(queryPath);
-            assertEquals("Mismatched information", expected, actual);
+            assertEquals(expected, actual, "Mismatched information");
         } finally {
             sshd.setSubsystemFactories(factories);
         }

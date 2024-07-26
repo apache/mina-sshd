@@ -44,16 +44,21 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ClientSessionListenerTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
@@ -63,8 +68,8 @@ public class ClientSessionListenerTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(ClientSessionListenerTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -73,8 +78,8 @@ public class ClientSessionListenerTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -93,7 +98,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSessionListenerCanModifyKEXNegotiation() throws Exception {
+    void sessionListenerCanModifyKEXNegotiation() throws Exception {
         Map<KexProposalOption, NamedResource> kexParams = new EnumMap<>(KexProposalOption.class);
         kexParams.put(KexProposalOption.ALGORITHMS, getLeastFavorite(KeyExchange.class, client.getKeyExchangeFactories()));
         kexParams.put(KexProposalOption.C2SENC, getLeastFavorite(CipherFactory.class, sshd.getCipherFactories()));
@@ -117,7 +122,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
             kexParams.forEach((option, factory) -> {
                 String expected = factory.getName();
                 String actual = session.getNegotiatedKexParameter(option);
-                assertEquals("Mismatched values for KEX=" + option, expected, actual);
+                assertEquals(expected, actual, "Mismatched values for KEX=" + option);
             });
         } finally {
             client.removeSessionListener(listener);
@@ -125,7 +130,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSessionListenerCanInfluenceAuthentication() throws IOException {
+    void sessionListenerCanInfluenceAuthentication() throws IOException {
         AtomicInteger verificationCount = new AtomicInteger();
         ServerKeyVerifier verifier = (sshClientSession, remoteAddress, serverKey) -> {
             verificationCount.incrementAndGet();
@@ -146,11 +151,11 @@ public class ClientSessionListenerTest extends BaseTestSupport {
         client.addSessionListener(listener);
 
         try (ClientSession session = createTestClientSession()) {
-            assertNotSame("Invalid default user interaction", UserInteraction.NONE, client.getUserInteraction());
-            assertNotSame("Invalid default server key verifier", verifier, client.getServerKeyVerifier());
-            assertSame("Mismatched session user interaction", UserInteraction.NONE, session.getUserInteraction());
-            assertSame("Mismatched session server key verifier", verifier, session.getServerKeyVerifier());
-            assertEquals("Mismatched verification count", 1, verificationCount.get());
+            assertNotSame(UserInteraction.NONE, client.getUserInteraction(), "Invalid default user interaction");
+            assertNotSame(verifier, client.getServerKeyVerifier(), "Invalid default server key verifier");
+            assertSame(UserInteraction.NONE, session.getUserInteraction(), "Mismatched session user interaction");
+            assertSame(verifier, session.getServerKeyVerifier(), "Mismatched session server key verifier");
+            assertEquals(1, verificationCount.get(), "Mismatched verification count");
         } finally {
             client.removeSessionListener(listener);
         }
@@ -159,7 +164,7 @@ public class ClientSessionListenerTest extends BaseTestSupport {
     private static <V extends NamedResource> NamedResource getLeastFavorite(
             Class<V> type, List<? extends NamedResource> factories) {
         int numFactories = GenericUtils.size(factories);
-        assertTrue("No factories for " + type.getSimpleName(), numFactories > 0);
+        assertTrue(numFactories > 0, "No factories for " + type.getSimpleName());
         return factories.get(numFactories - 1);
     }
 

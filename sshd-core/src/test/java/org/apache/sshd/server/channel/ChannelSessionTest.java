@@ -44,14 +44,16 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
 import org.apache.sshd.util.test.CommandExecutionHelper;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ChannelSessionTest extends BaseTestSupport {
     public ChannelSessionTest() {
         super();
@@ -60,8 +62,9 @@ public class ChannelSessionTest extends BaseTestSupport {
     /*
      * Testing a command closing output stream when it completes
      */
-    @Test // see SSHD-1257
-    public void closeOutputStream() throws Exception {
+    // see SSHD-1257
+    @Test
+    void closeOutputStream() throws Exception {
         try (SshServer server = setupTestServer();
              SshClient client = setupTestClient()) {
 
@@ -97,15 +100,15 @@ public class ChannelSessionTest extends BaseTestSupport {
                     Collection<ClientChannelEvent> result
                             = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
                     long waitEnd = System.currentTimeMillis();
-                    assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
-                            result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                    assertTrue(result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)),
+                            "Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result);
 
                     byte[] b = new byte[1024];
                     InputStream invertedOut = channel.getInvertedOut();
                     int l = invertedOut.read(b);
                     String cmdReceived = (l > 0) ? new String(b, 0, l) : "";
 
-                    assertEquals("Mismatched echoed command", cmdSent, cmdReceived);
+                    assertEquals(cmdSent, cmdReceived, "Mismatched echoed command");
                 }
             }
         }
@@ -128,21 +131,21 @@ public class ChannelSessionTest extends BaseTestSupport {
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result = second.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), 10_000);
                 long waitEnd = System.currentTimeMillis();
-                assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
-                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                assertTrue(result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)),
+                        "Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result);
                 // Read from the second command's stdout and check the result.
                 try (InputStream invertedOut = second.getInvertedOut()) {
                     byte[] b = new byte[1024];
                     int l = invertedOut.read(b);
                     String cmdReceived = (l > 0) ? new String(b, 0, l) : "";
-                    assertEquals("Mismatched echoed command", cmdSent, cmdReceived);
+                    assertEquals(cmdSent, cmdReceived, "Mismatched echoed command");
                 }
             }
         }
     }
 
     @Test
-    public void pipedInputStream() throws Exception {
+    void pipedInputStream() throws Exception {
         try (SshServer server = setupTestServer();
              SshClient client = setupTestClient()) {
 
@@ -167,7 +170,7 @@ public class ChannelSessionTest extends BaseTestSupport {
     }
 
     @Test
-    public void testNoFlush() throws Exception {
+    void noFlush() throws Exception {
         try (SshServer server = setupTestServer();
              SshClient client = setupTestClient()) {
 
@@ -199,15 +202,15 @@ public class ChannelSessionTest extends BaseTestSupport {
                     Collection<ClientChannelEvent> result
                             = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.SECONDS.toMillis(11L));
                     long waitEnd = System.currentTimeMillis();
-                    assertTrue("Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result,
-                            result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                    assertTrue(result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)),
+                            "Wrong channel state after " + (waitEnd - waitStart) + " ms.: " + result);
 
                     byte[] b = new byte[1024];
                     InputStream invertedOut = channel.getInvertedOut();
                     int l = invertedOut.read(b);
                     String cmdReceived = (l > 0) ? new String(b, 0, l) : "";
 
-                    assertEquals("Mismatched echoed command", cmdSent, cmdReceived);
+                    assertEquals(cmdSent, cmdReceived, "Mismatched echoed command");
                 }
             }
         }
@@ -217,7 +220,7 @@ public class ChannelSessionTest extends BaseTestSupport {
      * Test whether onWindowExpanded is called from server session
      */
     @Test
-    public void testHandleWindowAdjust() throws Exception {
+    void handleWindowAdjust() throws Exception {
         Buffer buffer = new ByteArrayBuffer();
         buffer.putUInt(1234L);
 
@@ -236,26 +239,28 @@ public class ChannelSessionTest extends BaseTestSupport {
                 }
             };
             channelSession.handleWindowAdjust(buffer);
-            assertTrue("Expanded ?", expanded.get());
+            assertTrue(expanded.get(), "Expanded ?");
         }
     }
 
-    @Test // see SSHD-652
-    public void testCloseFutureListenerRegistration() throws Exception {
+    // see SSHD-652
+    @Test
+    void closeFutureListenerRegistration() throws Exception {
         AtomicInteger closeCount = new AtomicInteger();
         try (ChannelSession session = new ChannelSession()) {
             session.addCloseFutureListener(future -> {
-                assertTrue("Future not marted as closed", future.isClosed());
-                assertEquals("Unexpected multiple call to callback", 1, closeCount.incrementAndGet());
+                assertTrue(future.isClosed(), "Future not marted as closed");
+                assertEquals(1, closeCount.incrementAndGet(), "Unexpected multiple call to callback");
             });
             session.close();
         }
 
-        assertEquals("Close listener not called", 1, closeCount.get());
+        assertEquals(1, closeCount.get(), "Close listener not called");
     }
 
-    @Test   // SSHD-1244
-    public void testLargeWindowSizeAdjust() throws Exception {
+    // SSHD-1244
+    @Test
+    void largeWindowSizeAdjust() throws Exception {
         try (ChannelSession session = new ChannelSession() {
             {
                 RemoteWindow wRemote = getRemoteWindow();
@@ -264,14 +269,14 @@ public class ChannelSessionTest extends BaseTestSupport {
         }) {
             RemoteWindow wRemote = session.getRemoteWindow();
             long initialSize = wRemote.getSize();
-            assertEquals("Bad initial window size", 1024, initialSize);
+            assertEquals(1024, initialSize, "Bad initial window size");
 
             Buffer buffer = new ByteArrayBuffer();
             buffer.putUInt(BufferUtils.MAX_UINT32_VALUE);
             session.handleWindowAdjust(buffer);
 
             long updatedSize = wRemote.getSize();
-            assertEquals("Mismatched updated window size", BufferUtils.MAX_UINT32_VALUE, updatedSize);
+            assertEquals(BufferUtils.MAX_UINT32_VALUE, updatedSize, "Mismatched updated window size");
         }
     }
 }

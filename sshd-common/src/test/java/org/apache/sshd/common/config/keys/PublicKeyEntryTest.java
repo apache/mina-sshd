@@ -27,24 +27,26 @@ import java.util.Collections;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PublicKeyEntryTest extends JUnitTestSupport {
     public PublicKeyEntryTest() {
         super();
     }
 
     @Test
-    public void testFallbackResolver() throws Exception {
+    void fallbackResolver() throws Exception {
         PublicKeyEntry entry = PublicKeyEntry.parsePublicKeyEntry(
                 GenericUtils.join(
                         Arrays.asList(getCurrentTestName(), "AAAA", getClass().getSimpleName()), ' '));
@@ -52,8 +54,8 @@ public class PublicKeyEntryTest extends JUnitTestSupport {
                 null, PublicKeyEntryResolver.FAILING, PublicKeyEntryResolver.IGNORING }) {
             try {
                 PublicKey key = entry.resolvePublicKey(null, Collections.emptyMap(), resolver);
-                assertSame("Mismatched successful resolver", PublicKeyEntryResolver.IGNORING, resolver);
-                assertNull("Unexpected success for resolver=" + resolver + ": " + KeyUtils.getFingerPrint(key), key);
+                assertSame(PublicKeyEntryResolver.IGNORING, resolver, "Mismatched successful resolver");
+                assertNull(key, "Unexpected success for resolver=" + resolver + ": " + KeyUtils.getFingerPrint(key));
             } catch (GeneralSecurityException e) {
                 assertObjectInstanceOf("Mismatched thrown exception for resolver=" + resolver, InvalidKeySpecException.class,
                         e);

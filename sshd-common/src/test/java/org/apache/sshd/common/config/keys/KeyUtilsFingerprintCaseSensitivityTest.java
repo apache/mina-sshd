@@ -27,26 +27,21 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
 
     // CHECKSTYLE:OFF
@@ -68,18 +63,17 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
     private String expected;
     private String test;
 
-    public KeyUtilsFingerprintCaseSensitivityTest(String expected, String test) {
+    public void initKeyUtilsFingerprintCaseSensitivityTest(String expected, String test) {
         this.expected = expected;
         this.test = test;
     }
 
-    @BeforeClass
-    public static void beforeClass() throws GeneralSecurityException, IOException {
+    @BeforeAll
+    static void beforeClass() throws GeneralSecurityException, IOException {
         PublicKeyEntry keyEntry = PublicKeyEntry.parsePublicKeyEntry(KEY_STRING);
         key = keyEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
     }
 
-    @Parameters(name = "expected={0}, test={1}")
     public static Collection<Object[]> parameters() {
         return Arrays.asList(
                 new Object[] { MD5_FULL, MD5_FULL },
@@ -94,8 +88,10 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
                 new Object[] { SHA1_FULL, SHA1_PREFIX.toLowerCase() + SHA1 });
     }
 
-    @Test
-    public void testCase() throws Exception {
-        assertEquals("Check failed", new SimpleImmutableEntry<>(true, expected), KeyUtils.checkFingerPrint(test, key));
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "expected={0}, test={1}")
+    public void testCase(String expected, String test) throws Exception {
+        initKeyUtilsFingerprintCaseSensitivityTest(expected, test);
+        assertEquals(new SimpleImmutableEntry<>(true, expected), KeyUtils.checkFingerPrint(test, key), "Check failed");
     }
 }

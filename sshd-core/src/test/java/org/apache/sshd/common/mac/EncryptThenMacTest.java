@@ -31,37 +31,34 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class EncryptThenMacTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
 
-    private final MacFactory factory;
+    private MacFactory factory;
 
-    public EncryptThenMacTest(MacFactory factory) {
+    public void initEncryptThenMacTest(MacFactory factory) throws Exception {
         this.factory = factory;
+        sshd.setMacFactories(Collections.singletonList(this.factory));
+        client.setMacFactories(Collections.singletonList(this.factory));
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(EncryptThenMacTest.class);
         sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(EncryptThenMacTest.class));
         sshd.start();
@@ -71,8 +68,8 @@ public class EncryptThenMacTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -90,7 +87,6 @@ public class EncryptThenMacTest extends BaseTestSupport {
         }
     }
 
-    @Parameters(name = "{0}")
     public static Collection<Object[]> parameters() {
         List<Object[]> ret = new ArrayList<>();
         for (MacFactory f : BuiltinMacs.VALUES) {
@@ -111,14 +107,10 @@ public class EncryptThenMacTest extends BaseTestSupport {
         return ret;
     }
 
-    @Before
-    public void setUp() throws Exception {
-        sshd.setMacFactories(Collections.singletonList(factory));
-        client.setMacFactories(Collections.singletonList(factory));
-    }
-
-    @Test
-    public void testClientConnection() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void clientConnection(MacFactory factory) throws Exception {
+        initEncryptThenMacTest(factory);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
@@ -127,7 +119,7 @@ public class EncryptThenMacTest extends BaseTestSupport {
             String expected = factory.getName();
             for (KexProposalOption opt : KexProposalOption.MAC_PROPOSALS) {
                 String actual = session.getNegotiatedKexParameter(opt);
-                assertEquals("Mismatched " + opt + " negotiation", expected, actual);
+                assertEquals(expected, actual, "Mismatched " + opt + " negotiation");
             }
         }
     }

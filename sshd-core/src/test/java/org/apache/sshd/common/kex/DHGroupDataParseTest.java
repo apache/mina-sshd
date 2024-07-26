@@ -31,36 +31,34 @@ import java.util.TreeSet;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class DHGroupDataParseTest extends BaseTestSupport {
-    private final String name;
-    private final byte[] expected;
+    private String name;
+    private byte[] expected;
 
-    public DHGroupDataParseTest(String name, byte[] expected) {
+    public void initDHGroupDataParseTest(String name, byte[] expected) {
         this.name = name;
         this.expected = expected;
     }
 
-    @Parameters(name = "{0}") // Note: we rely on the naming convention
+    // Note: we rely on the naming convention
     public static List<Object[]> parameters() throws Exception {
         Collection<String> processedResources = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         List<Object[]> testCases = new ArrayList<>();
@@ -87,28 +85,30 @@ public class DHGroupDataParseTest extends BaseTestSupport {
                 break;
             }
 
-            assertTrue("Cannot extract group ID from " + name, groupId > 0);
+            assertTrue(groupId > 0, "Cannot extract group ID from " + name);
 
             // For some reason, P1 is stored in 'group2.prime' - TODO standardize the naming convention
             if (groupId == 1) {
                 groupId = 2;
             }
             String resName = "group" + groupId + ".prime";
-            assertTrue("Duplicate resource name: " + resName, processedResources.add(resName));
+            assertTrue(processedResources.add(resName), "Duplicate resource name: " + resName);
 
             byte[] expected = (byte[]) m.invoke(null, GenericUtils.EMPTY_OBJECT_ARRAY);
             testCases.add(new Object[] { resName, expected });
         }
 
-        assertFalse("No resources processed", processedResources.isEmpty());
+        assertFalse(processedResources.isEmpty(), "No resources processed");
         return testCases;
     }
 
-    @Test
-    public void testParseOakleyGroupPrimeValues() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void parseOakleyGroupPrimeValues(String name, byte[] expected) throws Exception {
+        initDHGroupDataParseTest(name, expected);
         List<String> lines;
         try (InputStream stream = DHGroupData.class.getResourceAsStream(name)) {
-            assertNotNull("Missing prime value file for group=" + name, stream);
+            assertNotNull(stream, "Missing prime value file for group=" + name);
             lines = IoUtils.readAllLines(stream);
         }
 
@@ -127,7 +127,7 @@ public class DHGroupDataParseTest extends BaseTestSupport {
         Random rnd = new Random(System.nanoTime());
         for (int index = 1, numDataLines = dataLines.size(), numOtherLines = otherLines.size(); index <= 4; index++) {
             byte[] actual = DHGroupData.readOakleyGroupPrimeValue(lines.stream());
-            assertArrayEquals(name + "[" + index + "]", expected, actual);
+            assertArrayEquals(expected, actual, name + "[" + index + "]");
             lines.clear();
 
             // create an interleaving of the data lines and the other ones

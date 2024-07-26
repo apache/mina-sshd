@@ -33,37 +33,31 @@ import java.util.Map;
 
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.DigestFactory;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
-    private final PublicKey key;
-    private final DigestFactory digestFactory;
-    private final String expected;
+    private PublicKey key;
+    private DigestFactory digestFactory;
+    private String expected;
 
-    public KeyUtilsFingerprintGenerationTest(PublicKey key, DigestFactory digestFactory, String expected) {
+    public void initKeyUtilsFingerprintGenerationTest(PublicKey key, DigestFactory digestFactory, String expected) {
         this.key = key;
         this.digestFactory = digestFactory;
         this.expected = expected;
     }
 
-    @Parameters(name = "key={0}, digestFactory={1}, expected={2}")
     public static Collection<Object[]> parameters() throws IOException, GeneralSecurityException {
         List<? extends Map.Entry<String, List<? extends Map.Entry<DigestFactory, String>>>> keyEntries
                 = Collections.unmodifiableList(Arrays.asList(
@@ -135,20 +129,22 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
         return ret;
     }
 
-    @Test
-    public void testFingerprint() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "key={0}, digestFactory={1}, expected={2}")
+    public void fingerprint(PublicKey key, DigestFactory digestFactory, String expected) throws Exception {
+        initKeyUtilsFingerprintGenerationTest(key, digestFactory, expected);
         String name = digestFactory.getName();
         assertEquals(
-                String.format("Fingerprint does not match for digest %s", name),
                 expected,
-                KeyUtils.getFingerPrint(digestFactory, key));
+                KeyUtils.getFingerPrint(digestFactory, key),
+                String.format("Fingerprint does not match for digest %s", name));
         assertEquals(
-                String.format("Fingerprint check failed for digest %s", name),
                 new SimpleImmutableEntry<>(true, expected),
-                KeyUtils.checkFingerPrint(expected, digestFactory, key));
+                KeyUtils.checkFingerPrint(expected, digestFactory, key),
+                String.format("Fingerprint check failed for digest %s", name));
         assertEquals(
-                String.format("Fingerprint check succeeded for invalid digest %s", name),
                 new SimpleImmutableEntry<>(false, expected),
-                KeyUtils.checkFingerPrint(expected + "A", digestFactory, key));
+                KeyUtils.checkFingerPrint(expected + "A", digestFactory, key),
+                String.format("Fingerprint check succeeded for invalid digest %s", name));
     }
 }

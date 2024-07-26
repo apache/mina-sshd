@@ -25,21 +25,22 @@ import java.util.stream.Collectors;
 
 import org.apache.sshd.sftp.common.extensions.VersionsParser.Versions;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class VersionParserTest extends JUnitTestSupport {
     public VersionParserTest() {
         super();
     }
 
-    @Test // see SSHD-909
-    public void testIgnoreNonNumbersWhenResolvingAvailableVersions() {
+    // see SSHD-909
+    @Test
+    void ignoreNonNumbersWhenResolvingAvailableVersions() {
         List<Integer> expected = Arrays.asList(3, 4, 5, 6);
         List<String> values = expected.stream()
                 .map(Object::toString)

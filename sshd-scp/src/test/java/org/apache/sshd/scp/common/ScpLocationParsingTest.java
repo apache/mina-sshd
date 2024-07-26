@@ -23,36 +23,30 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class ScpLocationParsingTest extends JUnitTestSupport {
-    private final String value;
-    private final ScpLocation location;
+    private String value;
+    private ScpLocation location;
 
-    public ScpLocationParsingTest(String value, ScpLocation location) {
+    public void initScpLocationParsingTest(String value, ScpLocation location) {
         this.value = value;
         this.location = location;
     }
 
-    @Parameters(name = "value={0}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // not serializing it
@@ -75,17 +69,21 @@ public class ScpLocationParsingTest extends JUnitTestSupport {
         };
     }
 
-    @Test
-    public void testLocationParsing() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "value={0}")
+    public void locationParsing(String value, ScpLocation location) {
+        initScpLocationParsingTest(value, location);
         ScpLocation actual = ScpLocation.parse(value);
         assertEquals(location, actual);
     }
 
-    @Test
-    public void testLocationToString() {
-        Assume.assumeTrue("No expected value to compate", location != null);
-        Assume.assumeTrue("Default port being used",
-                location.isLocal() || (location.resolvePort() != SshConstants.DEFAULT_PORT));
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "value={0}")
+    public void locationToString(String value, ScpLocation location) {
+        initScpLocationParsingTest(value, location);
+        Assumptions.assumeTrue(location != null, "No expected value to compate");
+        Assumptions.assumeTrue(location.isLocal() || (location.resolvePort() != SshConstants.DEFAULT_PORT),
+                "Default port being used");
         String spec = location.toString();
         assertEquals(value, spec);
     }

@@ -35,14 +35,21 @@ import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.client.simple.BaseSimpleClientTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
     private final Path targetPath;
     private final Path parentPath;
@@ -55,6 +62,7 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
+    @BeforeEach
     @Override
     public void setUp() throws Exception {
         super.setUp();
@@ -65,21 +73,21 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
     }
 
     @Test
-    public void testSessionClosedWhenClientClosed() throws Exception {
+    void sessionClosedWhenClientClosed() throws Exception {
         try (SftpClient sftp = login()) {
-            assertTrue("SFTP not open", sftp.isOpen());
+            assertTrue(sftp.isOpen(), "SFTP not open");
 
             Session session = sftp.getClientSession();
-            assertTrue("Session not open", session.isOpen());
+            assertTrue(session.isOpen(), "Session not open");
 
             sftp.close();
-            assertFalse("Session not closed", session.isOpen());
-            assertFalse("SFTP not closed", sftp.isOpen());
+            assertFalse(session.isOpen(), "Session not closed");
+            assertFalse(sftp.isOpen(), "SFTP not closed");
         }
     }
 
     @Test
-    public void testSftpProxyCalls() throws Exception {
+    void sftpProxyCalls() throws Exception {
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
@@ -99,13 +107,13 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
                 sftp.write(h, 0L, written);
 
                 SftpClient.Attributes attrs = sftp.stat(h);
-                assertNotNull("No handle attributes", attrs);
-                assertEquals("Mismatched remote file size", written.length, attrs.getSize());
+                assertNotNull(attrs, "No handle attributes");
+                assertEquals(written.length, attrs.getSize(), "Mismatched remote file size");
             }
 
-            assertTrue("Remote file not created: " + clientFile, Files.exists(clientFile, IoUtils.EMPTY_LINK_OPTIONS));
+            assertTrue(Files.exists(clientFile, IoUtils.EMPTY_LINK_OPTIONS), "Remote file not created: " + clientFile);
             byte[] local = Files.readAllBytes(clientFile);
-            assertArrayEquals("Mismatched remote written data", written, local);
+            assertArrayEquals(written, local, "Mismatched remote written data");
 
             try (SftpClient.CloseableHandle h = sftp.openDir(remoteFileDir)) {
                 boolean matchFound = false;
@@ -117,11 +125,11 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
                     }
                 }
 
-                assertTrue("No directory entry found for " + clientFileName, matchFound);
+                assertTrue(matchFound, "No directory entry found for " + clientFileName);
             }
 
             sftp.remove(remoteFilePath);
-            assertFalse("Remote file not removed: " + clientFile, Files.exists(clientFile, IoUtils.EMPTY_LINK_OPTIONS));
+            assertFalse(Files.exists(clientFile, IoUtils.EMPTY_LINK_OPTIONS), "Remote file not removed: " + clientFile);
         }
     }
 

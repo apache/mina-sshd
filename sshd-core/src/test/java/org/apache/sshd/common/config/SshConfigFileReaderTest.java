@@ -49,17 +49,24 @@ import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 @SuppressWarnings("checkstyle:MethodCount")
 public class SshConfigFileReaderTest extends BaseTestSupport {
     public SshConfigFileReaderTest() {
@@ -67,24 +74,24 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReadFromURL() throws IOException {
+    void readFromURL() throws IOException {
         URL url = getClass().getResource("sshd_config");
-        assertNotNull("Cannot locate test file", url);
+        assertNotNull(url, "Cannot locate test file");
 
         Properties props = ConfigFileReaderSupport.readConfigFile(url);
-        assertFalse("No properties read", props.isEmpty());
-        assertTrue("Unexpected commented property data", GenericUtils.isEmpty(props.getProperty("ListenAddress")));
-        assertTrue("Unexpected non-existing property data", GenericUtils.isEmpty(props.getProperty(getCurrentTestName())));
+        assertFalse(props.isEmpty(), "No properties read");
+        assertTrue(GenericUtils.isEmpty(props.getProperty("ListenAddress")), "Unexpected commented property data");
+        assertTrue(GenericUtils.isEmpty(props.getProperty(getCurrentTestName())), "Unexpected non-existing property data");
 
         String keysList = props.getProperty("HostKey");
-        assertFalse("No host keys", GenericUtils.isEmpty(keysList));
+        assertFalse(GenericUtils.isEmpty(keysList), "No host keys");
 
         String[] keys = GenericUtils.split(keysList, ',');
-        assertTrue("No multiple keys", GenericUtils.length((Object[]) keys) > 1);
+        assertTrue(GenericUtils.length((Object[]) keys) > 1, "No multiple keys");
     }
 
     @Test
-    public void testParseCiphersList() {
+    void parseCiphersList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_CIPHERS_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.CIPHERS_CONFIG_PROP, expected);
         BuiltinCiphers.ParseResult result = SshConfigFileReader.getCiphers(PropertyResolverUtils.toPropertyResolver(props));
@@ -92,7 +99,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testParseMacsList() {
+    void parseMacsList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_MAC_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.MACS_CONFIG_PROP, expected);
         BuiltinMacs.ParseResult result = SshConfigFileReader.getMacs(PropertyResolverUtils.toPropertyResolver(props));
@@ -100,7 +107,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testParseSignaturesList() {
+    void parseSignaturesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.HOST_KEY_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinSignatures.ParseResult result
@@ -109,7 +116,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testParseKexFactoriesList() {
+    void parseKexFactoriesList() {
         List<? extends NamedResource> expected = BaseBuilder.DEFAULT_KEX_PREFERENCE;
         Properties props = initNamedResourceProperties(ConfigFileReaderSupport.KEX_ALGORITHMS_CONFIG_PROP, expected);
         BuiltinDHFactories.ParseResult result
@@ -118,19 +125,19 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
     }
 
     @Test
-    public void testGetCompression() {
+    void getCompression() {
         Properties props = new Properties();
         for (CompressionConfigValue expected : CompressionConfigValue.VALUES) {
             props.setProperty(ConfigFileReaderSupport.COMPRESSION_PROP, expected.name().toLowerCase());
 
             NamedResource actual = SshConfigFileReader.getCompression(PropertyResolverUtils.toPropertyResolver(props));
-            assertNotNull("No match for " + expected.name(), actual);
-            assertEquals(expected.name(), expected.getName(), actual.getName());
+            assertNotNull(actual, "No match for " + expected.name());
+            assertEquals(expected.getName(), actual.getName(), expected.name());
         }
     }
 
     @Test
-    public void testConfigureAbstractFactoryManagerWithDefaults() {
+    void configureAbstractFactoryManagerWithDefaults() {
         Properties props = new Properties(); // empty means use defaults
         AbstractFactoryManager expected = new AbstractFactoryManager() {
             @Override
@@ -141,73 +148,82 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         // must be lenient since we do not cover the full default spectrum
         AbstractFactoryManager actual = SshConfigFileReader.configure(
                 expected, PropertyResolverUtils.toPropertyResolver(props), true, true);
-        assertSame("Mismatched configured result", expected, actual);
+        assertSame(expected, actual, "Mismatched configured result");
         validateAbstractFactoryManagerConfiguration(expected, props, true);
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testNonLenientCiphersConfiguration() {
-        FactoryManager manager = SshConfigFileReader.configureCiphers(
-                new AbstractFactoryManager() {
-                    @Override
-                    protected Closeable getInnerCloseable() {
-                        return null;
-                    }
-                },
-                getCurrentTestName(),
-                false,
-                true);
-        fail("Unexpected success: " + NamedResource.getNames(manager.getCipherFactories()));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testNonLenientSignaturesConfiguration() {
-        FactoryManager manager = SshConfigFileReader.configureSignatures(
-                new AbstractFactoryManager() {
-                    @Override
-                    protected Closeable getInnerCloseable() {
-                        return null;
-                    }
-                },
-                getCurrentTestName(),
-                false,
-                true);
-        fail("Unexpected success: " + NamedResource.getNames(manager.getSignatureFactories()));
-    }
-
-    @Test(expected = IllegalArgumentException.class)
-    public void testNonLenientMacsConfiguration() {
-        FactoryManager manager = SshConfigFileReader.configureMacs(
-                new AbstractFactoryManager() {
-                    @Override
-                    protected Closeable getInnerCloseable() {
-                        return null;
-                    }
-                },
-                getCurrentTestName(),
-                false,
-                true);
-        fail("Unexpected success: " + NamedResource.getNames(manager.getMacFactories()));
+    @Test
+    void nonLenientCiphersConfiguration() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            FactoryManager manager = SshConfigFileReader.configureCiphers(
+                    new AbstractFactoryManager() {
+                        @Override
+                        protected Closeable getInnerCloseable() {
+                            return null;
+                        }
+                    },
+                    getCurrentTestName(),
+                    false,
+                    true);
+            fail("Unexpected success: " + NamedResource.getNames(manager.getCipherFactories()));
+        });
     }
 
     @Test
-    public void testConfigureCompressionFromStringAcceptsCombinedValues() {
+    void nonLenientSignaturesConfiguration() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            FactoryManager manager = SshConfigFileReader.configureSignatures(
+                    new AbstractFactoryManager() {
+                        @Override
+                        protected Closeable getInnerCloseable() {
+                            return null;
+                        }
+                    },
+                    getCurrentTestName(),
+                    false,
+                    true);
+            fail("Unexpected success: " + NamedResource.getNames(manager.getSignatureFactories()));
+        });
+    }
+
+    @Test
+    void nonLenientMacsConfiguration() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            FactoryManager manager = SshConfigFileReader.configureMacs(
+                    new AbstractFactoryManager() {
+                        @Override
+                        protected Closeable getInnerCloseable() {
+                            return null;
+                        }
+                    },
+                    getCurrentTestName(),
+                    false,
+                    true);
+            fail("Unexpected success: " + NamedResource.getNames(manager.getMacFactories()));
+        });
+    }
+
+    @Test
+    void configureCompressionFromStringAcceptsCombinedValues() {
         testConfigureCompressionFromStringAcceptsCombinedValues(CompressionConfigValue.class,
                 e -> (e == null) ? null : e.name());
         testConfigureCompressionFromStringAcceptsCombinedValues(BuiltinCompressions.class, NamedResource.NAME_EXTRACTOR);
     }
 
-    @Test(expected = StreamCorruptedException.class)
-    public void testInvalidDelimiter() throws IOException {
-        String line = getClass().getSimpleName() + "+" + getCurrentTestName();
-        try (Reader rdr = new StringReader(line)) {
-            Properties props = ConfigFileReaderSupport.readConfigFile(rdr, true);
-            fail("Unexpected success: " + props);
-        }
+    @Test
+    void invalidDelimiter() throws IOException {
+        assertThrows(StreamCorruptedException.class, () -> {
+            String line = getClass().getSimpleName() + "+" + getCurrentTestName();
+            try (Reader rdr = new StringReader(line)) {
+                Properties props = ConfigFileReaderSupport.readConfigFile(rdr, true);
+                fail("Unexpected success: " + props);
+            }
+        });
     }
 
-    @Test // SSHD-774
-    public void testTabDelimiter() throws IOException {
+    // SSHD-774
+    @Test
+    void tabDelimiter() throws IOException {
         String name = getClass().getSimpleName();
         String expected = getCurrentTestName();
         Properties props;
@@ -216,7 +232,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
         }
 
         String actual = props.getProperty(name);
-        assertEquals("Mismatched read configuration value", expected, actual);
+        assertEquals(expected, actual, "Mismatched read configuration value");
     }
 
     private static <E extends Enum<E> & CompressionFactory> void testConfigureCompressionFromStringAcceptsCombinedValues(
@@ -235,8 +251,8 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
                     false,
                     true);
             List<NamedFactory<Compression>> compressions = manager.getCompressionFactories();
-            assertEquals(prefix + "(size)", 1, GenericUtils.size(compressions));
-            assertSame(prefix + "[instance]", expected, compressions.get(0));
+            assertEquals(1, GenericUtils.size(compressions), prefix + "(size)");
+            assertSame(expected, compressions.get(0), prefix + "[instance]");
         }
     }
 
@@ -291,7 +307,7 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     private static <M extends FactoryManager> M validateFactoryManagerCompressions(M manager, String value, boolean lenient) {
         NamedFactory<Compression> factory = CompressionConfigValue.fromName(value);
-        assertTrue("Unknown compression: " + value, lenient || (factory != null));
+        assertTrue(lenient || (factory != null), "Unknown compression: " + value);
         if (factory != null) {
             validateFactoryManagerFactories(Compression.class, Collections.singletonList(factory),
                     manager.getCompressionFactories());
@@ -316,14 +332,14 @@ public class SshConfigFileReaderTest extends BaseTestSupport {
 
     private static <T extends NamedResource> List<T> testParsedFactoriesList(
             List<? extends NamedResource> expected, List<T> actual, Collection<String> unsupported) {
-        assertTrue("Unexpected unsupported factories: " + unsupported, GenericUtils.isEmpty(unsupported));
-        assertEquals("Mismatched list size", expected.size(), GenericUtils.size(actual));
+        assertTrue(GenericUtils.isEmpty(unsupported), "Unexpected unsupported factories: " + unsupported);
+        assertEquals(expected.size(), GenericUtils.size(actual), "Mismatched list size");
         for (int index = 0; index < expected.size(); index++) {
             NamedResource e = expected.get(index);
             String n1 = e.getName();
             NamedResource a = actual.get(index);
             String n2 = a.getName();
-            assertEquals("Mismatched name at index=" + index, n1, n2);
+            assertEquals(n1, n2, "Mismatched name at index=" + index);
         }
 
         return actual;

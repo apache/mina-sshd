@@ -24,20 +24,20 @@ import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests reading an ed25519 private key in OpenSSH format AES encrypted and encrypted with AEAD ciphers (AES-GCM and
  * chacha20-poly1305@openssh.com).
  */
-@RunWith(Parameterized.class)
-@Category({ NoIoTestCase.class })
+@Tag("NoIoTestCase")
 public class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
 
     private static final String BASE = "ed25519_priv";
@@ -46,32 +46,33 @@ public class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
 
     private KeyPair unencrypted;
 
-    public OpenSSHKeyPairResourceParserAEADTest(String fileName) {
+    public void initOpenSSHKeyPairResourceParserAEADTest(String fileName) {
         testFileName = fileName;
     }
 
-    @Parameters(name = "{0}")
     public static String[] parameters() {
         return new String[] { BASE + ".aes", BASE + ".cha", BASE + ".gcm" };
     }
 
     private KeyPair load(String fileName) throws Exception {
         URL url = getClass().getResource(fileName);
-        assertNotNull("Missing test resource " + fileName, url);
+        assertNotNull(url, "Missing test resource " + fileName);
         Collection<KeyPair> pairs = OpenSSHKeyPairResourceParser.INSTANCE.loadKeyPairs(null, url, (s, r, i) -> "test");
-        assertEquals("Unexpected number of keys", 1, pairs.size());
+        assertEquals(1, pairs.size(), "Unexpected number of keys");
         KeyPair result = pairs.iterator().next();
-        assertNotNull("No unencrypted key pair", result);
+        assertNotNull(result, "No unencrypted key pair");
         return result;
     }
 
-    @Before
-    public void loadUnencrypted() throws Exception {
+    @BeforeEach
+    void loadUnencrypted() throws Exception {
         unencrypted = load(BASE);
     }
 
-    @Test
-    public void testDecrypt() throws Exception {
-        assertTrue("Unequal keys", KeyUtils.compareKeyPairs(unencrypted, load(testFileName)));
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void decrypt(String fileName) throws Exception {
+        initOpenSSHKeyPairResourceParserAEADTest(fileName);
+        assertTrue(KeyUtils.compareKeyPairs(unencrypted, load(testFileName)), "Unequal keys");
     }
 }

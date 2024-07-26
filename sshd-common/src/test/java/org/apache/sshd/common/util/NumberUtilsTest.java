@@ -20,75 +20,80 @@
 package org.apache.sshd.common.util;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class NumberUtilsTest extends JUnitTestSupport {
     public NumberUtilsTest() {
         super();
     }
 
     @Test
-    public void testIntNextPowerOf2() {
+    void intNextPowerOf2() {
         int expected = 1;
         for (int index = 0; index < Integer.SIZE; expected <<= 1, index++) {
             if (expected > 2) {
-                assertEquals("Mismatched lower bound value", expected, NumberUtils.getNextPowerOf2(expected - 1));
+                assertEquals(expected, NumberUtils.getNextPowerOf2(expected - 1), "Mismatched lower bound value");
             }
 
             if (expected > 0) { // avoid the negative value
-                assertEquals("Mismatched exact value", expected, NumberUtils.getNextPowerOf2(expected));
+                assertEquals(expected, NumberUtils.getNextPowerOf2(expected), "Mismatched exact value");
             }
         }
     }
 
     @Test
-    public void testIntNextPowerOf2Overflow() {
+    void intNextPowerOf2Overflow() {
         int expected = Integer.MAX_VALUE - Byte.SIZE;
         int actual = NumberUtils.getNextPowerOf2(expected);
         assertEquals(expected, actual);
     }
 
     @Test
-    public void testToInteger() {
-        assertNull("Unexpected null value", NumberUtils.toInteger(null));
+    void toInteger() {
+        assertNull(NumberUtils.toInteger(null), "Unexpected null value");
         for (Number n : new Number[] {
                 Byte.valueOf(Byte.MAX_VALUE), Short.valueOf(Short.MIN_VALUE),
                 Integer.valueOf(Short.MAX_VALUE), Long.valueOf(82007160L) }) {
             Integer i = NumberUtils.toInteger(n);
             if (n instanceof Integer) {
-                assertSame("Unexpected conversion", n, i);
+                assertSame(n, i, "Unexpected conversion");
             } else {
-                assertEquals("Mismatched values", n.intValue(), i.intValue());
+                assertEquals(n.intValue(), i.intValue(), "Mismatched values");
             }
         }
     }
 
     @Test
-    public void testIsValidIntegerNumber() {
+    void isValidIntegerNumber() {
         for (String s : new String[] { "7", "73", "736", "7365", "19650307" }) {
-            assertTrue(s, NumberUtils.isIntegerNumber(s));
+            assertTrue(NumberUtils.isIntegerNumber(s), s);
 
             String pos = "+" + s;
-            assertTrue(pos, NumberUtils.isIntegerNumber(pos));
+            assertTrue(NumberUtils.isIntegerNumber(pos), pos);
 
             String neg = "-" + s;
-            assertTrue(neg, NumberUtils.isIntegerNumber(neg));
+            assertTrue(NumberUtils.isIntegerNumber(neg), neg);
         }
     }
 
     @Test
-    public void testIsInvalidIntegerNumber() {
+    void isInvalidIntegerNumber() {
         for (String s : new String[] { null, "", "    ", getCurrentTestName(), "3rd", "3.14", "-.3" }) {
-            assertFalse(s, NumberUtils.isIntegerNumber(s));
+            assertFalse(NumberUtils.isIntegerNumber(s), s);
         }
     }
 }

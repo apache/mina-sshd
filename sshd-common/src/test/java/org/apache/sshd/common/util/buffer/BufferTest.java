@@ -24,21 +24,24 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BufferTest extends JUnitTestSupport {
     public BufferTest() {
         super();
     }
 
     @Test
-    public void testGetLong() throws Exception {
+    void getLong() throws Exception {
         long expected = 1234567890123456789L;
 
         try (ByteArrayOutputStream stream = new ByteArrayOutputStream()) {
@@ -47,62 +50,62 @@ public class BufferTest extends JUnitTestSupport {
             }
 
             Buffer buffer = new ByteArrayBuffer(stream.toByteArray());
-            assertEquals("Mismatched recovered value", expected, buffer.getLong());
+            assertEquals(expected, buffer.getLong(), "Mismatched recovered value");
         }
     }
 
     @Test
-    public void testPutCharsWithNullOrEmptyValue() {
+    void putCharsWithNullOrEmptyValue() {
         Buffer buffer = new ByteArrayBuffer(Integer.SIZE);
         for (char[] chars : new char[][] { null, GenericUtils.EMPTY_CHAR_ARRAY }) {
             buffer.putChars(chars);
 
             String value = buffer.getString();
-            assertEquals("Mismatched value for " + ((chars == null) ? "null" : "empty") + " characters", "", value);
+            assertEquals("", value, "Mismatched value for " + ((chars == null) ? "null" : "empty") + " characters");
         }
     }
 
     @Test
-    public void testPutCharsOnNonEmptyValue() {
+    void putCharsOnNonEmptyValue() {
         String expected = getCurrentTestName();
         Buffer buffer = new ByteArrayBuffer(expected.length() + Byte.SIZE);
         buffer.putChars(expected.toCharArray());
 
         String actual = buffer.getString();
-        assertEquals("Mismatched recovered values", expected, actual);
+        assertEquals(expected, actual, "Mismatched recovered values");
     }
 
     @Test
-    public void testPutAndWipeChars() {
+    void putAndWipeChars() {
         String expected = getCurrentTestName();
         char[] chars = expected.toCharArray();
         Buffer buffer = new ByteArrayBuffer(chars.length + Byte.SIZE);
         buffer.putAndWipeChars(chars);
 
         String actual = buffer.getString();
-        assertEquals("Mismatched recovered values", expected, actual);
+        assertEquals(expected, actual, "Mismatched recovered values");
 
         for (int index = 0; index < chars.length; index++) {
-            assertEquals("Character not wiped at index=" + index, 0, chars[index]);
+            assertEquals(0, chars[index], "Character not wiped at index=" + index);
         }
     }
 
     @Test
-    public void testPutAndWipeBytes() {
+    void putAndWipeBytes() {
         String expected = getCurrentTestName();
         byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
         Buffer buffer = new ByteArrayBuffer(bytes.length + Byte.SIZE);
         buffer.putAndWipeBytes(bytes);
         String actual = buffer.getString();
-        assertEquals("Mismatched recovered values", expected, actual);
+        assertEquals(expected, actual, "Mismatched recovered values");
 
         for (int index = 0; index < bytes.length; index++) {
-            assertEquals("Value not wiped at index=" + index, 0, bytes[index]);
+            assertEquals(0, bytes[index], "Value not wiped at index=" + index);
         }
     }
 
     @Test
-    public void testGetPublicKeyCorrupted() {
+    void getPublicKeyCorrupted() {
         ByteArrayBuffer buffer = new ByteArrayBuffer(8);
         buffer.putInt(Integer.MAX_VALUE - 10000);
         buffer.putInt(0);
@@ -112,14 +115,14 @@ public class BufferTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testShortPositive() {
+    void shortPositive() {
         ByteArrayBuffer buffer = new ByteArrayBuffer(2);
         buffer.putShort(261);
         assertEquals(261, buffer.getShort());
     }
 
     @Test
-    public void testShortNegative() {
+    void shortNegative() {
         ByteArrayBuffer buffer = new ByteArrayBuffer(2);
         buffer.putShort(-2);
         assertEquals(-2, buffer.getShort());

@@ -35,35 +35,34 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.functors.UnaryEquator;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
     public static final String PASSWORD = "super secret passphrase";
 
-    private final String keyType;
-    private final String regularFile;
-    private final String encryptedFile;
-    private final PuttyKeyPairResourceParser<?, ?> parser;
+    private String keyType;
+    private String regularFile;
+    private String encryptedFile;
+    private PuttyKeyPairResourceParser<?, ?> parser;
 
-    public PuttyKeyUtilsTest(String keyType) {
+    public void initPuttyKeyUtilsTest(String keyType) {
         this.keyType = keyType;
         this.parser = PuttyKeyUtils.BY_KEY_TYPE.get(keyType);
         this.regularFile = getClass().getSimpleName()
@@ -74,17 +73,18 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
                              + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(PuttyKeyUtils.BY_KEY_TYPE.keySet());
     }
 
-    @Test
-    public void testCanDecodePuttyKeyFile() throws IOException, GeneralSecurityException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void canDecodePuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
+        initPuttyKeyUtilsTest(keyType);
         for (String resource : new String[] { regularFile, encryptedFile }) {
             URL url = getClass().getResource(resource);
             if (UnaryEquator.isSameReference(regularFile, resource)) {
-                assertNotNull("Missing test resource: " + resource, url);
+                assertNotNull(url, "Missing test resource: " + resource);
             } else {
                 if (url == null) {
                     outputDebugMessage("Skip non-existing encrypted file: %s", resource);
@@ -94,41 +94,47 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
 
             List<String> lines = IoUtils.readAllLines(url);
             NamedResource resourceKey = NamedResource.ofName(resource);
-            assertTrue(resource + " - can extract key pair", parser.canExtractKeyPairs(resourceKey, lines));
+            assertTrue(parser.canExtractKeyPairs(resourceKey, lines), resource + " - can extract key pair");
 
             for (PuttyKeyPairResourceParser<?, ?> other : PuttyKeyUtils.BY_KEY_TYPE.values()) {
                 if (parser == other) {
                     continue;
                 }
 
-                assertFalse(other.getClass().getSimpleName() + "/" + resource + " - unexpected extraction capability",
-                        other.canExtractKeyPairs(resourceKey, lines));
+                assertFalse(other.canExtractKeyPairs(resourceKey, lines),
+                        other.getClass().getSimpleName() + "/" + resource + " - unexpected extraction capability");
             }
         }
     }
 
-    @Test
-    public void testDecodePuttyKeyFile() throws IOException, GeneralSecurityException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void decodePuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
+        initPuttyKeyUtilsTest(keyType);
         URL url = getClass().getResource(regularFile);
-        assertNotNull("Missing test resource: " + regularFile, url);
+        assertNotNull(url, "Missing test resource: " + regularFile);
 
         Collection<KeyPair> keys = parser.loadKeyPairs(null, url, null);
-        assertEquals("Mismatched loaded keys count from " + regularFile, 1, GenericUtils.size(keys));
+        assertEquals(1, GenericUtils.size(keys), "Mismatched loaded keys count from " + regularFile);
         assertLoadedKeyPair(regularFile, GenericUtils.head(keys));
     }
 
-    @Test
-    public void testDecodeEncryptedPuttyKeyFile() throws IOException, GeneralSecurityException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void decodeEncryptedPuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
+        initPuttyKeyUtilsTest(keyType);
         testDecodeEncryptedPuttyKeyFile(encryptedFile, true, PASSWORD, parser, keyType);
     }
 
-    @Test
-    public void testDecideEncryptedFileWithRetries() throws IOException, GeneralSecurityException {
-        Assume.assumeTrue(BuiltinCiphers.aes256cbc.getTransformation() + " N/A", BuiltinCiphers.aes256cbc.isSupported());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void decideEncryptedFileWithRetries(String keyType) throws IOException, GeneralSecurityException {
+        initPuttyKeyUtilsTest(keyType);
+        Assumptions.assumeTrue(BuiltinCiphers.aes256cbc.isSupported(), BuiltinCiphers.aes256cbc.getTransformation() + " N/A");
 
         URL url = getClass().getResource(encryptedFile);
-        Assume.assumeTrue("Skip non-existent encrypted file: " + encryptedFile, url != null);
-        assertNotNull("Missing test resource: " + encryptedFile, url);
+        Assumptions.assumeTrue(url != null, "Skip non-existent encrypted file: " + encryptedFile);
+        assertNotNull(url, "Missing test resource: " + encryptedFile);
 
         int maxRetries = 3;
         SessionContext mockSession = Mockito.mock(SessionContext.class);
@@ -138,17 +144,17 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
                 @Override
                 public String getPassword(SessionContext session, NamedResource resourceKey, int retryIndex)
                         throws IOException {
-                    assertSame("Mismatched session context", mockSession, session);
+                    assertSame(mockSession, session, "Mismatched session context");
 
                     switch (result) {
                         case IGNORE:
                         case TERMINATE:
-                            assertEquals("Mismatched retries invocation count", 0, retryIndex);
-                            assertEquals("Mismatched retries tracking count", retryIndex, retriesCount.get());
+                            assertEquals(0, retryIndex, "Mismatched retries invocation count");
+                            assertEquals(retryIndex, retriesCount.get(), "Mismatched retries tracking count");
                             return "qwertyuiop123456!@#$%^";
                         case RETRY: {
                             int count = retriesCount.incrementAndGet();
-                            assertEquals("Mismatched retries count", retryIndex + 1, count);
+                            assertEquals(retryIndex + 1, count, "Mismatched retries count");
                             if (count == maxRetries) {
                                 return PASSWORD;
                             } else {
@@ -164,7 +170,7 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
                 public ResourceDecodeResult handleDecodeAttemptResult(
                         SessionContext session, NamedResource resourceKey, int retryIndex, String password, Exception err)
                         throws IOException, GeneralSecurityException {
-                    assertSame("Mismatched session context", mockSession, session);
+                    assertSame(mockSession, session, "Mismatched session context");
                     if (err == null) {
                         return null;
                     }
@@ -187,11 +193,11 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
             try {
                 Collection<KeyPair> keys = parser.loadKeyPairs(mockSession, url, provider);
                 if (result == ResourceDecodeResult.IGNORE) {
-                    assertEquals("Unexpected loaded keys count from " + encryptedFile, 0, GenericUtils.size(keys));
-                    assertEquals("Mismatched " + result + " retries count", 0, retriesCount.get());
+                    assertEquals(0, GenericUtils.size(keys), "Unexpected loaded keys count from " + encryptedFile);
+                    assertEquals(0, retriesCount.get(), "Mismatched " + result + " retries count");
                 } else {
-                    assertEquals("Mismatched loaded keys count from " + encryptedFile, 1, GenericUtils.size(keys));
-                    assertEquals("Mismatched " + result + " retries count", maxRetries, retriesCount.get());
+                    assertEquals(1, GenericUtils.size(keys), "Mismatched loaded keys count from " + encryptedFile);
+                    assertEquals(maxRetries, retriesCount.get(), "Mismatched " + result + " retries count");
                     assertLoadedKeyPair(encryptedFile, GenericUtils.head(keys));
                 }
             } catch (IOException | GeneralSecurityException | RuntimeException e) {
@@ -199,7 +205,7 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
                     throw e;
                 }
 
-                assertEquals("Mismatched " + result + " retries count", 0, retriesCount.get());
+                assertEquals(0, retriesCount.get(), "Mismatched " + result + " retries count");
             }
         }
     }

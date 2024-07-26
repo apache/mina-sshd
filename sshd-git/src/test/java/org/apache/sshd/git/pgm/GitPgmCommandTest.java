@@ -36,20 +36,23 @@ import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.eclipse.jgit.api.Git;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class GitPgmCommandTest extends BaseTestSupport {
     public GitPgmCommandTest() {
         super();
     }
 
     @Test
-    public void testGitPgm() throws Exception {
+    void gitPgm() throws Exception {
         Path serverDir = getTempTargetRelativeFile(getClass().getSimpleName());
         try (SshServer sshd = setupTestServer()) {
             sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
@@ -95,11 +98,11 @@ public class GitPgmCommandTest extends BaseTestSupport {
 
             Collection<ClientChannelEvent> result
                     = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
-            assertTrue("Command '" + command + "'not completed on time: " + result, result.contains(ClientChannelEvent.CLOSED));
+            assertTrue(result.contains(ClientChannelEvent.CLOSED), "Command '" + command + "'not completed on time: " + result);
 
             Integer status = channel.getExitStatus();
             if (status != null) {
-                assertEquals("Failed (" + status + ") " + command, 0, status.intValue());
+                assertEquals(0, status.intValue(), "Failed (" + status + ") " + command);
             }
         }
     }

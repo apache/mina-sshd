@@ -35,24 +35,30 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
     public ConfigFileHostEntryResolverTest() {
         super();
     }
 
     @Test
-    public void testIdentityFilePaths() throws IOException {
+    void identityFilePaths() throws IOException {
         final String config = "IdentityFile ~/.ssh/%r.key0\n" //
                               + "Host foo\n" //
                               + "IdentityFile ~/.ssh/%r.key1\n" //
@@ -84,7 +90,7 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testConfigFileReload() throws IOException {
+    void configFileReload() throws IOException {
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         AtomicInteger reloadCount = new AtomicInteger();
         ConfigFileHostEntryResolver resolver = new ConfigFileHostEntryResolver(
@@ -159,22 +165,21 @@ public class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
                             null);
 
             if (entries == null) {
-                assertEquals(phase + "[" + index + "]: mismatched reload count", 0, reloadCount.get());
+                assertEquals(0, reloadCount.get(), phase + "[" + index + "]: mismatched reload count");
             } else {
-                assertEquals(phase + "[" + index + "]: mismatched reload count", 1, reloadCount.get());
+                assertEquals(1, reloadCount.get(), phase + "[" + index + "]: mismatched reload count");
             }
 
             if (expected == null) {
-                assertNull(phase + "[" + index + "]: Unexpected success for " + query, actual);
+                assertNull(actual, phase + "[" + index + "]: Unexpected success for " + query);
             } else {
-                assertNotNull(phase + "[" + index + "]: No result for " + query, actual);
-                assertNotSame(phase + "[" + index + "]: No cloned result for " + query, expected, actual);
-                assertEquals(phase + "[" + index + "]: Mismatched host for " + query,
-                        expected.getHostName(), actual.getHostName());
-                assertEquals(phase + "[" + index + "]: Mismatched port for " + query,
-                        expected.getPort(), actual.getPort());
-                assertEquals(phase + "[" + index + "]: Mismatched user for " + query,
-                        expected.getUsername(), actual.getUsername());
+                assertNotNull(actual, phase + "[" + index + "]: No result for " + query);
+                assertNotSame(expected, actual, phase + "[" + index + "]: No cloned result for " + query);
+                assertEquals(expected.getHostName(), actual.getHostName(),
+                        phase + "[" + index + "]: Mismatched host for " + query);
+                assertEquals(expected.getPort(), actual.getPort(), phase + "[" + index + "]: Mismatched port for " + query);
+                assertEquals(expected.getUsername(), actual.getUsername(),
+                        phase + "[" + index + "]: Mismatched user for " + query);
             }
         }
     }

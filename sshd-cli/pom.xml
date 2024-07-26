@@ -55,14 +55,14 @@
             <artifactId>sshd-putty</artifactId>
             <version>${project.version}</version>
         </dependency>
-            <!-- For ed25519 support -->
+        <!-- For ed25519 support -->
         <dependency>
             <groupId>net.i2p.crypto</groupId>
             <artifactId>eddsa</artifactId>
             <optional>true</optional>
         </dependency>
 
-            <!-- Test dependencies -->
+        <!-- Test dependencies -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-core</artifactId>
@@ -77,7 +77,7 @@
             <type>test-jar</type>
             <scope>test</scope>
         </dependency>
-            <!-- For the I/O factories -->
+        <!-- For the I/O factories -->
         <dependency>
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-mina</artifactId>
@@ -88,6 +88,11 @@
             <groupId>org.apache.sshd</groupId>
             <artifactId>sshd-netty</artifactId>
             <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
 

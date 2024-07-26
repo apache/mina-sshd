@@ -44,21 +44,25 @@ import org.apache.sshd.server.auth.keyboard.UserAuthKeyboardInteractiveFactory;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSupport {
     public KeyboardInteractiveAuthenticationTest() {
         super();
     }
 
-    @Test // see SSHD-612
-    public void testAuthDefaultKeyInteractive() throws Exception {
+    // see SSHD-612
+    @Test
+    void authDefaultKeyInteractive() throws Exception {
         try (SshClient client = setupTestClient()) {
             sshd.setPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
             sshd.setKeyboardInteractiveAuthenticator(new DefaultKeyboardInteractiveAuthenticator() {
@@ -66,24 +70,25 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
                 public InteractiveChallenge generateChallenge(
                         ServerSession session, String username, String lang, String subMethods)
                         throws Exception {
-                    assertEquals("Mismatched user language",
-                            CoreModuleProperties.INTERACTIVE_LANGUAGE_TAG.getRequired(client),
-                            lang);
-                    assertEquals("Mismatched client sub-methods",
-                            CoreModuleProperties.INTERACTIVE_SUBMETHODS.getRequired(client),
-                            subMethods);
+                    assertEquals(CoreModuleProperties.INTERACTIVE_LANGUAGE_TAG.getRequired(client),
+                            lang,
+                            "Mismatched user language");
+                    assertEquals(CoreModuleProperties.INTERACTIVE_SUBMETHODS.getRequired(client),
+                            subMethods,
+                            "Mismatched client sub-methods");
 
                     InteractiveChallenge challenge = super.generateChallenge(session, username, lang, subMethods);
-                    assertEquals("Mismatched interaction name", getInteractionName(session), challenge.getInteractionName());
-                    assertEquals("Mismatched interaction instruction", getInteractionInstruction(session),
-                            challenge.getInteractionInstruction());
-                    assertEquals("Mismatched language tag", getInteractionLanguage(session), challenge.getLanguageTag());
+                    assertEquals(getInteractionName(session), challenge.getInteractionName(), "Mismatched interaction name");
+                    assertEquals(getInteractionInstruction(session),
+                            challenge.getInteractionInstruction(),
+                            "Mismatched interaction instruction");
+                    assertEquals(getInteractionLanguage(session), challenge.getLanguageTag(), "Mismatched language tag");
 
                     List<PromptEntry> entries = challenge.getPrompts();
-                    assertEquals("Mismatched prompts count", 1, GenericUtils.size(entries));
+                    assertEquals(1, GenericUtils.size(entries), "Mismatched prompts count");
 
                     PromptEntry entry = entries.get(0);
-                    assertEquals("Mismatched prompt", getInteractionPrompt(session), entry.getPrompt());
+                    assertEquals(getInteractionPrompt(session), entry.getPrompt(), "Mismatched prompt");
                     assertEquals("Mismatched echo", isInteractionPromptEchoEnabled(session), entry.isEcho());
 
                     return challenge;
@@ -105,7 +110,7 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
                 Collection<ClientSession.ClientSessionEvent> result = s.waitFor(
                         EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH),
                         DEFAULT_TIMEOUT);
-                assertFalse("Timeout while waiting for session", result.contains(ClientSession.ClientSessionEvent.TIMEOUT));
+                assertFalse(result.contains(ClientSession.ClientSessionEvent.TIMEOUT), "Timeout while waiting for session");
 
                 KeyPairProvider provider = createTestHostKeyProvider();
                 KeyPair pair = provider.loadKey(s, CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_TYPE);
@@ -128,8 +133,9 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
         }
     }
 
-    @Test // see SSHD-563
-    public void testAuthMultiChallengeKeyInteractive() throws Exception {
+    // see SSHD-563
+    @Test
+    void authMultiChallengeKeyInteractive() throws Exception {
         Class<?> anchor = getClass();
         InteractiveChallenge challenge = new InteractiveChallenge();
         challenge.setInteractionName(getCurrentTestName());
@@ -153,7 +159,7 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
             public InteractiveChallenge generateChallenge(
                     ServerSession session, String username, String lang, String subMethods)
                     throws Exception {
-                assertEquals("Unexpected challenge call", 1, genCount.incrementAndGet());
+                assertEquals(1, genCount.incrementAndGet(), "Unexpected challenge call");
                 return challenge;
             }
 
@@ -161,8 +167,8 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
             public boolean authenticate(
                     ServerSession session, String username, List<String> responses)
                     throws Exception {
-                assertEquals("Unexpected authenticate call", 1, authCount.incrementAndGet());
-                assertEquals("Mismatched number of responses", MapEntryUtils.size(rspMap), GenericUtils.size(responses));
+                assertEquals(1, authCount.incrementAndGet(), "Unexpected authenticate call");
+                assertEquals(MapEntryUtils.size(rspMap), GenericUtils.size(responses), "Mismatched number of responses");
 
                 int index = 0;
                 // Cannot use forEach because the index is not effectively final
@@ -170,7 +176,7 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
                     String prompt = re.getKey();
                     String expected = re.getValue();
                     String actual = responses.get(index);
-                    assertEquals("Mismatched response for prompt=" + prompt, expected, actual);
+                    assertEquals(expected, actual, "Mismatched response for prompt=" + prompt);
                     index++;
                 }
                 return true;
@@ -190,19 +196,19 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
                 public String[] interactive(
                         ClientSession session, String name, String instruction,
                         String lang, String[] prompt, boolean[] echo) {
-                    assertEquals("Unexpected multiple calls", 1, interactiveCount.incrementAndGet());
-                    assertEquals("Mismatched name", challenge.getInteractionName(), name);
-                    assertEquals("Mismatched instruction", challenge.getInteractionInstruction(), instruction);
-                    assertEquals("Mismatched language", challenge.getLanguageTag(), lang);
+                    assertEquals(1, interactiveCount.incrementAndGet(), "Unexpected multiple calls");
+                    assertEquals(challenge.getInteractionName(), name, "Mismatched name");
+                    assertEquals(challenge.getInteractionInstruction(), instruction, "Mismatched instruction");
+                    assertEquals(challenge.getLanguageTag(), lang, "Mismatched language");
 
                     List<PromptEntry> entries = challenge.getPrompts();
-                    assertEquals("Mismatched prompts count", GenericUtils.size(entries), GenericUtils.length(prompt));
+                    assertEquals(GenericUtils.size(entries), GenericUtils.length(prompt), "Mismatched prompts count");
 
                     String[] responses = new String[prompt.length];
                     for (int index = 0; index < prompt.length; index++) {
                         PromptEntry e = entries.get(index);
                         String key = e.getPrompt();
-                        assertEquals("Mismatched prompt at index=" + index, key, prompt[index]);
+                        assertEquals(key, prompt[index], "Mismatched prompt at index=" + index);
                         assertEquals("Mismatched echo at index=" + index, e.isEcho(), echo[index]);
                         responses[index] = ValidateUtils.checkNotNull(rspMap.get(key), "No value for prompt=%s", key);
                     }
@@ -223,9 +229,9 @@ public class KeyboardInteractiveAuthenticationTest extends AuthenticationTestSup
                     .verify(CONNECT_TIMEOUT)
                     .getSession()) {
                 s.auth().verify(AUTH_TIMEOUT);
-                assertEquals("Bad generated challenge count", 1, genCount.get());
-                assertEquals("Bad authentication count", 1, authCount.get());
-                assertEquals("Bad interactive count", 1, interactiveCount.get());
+                assertEquals(1, genCount.get(), "Bad generated challenge count");
+                assertEquals(1, authCount.get(), "Bad authentication count");
+                assertEquals(1, interactiveCount.get(), "Bad interactive count");
             } finally {
                 client.stop();
             }

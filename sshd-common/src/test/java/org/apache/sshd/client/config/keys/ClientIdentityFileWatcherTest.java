@@ -42,24 +42,27 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
     public ClientIdentityFileWatcherTest() {
         super();
     }
 
     @Test
-    public void testIdentityReload() throws Exception {
+    void identityReload() throws Exception {
         Path dir = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
         Path idFile = dir.resolve(getCurrentTestName() + ".pem");
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
@@ -68,7 +71,7 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
             public Iterable<KeyPair> loadClientIdentities(
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                     throws IOException, GeneralSecurityException {
-                assertTrue("Invalid location: " + location, isValidLocation(location));
+                assertTrue(isValidLocation(location), "Invalid location: " + location);
                 return Collections.singletonList(identity);
             }
 
@@ -126,7 +129,7 @@ public class ClientIdentityFileWatcherTest extends JUnitTestSupport {
             throws Exception {
         Iterable<KeyPair> ids = provider.getClientIdentities(null);
         KeyPair actualIdentity = GenericUtils.head(ids);
-        assertSame(phase + ": mismatched identity", expectedIdentity, actualIdentity);
-        assertEquals(phase + ": mismatched re-load count", expectedCount, reloadCount.intValue());
+        assertSame(expectedIdentity, actualIdentity, phase + ": mismatched identity");
+        assertEquals(expectedCount, reloadCount.intValue(), phase + ": mismatched re-load count");
     }
 }

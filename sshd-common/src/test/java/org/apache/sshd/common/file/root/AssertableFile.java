@@ -25,6 +25,8 @@ import java.nio.file.Path;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 /**
  * TODO upgrade to default methods in JDK 8
  *
@@ -37,37 +39,37 @@ public abstract class AssertableFile extends JUnitTestSupport {
 
     public static boolean notExists(Path p) {
         boolean cond = !Files.exists(p);
-        assertTrue(p + " does not exist", cond);
+        assertTrue(cond, p + " does not exist");
         return cond;
     }
 
     public static boolean exists(Path p) {
         boolean cond = Files.exists(p);
-        assertTrue(p + " exists", cond);
+        assertTrue(cond, p + " exists");
         return cond;
     }
 
     public static boolean isDir(Path p) {
         boolean cond = Files.isDirectory(p);
-        assertTrue(p + " is directory", cond);
+        assertTrue(cond, p + " is directory");
         return cond;
     }
 
     public static boolean isReadable(Path p) {
         boolean cond = Files.isReadable(p);
-        assertTrue(p + " is readable by user", cond);
+        assertTrue(cond, p + " is readable by user");
         return cond;
     }
 
     public static boolean isNonEmpty(byte[] bytes) {
         boolean cond = !NumberUtils.isEmpty(bytes);
-        assertTrue("bytes are non empty", cond);
+        assertTrue(cond, "bytes are non empty");
         return cond;
     }
 
     public static boolean isRootedAt(Path root, Path check) {
         boolean cond = check.toAbsolutePath().normalize().startsWith(root.toAbsolutePath().normalize());
-        assertTrue(check + " is subpath of parent " + root, cond);
+        assertTrue(cond, check + " is subpath of parent " + root);
         return cond;
     }
 }

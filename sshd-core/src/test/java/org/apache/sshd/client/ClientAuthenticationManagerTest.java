@@ -53,22 +53,27 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ClientAuthenticationManagerTest extends BaseTestSupport {
     public ClientAuthenticationManagerTest() {
         super();
     }
 
     @Test
-    public void testDefaultUserAuthFactoriesMethods() {
+    void defaultUserAuthFactoriesMethods() {
         AtomicReference<List<UserAuthFactory>> factoriesHolder = new AtomicReference<>();
         @SuppressWarnings("checkstyle:anoninnerlength")
         ClientAuthenticationManager manager = new ClientAuthenticationManager() {
@@ -79,7 +84,7 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
             @Override
             public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
-                assertNull("Unexpected multiple invocation", factoriesHolder.getAndSet(userAuthFactories));
+                assertNull(factoriesHolder.getAndSet(userAuthFactories), "Unexpected multiple invocation");
             }
 
             @Override
@@ -177,36 +182,35 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
                 throw new UnsupportedOperationException("removePasswordIdentity(" + password + ")");
             }
         };
-        assertEquals("Mismatched initial factories list", "", manager.getUserAuthFactoriesNameList());
+        assertEquals("", manager.getUserAuthFactoriesNameList(), "Mismatched initial factories list");
 
         String expected = NamedResource.getNames(BuiltinUserAuthFactories.VALUES);
         manager.setUserAuthFactoriesNameList(expected);
-        assertEquals("Mismatched updated factories names", expected, manager.getUserAuthFactoriesNameList());
+        assertEquals(expected, manager.getUserAuthFactoriesNameList(), "Mismatched updated factories names");
 
         List<UserAuthFactory> factories = factoriesHolder.get();
-        assertEquals("Mismatched factories count",
-                BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
+        assertEquals(BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories), "Mismatched factories count");
         for (BuiltinUserAuthFactories f : BuiltinUserAuthFactories.VALUES) {
-            assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
+            assertTrue(factories.contains(f.create()), "Missing factory=" + f.name());
         }
     }
 
     @Test
-    public void testAddRemoveClientSessionIdentities() throws Exception {
+    void addRemoveClientSessionIdentities() throws Exception {
         try (ClientSession session = createMockClientSession()) {
             testClientAuthenticationManager(session);
         }
     }
 
     @Test
-    public void testAddRemoveSshClientIdentities() throws Exception {
+    void addRemoveSshClientIdentities() throws Exception {
         try (SshClient client = SshClient.setUpDefaultClient()) {
             testClientAuthenticationManager(client);
         }
     }
 
     @Test
-    public void testClientProvidersPropagation() throws Exception {
+    void clientProvidersPropagation() throws Exception {
         try (SshClient client = SshClient.setUpDefaultClient()) {
             client.setServiceFactories(SshClient.DEFAULT_SERVICE_FACTORIES);
             client.setUserAuthFactories(SshClient.DEFAULT_USER_AUTH_FACTORIES);
@@ -230,41 +234,41 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
             throws Exception {
         String baseName = type.getSimpleName();
         outputDebugMessage("testClientProvidersPropagation(%s)", baseName);
-        assertTrue(baseName + ": not an interface", type.isInterface());
+        assertTrue(type.isInterface(), baseName + ": not an interface");
 
         Method getter = ClientAuthenticationManager.class.getMethod("get" + baseName);
         Method setter = ClientAuthenticationManager.class.getMethod("set" + baseName, type);
         Object clientProvider = Mockito.mock(type);
         setter.invoke(client, clientProvider);
-        assertSame(baseName + ": mismatched client-only provider", clientProvider, getter.invoke(session));
+        assertSame(clientProvider, getter.invoke(session), baseName + ": mismatched client-only provider");
 
         Object sessionProvider = Mockito.mock(type);
         setter.invoke(session, sessionProvider);
-        assertSame(baseName + ": mismatched session override provider", sessionProvider, getter.invoke(session));
+        assertSame(sessionProvider, getter.invoke(session), baseName + ": mismatched session override provider");
 
         setter.invoke(session, new Object[] { null });
-        assertSame(baseName + ": mismatched nullified session provider", clientProvider, getter.invoke(session));
+        assertSame(clientProvider, getter.invoke(session), baseName + ": mismatched nullified session provider");
     }
 
     private <M extends ClientAuthenticationManager> M testClientAuthenticationManager(M manager) {
         if (manager != null) {
             String expected = getCurrentTestName();
-            assertNull("Unexpected initial password identity", manager.removePasswordIdentity(expected));
+            assertNull(manager.removePasswordIdentity(expected), "Unexpected initial password identity");
             manager.addPasswordIdentity(expected);
 
             String actual = manager.removePasswordIdentity(expected);
-            assertSame("Mismatched removed password identity", expected, actual);
-            assertNull("Password identity not removed", manager.removePasswordIdentity(expected));
+            assertSame(expected, actual, "Mismatched removed password identity");
+            assertNull(manager.removePasswordIdentity(expected), "Password identity not removed");
         }
 
         if (manager != null) {
             KeyPair expected = new KeyPair(Mockito.mock(PublicKey.class), Mockito.mock(PrivateKey.class));
-            assertNull("Unexpected initial pubket identity", manager.removePublicKeyIdentity(expected));
+            assertNull(manager.removePublicKeyIdentity(expected), "Unexpected initial pubket identity");
             manager.addPublicKeyIdentity(expected);
 
             KeyPair actual = manager.removePublicKeyIdentity(expected);
-            assertSame("Mismatched removed pubkey identity", expected, actual);
-            assertNull("Pubkey identity not removed", manager.removePublicKeyIdentity(expected));
+            assertSame(expected, actual, "Mismatched removed pubkey identity");
+            assertNull(manager.removePublicKeyIdentity(expected), "Pubkey identity not removed");
         }
 
         return manager;

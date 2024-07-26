@@ -44,18 +44,20 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
-import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class KeepAliveTest extends BaseTestSupport {
 
     private static final Duration HEARTBEAT = Duration.ofSeconds(2L);
@@ -66,12 +68,8 @@ public class KeepAliveTest extends BaseTestSupport {
     private static int port;
     private static SshClient client;
 
-    public KeepAliveTest() {
-        super();
-    }
-
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(KeepAliveTest.class);
         sshd.setShellFactory(new TestEchoShellFactory());
         sshd.start();
@@ -81,8 +79,8 @@ public class KeepAliveTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -100,13 +98,13 @@ public class KeepAliveTest extends BaseTestSupport {
         }
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         CoreModuleProperties.IDLE_TIMEOUT.set(sshd, TIMEOUT);
     }
 
-    @After
-    public void tearDown() {
+    @AfterEach
+    void tearDown() {
         // Restore default value
         CoreModuleProperties.IDLE_TIMEOUT.remove(sshd);
         CoreModuleProperties.HEARTBEAT_INTERVAL.remove(client);
@@ -114,7 +112,7 @@ public class KeepAliveTest extends BaseTestSupport {
     }
 
     @Test
-    public void testIdleClient() throws Exception {
+    void idleClient() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT)
                 .getSession()) {
@@ -125,14 +123,14 @@ public class KeepAliveTest extends BaseTestSupport {
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 long waitEnd = System.currentTimeMillis();
-                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
-                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)));
+                assertTrue(result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED)),
+                        "Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result);
             }
         }
     }
 
     @Test
-    public void testClientWithHeartBeat() throws Exception {
+    void clientWithHeartBeat() throws Exception {
         CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, HEARTBEAT);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT)
@@ -144,14 +142,14 @@ public class KeepAliveTest extends BaseTestSupport {
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 long waitEnd = System.currentTimeMillis();
-                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
-                        result.contains(ClientChannelEvent.TIMEOUT));
+                assertTrue(result.contains(ClientChannelEvent.TIMEOUT),
+                        "Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result);
             }
         }
     }
 
     @Test
-    public void testShellClosedOnClientTimeout() throws Exception {
+    void shellClosedOnClientTimeout() throws Exception {
         TestEchoShell.latch = new CountDownLatch(1);
 
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -168,21 +166,22 @@ public class KeepAliveTest extends BaseTestSupport {
                 channel.setErr(err);
                 channel.open().verify(OPEN_TIMEOUT);
 
-                assertTrue("Latch time out", TestEchoShell.latch.await(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+                assertTrue(TestEchoShell.latch.await(DEFAULT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS), "Latch time out");
 
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 long waitEnd = System.currentTimeMillis();
-                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
-                        result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.OPENED)));
+                assertTrue(result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.OPENED)),
+                        "Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result);
             }
         } finally {
             TestEchoShell.latch = null;
         }
     }
 
-    @Test // see SSHD-968
-    public void testAllowUnimplementedMessageHeartbeatResponse() throws Exception {
+    // see SSHD-968
+    @Test
+    void allowUnimplementedMessageHeartbeatResponse() throws Exception {
         List<RequestHandler<ConnectionService>> globalHandlers = sshd.getGlobalRequestHandlers();
         sshd.setGlobalRequestHandlers(
                 Collections.singletonList(
@@ -209,16 +208,17 @@ public class KeepAliveTest extends BaseTestSupport {
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), WAIT);
                 long waitEnd = System.currentTimeMillis();
-                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
-                        result.contains(ClientChannelEvent.TIMEOUT));
+                assertTrue(result.contains(ClientChannelEvent.TIMEOUT),
+                        "Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result);
             }
         } finally {
             sshd.setGlobalRequestHandlers(globalHandlers); // restore original
         }
     }
 
-    @Test // see GH-268
-    public void testTimeoutOnMissingHeartbeatResponse() throws Exception {
+    // see GH-268
+    @Test
+    void timeoutOnMissingHeartbeatResponse() throws Exception {
         CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofSeconds(30));
         List<RequestHandler<ConnectionService>> globalHandlers = sshd.getGlobalRequestHandlers();
         sshd.setGlobalRequestHandlers(Collections.singletonList(new AbstractConnectionServiceRequestHandler() {
@@ -241,8 +241,8 @@ public class KeepAliveTest extends BaseTestSupport {
                 long waitStart = System.currentTimeMillis();
                 Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TIMEOUT);
                 long waitEnd = System.currentTimeMillis();
-                assertTrue("Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result,
-                        result.contains(ClientChannelEvent.CLOSED));
+                assertTrue(result.contains(ClientChannelEvent.CLOSED),
+                        "Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result);
             }
         } finally {
             sshd.setGlobalRequestHandlers(globalHandlers); // restore original

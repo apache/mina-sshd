@@ -24,35 +24,27 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class CommandFactorySplitterTest extends JUnitTestSupport {
-    private final String command;
-    private final List<String> expected;
+    private String command;
+    private List<String> expected;
 
-    public CommandFactorySplitterTest(String command, List<String> expected) {
+    public void initCommandFactorySplitterTest(String command, List<String> expected) {
         this.command = command;
         this.expected = expected;
     }
 
-    @Parameters(name = "cmd={0}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // not serializing it
@@ -84,8 +76,10 @@ public class CommandFactorySplitterTest extends JUnitTestSupport {
         };
     }
 
-    @Test
-    public void testSplitter() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "cmd={0}")
+    public void splitter(String command, List<String> expected) {
+        initCommandFactorySplitterTest(command, expected);
         List<String> actual = CommandFactory.split(command);
         assertListEquals(command, expected, actual);
     }

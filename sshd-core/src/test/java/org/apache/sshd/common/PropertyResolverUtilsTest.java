@@ -31,48 +31,55 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PropertyResolverUtilsTest extends JUnitTestSupport {
     public PropertyResolverUtilsTest() {
         super();
     }
 
     @Test
-    public void testResolveAndUpdateClosestPropertyValue() {
+    void resolveAndUpdateClosestPropertyValue() {
         String propName = getCurrentTestName();
         String rootValue = getClass().getPackage().getName();
         Session resolver = createMockSession();
         FactoryManager root = Objects.requireNonNull(resolver.getFactoryManager(), "No manager");
-        assertNull("Unexpected root previous value", PropertyResolverUtils.updateProperty(root, propName, rootValue));
-        assertSame("Mismatched root value", rootValue, PropertyResolverUtils.getString(resolver, propName));
+        assertNull(PropertyResolverUtils.updateProperty(root, propName, rootValue), "Unexpected root previous value");
+        assertSame(rootValue, PropertyResolverUtils.getString(resolver, propName), "Mismatched root value");
 
         String nodeValue = getClass().getSimpleName();
-        assertNull("Unexpected node previous value", PropertyResolverUtils.updateProperty(resolver, propName, nodeValue));
-        assertSame("Mismatched node value", nodeValue, PropertyResolverUtils.getString(resolver, propName));
+        assertNull(PropertyResolverUtils.updateProperty(resolver, propName, nodeValue), "Unexpected node previous value");
+        assertSame(nodeValue, PropertyResolverUtils.getString(resolver, propName), "Mismatched node value");
     }
 
     @Test
-    public void testSyspropsResolver() {
+    void syspropsResolver() {
         PropertyResolver resolver = SyspropsMapWrapper.SYSPROPS_RESOLVER;
         Map<String, ?> props = resolver.getProperties();
-        assertTrue("Unexpected initial resolver values: " + props, MapEntryUtils.isEmpty(props));
+        assertTrue(MapEntryUtils.isEmpty(props), "Unexpected initial resolver values: " + props);
 
         final String propName = getCurrentTestName();
-        assertNull("Unexpected initial resolved value", PropertyResolverUtils.getObject(resolver, propName));
+        assertNull(PropertyResolverUtils.getObject(resolver, propName), "Unexpected initial resolved value");
 
         final String propKey = SyspropsMapWrapper.getMappedSyspropKey(propName);
-        assertNull("Unexpected property value for " + propKey, System.getProperty(propKey));
+        assertNull(System.getProperty(propKey), "Unexpected property value for " + propKey);
 
         try {
             long expected = System.currentTimeMillis();
@@ -101,12 +108,12 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testLongProperty() {
+    void longProperty() {
         long expected = System.currentTimeMillis();
         String name = getCurrentTestName();
 
         Session session = createMockSession();
-        assertEquals("Mismatched empty props value", expected, PropertyResolverUtils.getLongProperty(session, name, expected));
+        assertEquals(expected, PropertyResolverUtils.getLongProperty(session, name, expected), "Mismatched empty props value");
 
         PropertyResolverUtils.updateProperty(session, name, expected);
         testLongProperty(session, name, expected);
@@ -124,24 +131,24 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
 
         {
             Long actual = PropertyResolverUtils.getLong(resolver, name);
-            assertNotNull("No actual Long value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on Long retrieval for storage as " + storage, expected, actual.longValue());
+            assertNotNull(actual, "No actual Long value found for storage as " + storage);
+            assertEquals(expected, actual.longValue(), "Mismatched values on Long retrieval for storage as " + storage);
         }
 
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
-            assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Long.toString(expected), actual);
+            assertNotNull(actual, "No actual String value found for storage as " + storage);
+            assertEquals(Long.toString(expected), actual, "Mismatched values on String retrieval for storage as " + storage);
         }
     }
 
     @Test
-    public void testIntegerProperty() {
+    void integerProperty() {
         int expected = 3777347;
         String name = getCurrentTestName();
 
         Session session = createMockSession();
-        assertEquals("Mismatched empty props value", expected, PropertyResolverUtils.getIntProperty(session, name, expected));
+        assertEquals(expected, PropertyResolverUtils.getIntProperty(session, name, expected), "Mismatched empty props value");
 
         PropertyResolverUtils.updateProperty(session, name, expected);
         testIntegerProperty(session, name, expected);
@@ -163,19 +170,19 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
 
         {
             Integer actual = PropertyResolverUtils.getInteger(resolver, name);
-            assertNotNull("No actual Integer value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on Integer retrieval for storage as " + storage, expected, actual.intValue());
+            assertNotNull(actual, "No actual Integer value found for storage as " + storage);
+            assertEquals(expected, actual.intValue(), "Mismatched values on Integer retrieval for storage as " + storage);
         }
 
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
-            assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Integer.toString(expected), actual);
+            assertNotNull(actual, "No actual String value found for storage as " + storage);
+            assertEquals(Integer.toString(expected), actual, "Mismatched values on String retrieval for storage as " + storage);
         }
     }
 
     @Test
-    public void testBooleanProperty() {
+    void booleanProperty() {
         for (boolean expected : new boolean[] { false, true }) {
             String name = getCurrentTestName();
 
@@ -200,41 +207,41 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
 
         {
             Boolean actual = PropertyResolverUtils.getBoolean(resolver, name);
-            assertNotNull("No actual Boolean value found for storage as " + storage, actual);
+            assertNotNull(actual, "No actual Boolean value found for storage as " + storage);
             assertEquals("Mismatched values on Boolean retrieval for storage as " + storage, expected, actual.booleanValue());
         }
 
         {
             String actual = PropertyResolverUtils.getString(resolver, name);
-            assertNotNull("No actual String value found for storage as " + storage, actual);
-            assertEquals("Mismatched values on String retrieval for storage as " + storage, Boolean.toString(expected), actual);
+            assertNotNull(actual, "No actual String value found for storage as " + storage);
+            assertEquals(Boolean.toString(expected), actual, "Mismatched values on String retrieval for storage as " + storage);
         }
     }
 
     @Test
-    public void testToEnumFromString() {
+    void toEnumFromString() {
         Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
         for (TimeUnit expected : units) {
             String name = expected.name();
             for (int index = 1, count = name.length(); index <= count; index++) {
                 TimeUnit actual = PropertyResolverUtils.toEnum(TimeUnit.class, name, true, units);
-                assertSame("Mismatched instance for name=" + name, expected, actual);
+                assertSame(expected, actual, "Mismatched instance for name=" + name);
                 name = shuffleCase(name);
             }
         }
     }
 
     @Test
-    public void testToEnumFromEnum() {
+    void toEnumFromEnum() {
         Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
         for (TimeUnit expected : units) {
             TimeUnit actual = PropertyResolverUtils.toEnum(TimeUnit.class, expected, true, null);
-            assertSame("Mismatched resolved value", expected, actual);
+            assertSame(expected, actual, "Mismatched resolved value");
         }
     }
 
     @Test
-    public void testToEnumFromNonString() {
+    void toEnumFromNonString() {
         Collection<TimeUnit> units = EnumSet.allOf(TimeUnit.class);
         for (Object value : new Object[] { this, getClass(), new Date() }) {
             try {
@@ -246,11 +253,13 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
         }
     }
 
-    @Test(expected = NoSuchElementException.class)
-    public void testToEnumNoMatchFound() {
-        TimeUnit result
-                = PropertyResolverUtils.toEnum(TimeUnit.class, getCurrentTestName(), true, EnumSet.allOf(TimeUnit.class));
-        fail("Unexpected success: " + result);
+    @Test
+    void toEnumNoMatchFound() {
+        assertThrows(NoSuchElementException.class, () -> {
+            TimeUnit result
+                    = PropertyResolverUtils.toEnum(TimeUnit.class, getCurrentTestName(), true, EnumSet.allOf(TimeUnit.class));
+            fail("Unexpected success: " + result);
+        });
     }
 
     private Session createMockSession() {

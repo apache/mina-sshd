@@ -24,24 +24,27 @@ import java.util.function.IntUnaryOperator;
 
 import org.apache.sshd.common.util.functors.Int2IntFunction;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class Int2IntFunctionTest extends JUnitTestSupport {
     public Int2IntFunctionTest() {
         super();
     }
 
     @Test
-    public void testAdd() {
+    void add() {
         int factor = Byte.SIZE;
         IntUnaryOperator func = Int2IntFunction.add(factor);
         for (int index = 1, sum = 0; index <= Byte.SIZE; index++) {
@@ -51,7 +54,7 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testAddIdentity() {
+    void addIdentity() {
         IntUnaryOperator func = Int2IntFunction.add(0);
         Random rnd = new Random(System.nanoTime());
         for (int index = 1; index <= Byte.SIZE; index++) {
@@ -62,7 +65,7 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSub() {
+    void sub() {
         int factor = Byte.SIZE;
         IntUnaryOperator func = Int2IntFunction.sub(factor);
         for (int index = 1, sum = 0; index <= Byte.SIZE; index++) {
@@ -72,7 +75,7 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSubIdentity() {
+    void subIdentity() {
         IntUnaryOperator func = Int2IntFunction.sub(0);
         Random rnd = new Random(System.nanoTime());
         for (int index = 1; index <= Byte.SIZE; index++) {
@@ -83,7 +86,7 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testMul() {
+    void mul() {
         int factor = 2;
         IntUnaryOperator func = Int2IntFunction.mul(factor);
         for (int index = 1, mul = 1, expected = factor; index <= Byte.SIZE; index++, expected *= factor) {
@@ -93,7 +96,7 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testMulIdentity() {
+    void mulIdentity() {
         IntUnaryOperator func = Int2IntFunction.mul(1);
         Random rnd = new Random(System.nanoTime());
         for (int index = 1; index <= Byte.SIZE; index++) {
@@ -104,30 +107,30 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testMulZero() {
+    void mulZero() {
         IntUnaryOperator func = Int2IntFunction.mul(0);
         Random rnd = new Random(System.nanoTime());
         for (int index = 1; index <= Byte.SIZE; index++) {
             int value = rnd.nextInt();
             int actual = func.applyAsInt(value);
-            assertEquals(Integer.toString(value), 0, actual);
+            assertEquals(0, actual, Integer.toString(value));
         }
     }
 
     @Test
-    public void testConstant() {
+    void constant() {
         int expected = 377347;
         IntUnaryOperator func = Int2IntFunction.constant(expected);
         Random rnd = new Random(System.nanoTime());
         for (int index = 1; index <= Byte.SIZE; index++) {
             int value = rnd.nextInt();
             int actual = func.applyAsInt(value);
-            assertEquals(Integer.toString(value), expected, actual);
+            assertEquals(expected, actual, Integer.toString(value));
         }
     }
 
     @Test
-    public void testDiv() {
+    void div() {
         int factor = 2;
         IntUnaryOperator func = Int2IntFunction.div(factor);
         for (int index = 1, quot = 65536, expected = quot / factor; index <= Byte.SIZE; index++, expected /= factor) {
@@ -137,7 +140,7 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testDivIdentity() {
+    void divIdentity() {
         IntUnaryOperator func = Int2IntFunction.div(1);
         Random rnd = new Random(System.nanoTime());
         for (int index = 1; index <= Byte.SIZE; index++) {
@@ -147,9 +150,11 @@ public class Int2IntFunctionTest extends JUnitTestSupport {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testDivZeroFactor() {
-        IntUnaryOperator func = Int2IntFunction.div(0);
-        fail("Unexpected success: " + func);
+    @Test
+    void divZeroFactor() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            IntUnaryOperator func = Int2IntFunction.div(0);
+            fail("Unexpected success: " + func);
+        });
     }
 }

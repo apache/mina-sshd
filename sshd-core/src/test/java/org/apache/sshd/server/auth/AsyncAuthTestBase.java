@@ -30,8 +30,12 @@ import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.apache.sshd.util.test.EchoShellFactory;
-import org.junit.After;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -69,7 +73,7 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
         port = server.getPort();
     }
 
-    @After
+    @AfterEach
     public void stopServer() throws Exception {
         if (server != null) {
             server.stop();
@@ -78,52 +82,52 @@ public abstract class AsyncAuthTestBase extends BaseTestSupport {
     }
 
     @Test
-    public void testSyncAuthFailed() throws Exception {
+    public void syncAuthFailed() throws Exception {
         startServer();
         authenticator = (username, x, sess) -> false;
         assertFalse(authenticate());
     }
 
     @Test
-    public void testSyncAuthSucceeded() throws Exception {
+    public void syncAuthSucceeded() throws Exception {
         startServer();
         authenticator = (username, x, sess) -> true;
         assertTrue(authenticate());
     }
 
     @Test
-    public void testAsyncAuthFailed() throws Exception {
+    public void asyncAuthFailed() throws Exception {
         startServer();
         authenticator = (username, x, sess) -> async(200, false);
         assertFalse(authenticate());
     }
 
     @Test
-    public void testAsyncAuthSucceeded() throws Exception {
+    public void asyncAuthSucceeded() throws Exception {
         startServer();
         authenticator = (username, x, sess) -> async(200, true);
         assertTrue(authenticate());
     }
 
     @Test
-    public void testAsyncAuthTimeout() throws Exception {
+    public void asyncAuthTimeout() throws Exception {
         startServer(Duration.ofMillis(500));
         authenticator = (username, x, sess) -> asyncTimeout();
         try {
             authenticate();
         } catch (JSchException e) {
-            assertTrue("Unexpected failure " + e.getMessage(), e.getMessage().startsWith("SSH_MSG_DISCONNECT"));
+            assertTrue(e.getMessage().startsWith("SSH_MSG_DISCONNECT"), "Unexpected failure " + e.getMessage());
         }
     }
 
     @Test
-    public void testAsyncAuthSucceededAfterTimeout() throws Exception {
+    public void asyncAuthSucceededAfterTimeout() throws Exception {
         startServer(Duration.ofMillis(500));
         authenticator = (username, x, sess) -> async(1000, true);
         try {
             authenticate();
         } catch (JSchException e) {
-            assertTrue("Unexpected failure " + e.getMessage(), e.getMessage().startsWith("SSH_MSG_DISCONNECT"));
+            assertTrue(e.getMessage().startsWith("SSH_MSG_DISCONNECT"), "Unexpected failure " + e.getMessage());
         }
     }
 

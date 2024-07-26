@@ -25,35 +25,37 @@ import java.util.Set;
 
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PtyModeTest extends JUnitTestSupport {
     public PtyModeTest() {
         super();
     }
 
     @Test
-    public void testOpcodeExtractorOnNull() {
+    void opcodeExtractorOnNull() {
         assertEquals(-1, PtyMode.OPCODE_EXTRACTOR.applyAsInt(null));
     }
 
     @Test
-    public void testEnabledOptions() {
+    void enabledOptions() {
         Set<PtyMode> expected = EnumSet.of(PtyMode.ECHO, PtyMode.CS8, PtyMode.ICANON);
         Map<PtyMode, Integer> modes = PtyMode.createEnabledOptions(expected);
-        assertEquals("Mismatched modes size", expected.size(), MapEntryUtils.size(modes));
+        assertEquals(expected.size(), MapEntryUtils.size(modes), "Mismatched modes size");
 
         for (PtyMode m : expected) {
-            assertSame("Mismatched setting for " + m, PtyMode.TRUE_SETTING, modes.get(m));
+            assertSame(PtyMode.TRUE_SETTING, modes.get(m), "Mismatched setting for " + m);
         }
 
         Set<PtyMode> actual = PtyMode.resolveEnabledOptions(modes, expected);

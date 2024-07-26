@@ -31,16 +31,19 @@ import org.apache.sshd.common.io.IoServiceFactoryFactory;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.server.SshServer;
-import org.junit.Assume;
-import org.junit.Rule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.BeforeEachCallback;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.extension.ExtensionContext;
+import org.junit.jupiter.api.extension.TestWatcher;
 
 /**
  * Helper used as base class for all test classes
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@ExtendWith(BaseTestSupport.CustomTestWatcher.class)
 public abstract class BaseTestSupport extends JUnitTestSupport {
     // can be used to override the 'localhost' with an address other than 127.0.0.1 in case it is required
     public static final String TEST_LOCALHOST
@@ -52,17 +55,18 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
     public static final Duration DEFAULT_TIMEOUT = CoreTestSupportUtils.getTimeout("default", Duration.ofSeconds(5));
     public static final Duration CLOSE_TIMEOUT = CoreTestSupportUtils.getTimeout("close", Duration.ofSeconds(15));
 
-    @Rule
-    public final TestWatcher rule = new TestWatcher() {
+    static class CustomTestWatcher implements TestWatcher, BeforeEachCallback, AfterEachCallback {
         // TODO consider using a ThreadLocal storage for the start time - provided
         // the code is assured to call starting/finished on the same thread
         private long startTime;
 
         @Override
-        protected void starting(Description description) {
+        public void beforeEach(ExtensionContext context) {
             System.out.append(System.lineSeparator())
-                    .append("Starting ").append(description.getClassName())
-                    .append(':').append(description.getMethodName())
+                    .append("Starting ")
+                    .append(context.getDisplayName())
+                    //.append(description.getClassName())
+                    //.append(':').append(description.getMethodName())
                     .println("...");
             try {
                 IoServiceFactoryFactory ioProvider = getIoServiceProvider();
@@ -75,11 +79,13 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
         }
 
         @Override
-        protected void finished(Description description) {
+        public void afterEach(ExtensionContext context) {
             long duration = System.currentTimeMillis() - startTime;
             System.out.append(System.lineSeparator())
-                    .append("Finished ").append(description.getClassName())
-                    .append(':').append(description.getMethodName())
+                    .append("Finished ")
+                    .append(context.getDisplayName())
+                    //.append(description.getClassName())
+                    //.append(':').append(description.getMethodName())
                     .append(" in ").append(Long.toString(duration))
                     .println(" ms");
         }
@@ -177,6 +183,6 @@ public abstract class BaseTestSupport extends JUnitTestSupport {
                 .filter(f -> clazzName.equals(f.getFactoryClassName()))
                 .findFirst()
                 .orElse(null);
-        Assume.assumeTrue(message + " - skip factory=" + match, match == null);
+        Assumptions.assumeTrue(match == null, message + " - skip factory=" + match);
     }
 }

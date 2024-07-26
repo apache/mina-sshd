@@ -39,21 +39,25 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class HostBasedAuthenticationTest extends AuthenticationTestSupport {
     public HostBasedAuthenticationTest() {
         super();
     }
 
-    @Test // see SSHD-620
-    public void testHostBasedAuthentication() throws Exception {
+    // see SSHD-620
+    @Test
+    void hostBasedAuthentication() throws Exception {
         AtomicInteger invocationCount = new AtomicInteger(0);
         testHostBasedAuthentication(
                 (
@@ -61,11 +65,12 @@ public class HostBasedAuthenticationTest extends AuthenticationTestSupport {
                         certificates) -> invocationCount.incrementAndGet() > 0,
                 session -> {
                     /* ignored */ });
-        assertEquals("Mismatched authenticator invocation count", 1, invocationCount.get());
+        assertEquals(1, invocationCount.get(), "Mismatched authenticator invocation count");
     }
 
-    @Test   // see SSHD-1114
-    public void testHostBasedAuthenticationReporter() throws Exception {
+    // see SSHD-1114
+    @Test
+    void hostBasedAuthenticationReporter() throws Exception {
         AtomicReference<String> hostnameClientHolder = new AtomicReference<>();
         AtomicReference<String> usernameClientHolder = new AtomicReference<>();
         AtomicReference<PublicKey> keyClientHolder = new AtomicReference<>();
@@ -90,8 +95,8 @@ public class HostBasedAuthenticationTest extends AuthenticationTestSupport {
             public void signalAuthenticationSuccess(
                     ClientSession session, String service, KeyPair identity, String hostname, String username)
                     throws Exception {
-                assertEquals("Host", hostname, hostnameClientHolder.get());
-                assertEquals("User", username, usernameClientHolder.get());
+                assertEquals(hostname, hostnameClientHolder.get(), "Host");
+                assertEquals(username, usernameClientHolder.get(), "User");
                 assertKeyEquals("Identity", identity.getPublic(), keyClientHolder.get());
             }
 

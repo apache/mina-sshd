@@ -29,24 +29,26 @@ import java.nio.file.Path;
 import java.util.Date;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class NoCloseReaderTest extends JUnitTestSupport {
     public NoCloseReaderTest() {
         super();
     }
 
     @Test
-    public void testCanKeepReadingAfterClose() throws IOException {
+    void canKeepReadingAfterClose() throws IOException {
         String expected = getClass().getName() + "#" + getCurrentTestName() + "@" + new Date();
         Path dir = createTempClassFolder();
         Path file = Files.write(dir.resolve(getCurrentTestName() + ".txt"), expected.getBytes(StandardCharsets.UTF_8));
@@ -85,10 +87,10 @@ public class NoCloseReaderTest extends JUnitTestSupport {
             }
 
             int readValue = shielded.read();
-            assertEquals("Shielded EOF not signalled", -1, readValue);
+            assertEquals(-1, readValue, "Shielded EOF not signalled");
 
             readValue = rdr.read();
-            assertEquals("Original EOF not signalled", -1, readValue);
+            assertEquals(-1, readValue, "Original EOF not signalled");
         }
     }
 

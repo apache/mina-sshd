@@ -25,30 +25,34 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ChannelPipedOutputStreamTest extends BaseTestSupport {
     public ChannelPipedOutputStreamTest() {
         super();
     }
 
     @Test
-    public void testNioChannelImplementation() throws IOException {
+    void nioChannelImplementation() throws IOException {
         ChannelPipedSink sink = Mockito.mock(ChannelPipedSink.class);
         AtomicBoolean eofCalled = new AtomicBoolean(false);
         Mockito.doAnswer(invocation -> {
-            assertFalse("Multiple EOF calls", eofCalled.getAndSet(true));
+            assertFalse(eofCalled.getAndSet(true), "Multiple EOF calls");
             return null;
         }).when(sink).eof();
 
@@ -60,19 +64,19 @@ public class ChannelPipedOutputStreamTest extends BaseTestSupport {
         }).when(sink).receive(ArgumentMatchers.any(byte[].class), ArgumentMatchers.anyInt(), ArgumentMatchers.anyInt());
 
         try (ChannelPipedOutputStream stream = new ChannelPipedOutputStream(sink)) {
-            assertTrue("Stream not marked as initially open", stream.isOpen());
-            assertEquals("Unexpected initial receive count", 0, receiveCount.intValue());
+            assertTrue(stream.isOpen(), "Stream not marked as initially open");
+            assertEquals(0, receiveCount.intValue(), "Unexpected initial receive count");
 
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.write(b);
-            assertTrue("Stream not marked as still open after write data", stream.isOpen());
-            assertEquals("Mismatched write data count", b.length, receiveCount.intValue());
+            assertTrue(stream.isOpen(), "Stream not marked as still open after write data");
+            assertEquals(b.length, receiveCount.intValue(), "Mismatched write data count");
 
             stream.close();
-            assertFalse("Stream still marked as open after close", stream.isOpen());
-            assertTrue("Sink EOF not called on close", eofCalled.get());
+            assertFalse(stream.isOpen(), "Stream still marked as open after close");
+            assertTrue(eofCalled.get(), "Sink EOF not called on close");
 
-            assertThrows("Unexpected write success after close", IOException.class, () -> stream.write(b));
+            assertThrows(IOException.class, () -> stream.write(b), "Unexpected write success after close");
             // flush() should not fail
             stream.flush();
         }

@@ -24,36 +24,31 @@ import java.util.LinkedList;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.sftp.client.SftpVersionSelector.NamedVersionSelector;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SftpVersionResolverTest extends JUnitTestSupport {
-    private final NamedVersionSelector expected;
-    private final NamedVersionSelector actual;
+    private NamedVersionSelector expected;
+    private NamedVersionSelector actual;
 
-    public SftpVersionResolverTest(String selector, NamedVersionSelector expected) {
+    public void initSftpVersionResolverTest(String selector, NamedVersionSelector expected) {
         this.expected = expected;
         this.actual = SftpVersionSelector.resolveVersionSelector(selector);
     }
 
-    @Parameters(name = "selector={0}")
     public static Collection<Object[]> parameters() {
         return new LinkedList<Object[]>() {
             // Not serializing it
@@ -79,17 +74,21 @@ public class SftpVersionResolverTest extends JUnitTestSupport {
         };
     }
 
-    @Test
-    public void testResolvedResult() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "selector={0}")
+    public void resolvedResult(String selector, NamedVersionSelector expected) {
+        initSftpVersionResolverTest(selector, expected);
         assertEquals(expected, actual);
     }
 
-    @Test
-    public void testPreDefinedSelectorResolution() {
-        Assume.assumeTrue("Pre-defined selector ?",
-                (NamedResource.safeCompareByName(SftpVersionSelector.CURRENT, expected, false) == 0)
-                        || (NamedResource.safeCompareByName(SftpVersionSelector.MINIMUM, expected, false) == 0)
-                        || (NamedResource.safeCompareByName(SftpVersionSelector.MAXIMUM, expected, false) == 0));
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "selector={0}")
+    public void preDefinedSelectorResolution(String selector, NamedVersionSelector expected) {
+        initSftpVersionResolverTest(selector, expected);
+        Assumptions.assumeTrue((NamedResource.safeCompareByName(SftpVersionSelector.CURRENT, expected, false) == 0)
+                || (NamedResource.safeCompareByName(SftpVersionSelector.MINIMUM, expected, false) == 0)
+                || (NamedResource.safeCompareByName(SftpVersionSelector.MAXIMUM, expected, false) == 0),
+                "Pre-defined selector ?");
         assertSame(expected, actual);
     }
 

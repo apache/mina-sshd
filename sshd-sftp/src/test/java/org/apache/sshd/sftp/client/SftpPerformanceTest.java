@@ -40,15 +40,15 @@ import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.sftp.client.SftpClient.OpenMode;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.Ignore;
 import org.junit.Rule;
-import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.Network;
 import org.testcontainers.containers.ToxiproxyContainer;
 import org.testcontainers.containers.ToxiproxyContainer.ContainerProxy;
 
-@Ignore("Special class used for development only - not really a test just useful to run as such")
+@Disabled("Special class used for development only - not really a test just useful to run as such")
 public class SftpPerformanceTest {
     public static final Duration SFTP_CONNECT_TIMEOUT = CoreTestSupportUtils.getTimeout("sftp.connect", Duration.ofSeconds(30));
     public static final Duration SFTP_AUTH_TIMEOUT = CoreTestSupportUtils.getTimeout("sftp.auth", Duration.ofSeconds(15));
@@ -78,7 +78,7 @@ public class SftpPerformanceTest {
     }
 
     @Test
-    public void testUploadLatency() throws IOException {
+    void uploadLatency() throws IOException {
         final ContainerProxy proxy = toxiproxy.getProxy(sftp, 22);
         for (int latency : Arrays.asList(0, 1, 5, 10, 50, 100, 500)) {
             Latency toxic = proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, latency);
@@ -102,7 +102,7 @@ public class SftpPerformanceTest {
     }
 
     @Test
-    public void testDownloadLatency() throws IOException {
+    void downloadLatency() throws IOException {
         final ContainerProxy proxy = toxiproxy.getProxy(sftp, 22);
         for (int latency : Arrays.asList(0, 1, 5, 10, 50, 100, 500)) {
             Latency toxic = proxy.toxics().latency("latency", ToxicDirection.DOWNSTREAM, latency);

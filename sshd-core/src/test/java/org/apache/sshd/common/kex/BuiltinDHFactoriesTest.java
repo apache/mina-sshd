@@ -32,48 +32,56 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.kex.BuiltinDHFactories.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinDHFactoriesTest extends BaseTestSupport {
     public BuiltinDHFactoriesTest() {
         super();
     }
 
     @Test
-    public void testFromName() {
+    void fromName() {
         for (BuiltinDHFactories expected : BuiltinDHFactories.VALUES) {
             String name = expected.getName();
             BuiltinDHFactories actual = BuiltinDHFactories.fromFactoryName(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testAllConstantsCovered() throws Exception {
+    void allConstantsCovered() throws Exception {
         Set<BuiltinDHFactories> avail = EnumSet.noneOf(BuiltinDHFactories.class);
         Field[] fields = BuiltinDHFactories.Constants.class.getFields();
         for (Field f : fields) {
             String name = (String) f.get(null);
             BuiltinDHFactories value = BuiltinDHFactories.fromFactoryName(name);
-            assertNotNull("No match found for " + name, value);
-            assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull(value, "No match found for " + name);
+            assertTrue(avail.add(value), name + " re-specified");
         }
 
         assertEquals("Incomplete coverage", BuiltinDHFactories.VALUES, avail);
     }
 
     @Test
-    public void testParseDHFactorysList() {
+    void parseDHFactorysList() {
         List<String> builtin = NamedResource.getNameList(BuiltinDHFactories.VALUES);
         List<String> unknown
                 = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
@@ -110,16 +118,16 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
     }
 
     @Test
-    public void testResolveFactoryOnBuiltinValues() {
+    void resolveFactoryOnBuiltinValues() {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             String name = expected.getName();
             DHFactory actual = BuiltinDHFactories.resolveFactory(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testNotAllowedToRegisterBuiltinFactories() {
+    void notAllowedToRegisterBuiltinFactories() {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             try {
                 BuiltinDHFactories.registerExtension(expected);
@@ -130,55 +138,57 @@ public class BuiltinDHFactoriesTest extends BaseTestSupport {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testNotAllowedToOverrideRegisteredFactories() {
-        DHFactory expected = Mockito.mock(DHFactory.class);
-        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+    @Test
+    void notAllowedToOverrideRegisteredFactories() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            DHFactory expected = Mockito.mock(DHFactory.class);
+            Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String name = expected.getName();
-        try {
-            for (int index = 1; index <= Byte.SIZE; index++) {
-                BuiltinDHFactories.registerExtension(expected);
-                assertEquals("Unexpected success at attempt #" + index, 1, index);
+            String name = expected.getName();
+            try {
+                for (int index = 1; index <= Byte.SIZE; index++) {
+                    BuiltinDHFactories.registerExtension(expected);
+                    assertEquals(1, index, "Unexpected success at attempt #" + index);
+                }
+            } finally {
+                BuiltinDHFactories.unregisterExtension(name);
             }
-        } finally {
-            BuiltinDHFactories.unregisterExtension(name);
-        }
+        });
     }
 
     @Test
-    public void testResolveFactoryOnRegisteredExtension() {
+    void resolveFactoryOnRegisteredExtension() {
         DHFactory expected = Mockito.mock(DHFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
         String name = expected.getName();
         try {
-            assertNull("Extension already registered", BuiltinDHFactories.resolveFactory(name));
+            assertNull(BuiltinDHFactories.resolveFactory(name), "Extension already registered");
             BuiltinDHFactories.registerExtension(expected);
 
             DHFactory actual = BuiltinDHFactories.resolveFactory(name);
-            assertSame("Mismatched resolved instance", expected, actual);
+            assertSame(expected, actual, "Mismatched resolved instance");
         } finally {
             DHFactory actual = BuiltinDHFactories.unregisterExtension(name);
-            assertSame("Mismatched unregistered instance", expected, actual);
-            assertNull("Extension not un-registered", BuiltinDHFactories.resolveFactory(name));
+            assertSame(expected, actual, "Mismatched unregistered instance");
+            assertNull(BuiltinDHFactories.resolveFactory(name), "Extension not un-registered");
         }
     }
 
     @Test
-    public void testDHG() throws Exception {
+    void dhg() throws Exception {
         for (DHFactory expected : BuiltinDHFactories.VALUES) {
             if (!expected.isGroupExchange()) {
                 if (expected.isSupported()) {
-                    assertNotNull(expected + ": Null DH created", expected.create());
+                    assertNotNull(expected.create(), expected + ": Null DH created");
                 }
             }
         }
     }
 
     @Test
-    public void testDHGRead() throws Exception {
-        assertArrayEquals("P1", DHGroupData.getP1(), DHGroupData.getOakleyGroupPrimeValue("group2.prime"));
-        assertArrayEquals("P14", DHGroupData.getP14(), DHGroupData.getOakleyGroupPrimeValue("group14.prime"));
+    void dhgRead() throws Exception {
+        assertArrayEquals(DHGroupData.getP1(), DHGroupData.getOakleyGroupPrimeValue("group2.prime"), "P1");
+        assertArrayEquals(DHGroupData.getP14(), DHGroupData.getOakleyGroupPrimeValue("group14.prime"), "P14");
     }
 }

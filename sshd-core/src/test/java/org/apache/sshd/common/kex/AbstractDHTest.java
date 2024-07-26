@@ -22,25 +22,29 @@ package org.apache.sshd.common.kex;
 import java.util.Arrays;
 
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class AbstractDHTest extends BaseTestSupport {
     public AbstractDHTest() {
         super();
     }
 
     @Test
-    public void testStripLeadingZeroes() {
+    void stripLeadingZeroes() {
         byte[] data = { 3, 7, 7, 3, 4, 7 };
         for (int index = 1; index <= data.length; index++) {
-            assertSame("Unexpected sub-array generation for " + Arrays.toString(data), data,
-                    AbstractDH.stripLeadingZeroes(data));
+            assertSame(data,
+                    AbstractDH.stripLeadingZeroes(data),
+                    "Unexpected sub-array generation for " + Arrays.toString(data));
             if (index < data.length) {
                 data[index] = 0;
             }
@@ -60,7 +64,7 @@ public class AbstractDHTest extends BaseTestSupport {
             byte[] stripped = AbstractDH.stripLeadingZeroes(data);
             String ds = Arrays.toString(data);
             String ss = Arrays.toString(stripped);
-            assertEquals("Mismatched stripped (" + ss + ") length for " + ds, data.length - index, stripped.length);
+            assertEquals(data.length - index, stripped.length, "Mismatched stripped (" + ss + ") length for " + ds);
             for (int i = index, j = 0; j < stripped.length; i++, j++) {
                 if (data[i] != stripped[j]) {
                     fail("Mismatched values at stripped index = " + j + ": data=" + ds + ", stripped=" + ss);

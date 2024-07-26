@@ -31,31 +31,32 @@ import org.apache.directory.server.annotations.CreateTransport;
 import org.apache.directory.server.core.annotations.ApplyLdifFiles;
 import org.apache.directory.server.core.annotations.CreateDS;
 import org.apache.directory.server.core.annotations.CreatePartition;
-import org.apache.directory.server.core.integ.CreateLdapServerRule;
+import org.apache.directory.server.core.integ.ApacheDSTestExtension;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.server.session.ServerSession;
-import org.junit.ClassRule;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@ExtendWith(ApacheDSTestExtension.class)
+@TestMethodOrder(MethodName.class)
 @CreateDS(name = "myDS",
           partitions = { @CreatePartition(name = "users", suffix = BaseAuthenticatorTest.BASE_DN_TEST) })
 @CreateLdapServer(allowAnonymousAccess = true,
                   transports = { @CreateTransport(protocol = "LDAP", address = "localhost") })
 @ApplyLdifFiles({ "auth-users.ldif" })
 public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
-
-    @ClassRule
-    public static CreateLdapServerRule serverRule = new CreateLdapServerRule();
 
     private static final Map<String, PublicKey> KEYS_MAP = new TreeMap<>(Comparator.naturalOrder());
     // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
@@ -66,10 +67,10 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
     }
 
     @Test
-    public void testPublicKeyComparison() throws Exception {
-        Map<String, String> credentials = populateUsers(serverRule.getLdapServer().getDirectoryService(),
+    void publicKeyComparison() throws Exception {
+        Map<String, String> credentials = populateUsers(classLdapServer.getDirectoryService(),
                 LdapPublickeyAuthenticatorTest.class, TEST_ATTR_NAME);
-        assertFalse("No keys retrieved", MapEntryUtils.isEmpty(credentials));
+        assertFalse(MapEntryUtils.isEmpty(credentials), "No keys retrieved");
 
         // Cannot use forEach because of the potential GeneraSecurityException being thrown
         for (Map.Entry<String, String> ce : credentials.entrySet()) {
@@ -81,8 +82,8 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         }
 
         LdapPublickeyAuthenticator auth = new LdapPublickeyAuthenticator();
-        auth.setHost(getHost(serverRule.getLdapServer()));
-        auth.setPort(getPort(serverRule.getLdapServer()));
+        auth.setHost(getHost(classLdapServer));
+        auth.setPort(getPort(classLdapServer));
         auth.setBaseDN(BASE_DN_TEST);
         auth.setKeyAttributeName(TEST_ATTR_NAME);
         auth.setRetrievedAttributes(TEST_ATTR_NAME);
@@ -92,7 +93,7 @@ public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         KEYS_MAP.forEach((username, key) -> {
             outputDebugMessage("Authenticate: user=%s, key-type=%s, fingerprint=%s",
                     username, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
-            assertTrue("Failed to authenticate user=" + username, auth.authenticate(username, key, session));
+            assertTrue(auth.authenticate(username, key, session), "Failed to authenticate user=" + username);
         });
     }
 }

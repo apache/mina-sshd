@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.io;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
@@ -35,37 +36,42 @@ import java.util.Map;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ModifiableFileWatcherTest extends JUnitTestSupport {
 
-    @Rule
-    public TemporaryFolder tmp = new TemporaryFolder();
+    @TempDir
+    protected File tmp;
 
     public ModifiableFileWatcherTest() {
         super();
     }
 
-    @Test // see SSHD-606
-    public void testValidateStrictConfigFilePermissions() throws IOException {
-        Assume.assumeTrue("Test does not always work on Windows", !OsUtils.isWin32());
+    // see SSHD-606
+    @Test
+    void validateStrictConfigFilePermissions() throws IOException {
+        Assumptions.assumeTrue(!OsUtils.isWin32(), "Test does not always work on Windows");
 
         Path file = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         outputDebugMessage("%s deletion result=%s", file, Files.deleteIfExists(file));
-        assertNull("Unexpected violation for non-existent file: " + file,
-                ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+        assertNull(ModifiableFileWatcher.validateStrictConfigFilePermissions(file),
+                "Unexpected violation for non-existent file: " + file);
 
         assertHierarchyTargetFolderExists(file.getParent());
         try (OutputStream output = Files.newOutputStream(file)) {
@@ -75,33 +81,33 @@ public class ModifiableFileWatcherTest extends JUnitTestSupport {
 
         Collection<PosixFilePermission> perms = IoUtils.getPermissions(file);
         if (GenericUtils.isEmpty(perms)) {
-            assertNull("Unexpected violation for no permissions file: " + file,
-                    ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+            assertNull(ModifiableFileWatcher.validateStrictConfigFilePermissions(file),
+                    "Unexpected violation for no permissions file: " + file);
         } else if (OsUtils.isUNIX()) {
             Map.Entry<String, Object> violation = null;
             for (PosixFilePermission p : ModifiableFileWatcher.STRICTLY_PROHIBITED_FILE_PERMISSION) {
                 if (perms.contains(p)) {
                     violation = ModifiableFileWatcher.validateStrictConfigFilePermissions(file);
-                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms,
-                            violation);
+                    assertNotNull(violation,
+                            "Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms);
                     break;
                 }
             }
 
             if (violation == null) { // we do not expected a failure if no permissions have been violated
-                assertNull("Unexpected UNIX violation for file " + file + " permissions=" + perms,
-                        ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+                assertNull(ModifiableFileWatcher.validateStrictConfigFilePermissions(file),
+                        "Unexpected UNIX violation for file " + file + " permissions=" + perms);
             }
         } else {
-            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms,
-                    ModifiableFileWatcher.validateStrictConfigFilePermissions(file));
+            assertNull(ModifiableFileWatcher.validateStrictConfigFilePermissions(file),
+                    "Unexpected Windows violation for file " + file + " permissions=" + perms);
         }
     }
 
     @Test
-    public void testSymlinkChain() throws Exception {
-        Assume.assumeFalse("Symlink test disabled on Windows", OsUtils.isWin32());
-        Path adam = tmp.getRoot().toPath().resolve("adam");
+    void symlinkChain() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "Symlink test disabled on Windows");
+        Path adam = tmp.toPath().resolve("adam");
         Path jeff = adam.getParent().resolve("jeff");
         Path link = adam.getParent().resolve(adam.getFileName() + ".link");
         Path link2 = adam.getParent().resolve("topLink");
@@ -113,74 +119,74 @@ public class ModifiableFileWatcherTest extends JUnitTestSupport {
         Files.createSymbolicLink(link, adam);
         Files.createSymbolicLink(link2, link);
         ModifiableFileWatcher watcher = new ModifiableFileWatcher(link2);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         String data = new String(Files.readAllBytes(link2), StandardCharsets.US_ASCII);
         assertEquals("adam", data);
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         Files.delete(link);
         Files.createSymbolicLink(link, jeff);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         data = new String(Files.readAllBytes(link2), StandardCharsets.US_ASCII);
         assertEquals("jeff", data);
     }
 
     @Test
-    public void testFileModified() throws Exception {
-        Path adam = tmp.getRoot().toPath().resolve("adam");
+    void fileModified() throws Exception {
+        Path adam = tmp.toPath().resolve("adam");
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now().minusSeconds(6)));
         ModifiableFileWatcher watcher = new ModifiableFileWatcher(adam);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         String data = new String(Files.readAllBytes(adam), StandardCharsets.US_ASCII);
         assertEquals("adam", data);
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now().minusSeconds(4)));
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
     }
 
     @Test
-    public void testFileDeleted() throws Exception {
-        Path adam = tmp.getRoot().toPath().resolve("adam");
+    void fileDeleted() throws Exception {
+        Path adam = tmp.toPath().resolve("adam");
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now().minusSeconds(4)));
         ModifiableFileWatcher watcher = new ModifiableFileWatcher(adam);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         String data = new String(Files.readAllBytes(adam), StandardCharsets.US_ASCII);
         assertEquals("adam", data);
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         Files.delete(adam);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
     }
 
     @Test
-    public void testFileCreated() throws Exception {
-        Path adam = tmp.getRoot().toPath().resolve("adam");
+    void fileCreated() throws Exception {
+        Path adam = tmp.toPath().resolve("adam");
         ModifiableFileWatcher watcher = new ModifiableFileWatcher(adam);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         watcher.updateReloadAttributes();
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now().minusSeconds(4)));
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         String data = new String(Files.readAllBytes(adam), StandardCharsets.US_ASCII);
         assertEquals("adam", data);
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
     }
 
     @Test
-    public void testLoadDirectly() throws Exception {
-        Path adam = tmp.getRoot().toPath().resolve("adam");
+    void loadDirectly() throws Exception {
+        Path adam = tmp.toPath().resolve("adam");
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now().minusSeconds(6)));
         ModifiableFileWatcher watcher = new ModifiableFileWatcher(adam);
@@ -188,20 +194,20 @@ public class ModifiableFileWatcherTest extends JUnitTestSupport {
         assertEquals("adam", data);
         // No call to checkReloadRequired() before.
         watcher.updateReloadAttributes();
-        assertFalse("Should not need to reload", watcher.checkReloadRequired());
+        assertFalse(watcher.checkReloadRequired(), "Should not need to reload");
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now().minusSeconds(4)));
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
     }
 
     @Test
-    public void testRacyFile() throws Exception {
-        Path adam = tmp.getRoot().toPath().resolve("adam");
+    void racyFile() throws Exception {
+        Path adam = tmp.toPath().resolve("adam");
         Files.write(adam, "adam".getBytes(StandardCharsets.US_ASCII));
         Files.setLastModifiedTime(adam, FileTime.from(Instant.now()));
         FileTime timestamp = Files.getLastModifiedTime(adam);
         ModifiableFileWatcher watcher = new ModifiableFileWatcher(adam);
-        assertTrue("Should need to reload", watcher.checkReloadRequired());
+        assertTrue(watcher.checkReloadRequired(), "Should need to reload");
         String data = new String(Files.readAllBytes(adam), StandardCharsets.US_ASCII);
         assertEquals("adam", data);
         watcher.updateReloadAttributes();
@@ -217,8 +223,8 @@ public class ModifiableFileWatcherTest extends JUnitTestSupport {
                 break;
             }
         }
-        assertNotNull("Expected non-racy clean", stop);
-        assertTrue("Should have been racy initially", n > 1);
-        assertTrue("Non-racy too early", Duration.between(timestamp.toInstant(), stop).compareTo(Duration.ofSeconds(2)) >= 0);
+        assertNotNull(stop, "Expected non-racy clean");
+        assertTrue(n > 1, "Should have been racy initially");
+        assertTrue(Duration.between(timestamp.toInstant(), stop).compareTo(Duration.ofSeconds(2)) >= 0, "Non-racy too early");
     }
 }

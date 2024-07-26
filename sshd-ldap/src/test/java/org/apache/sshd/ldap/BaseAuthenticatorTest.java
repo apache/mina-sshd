@@ -29,24 +29,49 @@ import org.apache.directory.api.ldap.model.entry.Attribute;
 import org.apache.directory.api.ldap.model.entry.Entry;
 import org.apache.directory.api.ldap.model.ldif.LdifEntry;
 import org.apache.directory.api.ldap.model.ldif.LdifReader;
+import org.apache.directory.ldap.client.template.LdapConnectionTemplate;
 import org.apache.directory.server.core.api.DirectoryService;
 import org.apache.directory.server.ldap.LdapServer;
 import org.apache.directory.server.protocol.shared.transport.Transport;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.experimental.categories.Category;
+import org.junit.jupiter.api.Tag;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Category({ NoIoTestCase.class })
+@Tag("NoIoTestCase")
+@SuppressWarnings("checkstyle:VisibilityModifier")
 public abstract class BaseAuthenticatorTest extends BaseTestSupport {
 
     public static final String BASE_DN_TEST = "ou=People,dc=sshd,dc=apache,dc=org";
+
+    /** The class DirectoryService instance */
+    public static DirectoryService classDirectoryService;
+
+    /** The test DirectoryService instance */
+    public static DirectoryService methodDirectoryService;
+
+    /** The current DirectoryService instance */
+    public static DirectoryService directoryService;
+
+    /** The class LdapServer instance */
+    public static LdapServer classLdapServer;
+
+    /** The test LdapServer instance */
+    public static LdapServer methodLdapServer;
+
+    /** The current LdapServer instance */
+    public static LdapServer ldapServer;
+
+    /** The Ldap connection template */
+    public static LdapConnectionTemplate ldapConnectionTemplate;
+
+    /** The current revision */
+    public static long revision;
 
     protected BaseAuthenticatorTest() {
         super();

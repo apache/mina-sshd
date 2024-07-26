@@ -35,25 +35,27 @@ import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KexExtensionHandlerTest extends JUnitTestSupport {
     public KexExtensionHandlerTest() {
         super();
     }
 
     @Test
-    public void testEncodeDecodeExtensionMessage() throws Exception {
+    void encodeDecodeExtensionMessage() throws Exception {
         List<Map.Entry<String, ?>> expected = Arrays.asList(
                 new SimpleImmutableEntry<>(
                         DelayCompression.NAME,
@@ -76,10 +78,10 @@ public class KexExtensionHandlerTest extends JUnitTestSupport {
             public boolean handleKexExtensionRequest(Session session, int index, int count, String name, byte[] data)
                     throws IOException {
                 KexExtensionParser<?> parser = KexExtensions.getRegisteredExtensionParser(name);
-                assertNotNull("No parser found for extension=" + name, parser);
+                assertNotNull(parser, "No parser found for extension=" + name);
 
                 Object value = parser.parseExtension(data);
-                assertNotNull("No value extracted for extension=" + name, value);
+                assertNotNull(value, "No value extracted for extension=" + name);
                 actual.add(new SimpleImmutableEntry<>(name, value));
                 return true;
             }
@@ -87,19 +89,19 @@ public class KexExtensionHandlerTest extends JUnitTestSupport {
         Session session = Mockito.mock(Session.class);
         handler.handleKexExtensionsMessage(session, buffer);
 
-        assertEquals("Mismatched recovered extensions count", expected.size(), actual.size());
+        assertEquals(expected.size(), actual.size(), "Mismatched recovered extensions count");
         for (int index = 0; index < actual.size(); index++) {
             Map.Entry<String, ?> expEntry = expected.get(index);
             String name = expEntry.getKey();
             Map.Entry<String, ?> actEntry = actual.get(index);
-            assertEquals("Mismatched extension name at index=" + index, name, actEntry.getKey());
+            assertEquals(name, actEntry.getKey(), "Mismatched extension name at index=" + index);
 
             Object expValue = expEntry.getValue();
             Object actValue = actEntry.getValue();
             if (expValue instanceof List<?>) {
                 assertListEquals(name, (List<?>) expValue, (List<?>) actValue);
             } else {
-                assertEquals("Mismatched values for extension=" + name, expValue, actValue);
+                assertEquals(expValue, actValue, "Mismatched values for extension=" + name);
             }
         }
     }

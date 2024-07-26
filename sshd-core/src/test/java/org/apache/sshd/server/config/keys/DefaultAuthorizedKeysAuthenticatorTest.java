@@ -30,22 +30,22 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
     public DefaultAuthorizedKeysAuthenticatorTest() {
         super();
     }
 
     @Test
-    public void testUsernameValidation() throws Exception {
+    void usernameValidation() throws Exception {
         Path file = getTempTargetRelativeFile(getCurrentTestName());
         writeDefaultSupportedKeys(file);
 

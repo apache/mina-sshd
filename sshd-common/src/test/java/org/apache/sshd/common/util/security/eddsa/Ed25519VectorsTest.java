@@ -32,38 +32,34 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02#section-6"> EdDSA and Ed25519
  *         draft-josefsson-eddsa-ed25519-02 - section 6 - Test Vectors for Ed25519</A>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class Ed25519VectorsTest extends JUnitTestSupport {
-    private final byte[] prvBytes;
-    private final PrivateKey privateKey;
-    private final byte[] pubBytes;
-    private final PublicKey publicKey;
-    private final byte[] msgBytes;
-    private final byte[] expSignature;
+    private byte[] prvBytes;
+    private PrivateKey privateKey;
+    private byte[] pubBytes;
+    private PublicKey publicKey;
+    private byte[] msgBytes;
+    private byte[] expSignature;
 
-    public Ed25519VectorsTest(String name, String prvKey, String pubKey, String msg, String signature)
+    public void initEd25519VectorsTest(String name, String prvKey, String pubKey, String msg, String signature)
             throws GeneralSecurityException {
         prvBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, prvKey);
         privateKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(prvBytes.clone());
@@ -73,7 +69,6 @@ public class Ed25519VectorsTest extends JUnitTestSupport {
         expSignature = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, signature);
     }
 
-    @Parameters(name = "{0}")
     @SuppressWarnings("checkstyle:anoninnerlength")
     public static List<Object[]> parameters() {
         return new ArrayList<>(
@@ -183,39 +178,48 @@ public class Ed25519VectorsTest extends JUnitTestSupport {
                         }));
     }
 
-    @BeforeClass
-    public static void checkEDDSASupported() {
-        Assume.assumeTrue("EDDSA N/A", SecurityUtils.isEDDSACurveSupported());
+    @BeforeAll
+    static void checkEDDSASupported() {
+        Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), "EDDSA N/A");
     }
 
-    @Test
-    public void testPublicKeyBytes() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void publicKeyBytes(String name, String prvKey, String pubKey, String msg, String signature) throws Exception {
+        initEd25519VectorsTest(name, prvKey, pubKey, msg, signature);
         byte[] publicSeed = Ed25519PublicKeyDecoder.getSeedValue((EdDSAPublicKey) publicKey);
-        assertArrayEquals("Mismatched public seed value", pubBytes, publicSeed);
+        assertArrayEquals(pubBytes, publicSeed, "Mismatched public seed value");
     }
 
-    @Test
-    public void testPrivateKeyBytes() {
-        assertArrayEquals("Mismatched private seed value", prvBytes, ((EdDSAPrivateKey) privateKey).getSeed());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void privateKeyBytes(String name, String prvKey, String pubKey, String msg, String signature) throws Exception {
+        initEd25519VectorsTest(name, prvKey, pubKey, msg, signature);
+        assertArrayEquals(prvBytes, ((EdDSAPrivateKey) privateKey).getSeed(), "Mismatched private seed value");
     }
 
-    @Test
-    public void testSignature() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void signature(String name, String prvKey, String pubKey, String msg, String signature) throws Exception {
+        initEd25519VectorsTest(name, prvKey, pubKey, msg, signature);
         Signature signer = EdDSASecurityProviderUtils.getEDDSASignature();
         signer.initSigner(null, privateKey);
         signer.update(null, msgBytes.clone());
 
         byte[] actSignature = signer.sign(null);
-        assertArrayEquals("Mismatched signature", expSignature, actSignature);
+        assertArrayEquals(expSignature, actSignature, "Mismatched signature");
 
         Signature verifier = EdDSASecurityProviderUtils.getEDDSASignature();
         verifier.initVerifier(null, publicKey);
         verifier.update(null, msgBytes.clone());
-        assertTrue("Verification failed", verifier.verify(null, expSignature));
+        assertTrue(verifier.verify(null, expSignature), "Verification failed");
     }
 
-    @Test
-    public void testPartialBufferSignature() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void partialBufferSignature(String name, String prvKey, String pubKey, String msg, String signature)
+            throws Exception {
+        initEd25519VectorsTest(name, prvKey, pubKey, msg, signature);
         byte[] extraData = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
         byte[] dataBuf = new byte[msgBytes.length + extraData.length];
         int offset = extraData.length / 2;
@@ -228,11 +232,11 @@ public class Ed25519VectorsTest extends JUnitTestSupport {
         signer.update(null, dataBuf.clone(), offset, msgBytes.length);
 
         byte[] actSignature = signer.sign(null);
-        assertArrayEquals("Mismatched signature", expSignature, actSignature);
+        assertArrayEquals(expSignature, actSignature, "Mismatched signature");
 
         Signature verifier = EdDSASecurityProviderUtils.getEDDSASignature();
         verifier.initVerifier(null, publicKey);
         verifier.update(null, dataBuf.clone(), offset, msgBytes.length);
-        assertTrue("Verification failed", verifier.verify(null, expSignature));
+        assertTrue(verifier.verify(null, expSignature), "Verification failed");
     }
 }

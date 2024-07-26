@@ -54,27 +54,31 @@ import org.apache.sshd.sftp.common.extensions.openssh.StatVfsExtensionParser;
 import org.apache.sshd.sftp.server.SftpSubsystem;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     public OpenSSHExtensionsTest() throws IOException {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
     @Test
-    public void testPosixRename() throws IOException {
+    void posixRename() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -99,8 +103,8 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                 rename.posixRename(file2Path, file3Path);
                 fail("Unxpected rename success of " + file2Path + " => " + file3Path);
             } catch (SftpException e) {
-                assertEquals("Mismatched status for failed rename of " + file2Path + " => " + file3Path,
-                        SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus());
+                assertEquals(SftpConstants.SSH_FX_NO_SUCH_FILE, e.getStatus(),
+                        "Mismatched status for failed rename of " + file2Path + " => " + file3Path);
             }
 
             try (OutputStream os = sftp.write(file2Path, SftpClient.MIN_WRITE_BUFFER_SIZE)) {
@@ -112,7 +116,7 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
     }
 
     @Test
-    public void testFsync() throws IOException {
+    void fsync() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -128,13 +132,13 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
                 fsync.fsync(fileHandle);
 
                 byte[] actual = Files.readAllBytes(srcFile);
-                assertArrayEquals("Mismatched written data", expected, actual);
+                assertArrayEquals(expected, actual, "Mismatched written data");
             }
         }
     }
 
     @Test
-    public void testStat() throws Exception {
+    void stat() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -205,21 +209,22 @@ public class OpenSSHExtensionsTest extends AbstractSftpClientTestSupport {
             OpenSSHStatPathExtension pathStat = assertExtensionCreated(sftp, OpenSSHStatPathExtension.class);
             OpenSSHStatExtensionInfo actual = pathStat.stat(srcPath);
             String invokedExtension = extensionHolder.getAndSet(null);
-            assertEquals("Mismatched invoked extension", pathStat.getName(), invokedExtension);
+            assertEquals(pathStat.getName(), invokedExtension, "Mismatched invoked extension");
             assertFieldsEqual(invokedExtension, expected, actual);
 
             try (CloseableHandle handle = sftp.open(srcPath)) {
                 OpenSSHStatHandleExtension handleStat = assertExtensionCreated(sftp, OpenSSHStatHandleExtension.class);
                 actual = handleStat.stat(handle);
                 invokedExtension = extensionHolder.getAndSet(null);
-                assertEquals("Mismatched invoked extension", handleStat.getName(), invokedExtension);
+                assertEquals(handleStat.getName(), invokedExtension, "Mismatched invoked extension");
                 assertFieldsEqual(invokedExtension, expected, actual);
             }
         }
     }
 
-    @Test   // see SSHD-1233
-    public void testLimits() throws Exception {
+    // see SSHD-1233
+    @Test
+    void limits() throws Exception {
         try (SftpClient sftp = createSingleSessionClient()) {
             OpenSSHLimitsExtension ext = assertExtensionCreated(sftp, OpenSSHLimitsExtension.class);
             OpenSSHLimitsExtensionInfo expected = new OpenSSHLimitsExtensionInfo(sftp.getClientChannel());

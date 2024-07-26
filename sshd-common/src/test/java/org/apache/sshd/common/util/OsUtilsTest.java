@@ -22,24 +22,26 @@ package org.apache.sshd.common.util;
 import java.util.Objects;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class OsUtilsTest extends JUnitTestSupport {
     public OsUtilsTest() {
         super();
     }
 
     @Test
-    public void testSetOsTypeByProperty() {
+    void setOsTypeByProperty() {
         try {
             for (String osType : new String[] { "Some-Windows", "Some-Linux" }) {
                 OsUtils.setOS(null); // force re-detection
@@ -59,7 +61,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSetOsTypeProgrammatically() {
+    void setOsTypeProgrammatically() {
         try {
             OsUtils.setOS("windows 10");
             assertEquals("Mismatched detection value", false, OsUtils.isOSX());
@@ -84,7 +86,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSetCurrentUserByProperty() {
+    void setCurrentUserByProperty() {
         try {
             for (String expected : new String[] { getClass().getSimpleName(), getCurrentTestName() }) {
                 OsUtils.setCurrentUser(null); // force re-detection
@@ -92,7 +94,7 @@ public class OsUtilsTest extends JUnitTestSupport {
                 try {
                     System.setProperty(OsUtils.CURRENT_USER_OVERRIDE_PROP, expected);
                     String actual = OsUtils.getCurrentUser();
-                    assertEquals("Mismatched reported current user", expected, actual);
+                    assertEquals(expected, actual, "Mismatched reported current user");
                 } finally {
                     System.clearProperty(OsUtils.CURRENT_USER_OVERRIDE_PROP);
                 }
@@ -103,11 +105,11 @@ public class OsUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSetCurrentUserProgrammatically() {
+    void setCurrentUserProgrammatically() {
         try {
             for (String expected : new String[] { getClass().getSimpleName(), getCurrentTestName() }) {
                 OsUtils.setCurrentUser(expected); // force value
-                assertEquals("Mismatched detection value", expected, OsUtils.getCurrentUser());
+                assertEquals(expected, OsUtils.getCurrentUser(), "Mismatched detection value");
             }
         } finally {
             OsUtils.setCurrentUser(null); // force re-detection
@@ -115,7 +117,7 @@ public class OsUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSetJavaVersionByProperty() {
+    void setJavaVersionByProperty() {
         try {
             for (String value : new String[] { "7.3.6_5", "37.77.34_7-" + getCurrentTestName() }) {
                 OsUtils.setJavaVersion(null); // force re-detection
@@ -124,7 +126,7 @@ public class OsUtilsTest extends JUnitTestSupport {
                     System.setProperty(OsUtils.JAVA_VERSION_OVERRIDE_PROP, value);
                     String expected = value.replace('_', '.');
                     String actual = Objects.toString(OsUtils.getJavaVersion(), null);
-                    assertTrue("Mismatched reported version value: " + actual, expected.startsWith(actual));
+                    assertTrue(expected.startsWith(actual), "Mismatched reported version value: " + actual);
                 } finally {
                     System.clearProperty(OsUtils.JAVA_VERSION_OVERRIDE_PROP);
                 }
@@ -135,11 +137,11 @@ public class OsUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testSetJavaVersionProgrammatically() {
+    void setJavaVersionProgrammatically() {
         try {
             for (VersionInfo expected : new VersionInfo[] { VersionInfo.parse("7.3.6.5"), VersionInfo.parse("37.77.34.7") }) {
                 OsUtils.setJavaVersion(expected); // force value
-                assertEquals("Mismatched detection value", expected, OsUtils.getJavaVersion());
+                assertEquals(expected, OsUtils.getJavaVersion(), "Mismatched detection value");
             }
         } finally {
             OsUtils.setJavaVersion(null); // force re-detection

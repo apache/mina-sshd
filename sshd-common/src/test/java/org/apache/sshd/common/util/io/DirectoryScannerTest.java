@@ -30,26 +30,25 @@ import java.util.Objects;
 
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class DirectoryScannerTest extends JUnitTestSupport {
     public DirectoryScannerTest() {
         super();
     }
 
     @Test
-    public void testDeepScanning() throws IOException {
+    void deepScanning() throws IOException {
         Path rootDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(rootDir); // start fresh
 
@@ -73,7 +72,7 @@ public class DirectoryScannerTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testFileSuffixMatching() throws IOException {
+    void fileSuffixMatching() throws IOException {
         Path rootDir = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(rootDir); // start fresh
         Files.createDirectories(rootDir);

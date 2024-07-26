@@ -31,36 +31,39 @@ import java.util.function.Function;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KeyPairProviderTest extends JUnitTestSupport {
     public KeyPairProviderTest() {
         super();
     }
 
     @Test
-    public void testEmptyKeyProvider() throws IOException, GeneralSecurityException {
+    void emptyKeyProvider() throws IOException, GeneralSecurityException {
         KeyPairProvider provider = KeyPairProvider.EMPTY_KEYPAIR_PROVIDER;
-        assertTrue("Non empty loaded keys", GenericUtils.isEmpty(provider.loadKeys(null)));
-        assertTrue("Non empty key type", GenericUtils.isEmpty(provider.getKeyTypes(null)));
+        assertTrue(GenericUtils.isEmpty(provider.loadKeys(null)), "Non empty loaded keys");
+        assertTrue(GenericUtils.isEmpty(provider.getKeyTypes(null)), "Non empty key type");
 
         for (String keyType : new String[] { null, "", getCurrentTestName() }) {
-            assertNull("Unexpected key-pair loaded for type='" + keyType + "'", provider.loadKey(null, keyType));
+            assertNull(provider.loadKey(null, keyType), "Unexpected key-pair loaded for type='" + keyType + "'");
         }
     }
 
     @Test
-    public void testMapToKeyPairProvider() throws IOException, GeneralSecurityException {
+    void mapToKeyPairProvider() throws IOException, GeneralSecurityException {
         PublicKey pubKey = Mockito.mock(PublicKey.class);
         PrivateKey prvKey = Mockito.mock(PrivateKey.class);
         String[] testKeys = { getCurrentTestName(), getClass().getSimpleName() };
@@ -78,7 +81,7 @@ public class KeyPairProviderTest extends JUnitTestSupport {
             String keyType = pe.getKey();
             KeyPair expected = pe.getValue();
             KeyPair actual = provider.loadKey(null, keyType);
-            assertSame(keyType, expected, actual);
+            assertSame(expected, actual, keyType);
         }
     }
 }

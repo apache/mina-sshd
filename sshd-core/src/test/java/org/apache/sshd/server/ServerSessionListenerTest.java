@@ -47,18 +47,23 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ServerSessionListenerTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
@@ -68,8 +73,8 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         super();
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(ServerSessionListenerTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -78,8 +83,8 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -97,8 +102,9 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         }
     }
 
-    @Test // see https://issues.apache.org/jira/browse/SSHD-456
-    public void testServerStillListensIfSessionListenerThrowsException() throws Exception {
+    // see https://issues.apache.org/jira/browse/SSHD-456
+    @Test
+    void serverStillListensIfSessionListenerThrowsException() throws Exception {
         final Map<String, SocketAddress> eventsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         final Logger log = LoggerFactory.getLogger(getClass());
         SessionListener listener = new SessionListener() {
@@ -149,14 +155,14 @@ public class ServerSessionListenerTest extends BaseTestSupport {
                     }
 
                     synchronized (eventsMap) {
-                        assertTrue("Unexpected premature success at retry # " + retryCount + ": " + eventsMap,
-                                eventsMap.size() >= 3);
+                        assertTrue(eventsMap.size() >= 3,
+                                "Unexpected premature success at retry # " + retryCount + ": " + eventsMap);
                     }
                 } catch (IOException e) {
                     // expected - ignored
                     synchronized (eventsMap) {
                         int nextCount = eventsMap.size();
-                        assertTrue("No session event generated at retry #" + retryCount, nextCount > curCount);
+                        assertTrue(nextCount > curCount, "No session event generated at retry #" + retryCount);
                     }
                 }
             }
@@ -167,7 +173,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSessionListenerCanModifyKEXNegotiation() throws Exception {
+    void sessionListenerCanModifyKEXNegotiation() throws Exception {
         Map<KexProposalOption, NamedResource> kexParams = new EnumMap<>(KexProposalOption.class);
         kexParams.put(KexProposalOption.ALGORITHMS, getLeastFavorite(KeyExchangeFactory.class, sshd.getKeyExchangeFactories()));
         kexParams.put(KexProposalOption.S2CENC, getLeastFavorite(CipherFactory.class, sshd.getCipherFactories()));
@@ -191,7 +197,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
             kexParams.forEach((option, factory) -> {
                 String expected = factory.getName();
                 String actual = session.getNegotiatedKexParameter(option);
-                assertEquals("Mismatched values for KEX=" + option, expected, actual);
+                assertEquals(expected, actual, "Mismatched values for KEX=" + option);
             });
         } finally {
             sshd.removeSessionListener(listener);
@@ -199,7 +205,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testSessionListenerCanModifyAuthentication() throws Exception {
+    void sessionListenerCanModifyAuthentication() throws Exception {
         AtomicInteger passCount = new AtomicInteger(0);
         PasswordAuthenticator defaultPassAuth = sshd.getPasswordAuthenticator();
         PasswordAuthenticator passAuth = (username, password, session) -> {
@@ -221,11 +227,10 @@ public class ServerSessionListenerTest extends BaseTestSupport {
         sshd.addSessionListener(listener);
 
         try (ClientSession session = createTestClientSession()) {
-            assertNotSame("Mismatched default password authenticator",
-                    passAuth, sshd.getPasswordAuthenticator());
-            assertNotSame("Mismatched default kb authenticator",
-                    KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator());
-            assertEquals("Authenticator override not invoked", 1, passCount.get());
+            assertNotSame(passAuth, sshd.getPasswordAuthenticator(), "Mismatched default password authenticator");
+            assertNotSame(KeyboardInteractiveAuthenticator.NONE, sshd.getKeyboardInteractiveAuthenticator(),
+                    "Mismatched default kb authenticator");
+            assertEquals(1, passCount.get(), "Authenticator override not invoked");
         } finally {
             sshd.removeSessionListener(listener);
         }
@@ -234,7 +239,7 @@ public class ServerSessionListenerTest extends BaseTestSupport {
     private static <V extends NamedResource> NamedResource getLeastFavorite(
             Class<V> type, List<? extends NamedResource> factories) {
         int numFactories = GenericUtils.size(factories);
-        assertTrue("No factories for " + type.getSimpleName(), numFactories > 0);
+        assertTrue(numFactories > 0, "No factories for " + type.getSimpleName());
         return factories.get(numFactories - 1);
     }
 

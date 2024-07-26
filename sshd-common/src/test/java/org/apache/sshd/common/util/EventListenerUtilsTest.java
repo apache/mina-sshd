@@ -27,24 +27,28 @@ import java.util.List;
 import java.util.Set;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class EventListenerUtilsTest extends JUnitTestSupport {
     public EventListenerUtilsTest() {
         super();
     }
 
     @Test
-    public void testProxyWrapper() {
+    void proxyWrapper() {
         List<ProxyListenerImpl> impls = new ArrayList<>();
         for (int index = 0; index < Byte.SIZE; index++) {
             impls.add(new ProxyListenerImpl());
@@ -58,53 +62,53 @@ public class EventListenerUtilsTest extends JUnitTestSupport {
 
         for (int index = 0; index < impls.size(); index++) {
             ProxyListenerImpl l = impls.get(index);
-            assertSame("Mismatched string at listener #" + index, expStr, l.getStringValue());
-            assertSame("Mismatched number at listener #" + index, expNum, l.getNumberValue());
+            assertSame(expStr, l.getStringValue(), "Mismatched string at listener #" + index);
+            assertSame(expNum, l.getNumberValue(), "Mismatched number at listener #" + index);
         }
     }
 
     @Test
-    public void testListenerInstanceComparatorOnProxy() {
+    void listenerInstanceComparatorOnProxy() {
         Comparator<? super EventListener> comparator = EventListenerUtils.LISTENER_INSTANCE_COMPARATOR;
         ProxyListener p1
                 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
-        assertEquals("Mismatched self reference comparison", 0, comparator.compare(p1, p1));
+        assertEquals(0, comparator.compare(p1, p1), "Mismatched self reference comparison");
 
         EventListener l = new EventListener() {
             /* nothing extra */ };
-        assertEquals("Mismatched proxy vs. non-proxy result", 1, Integer.signum(comparator.compare(p1, l)));
-        assertEquals("Mismatched non-proxy vs. proxy result", -1, Integer.signum(comparator.compare(l, p1)));
+        assertEquals(1, Integer.signum(comparator.compare(p1, l)), "Mismatched proxy vs. non-proxy result");
+        assertEquals(-1, Integer.signum(comparator.compare(l, p1)), "Mismatched non-proxy vs. proxy result");
 
         ProxyListener p2
                 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
         int p1vsp2 = Integer.signum(comparator.compare(p1, p2));
-        assertNotEquals("Mismatched p1 vs. p2 comparison", 0, p1vsp2);
-        assertEquals("Mismatched p2 vs. p1 comparison result", 0 - p1vsp2, Integer.signum(comparator.compare(p2, p1)));
+        assertNotEquals(0, p1vsp2, "Mismatched p1 vs. p2 comparison");
+        assertEquals(0 - p1vsp2, Integer.signum(comparator.compare(p2, p1)), "Mismatched p2 vs. p1 comparison result");
     }
 
     @Test
-    public void testListenerInstanceComparatorOnNonProxy() {
+    void listenerInstanceComparatorOnNonProxy() {
         Comparator<? super EventListener> comparator = EventListenerUtils.LISTENER_INSTANCE_COMPARATOR;
         EventListener l1 = new EventListener() {
             /* nothing extra */ };
-        assertEquals("Mismatched self reference comparison", 0, comparator.compare(l1, l1));
+        assertEquals(0, comparator.compare(l1, l1), "Mismatched self reference comparison");
 
         EventListener l2 = new EventListener() {
             /* nothing extra */ };
         int l1vsl2 = Integer.signum(comparator.compare(l1, l2));
-        assertNotEquals("Mismatched l1 vs. l2 comparison result", 0, l1vsl2);
-        assertEquals("Mismatched l2 vs. l1 comparison result", 0 - l1vsl2, Integer.signum(comparator.compare(l2, l1)));
+        assertNotEquals(0, l1vsl2, "Mismatched l1 vs. l2 comparison result");
+        assertEquals(0 - l1vsl2, Integer.signum(comparator.compare(l2, l1)), "Mismatched l2 vs. l1 comparison result");
     }
 
     @Test
-    public void testSynchronizedListenersSetOnProxies() {
+    void synchronizedListenersSetOnProxies() {
         ProxyListener p1
                 = EventListenerUtils.proxyWrapper(ProxyListener.class, Collections.singletonList(new ProxyListenerImpl()));
         Set<ProxyListener> s = EventListenerUtils.synchronizedListenersSet();
         for (int index = 1; index <= Byte.SIZE; index++) {
             boolean modified = s.add(p1);
             assertEquals("Mismatched p1 modification indicator at attempt #" + index, index == 1, modified);
-            assertEquals("Mismatched p1 set size at attempt #" + index, 1, s.size());
+            assertEquals(1, s.size(), "Mismatched p1 set size at attempt #" + index);
         }
 
         ProxyListener p2
@@ -112,13 +116,13 @@ public class EventListenerUtilsTest extends JUnitTestSupport {
         for (int index = 1; index <= Byte.SIZE; index++) {
             boolean modified = s.add(p2);
             assertEquals("Mismatched p2 modification indicator at attempt #" + index, index == 1, modified);
-            assertEquals("Mismatched p2 set size at attempt #" + index, 2, s.size());
+            assertEquals(2, s.size(), "Mismatched p2 set size at attempt #" + index);
         }
 
-        assertTrue("Failed to remove p1", s.remove(p1));
-        assertEquals("Mismatched post p1-remove size", 1, s.size());
-        assertTrue("Failed to remove p2", s.remove(p2));
-        assertEquals("Mismatched post p2-remove size", 0, s.size());
+        assertTrue(s.remove(p1), "Failed to remove p1");
+        assertEquals(1, s.size(), "Mismatched post p1-remove size");
+        assertTrue(s.remove(p2), "Failed to remove p2");
+        assertEquals(0, s.size(), "Mismatched post p2-remove size");
     }
 
     interface ProxyListener extends SshdEventListener {

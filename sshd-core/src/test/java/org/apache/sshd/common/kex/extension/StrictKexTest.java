@@ -35,11 +35,16 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests for message handling during "strict KEX" is active: initial KEX must fail and disconnect if the KEX_INIT
@@ -54,7 +59,7 @@ import org.junit.runners.MethodSorters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://github.com/apache/mina-sshd/issues/445">Terrapin Mitigation: &quot;strict-kex&quot;</A>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class StrictKexTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
@@ -63,14 +68,14 @@ public class StrictKexTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -80,12 +85,12 @@ public class StrictKexTest extends BaseTestSupport {
     }
 
     @Test
-    public void connectionClosedIfFirstPacketFromClientNotKexInit() throws Exception {
+    void connectionClosedIfFirstPacketFromClientNotKexInit() throws Exception {
         testConnectionClosedIfFirstPacketFromPeerNotKexInit(true);
     }
 
     @Test
-    public void connectionClosedIfFirstPacketFromServerNotKexInit() throws Exception {
+    void connectionClosedIfFirstPacketFromServerNotKexInit() throws Exception {
         testConnectionClosedIfFirstPacketFromPeerNotKexInit(false);
     }
 
@@ -112,25 +117,26 @@ public class StrictKexTest extends BaseTestSupport {
             fail("Unexpected session success");
         } catch (SshException e) {
             IoWriteFuture future = debugMsg.get();
-            assertNotNull("No SSH_MSG_DEBUG", future);
-            assertTrue("SSH_MSG_DEBUG should have been sent", future.isWritten());
+            assertNotNull(future, "No SSH_MSG_DEBUG");
+            assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
             // Due to a race condition in the Nio2 transport when closing a connection due to an exception it's possible
             // that we do _not_ get the expected disconnection code. The race condition may lead to the IoSession being
             // closed in the peer before it has sent the DISCONNECT message. Happens in particular on Windows.
             if (e.getDisconnectCode() == SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED) {
-                assertTrue("Unexpected disconnect reason: " + e.getMessage(), e.getMessage()
-                        .startsWith("Strict KEX negotiated but sequence number of first KEX_INIT received is not 1"));
+                assertTrue(e.getMessage()
+                        .startsWith("Strict KEX negotiated but sequence number of first KEX_INIT received is not 1"),
+                        "Unexpected disconnect reason: " + e.getMessage());
             }
         }
     }
 
     @Test
-    public void connectionClosedIfSpuriousPacketFromClientInKex() throws Exception {
+    void connectionClosedIfSpuriousPacketFromClientInKex() throws Exception {
         testConnectionClosedIfSupriousPacketInKex(true);
     }
 
     @Test
-    public void connectionClosedIfSpuriousPacketFromServerInKex() throws Exception {
+    void connectionClosedIfSpuriousPacketFromServerInKex() throws Exception {
         testConnectionClosedIfSupriousPacketInKex(false);
     }
 
@@ -160,22 +166,22 @@ public class StrictKexTest extends BaseTestSupport {
             fail("Unexpected session success");
         } catch (SshException e) {
             IoWriteFuture future = debugMsg.get();
-            assertNotNull("No SSH_MSG_DEBUG", future);
-            assertTrue("SSH_MSG_DEBUG should have been sent", future.isWritten());
+            assertNotNull(future, "No SSH_MSG_DEBUG");
+            assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
             if (e.getDisconnectCode() == SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED) {
-                assertEquals("Unexpected disconnect reason",
-                        "SSH_MSG_DEBUG not allowed during initial key exchange in strict KEX", e.getMessage());
+                assertEquals("SSH_MSG_DEBUG not allowed during initial key exchange in strict KEX", e.getMessage(),
+                        "Unexpected disconnect reason");
             }
         }
     }
 
     @Test
-    public void reKeyAllowsDebugInKexFromClient() throws Exception {
+    void reKeyAllowsDebugInKexFromClient() throws Exception {
         testReKeyAllowsDebugInKex(true);
     }
 
     @Test
-    public void reKeyAllowsDebugInKexFromServer() throws Exception {
+    void reKeyAllowsDebugInKexFromServer() throws Exception {
         testReKeyAllowsDebugInKex(false);
     }
 
@@ -205,23 +211,23 @@ public class StrictKexTest extends BaseTestSupport {
         }
 
         try (ClientSession session = obtainInitialTestClientSession()) {
-            assertTrue("Session should be stablished", session.isOpen());
+            assertTrue(session.isOpen(), "Session should be stablished");
             sendDebug.set(true);
-            assertTrue("KEX not done", session.reExchangeKeys().verify(CONNECT_TIMEOUT).isDone());
+            assertTrue(session.reExchangeKeys().verify(CONNECT_TIMEOUT).isDone(), "KEX not done");
             IoWriteFuture future = debugMsg.get();
-            assertNotNull("No SSH_MSG_DEBUG", future);
-            assertTrue("SSH_MSG_DEBUG should have been sent", future.isWritten());
+            assertNotNull(future, "No SSH_MSG_DEBUG");
+            assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
             assertTrue(session.isOpen());
         }
     }
 
     @Test
-    public void strictKexWorksWithServerFlagInClientProposal() throws Exception {
+    void strictKexWorksWithServerFlagInClientProposal() throws Exception {
         testStrictKexWorksWithWrongFlag(true);
     }
 
     @Test
-    public void strictKexWorksWithClientFlagInServerProposal() throws Exception {
+    void strictKexWorksWithClientFlagInServerProposal() throws Exception {
         testStrictKexWorksWithWrongFlag(false);
     }
 
@@ -250,7 +256,7 @@ public class StrictKexTest extends BaseTestSupport {
         }
 
         try (ClientSession session = obtainInitialTestClientSession()) {
-            assertTrue("Session should be stablished", session.isOpen());
+            assertTrue(session.isOpen(), "Session should be stablished");
         }
     }
 

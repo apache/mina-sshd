@@ -48,24 +48,28 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
     public BuiltinClientIdentitiesWatcherTest() {
         super();
     }
 
     @Test
-    public void testMultipleFilesWatch() throws Exception {
+    void multipleFilesWatch() throws Exception {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
         String keyType
                 = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(identity), "Cannot determine identity key type");
@@ -76,8 +80,8 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
         for (BuiltinIdentities id : BuiltinIdentities.VALUES) {
             Path idFile = dir.resolve(ClientIdentity.getIdentityFileName(id));
             Files.deleteIfExists(idFile);
-            assertNull("Multiple file mappings for " + id, locationsMap.put(id, idFile));
-            assertNull("Multiple identity mappings for " + id, idsMap.put(id, KeyUtils.cloneKeyPair(keyType, identity)));
+            assertNull(locationsMap.put(id, idFile), "Multiple file mappings for " + id);
+            assertNull(idsMap.put(id, KeyUtils.cloneKeyPair(keyType, identity)), "Multiple identity mappings for " + id);
         }
 
         ClientIdentityLoader loader = new ClientIdentityLoader() {
@@ -86,7 +90,7 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
                     SessionContext session, NamedResource location, FilePasswordProvider provider)
                     throws IOException, GeneralSecurityException {
                 BuiltinIdentities id = findIdentity(location);
-                assertNotNull("Invalid location: " + location, id);
+                assertNotNull(id, "Invalid location: " + location);
                 KeyPair kp = idsMap.get(id);
                 return (kp == null) ? null : Collections.singletonList(kp);
             }
@@ -160,11 +164,11 @@ public class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
         for (KeyPair kp : keys) {
             actual.add(kp);
         }
-        assertEquals(phase + ": mismatched sizes", GenericUtils.size(expected), GenericUtils.size(actual));
+        assertEquals(GenericUtils.size(expected), GenericUtils.size(actual), phase + ": mismatched sizes");
 
         if (!GenericUtils.isEmpty(expected)) {
             for (KeyPair kp : expected) {
-                assertTrue(phase + ": missing key", actual.contains(kp));
+                assertTrue(actual.contains(kp), phase + ": missing key");
             }
         }
     }

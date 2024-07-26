@@ -34,24 +34,27 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ServerAuthenticationManagerTest extends BaseTestSupport {
     public ServerAuthenticationManagerTest() {
         super();
     }
 
     @Test
-    public void testDefaultUserAuthFactoriesMethods() {
+    void defaultUserAuthFactoriesMethods() {
         AtomicReference<List<UserAuthFactory>> factoriesHolder = new AtomicReference<>();
         @SuppressWarnings("checkstyle:anoninnerlength")
         ServerAuthenticationManager manager = new ServerAuthenticationManager() {
@@ -62,7 +65,7 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
 
             @Override
             public void setUserAuthFactories(List<UserAuthFactory> userAuthFactories) {
-                assertNull("Unexpected multiple invocation", factoriesHolder.getAndSet(userAuthFactories));
+                assertNull(factoriesHolder.getAndSet(userAuthFactories), "Unexpected multiple invocation");
             }
 
             @Override
@@ -136,17 +139,16 @@ public class ServerAuthenticationManagerTest extends BaseTestSupport {
                 throw new UnsupportedOperationException("setHostKeyCertificateProvider(" + provider + ")");
             }
         };
-        assertEquals("Mismatched initial factories list", "", manager.getUserAuthFactoriesNameList());
+        assertEquals("", manager.getUserAuthFactoriesNameList(), "Mismatched initial factories list");
 
         String expected = NamedResource.getNames(BuiltinUserAuthFactories.VALUES);
         manager.setUserAuthFactoriesNameList(expected);
-        assertEquals("Mismatched updated factories names", expected, manager.getUserAuthFactoriesNameList());
+        assertEquals(expected, manager.getUserAuthFactoriesNameList(), "Mismatched updated factories names");
 
         List<UserAuthFactory> factories = factoriesHolder.get();
-        assertEquals("Mismatched factories count",
-                BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories));
+        assertEquals(BuiltinUserAuthFactories.VALUES.size(), GenericUtils.size(factories), "Mismatched factories count");
         for (BuiltinUserAuthFactories f : BuiltinUserAuthFactories.VALUES) {
-            assertTrue("Missing factory=" + f.name(), factories.contains(f.create()));
+            assertTrue(factories.contains(f.create()), "Missing factory=" + f.name());
         }
     }
 }

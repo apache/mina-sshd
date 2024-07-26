@@ -20,6 +20,7 @@
 package org.apache.sshd.common.config.keys;
 
 import java.io.ByteArrayInputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,31 +46,35 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Rule;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.rules.TemporaryFolder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.api.io.TempDir;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KeyUtilsTest extends JUnitTestSupport {
 
-    @Rule
-    public TemporaryFolder testDir = new TemporaryFolder();
+    @TempDir
+    protected File testDir;
 
     public KeyUtilsTest() {
         super();
     }
 
     @Test
-    public void testGenerateFingerPrintOnException() {
+    void generateFingerPrintOnException() {
         for (DigestFactory info : BuiltinDigests.VALUES) {
             if (!info.isSupported()) {
                 System.out.println("Skip unsupported digest: " + info.getAlgorithm());
@@ -110,14 +115,14 @@ public class KeyUtilsTest extends JUnitTestSupport {
                 }
             }, getCurrentTestName());
             String expected = thrown.getClass().getSimpleName();
-            assertEquals("Mismatched fingerprint for " + thrown.getMessage(), expected, actual);
+            assertEquals(expected, actual, "Mismatched fingerprint for " + thrown.getMessage());
         }
     }
 
     @Test
-    public void testGenerateDefaultFingerprintDigest() {
+    void generateDefaultFingerprintDigest() {
         DigestFactory defaultValue = KeyUtils.getDefaultFingerPrintFactory();
-        assertNotNull("No current default fingerprint digest factory", defaultValue);
+        assertNotNull(defaultValue, "No current default fingerprint digest factory");
         try {
             for (DigestFactory f : BuiltinDigests.VALUES) {
                 if (!f.isSupported()) {
@@ -130,20 +135,21 @@ public class KeyUtilsTest extends JUnitTestSupport {
                 String data = getClass().getName() + "#" + getCurrentTestName() + "(" + f.getName() + ")";
                 String expected = KeyUtils.getFingerPrint(f, data);
                 String actual = KeyUtils.getFingerPrint(data);
-                assertEquals("Mismatched fingerprint for digest=" + f.getName(), expected, actual);
+                assertEquals(expected, actual, "Mismatched fingerprint for digest=" + f.getName());
             }
         } finally {
             KeyUtils.setDefaultFingerPrintFactory(defaultValue); // restore the original
         }
     }
 
-    @Test // see SSHD-606
-    public void testValidateStrictKeyFilePermissions() throws IOException {
-        Assume.assumeTrue("Test does not always work on Windows", !OsUtils.isWin32());
+    // see SSHD-606
+    @Test
+    void validateStrictKeyFilePermissions() throws IOException {
+        Assumptions.assumeTrue(!OsUtils.isWin32(), "Test does not always work on Windows");
 
         Path file = getTempTargetRelativeFile(getClass().getSimpleName(), getCurrentTestName());
         outputDebugMessage("%s deletion result=%s", file, Files.deleteIfExists(file));
-        assertNull("Unexpected violation for non-existent file: " + file, KeyUtils.validateStrictKeyFilePermissions(file));
+        assertNull(KeyUtils.validateStrictKeyFilePermissions(file), "Unexpected violation for non-existent file: " + file);
 
         assertHierarchyTargetFolderExists(file.getParent());
         try (OutputStream output = Files.newOutputStream(file)) {
@@ -153,40 +159,42 @@ public class KeyUtilsTest extends JUnitTestSupport {
 
         Collection<PosixFilePermission> perms = IoUtils.getPermissions(file);
         if (GenericUtils.isEmpty(perms)) {
-            assertNull("Unexpected violation for no permissions file: " + file,
-                    KeyUtils.validateStrictKeyFilePermissions(file));
+            assertNull(KeyUtils.validateStrictKeyFilePermissions(file),
+                    "Unexpected violation for no permissions file: " + file);
         } else if (OsUtils.isUNIX()) {
             Map.Entry<String, Object> violation = null;
             for (PosixFilePermission p : KeyUtils.STRICTLY_PROHIBITED_FILE_PERMISSION) {
                 if (perms.contains(p)) {
                     violation = KeyUtils.validateStrictKeyFilePermissions(file);
-                    assertNotNull("Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms,
-                            violation);
+                    assertNotNull(violation,
+                            "Unexpected success for permission=" + p + " of file " + file + " permissions=" + perms);
                     break;
                 }
             }
 
             if (violation == null) { // we expect a failure since the parent does not have the necessary permissions
-                assertNotNull("Unexpected UNIX success for file " + file + " permissions=" + perms,
-                        KeyUtils.validateStrictKeyFilePermissions(file));
+                assertNotNull(KeyUtils.validateStrictKeyFilePermissions(file),
+                        "Unexpected UNIX success for file " + file + " permissions=" + perms);
             }
         } else {
-            assertNull("Unexpected Windows violation for file " + file + " permissions=" + perms,
-                    KeyUtils.validateStrictKeyFilePermissions(file));
+            assertNull(KeyUtils.validateStrictKeyFilePermissions(file),
+                    "Unexpected Windows violation for file " + file + " permissions=" + perms);
         }
     }
 
-    @Test // see SSHD-895
-    public void testRSAKeyTypeAliases() {
+    // see SSHD-895
+    @Test
+    void rsaKeyTypeAliases() {
         for (String alias : new String[] { KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS, KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS }) {
-            assertEquals("Mismatched canonical name for " + alias, KeyPairProvider.SSH_RSA,
-                    KeyUtils.getCanonicalKeyType(alias));
+            assertEquals(KeyPairProvider.SSH_RSA,
+                    KeyUtils.getCanonicalKeyType(alias),
+                    "Mismatched canonical name for " + alias);
         }
     }
 
     @Test
-    public void testLoadPublicKey() throws Exception {
-        Path testFile = testDir.newFile().toPath();
+    void loadPublicKey() throws Exception {
+        Path testFile = File.createTempFile("junit", null, testDir).toPath();
         try (InputStream testContent = this.getClass().getClassLoader().getResourceAsStream(
                 this.getClass().getPackage().getName().replace('.', '/') + "/loader/openssh/RSA-KeyPair.pub")) {
             Files.copy(testContent, testFile, StandardCopyOption.REPLACE_EXISTING);
@@ -197,22 +205,22 @@ public class KeyUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testLoadPublicKeyNonExisting() throws Exception {
-        Path testFile = testDir.getRoot().toPath().resolve("does_not_exist");
+    void loadPublicKeyNonExisting() throws Exception {
+        Path testFile = testDir.toPath().resolve("does_not_exist");
         assertFalse(Files.exists(testFile, LinkOption.NOFOLLOW_LINKS));
         assertThrows(IOException.class, () -> KeyUtils.loadPublicKey(testFile));
     }
 
     @Test
-    public void testLoadPublicKeyEmpty() throws Exception {
-        Path testFile = testDir.newFile().toPath();
+    void loadPublicKeyEmpty() throws Exception {
+        Path testFile = File.createTempFile("junit", null, testDir).toPath();
         PublicKey key = KeyUtils.loadPublicKey(testFile);
         assertNull(key);
     }
 
     @Test
-    public void testLoadPublicKeyMultiple() throws Exception {
-        Path testFile = testDir.newFile().toPath();
+    void loadPublicKeyMultiple() throws Exception {
+        Path testFile = File.createTempFile("junit", null, testDir).toPath();
         byte[] data;
         try (InputStream testContent = this.getClass().getClassLoader().getResourceAsStream(
                 this.getClass().getPackage().getName().replace('.', '/') + "/loader/openssh/RSA-KeyPair.pub")) {
@@ -229,8 +237,8 @@ public class KeyUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testLoadPublicKeyCorrupt() throws Exception {
-        Path testFile = testDir.newFile().toPath();
+    void loadPublicKeyCorrupt() throws Exception {
+        Path testFile = File.createTempFile("junit", null, testDir).toPath();
         byte[] data = new byte[42];
         Arrays.fill(data, (byte) 'a');
         Files.write(testFile, data);

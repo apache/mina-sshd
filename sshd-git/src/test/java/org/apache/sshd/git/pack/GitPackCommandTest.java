@@ -42,22 +42,25 @@ import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.GitProtocolConstants;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class GitPackCommandTest extends BaseTestSupport {
     public GitPackCommandTest() {
         super();
     }
 
-    @BeforeClass
-    public static void jschInit() {
+    @BeforeAll
+    static void jschInit() {
         JSchLogger.init();
     }
 
@@ -69,8 +72,8 @@ public class GitPackCommandTest extends BaseTestSupport {
     }
 
     @Test
-    public void testGitPack() throws Exception {
-        Assume.assumeFalse("On windows this activates TortoisePlink", OsUtils.isWin32());
+    void gitPack() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
 
         Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
         try (SshServer sshd = setupTestServer()) {
@@ -99,19 +102,19 @@ public class GitPackCommandTest extends BaseTestSupport {
                                 + serverDir.getFileName())
                         .setDirectory(localDir.toFile())
                         .call()) {
-                    assertTrue("Client not started after clone", client.isStarted());
+                    assertTrue(client.isStarted(), "Client not started after clone");
                     git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
                     git.push().call();
-                    assertTrue("Client not started after 1st push", client.isStarted());
+                    assertTrue(client.isStarted(), "Client not started after 1st push");
 
                     Path readmeFile = Files.createFile(localDir.resolve("readme.txt"));
                     git.add().addFilepattern(readmeFile.getFileName().toString()).call();
                     git.commit().setMessage(getCurrentTestName()).setCommitter(getCurrentTestName(), "sshd@apache.org").call();
                     git.push().call();
-                    assertTrue("Client not started after 2nd push", client.isStarted());
+                    assertTrue(client.isStarted(), "Client not started after 2nd push");
 
                     git.pull().setRebase(true).call();
-                    assertTrue("Client not started after rebase", client.isStarted());
+                    assertTrue(client.isStarted(), "Client not started after rebase");
 
                     PropertyResolver useProtocolV2 = PropertyResolverUtils
                             .toPropertyResolver(
@@ -119,13 +122,13 @@ public class GitPackCommandTest extends BaseTestSupport {
                                             GitProtocolConstants.VERSION_2_REQUEST));
                     client.setParentPropertyResolver(useProtocolV2);
                     git.fetch().call();
-                    assertTrue("Client not started after fetch using GIT_PROTOCOL='version=2' env. variable",
-                            client.isStarted());
+                    assertTrue(client.isStarted(),
+                            "Client not started after fetch using GIT_PROTOCOL='version=2' env. variable");
                 } finally {
                     client.stop();
                 }
 
-                assertFalse("Client not stopped after exit", client.isStarted());
+                assertFalse(client.isStarted(), "Client not stopped after exit");
             } finally {
                 sshd.stop();
             }

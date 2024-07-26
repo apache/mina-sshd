@@ -21,29 +21,31 @@ package org.apache.sshd.scp.server;
 
 import org.apache.sshd.scp.common.helpers.ScpReceiveDirCommandDetails;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ScpReceiveDirCommandDetailsTest extends JUnitTestSupport {
     public ScpReceiveDirCommandDetailsTest() {
         super();
     }
 
     @Test
-    public void testLengthDoesNotInfluenceEquality() {
+    void lengthDoesNotInfluenceEquality() {
         ScpReceiveDirCommandDetails d1 = new ScpReceiveDirCommandDetails("D0555 0 " + getCurrentTestName());
         ScpReceiveDirCommandDetails d2 = new ScpReceiveDirCommandDetails(d1.toHeader());
         d2.setLength(d1.getLength() + 1234L);
-        assertNotEquals("Len ?", d1.getLength(), d2.getLength());
-        assertEquals("Hash ?", d1.hashCode(), d2.hashCode());
-        assertEquals("EQ", d1, d2);
+        assertNotEquals(d1.getLength(), d2.getLength(), "Len ?");
+        assertEquals(d1.hashCode(), d2.hashCode(), "Hash ?");
+        assertEquals(d1, d2, "EQ");
     }
 }

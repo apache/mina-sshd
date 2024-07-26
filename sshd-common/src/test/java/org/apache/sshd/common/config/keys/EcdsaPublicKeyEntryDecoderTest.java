@@ -28,44 +28,38 @@ import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
     public static final int TESTS_COUNT
             = Integer.parseInt(System.getProperty(EcdsaPublicKeyEntryDecoderTest.class.getName(), "500"));
 
-    private final ECCurves curve;
+    private ECCurves curve;
 
-    public EcdsaPublicKeyEntryDecoderTest(ECCurves curve) {
+    public void initEcdsaPublicKeyEntryDecoderTest(ECCurves curve) {
         this.curve = curve;
     }
 
-    @Parameters(name = "{0}")
     public static List<Object[]> parameters() {
         return parameterize(ECCurves.VALUES);
     }
 
-    @Test // see SSHD-934
-    public void testEncodeDecodePublicKey() throws Exception {
-        Assume.assumeTrue("ECC not supported", SecurityUtils.isECCSupported());
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}") // see SSHD-934
+    public void encodeDecodePublicKey(ECCurves curve) throws Exception {
+        initEcdsaPublicKeyEntryDecoderTest(curve);
+        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
         int keySize = curve.getKeySize();
         String keyType = curve.getKeyType();
         for (int index = 1; index <= TESTS_COUNT; index++) {

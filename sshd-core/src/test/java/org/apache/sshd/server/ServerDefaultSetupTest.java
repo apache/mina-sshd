@@ -20,13 +20,13 @@
 package org.apache.sshd.server;
 
 import org.apache.sshd.DefaultSetupTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ServerDefaultSetupTest extends DefaultSetupTestSupport<SshServer> {
     public ServerDefaultSetupTest() {
         super(SshServer.setUpDefaultServer());

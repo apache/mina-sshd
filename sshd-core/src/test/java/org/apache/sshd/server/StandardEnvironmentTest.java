@@ -23,24 +23,25 @@ import java.util.Collection;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class StandardEnvironmentTest extends BaseTestSupport {
     public StandardEnvironmentTest() {
         super();
     }
 
     @Test
-    public void testAddSignalListenerOnDuplicateSignals() {
+    void addSignalListenerOnDuplicateSignals() {
         StandardEnvironment environ = new StandardEnvironment();
         SignalListener listener = (channel, signal) -> {
             // ignored
@@ -50,7 +51,7 @@ public class StandardEnvironmentTest extends BaseTestSupport {
             environ.addSignalListener(listener, s, s, s, s, s, s);
 
             Collection<SignalListener> ls = environ.getSignalListeners(s, false);
-            assertEquals("Mismatched registered listeners count for signal=" + s, 1, GenericUtils.size(ls));
+            assertEquals(1, GenericUtils.size(ls), "Mismatched registered listeners count for signal=" + s);
         }
     }
 }

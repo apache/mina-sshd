@@ -38,39 +38,42 @@ import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class OpenSSHCertificateTest extends BaseTestSupport {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
 
-    private final FileHostKeyCertificateProvider certificateProvider;
-    private final FileKeyPairProvider keyPairProvider;
-    private final List<NamedFactory<Signature>> signatureFactory;
+    private FileHostKeyCertificateProvider certificateProvider;
+    private FileKeyPairProvider keyPairProvider;
+    private List<NamedFactory<Signature>> signatureFactory;
 
-    public OpenSSHCertificateTest(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory) {
+    public void initOpenSSHCertificateTest(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory) {
         Path testResourcesFolder = getTestResourcesFolder();
         this.keyPairProvider = new FileKeyPairProvider(testResourcesFolder.resolve(keyPath));
         this.certificateProvider = new FileHostKeyCertificateProvider(testResourcesFolder.resolve(certPath));
         this.signatureFactory = signatureFactory;
+        sshd.setKeyPairProvider(keyPairProvider);
+        sshd.setHostKeyCertificateProvider(certificateProvider);
+
+        CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.remove(client);
+
+        client.setSignatureFactories(this.signatureFactory);
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(OpenSSHCertificateTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -79,8 +82,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -98,7 +101,6 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         }
     }
 
-    @Parameters(name = "type={2}")
     @SuppressWarnings("deprecation")
     public static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
@@ -123,18 +125,11 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         return Collections.unmodifiableList(list);
     }
 
-    @Before
-    public void setUp() {
-        sshd.setKeyPairProvider(keyPairProvider);
-        sshd.setHostKeyCertificateProvider(certificateProvider);
-
-        CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.remove(client);
-
-        client.setSignatureFactories(signatureFactory);
-    }
-
-    @Test
-    public void testOpenSshCertificates() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={2}")
+    public void openSshCertificates(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
+            throws Exception {
+        initOpenSSHCertificateTest(keyPath, certPath, signatureFactory);
         // default client
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT)
@@ -144,8 +139,11 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         }
     }
 
-    @Test // invalid principal, but continue
-    public void testContinueOnInvalidPrincipal() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={2}") // invalid principal, but continue
+    public void continueOnInvalidPrincipal(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
+            throws Exception {
+        initOpenSSHCertificateTest(keyPath, certPath, signatureFactory);
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, false);
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
                 .verify(CONNECT_TIMEOUT)
@@ -155,9 +153,12 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
         }
     }
 
-    @Test // invalid principal, abort
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "type={2}") // invalid principal, abort
     @SuppressWarnings("deprecation")
-    public void testAbortOnInvalidPrincipal() throws Exception {
+    public void abortOnInvalidPrincipal(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
+            throws Exception {
+        initOpenSSHCertificateTest(keyPath, certPath, signatureFactory);
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, true);
         boolean thrown = false;
         try (ClientSession s = client.connect(getCurrentTestName(), "localhost", port)
@@ -170,8 +171,8 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
             assertFalse(client.getSignatureFactories().contains(BuiltinSignatures.rsa_cert));
         } catch (SshException e) {
             assertEquals(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, e.getDisconnectCode());
-            assertTrue("Expected error about invalid principal, got: " + e.getMessage(),
-                    e.getMessage().contains("principal"));
+            assertTrue(e.getMessage().contains("principal"),
+                    "Expected error about invalid principal, got: " + e.getMessage());
             thrown = true;
         }
         boolean containsCert = GenericUtils.containsAny(client.getSignatureFactories(),

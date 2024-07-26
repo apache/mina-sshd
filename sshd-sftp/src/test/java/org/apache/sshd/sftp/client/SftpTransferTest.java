@@ -31,25 +31,24 @@ import java.util.List;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class)
+import static org.junit.jupiter.api.Assertions.fail;
+
+@TestMethodOrder(MethodName.class)
 public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
     private static final int BUFFER_SIZE = 8192;
 
-    private final long rekeyBlockSize;
+    private long rekeyBlockSize;
 
-    public SftpTransferTest(long rekeyBlockSize) throws IOException {
+    public void initSftpTransferTest(long rekeyBlockSize) throws IOException {
         this.rekeyBlockSize = rekeyBlockSize;
     }
 
-    @Parameterized.Parameters(name = "REKEY_BLOCK_SIZE {0}")
     public static List<Long> getParameters() {
         List<Long> params = new ArrayList<>();
         params.add(Long.valueOf(0));
@@ -57,15 +56,19 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
         return params;
     }
 
-    @Test
-    public void testTransferIntegrity() throws IOException {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "REKEY_BLOCK_SIZE {0}")
+    public void transferIntegrity(long rekeyBlockSize) throws IOException {
+        initSftpTransferTest(rekeyBlockSize);
         for (int i = 0; i < 10; i++) {
             doTestTransferIntegrity(0);
         }
     }
 
-    @Test
-    public void testTransferIntegrityWithBufferLargerThanPacket() throws IOException {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "REKEY_BLOCK_SIZE {0}")
+    public void transferIntegrityWithBufferLargerThanPacket(long rekeyBlockSize) throws IOException {
+        initSftpTransferTest(rekeyBlockSize);
         for (int i = 0; i < 10; i++) {
             doTestTransferIntegrity(65536);
         }

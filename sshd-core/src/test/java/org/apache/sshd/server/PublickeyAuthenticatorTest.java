@@ -33,30 +33,31 @@ import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
 import org.apache.sshd.server.auth.pubkey.StaticPublickeyAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PublickeyAuthenticatorTest extends BaseTestSupport {
     public PublickeyAuthenticatorTest() {
         super();
     }
 
     @Test
-    public void testAcceptAllPublickeyAuthenticator() throws Throwable {
+    void acceptAllPublickeyAuthenticator() throws Throwable {
         testStaticPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);
     }
 
     @Test
-    public void testRejectAllPublickeyAuthenticator() throws Throwable {
+    void rejectAllPublickeyAuthenticator() throws Throwable {
         testStaticPublickeyAuthenticator(RejectAllPublickeyAuthenticator.INSTANCE);
     }
 
@@ -96,7 +97,7 @@ public class PublickeyAuthenticatorTest extends BaseTestSupport {
                         throw t;
                     }
 
-                    assertTrue("No boolean result", result instanceof Boolean);
+                    assertTrue(result instanceof Boolean, "No boolean result");
                     assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected,
                             ((Boolean) result).booleanValue());
                 }

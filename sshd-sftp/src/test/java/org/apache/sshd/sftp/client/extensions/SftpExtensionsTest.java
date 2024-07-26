@@ -47,19 +47,23 @@ import org.apache.sshd.sftp.server.SftpFileSystemAccessor;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.sftp.server.SftpSubsystemProxy;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.shaded.com.google.common.base.Objects;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+@TestMethodOrder(MethodName.class)
 public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
     public SftpExtensionsTest() throws IOException {
         super();
     }
 
-    @Test // see SSHD-890
-    public void testUnsupportedExtension() throws IOException {
+    // see SSHD-890
+    @Test
+    void unsupportedExtension() throws IOException {
         try (SftpClient sftpClient = createSingleSessionClient()) {
             RawSftpClient sftp = assertObjectInstanceOf("Not a raw SFTP client", RawSftpClient.class, sftpClient);
 
@@ -75,13 +79,14 @@ public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
             responseBuffer.getInt(); // Ignoring message ID
             int substatus = responseBuffer.getInt();
 
-            assertEquals("Type is not STATUS", SftpConstants.SSH_FXP_STATUS, type);
-            assertEquals("Sub-Type is not UNSUPPORTED", SftpConstants.SSH_FX_OP_UNSUPPORTED, substatus);
+            assertEquals(SftpConstants.SSH_FXP_STATUS, type, "Type is not STATUS");
+            assertEquals(SftpConstants.SSH_FX_OP_UNSUPPORTED, substatus, "Sub-Type is not UNSUPPORTED");
         }
     }
 
-    @Test   // see SSHD-1166
-    public void testCustomFileExtensionAttributes() throws IOException {
+    // see SSHD-1166
+    @Test
+    void customFileExtensionAttributes() throws IOException {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path localFile = CommonTestSupportUtils.resolve(
@@ -91,7 +96,7 @@ public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
                 StandardCharsets.UTF_8);
 
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
-        assertEquals("Mismatched subsystem factories count", 1, GenericUtils.size(factories));
+        assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
 
         SubsystemFactory f = factories.get(0);
         assertObjectInstanceOf("Not an SFTP subsystem factory", SftpSubsystemFactory.class, f);
@@ -135,7 +140,7 @@ public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
         }
 
         Map<String, byte[]> extsMap = attrs.getExtensions();
-        assertTrue("No extended attributes provided", MapEntryUtils.isNotEmpty(extsMap));
+        assertTrue(MapEntryUtils.isNotEmpty(extsMap), "No extended attributes provided");
 
         Map<String, String> actual = extsMap.entrySet()
                 .stream()

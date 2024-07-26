@@ -28,30 +28,33 @@ import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
     public InteractivePasswordIdentityProviderTest() {
         super();
     }
 
     @Test
-    public void testPasswordEnumerations() throws IOException, GeneralSecurityException {
+    void passwordEnumerations() throws IOException, GeneralSecurityException {
         List<String> expected
                 = Arrays.asList(getClass().getSimpleName(), getClass().getPackage().getName(), getCurrentTestName());
         ClientSession session = Mockito.mock(ClientSession.class);
@@ -65,14 +68,14 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
                     @Override
                     public String answer(InvocationOnMock invocation) throws Throwable {
                         Object[] args = invocation.getArguments();
-                        assertSame("Mismatched session instance at index=" + passwordIndex, session, args[0]);
-                        assertSame("Mismatched prompt instance at index=" + passwordIndex, prompt, args[1]);
+                        assertSame(session, args[0], "Mismatched session instance at index=" + passwordIndex);
+                        assertSame(prompt, args[1], "Mismatched prompt instance at index=" + passwordIndex);
 
                         int index = passwordIndex.getAndIncrement();
                         if (index < expected.size()) {
                             return expected.get(index);
                         }
-                        assertEquals("Mismatched last call index", expected.size(), index);
+                        assertEquals(expected.size(), index, "Mismatched last call index");
                         return null;
                     }
                 });
@@ -83,16 +86,16 @@ public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
         int expIndex = 0;
         for (String actValue : passwords) {
             String expValue = expected.get(expIndex);
-            assertSame("Mismatched password provided at index=" + expIndex, expValue, actValue);
+            assertSame(expValue, actValue, "Mismatched password provided at index=" + expIndex);
             expIndex++;
         }
 
-        assertEquals("Not all passwords exhausted", expected.size() + 1, passwordIndex.get());
-        assertEquals("Mismatched retrieved passwords count", expIndex, expected.size());
+        assertEquals(expected.size() + 1, passwordIndex.get(), "Not all passwords exhausted");
+        assertEquals(expIndex, expected.size(), "Mismatched retrieved passwords count");
     }
 
     @Test
-    public void testInteractionAllowedConsultation() throws IOException, GeneralSecurityException {
+    void interactionAllowedConsultation() throws IOException, GeneralSecurityException {
         ClientSession session = Mockito.mock(ClientSession.class);
         UserInteraction userInteraction = Mockito.mock(UserInteraction.class);
         Mockito.when(userInteraction.isInteractionAllowed(ArgumentMatchers.any(ClientSession.class))).thenReturn(Boolean.FALSE);

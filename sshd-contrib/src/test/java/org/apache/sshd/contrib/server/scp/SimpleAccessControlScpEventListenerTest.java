@@ -37,16 +37,19 @@ import org.apache.sshd.scp.server.ScpCommandFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
@@ -58,8 +61,8 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.setCommandFactory(new ScpCommandFactory());
         sshd.setFileSystemFactory(fileSystemFactory);
@@ -67,8 +70,8 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
         port = sshd.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -79,7 +82,7 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReadOnlyScpTransferEventListener() throws Exception {
+    void readOnlyScpTransferEventListener() throws Exception {
         sshd.setCommandFactory(new ScpCommandFactory.Builder()
                 .addEventListener(SimpleAccessControlScpEventListener.READ_ONLY_ACCESSOR)
                 .build());
@@ -105,7 +108,7 @@ public class SimpleAccessControlScpEventListenerTest extends BaseTestSupport {
                 byte[] data = (getClass().getName() + "#" + getCurrentTestName()).getBytes(StandardCharsets.UTF_8);
                 Files.write(remoteFile, data);
                 byte[] downloaded = scp.downloadBytes(remotePath);
-                assertArrayEquals("Mismatched downloaded data", data, downloaded);
+                assertArrayEquals(data, downloaded, "Mismatched downloaded data");
 
                 try {
                     scp.upload(data, remotePath, EnumSet.allOf(PosixFilePermission.class), null);

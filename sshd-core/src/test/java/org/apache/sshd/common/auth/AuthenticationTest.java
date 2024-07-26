@@ -36,18 +36,26 @@ import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+@TestMethodOrder(MethodName.class)
 public class AuthenticationTest extends AuthenticationTestSupport {
     public AuthenticationTest() {
         super();
     }
 
-    @Test // see SSHD-600
-    public void testAuthExceptionPropagation() throws Exception {
+    // see SSHD-600
+    @Test
+    void authExceptionPropagation() throws Exception {
         try (SshClient client = setupTestClient()) {
             RuntimeException expected = new RuntimeException("Synthetic exception");
             AtomicInteger invocations = new AtomicInteger(0);
@@ -55,7 +63,7 @@ public class AuthenticationTest extends AuthenticationTestSupport {
             client.addSessionListener(new SessionListener() {
                 @Override
                 public void sessionEvent(Session session, Event event) {
-                    assertEquals("Mismatched invocations count", 1, invocations.incrementAndGet());
+                    assertEquals(1, invocations.incrementAndGet(), "Mismatched invocations count");
                     throw expected;
                 }
 
@@ -74,8 +82,8 @@ public class AuthenticationTest extends AuthenticationTestSupport {
                 s.addPasswordIdentity(getCurrentTestName());
 
                 AuthFuture future = s.auth();
-                assertTrue("Failed to complete auth in allocated time", future.await(DEFAULT_TIMEOUT));
-                assertFalse("Unexpected authentication success", future.isSuccess());
+                assertTrue(future.await(DEFAULT_TIMEOUT), "Failed to complete auth in allocated time");
+                assertFalse(future.isSuccess(), "Unexpected authentication success");
 
                 Throwable signalled = future.getException();
                 Throwable actual = signalled;
@@ -96,8 +104,9 @@ public class AuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @Test // see SSHD-625
-    public void testRuntimeErrorsInAuthenticators() throws Exception {
+    // see SSHD-625
+    @Test
+    void runtimeErrorsInAuthenticators() throws Exception {
         Error thrown = new OutOfMemoryError(getCurrentTestName());
         PasswordAuthenticator authPassword = sshd.getPasswordAuthenticator();
         AtomicInteger passCounter = new AtomicInteger(0);
@@ -135,14 +144,14 @@ public class AuthenticationTest extends AuthenticationTestSupport {
                         s.addPublicKeyIdentity(kp);
 
                         AuthFuture auth = s.auth();
-                        assertTrue("Failed to complete authentication on time", auth.await(AUTH_TIMEOUT));
+                        assertTrue(auth.await(AUTH_TIMEOUT), "Failed to complete authentication on time");
                         if (auth.isSuccess()) {
-                            assertTrue("Premature authentication success", index > 1);
+                            assertTrue(index > 1, "Premature authentication success");
                             break;
                         }
 
-                        assertEquals("Password authenticator not consulted", 1, passCounter.get());
-                        assertEquals("Pubkey authenticator not consulted", 1, pubkeyCounter.get());
+                        assertEquals(1, passCounter.get(), "Password authenticator not consulted");
+                        assertEquals(1, pubkeyCounter.get(), "Pubkey authenticator not consulted");
                     }
                 }
             } finally {
@@ -151,8 +160,9 @@ public class AuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @Test   // see SSHD-1040
-    public void testServerKeyAvailableAfterAuth() throws Exception {
+    // see SSHD-1040
+    @Test
+    void serverKeyAvailableAfterAuth() throws Exception {
         KeyPairProvider keyPairProvider = sshd.getKeyPairProvider();
         Iterable<KeyPair> availableKeys = keyPairProvider.loadKeys(null);
         PublicKey actualKey = null;
@@ -166,7 +176,7 @@ public class AuthenticationTest extends AuthenticationTestSupport {
                 session.auth().verify(AUTH_TIMEOUT);
 
                 KeyExchange kex = session.getKex();
-                assertNull("KEX not nullified after completion", kex);
+                assertNull(kex, "KEX not nullified after completion");
 
                 actualKey = session.getServerKey();
             } finally {
@@ -174,7 +184,7 @@ public class AuthenticationTest extends AuthenticationTestSupport {
             }
         }
 
-        assertNotNull("No server key extracted", actualKey);
+        assertNotNull(actualKey, "No server key extracted");
 
         for (KeyPair kp : availableKeys) {
             PublicKey expectedKey = kp.getPublic();

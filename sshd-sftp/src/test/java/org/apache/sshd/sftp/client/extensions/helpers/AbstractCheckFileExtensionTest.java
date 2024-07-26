@@ -48,22 +48,21 @@ import org.apache.sshd.sftp.client.extensions.CheckFileNameExtension;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSupport {
     private static final Collection<Integer> DATA_SIZES = Collections.unmodifiableList(
             Arrays.asList(
@@ -97,28 +96,29 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         PARAMETERS = list;
     }
 
-    private final String algorithm;
-    private final int dataSize;
-    private final int blockSize;
+    private String algorithm;
+    private int dataSize;
+    private int blockSize;
 
-    public AbstractCheckFileExtensionTest(String algorithm, int dataSize, int blockSize) throws IOException {
+    public void initAbstractCheckFileExtensionTest(String algorithm, int dataSize, int blockSize) throws IOException {
         this.algorithm = algorithm;
         this.dataSize = dataSize;
         this.blockSize = blockSize;
     }
 
-    @Parameters(name = "{0} - dataSize={1}, blockSize={2}")
     public static Collection<Object[]> parameters() {
         return PARAMETERS;
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
-    @Test
-    public void testCheckFileExtension() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0} - dataSize={1}, blockSize={2}")
+    public void checkFileExtension(String algorithm, int dataSize, int blockSize) throws Exception {
+        initAbstractCheckFileExtensionTest(algorithm, dataSize, blockSize);
         testCheckFileExtension(algorithm, dataSize, blockSize);
     }
 
@@ -180,7 +180,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                 Map.Entry<String, ?> result = file.checkFileName(srcFolder, algorithms, 0L, 0L, hashBlockSize);
                 fail("Unexpected success to hash folder=" + srcFolder + ": " + result.getKey());
             } catch (IOException e) { // expected - not allowed to hash a folder
-                assertTrue("Not an SftpException", e instanceof SftpException);
+                assertTrue(e instanceof SftpException, "Not an SftpException");
             }
 
             CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
@@ -189,7 +189,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                     Map.Entry<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
                     fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getKey());
                 } catch (IOException e) { // expected - not allowed to hash a folder
-                    assertTrue("Not an SftpException", e instanceof SftpException);
+                    assertTrue(e instanceof SftpException, "Not an SftpException");
                 }
             }
 
@@ -207,12 +207,12 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
             NamedResource hasher, Map.Entry<String, ? extends Collection<byte[]>> result,
             String expectedAlgorithm, byte[] expectedHash) {
         String name = hasher.getName();
-        assertNotNull("No result for hash=" + name, result);
-        assertEquals("Mismatched hash algorithms for " + name, expectedAlgorithm, result.getKey());
+        assertNotNull(result, "No result for hash=" + name);
+        assertEquals(expectedAlgorithm, result.getKey(), "Mismatched hash algorithms for " + name);
 
         if (NumberUtils.length(expectedHash) > 0) {
             Collection<byte[]> values = result.getValue();
-            assertEquals("Mismatched hash values count for " + name, 1, GenericUtils.size(values));
+            assertEquals(1, GenericUtils.size(values), "Mismatched hash values count for " + name);
 
             byte[] actualHash = GenericUtils.head(values);
             if (!Arrays.equals(expectedHash, actualHash)) {

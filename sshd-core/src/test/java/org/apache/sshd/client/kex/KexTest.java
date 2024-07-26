@@ -41,46 +41,42 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.TeeOutputStream;
-import org.junit.AfterClass;
-import org.junit.Assume;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 /**
  * Test client key exchange algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class KexTest extends BaseTestSupport {
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
 
-    private final BuiltinDHFactories factory;
+    private BuiltinDHFactories factory;
 
-    public KexTest(BuiltinDHFactories factory) {
+    public void initKexTest(BuiltinDHFactories factory) {
         this.factory = factory;
     }
 
-    @Parameters(name = "Factory={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(BuiltinDHFactories.VALUES);
     }
 
-    @BeforeClass
-    public static void setupClientAndServer() throws Exception {
+    @BeforeAll
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(KexTest.class);
         sshd.start();
         port = sshd.getPort();
@@ -89,8 +85,8 @@ public class KexTest extends BaseTestSupport {
         client.start();
     }
 
-    @AfterClass
-    public static void tearDownClientAndServer() throws Exception {
+    @AfterAll
+    static void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -108,14 +104,16 @@ public class KexTest extends BaseTestSupport {
         }
     }
 
-    @Test
-    public void testClientKeyExchange() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "Factory={0}")
+    public void clientKeyExchange(BuiltinDHFactories factory) throws Exception {
+        initKexTest(factory);
         if (factory.isGroupExchange()) {
             assertEquals(factory.getName() + " not supported even though DH group exchange supported",
                     SecurityUtils.isDHGroupExchangeSupported(), factory.isSupported());
         }
 
-        Assume.assumeTrue(factory.getName() + " not supported", factory.isSupported());
+        Assumptions.assumeTrue(factory.isSupported(), factory.getName() + " not supported");
         testClient(ClientBuilder.DH2KEX.apply(factory));
     }
 
@@ -155,11 +153,11 @@ public class KexTest extends BaseTestSupport {
                     teeOut.flush();
 
                     Collection<ClientChannelEvent> result = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TIMEOUT);
-                    assertFalse("Timeout while waiting for channel closure", result.contains(ClientChannelEvent.TIMEOUT));
+                    assertFalse(result.contains(ClientChannelEvent.TIMEOUT), "Timeout while waiting for channel closure");
                 }
             }
 
-            assertArrayEquals(kex.getName(), sent.toByteArray(), out.toByteArray());
+            assertArrayEquals(sent.toByteArray(), out.toByteArray(), kex.getName());
         }
     }
 }

@@ -32,27 +32,26 @@ import javax.crypto.spec.SecretKeySpec;
 import org.apache.sshd.common.cipher.Cipher.Mode;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
-@Category({ NoIoTestCase.class })
-@RunWith(Parameterized.class)
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+@Tag("NoIoTestCase")
 public class BaseCipherResetTest extends JUnitTestSupport {
 
     private static final Random RND = new SecureRandom();
 
-    private final String providerName;
+    private String providerName;
 
-    private final BuiltinCiphers builtIn;
+    private BuiltinCiphers builtIn;
 
-    public BaseCipherResetTest(String providerName, BuiltinCiphers builtIn, String name) {
+    public void initBaseCipherResetTest(String providerName, BuiltinCiphers builtIn, String name) {
         this.providerName = providerName;
         this.builtIn = builtIn;
         if ("BC".equals(providerName)) {
@@ -66,7 +65,6 @@ public class BaseCipherResetTest extends JUnitTestSupport {
         }
     }
 
-    @Parameters(name = "{2} - {0}")
     public static List<Object[]> getParameters() {
         List<Object[]> items = new ArrayList<>();
         for (BuiltinCiphers c : BuiltinCiphers.values()) {
@@ -79,14 +77,14 @@ public class BaseCipherResetTest extends JUnitTestSupport {
         return items;
     }
 
-    @Before
-    public void changeCipher() {
+    @BeforeEach
+    void changeCipher() {
         BaseCipher.factory = t -> javax.crypto.Cipher.getInstance(t, providerName);
         BaseCipher.alwaysReInit = true;
     }
 
-    @After
-    public void resetCipher() {
+    @AfterEach
+    void resetCipher() {
         BaseCipher.factory = SecurityUtils::getCipher;
         BaseCipher.alwaysReInit = false;
     }
@@ -94,11 +92,13 @@ public class BaseCipherResetTest extends JUnitTestSupport {
     private void checkBuffer(byte[] data, int index, byte[] front, byte[] back) {
         byte[] expected = front.clone();
         System.arraycopy(back, index, expected, index, back.length - index);
-        assertArrayEquals("Mismatched bytes at " + index, expected, data);
+        assertArrayEquals(expected, data, "Mismatched bytes at " + index);
     }
 
-    @Test
-    public void testReset() throws Exception {
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "{2} - {0}")
+    public void reset(String providerName, BuiltinCiphers builtIn, String name) throws Exception {
+        initBaseCipherResetTest(providerName, builtIn, name);
         byte[] plaintext = new byte[builtIn.getCipherBlockSize() * 30];
         for (int i = 0; i < plaintext.length; i++) {
             plaintext[i] = (byte) (' ' + i);
@@ -119,13 +119,13 @@ public class BaseCipherResetTest extends JUnitTestSupport {
         javax.crypto.Cipher cipher = javax.crypto.Cipher.getInstance(builtIn.getTransformation(), providerName);
         cipher.init(javax.crypto.Cipher.ENCRYPT_MODE, secretKey, param);
         byte[] encrypted = cipher.doFinal(plaintext);
-        assertEquals("Mismatched length", plaintext.length, encrypted.length);
+        assertEquals(plaintext.length, encrypted.length, "Mismatched length");
         Cipher sshCipher = builtIn.create();
         sshCipher.init(Mode.Encrypt, key, iv);
         byte[] sshText = plaintext.clone();
         // Encrypt it all
         sshCipher.update(sshText);
-        assertArrayEquals("Mismatched encrypted bytes", encrypted, sshText);
+        assertArrayEquals(encrypted, sshText, "Mismatched encrypted bytes");
         // Same, but encrypt block by block
         sshCipher = builtIn.create();
         sshCipher.init(Mode.Encrypt, key, iv);
@@ -135,7 +135,7 @@ public class BaseCipherResetTest extends JUnitTestSupport {
             sshCipher.update(sshText, i, blockSize);
             checkBuffer(sshText, i + blockSize, encrypted, plaintext);
         }
-        assertArrayEquals("Mismatched encrypted bytes", encrypted, sshText);
+        assertArrayEquals(encrypted, sshText, "Mismatched encrypted bytes");
         // Same, but encrypt six times five blocks
         sshCipher = builtIn.create();
         sshCipher.init(Mode.Encrypt, key, iv);
@@ -145,16 +145,16 @@ public class BaseCipherResetTest extends JUnitTestSupport {
             sshCipher.update(sshText, i, blockSize);
             checkBuffer(sshText, i + blockSize, encrypted, plaintext);
         }
-        assertArrayEquals("Mismatched encrypted bytes", encrypted, sshText);
+        assertArrayEquals(encrypted, sshText, "Mismatched encrypted bytes");
         // Decrypt in all three ways: should be equal to the original plaintext
         cipher.init(javax.crypto.Cipher.DECRYPT_MODE, secretKey, param);
         byte[] decrypted = cipher.doFinal(encrypted);
-        assertArrayEquals("Mismatched encrypted bytes", plaintext, decrypted);
+        assertArrayEquals(plaintext, decrypted, "Mismatched encrypted bytes");
         sshCipher = builtIn.create();
         sshCipher.init(Mode.Decrypt, key, iv);
         byte[] data = encrypted.clone();
         sshCipher.update(data);
-        assertArrayEquals("Mismatched encrypted bytes", plaintext, data);
+        assertArrayEquals(plaintext, data, "Mismatched encrypted bytes");
         sshCipher = builtIn.create();
         sshCipher.init(Mode.Decrypt, key, iv);
         data = encrypted.clone();
@@ -163,7 +163,7 @@ public class BaseCipherResetTest extends JUnitTestSupport {
             sshCipher.update(data, i, blockSize);
             checkBuffer(data, i + blockSize, plaintext, encrypted);
         }
-        assertArrayEquals("Mismatched encrypted bytes", plaintext, data);
+        assertArrayEquals(plaintext, data, "Mismatched encrypted bytes");
         sshCipher = builtIn.create();
         sshCipher.init(Mode.Decrypt, key, iv);
         data = encrypted.clone();
@@ -172,6 +172,6 @@ public class BaseCipherResetTest extends JUnitTestSupport {
             sshCipher.update(data, i, blockSize);
             checkBuffer(data, i + blockSize, plaintext, encrypted);
         }
-        assertArrayEquals("Mismatched encrypted bytes", plaintext, data);
+        assertArrayEquals(plaintext, data, "Mismatched encrypted bytes");
     }
 }

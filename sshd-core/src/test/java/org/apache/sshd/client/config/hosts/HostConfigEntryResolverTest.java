@@ -51,16 +51,20 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class HostConfigEntryResolverTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
@@ -70,8 +74,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.start();
         port = sshd.getPort();
@@ -79,8 +83,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         client = setupTestClient();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
         }
@@ -90,7 +94,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     }
 
     @Test
-    public void testEffectiveHostConfigResolution() throws Exception {
+    void effectiveHostConfigResolution() throws Exception {
         HostConfigEntry entry = new HostConfigEntry(getCurrentTestName(), TEST_LOCALHOST, port, getCurrentTestName());
         client.setHostConfigEntryResolver((host, portValue, lclAddress, username, proxy, context) -> entry);
         client.start();
@@ -108,7 +112,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     }
 
     @Test
-    public void testNegatedHostEntriesResolution() throws Exception {
+    void negatedHostEntriesResolution() throws Exception {
         HostConfigEntry positiveEntry = new HostConfigEntry(TEST_LOCALHOST, TEST_LOCALHOST, port, getCurrentTestName());
         HostConfigEntry negativeEntry = new HostConfigEntry(
                 Character.toString(HostPatternsHolder.NEGATION_CHAR_PATTERN) + positiveEntry.getHost(),
@@ -133,7 +137,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     }
 
     @Test
-    public void testPreloadedIdentities() throws Exception {
+    void preloadedIdentities() throws Exception {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(sshd);
         String user = getCurrentTestName();
         // make sure authentication is achieved only via the identity public key
@@ -182,7 +186,7 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
     }
 
     @Test
-    public void testUseIdentitiesOnly() throws Exception {
+    void useIdentitiesOnly() throws Exception {
         Path clientIdFile = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
         KeyIdentityProvider clientIdProvider
                 = CommonTestSupportUtils.createTestHostKeyProvider(clientIdFile.resolve(getCurrentTestName() + ".pem"));
@@ -247,9 +251,9 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         try (ClientSession session = client.connect(entry)
                 .verify(CONNECT_TIMEOUT).getSession()) {
             session.auth().verify(AUTH_TIMEOUT);
-            assertFalse("Unexpected default client identity attempted", defaultClientIdentityAttempted.get());
-            assertNull("Default client identity auto-added", session.removePublicKeyIdentity(defaultIdentity));
-            assertEquals("Entry identity not used", 1, specificIdentityLoadCount.get());
+            assertFalse(defaultClientIdentityAttempted.get(), "Unexpected default client identity attempted");
+            assertNull(session.removePublicKeyIdentity(defaultIdentity), "Default client identity auto-added");
+            assertEquals(1, specificIdentityLoadCount.get(), "Entry identity not used");
             assertEffectiveRemoteAddress(session, entry);
         } finally {
             client.stop();
@@ -264,8 +268,8 @@ public class HostConfigEntryResolverTest extends BaseTestSupport {
         IoSession ioSession = session.getIoSession();
         SocketAddress remoteAddress = ioSession.getRemoteAddress();
         InetSocketAddress inetAddress = SshdSocketAddress.toInetSocketAddress(remoteAddress);
-        assertEquals("Mismatched effective port", entry.getPort(), inetAddress.getPort());
-        assertEquals("Mismatched effective user", entry.getUsername(), session.getUsername());
+        assertEquals(entry.getPort(), inetAddress.getPort(), "Mismatched effective port");
+        assertEquals(entry.getUsername(), session.getUsername(), "Mismatched effective user");
         return session;
     }
 }

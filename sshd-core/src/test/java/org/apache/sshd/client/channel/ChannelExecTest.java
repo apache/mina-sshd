@@ -39,16 +39,18 @@ import org.apache.sshd.server.session.ServerConnectionServiceFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ChannelExecTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
@@ -58,8 +60,8 @@ public class ChannelExecTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setupClientAndServer() throws Exception {
+    @BeforeEach
+    void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestServer(ChannelExecTest.class);
         sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
             @Override
@@ -77,8 +79,8 @@ public class ChannelExecTest extends BaseTestSupport {
         client.start();
     }
 
-    @After
-    public void tearDownClientAndServer() throws Exception {
+    @AfterEach
+    void tearDownClientAndServer() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -96,8 +98,9 @@ public class ChannelExecTest extends BaseTestSupport {
         }
     }
 
-    @Test // see SSHD-692
-    public void testMultipleRemoteCommandExecutions() throws Exception {
+    // see SSHD-692
+    @Test
+    void multipleRemoteCommandExecutions() throws Exception {
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
@@ -106,13 +109,13 @@ public class ChannelExecTest extends BaseTestSupport {
             for (int index = 1; index <= Byte.SIZE; index++) {
                 String expected = getCurrentTestName() + "[" + index + "]";
                 String actual = session.executeRemoteCommand(expected + "\n");
-                assertEquals("Mismatched reply", expected, actual);
+                assertEquals(expected, actual, "Mismatched reply");
             }
         }
     }
 
     @Test
-    public void testHighChannelId() throws Exception {
+    void highChannelId() throws Exception {
         List<? extends ServiceFactory> factories = sshd.getServiceFactories();
         List<ServiceFactory> newFactories = new ArrayList<>();
         for (ServiceFactory f : factories) {
@@ -154,7 +157,7 @@ public class ChannelExecTest extends BaseTestSupport {
 
             String expected = getCurrentTestName();
             String actual = session.executeRemoteCommand(expected + '\n');
-            assertEquals("Mismatched reply", expected, actual);
+            assertEquals(expected, actual, "Mismatched reply");
         }
     }
 }

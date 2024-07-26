@@ -26,39 +26,42 @@ import java.util.Collections;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ChannelPipedInputStreamTest extends BaseTestSupport {
     public ChannelPipedInputStreamTest() {
         super();
     }
 
     @Test
-    public void testAvailable() throws IOException {
+    void available() throws IOException {
         try (ChannelPipedInputStream stream = createTestStream()) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
-            assertEquals("Mismatched reported available size after receive", b.length, stream.available());
+            assertEquals(b.length, stream.available(), "Mismatched reported available size after receive");
 
             stream.eof();
-            assertEquals("Mismatched reported available size after EOF", b.length, stream.available());
+            assertEquals(b.length, stream.available(), "Mismatched reported available size after EOF");
 
             byte[] readBytes = new byte[b.length + Long.SIZE];
-            assertEquals("Mismatched reported read size", b.length, stream.read(readBytes));
+            assertEquals(b.length, stream.read(readBytes), "Mismatched reported read size");
             assertStreamEquals(b, readBytes);
-            assertEquals("Unexpected data still available", -1, stream.available());
-            assertEquals("Unexpectedly not at EOF", -1, stream.read());
+            assertEquals(-1, stream.available(), "Unexpected data still available");
+            assertEquals(-1, stream.read(), "Unexpectedly not at EOF");
         }
     }
 
     @Test
-    public void testIdempotentClose() throws IOException {
+    void idempotentClose() throws IOException {
         try (ChannelPipedInputStream stream = createTestStream()) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
             stream.receive(b, 0, b.length);
@@ -81,9 +84,9 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
         if (expected.length > read.length) {
             fail("Less bytes than expected: " + Arrays.toString(expected) + " but got: " + Arrays.toString(read));
         } else {
-            assertArrayEquals("Mismatched stream content", expected, Arrays.copyOf(read, expected.length));
+            assertArrayEquals(expected, Arrays.copyOf(read, expected.length), "Mismatched stream content");
             for (int i = expected.length; i < read.length; i++) {
-                assertEquals("Non-zero value at position " + i, 0, read[i]);
+                assertEquals(0, read[i], "Non-zero value at position " + i);
             }
         }
     }

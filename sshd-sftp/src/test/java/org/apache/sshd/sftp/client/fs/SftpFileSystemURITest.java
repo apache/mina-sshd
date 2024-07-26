@@ -31,35 +31,31 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.auth.BasicCredentialsProvider;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.sftp.common.SftpConstants;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class SftpFileSystemURITest extends JUnitTestSupport {
-    private final String host;
-    private final int port;
-    private final String username;
-    private final String password;
-    private final Map<String, ?> params;
+    private String host;
+    private int port;
+    private String username;
+    private String password;
+    private Map<String, ?> params;
 
-    public SftpFileSystemURITest(String host, int port, String username, String password, Map<String, ?> params) {
+    public void initSftpFileSystemURITest(String host, int port, String username, String password, Map<String, ?> params) {
         this.host = host;
         this.port = port;
         this.username = username;
@@ -67,7 +63,6 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
         this.params = params;
     }
 
-    @Parameters(name = "host={0}, port={1}, user={2}, password={3}, params={4}")
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
@@ -96,29 +91,33 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
         };
     }
 
-    @Test
-    public void testFullURIEncoding() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "host={0}, port={1}, user={2}, password={3}, params={4}")
+    public void fullURIEncoding(String host, int port, String username, String password, Map<String, ?> params) {
+        initSftpFileSystemURITest(host, port, username, password, params);
         URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password, params);
-        assertEquals("Mismatched scheme", SftpConstants.SFTP_SUBSYSTEM_NAME, uri.getScheme());
-        assertEquals("Mismatched host", host, uri.getHost());
-        assertEquals("Mismatched port", port, uri.getPort());
+        assertEquals(SftpConstants.SFTP_SUBSYSTEM_NAME, uri.getScheme(), "Mismatched scheme");
+        assertEquals(host, uri.getHost(), "Mismatched host");
+        assertEquals(port, uri.getPort(), "Mismatched port");
 
         BasicCredentialsProvider credentials = SftpFileSystemProvider.parseCredentials(uri);
-        assertNotNull("No credentials provided", credentials);
-        assertEquals("Mismatched user", username, credentials.getUsername());
-        assertEquals("Mismatched password", password, credentials.getPassword());
+        assertNotNull(credentials, "No credentials provided");
+        assertEquals(username, credentials.getUsername(), "Mismatched user");
+        assertEquals(password, credentials.getPassword(), "Mismatched password");
 
         Map<String, ?> uriParams = SftpFileSystemProvider.parseURIParameters(uri);
         assertMapEquals(getCurrentTestName(), params, uriParams, (v1, v2) -> Objects.equals(v1.toString(), v2.toString()));
     }
 
-    @Test
-    public void testEncodeDecodeCredentials() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "host={0}, port={1}, user={2}, password={3}, params={4}")
+    public void encodeDecodeCredentials(String host, int port, String username, String password, Map<String, ?> params) {
+        initSftpFileSystemURITest(host, port, username, password, params);
         String userInfo = SftpFileSystemProvider.encodeCredentials(username, password);
         BasicCredentialsProvider credentials = SftpFileSystemProvider.parseCredentials(userInfo);
-        assertNotNull("No credentials provided", credentials);
-        assertEquals("Mismatched user", username, credentials.getUsername());
-        assertEquals("Mismatched password", password, credentials.getPassword());
+        assertNotNull(credentials, "No credentials provided");
+        assertEquals(username, credentials.getUsername(), "Mismatched user");
+        assertEquals(password, credentials.getPassword(), "Mismatched password");
     }
 
     @Override

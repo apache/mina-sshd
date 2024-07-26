@@ -22,30 +22,32 @@ import java.io.File;
 import java.util.Random;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SelectorUtilsTest extends JUnitTestSupport {
     public SelectorUtilsTest() {
         super();
     }
 
     @Test
-    public void testApplyLinuxSeparatorSlashifyRules() {
+    void applyLinuxSeparatorSlashifyRules() {
         testApplySlashifyRules('/');
     }
 
     @Test
-    public void testApplyWindowsSeparatorSlashifyRules() {
+    void applyWindowsSeparatorSlashifyRules() {
         testApplySlashifyRules('\\');
     }
 
@@ -57,7 +59,7 @@ public class SelectorUtilsTest extends JUnitTestSupport {
                 Character.toString(slash) + getClass().getSimpleName() + Character.toString(slash) + getCurrentTestName()
         }) {
             String actual = SelectorUtils.applySlashifyRules(expected, slash);
-            assertSame("Mismatched results for '" + expected + "'", expected, actual);
+            assertSame(expected, actual, "Mismatched results for '" + expected + "'");
         }
 
         String[] comps = { getClass().getSimpleName(), getCurrentTestName() };
@@ -101,7 +103,7 @@ public class SelectorUtilsTest extends JUnitTestSupport {
 
             String expected = sb.toString();
             String actual = SelectorUtils.applySlashifyRules(path, slash);
-            assertEquals("Mismatched results for path=" + path, expected, actual);
+            assertEquals(expected, actual, "Mismatched results for path=" + path);
         }
     }
 
@@ -115,41 +117,41 @@ public class SelectorUtilsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testTranslateToFileSystemPath() {
+    void translateToFileSystemPath() {
         String path = getClass().getPackage().getName().replace('.', File.separatorChar)
                       + File.separator + getClass().getSimpleName()
                       + File.separator + getCurrentTestName();
         for (String expected : new String[] { null, "", path }) {
             String actual = SelectorUtils.translateToFileSystemPath(expected, File.separator, File.separator);
-            assertSame("Mismatched instance for translated result", expected, actual);
+            assertSame(expected, actual, "Mismatched instance for translated result");
         }
 
         for (String fsSeparator : new String[] { String.valueOf('.'), "##" }) {
             String expected = path.replace(File.separator, fsSeparator);
             String actual = SelectorUtils.translateToFileSystemPath(path, File.separator, fsSeparator);
-            assertEquals("Mismatched translation result for separator='" + fsSeparator + "'", expected, actual);
+            assertEquals(expected, actual, "Mismatched translation result for separator='" + fsSeparator + "'");
 
             actual = SelectorUtils.translateToFileSystemPath(actual, fsSeparator, File.separator);
-            assertEquals("Mismatched translation revert for separator='" + fsSeparator + "'", path, actual);
+            assertEquals(path, actual, "Mismatched translation revert for separator='" + fsSeparator + "'");
         }
     }
 
     @Test
-    public void testAbsoluteWindowsPathTranslation() {
-        Assume.assumeTrue("Windows-specific test skipped", OsUtils.isWin32());
+    void absoluteWindowsPathTranslation() {
+        Assumptions.assumeTrue(OsUtils.isWin32(), "Windows-specific test skipped");
         String expected = detectTargetFolder().toString();
         for (String prefix : new String[] { "", "/" }) {
             String actual = SelectorUtils.translateToLocalPath(prefix + expected.replace('/', File.separatorChar));
-            assertEquals("Mismatched result for prefix='" + prefix + "'", expected, actual);
+            assertEquals(expected, actual, "Mismatched result for prefix='" + prefix + "'");
         }
     }
 
     @Test
-    public void testConcatPathsOneEmptyOrNull() {
+    void concatPathsOneEmptyOrNull() {
         String path = getCurrentTestName();
-        assertSame("Null 1st", path, SelectorUtils.concatPaths(null, path, File.separatorChar));
-        assertSame("Empty 1st", path, SelectorUtils.concatPaths("", path, File.separatorChar));
-        assertSame("Null 2nd", path, SelectorUtils.concatPaths(path, null, File.separatorChar));
-        assertSame("Empty 2nd", path, SelectorUtils.concatPaths(path, "", File.separatorChar));
+        assertSame(path, SelectorUtils.concatPaths(null, path, File.separatorChar), "Null 1st");
+        assertSame(path, SelectorUtils.concatPaths("", path, File.separatorChar), "Empty 1st");
+        assertSame(path, SelectorUtils.concatPaths(path, null, File.separatorChar), "Null 2nd");
+        assertSame(path, SelectorUtils.concatPaths(path, "", File.separatorChar), "Empty 2nd");
     }
 }

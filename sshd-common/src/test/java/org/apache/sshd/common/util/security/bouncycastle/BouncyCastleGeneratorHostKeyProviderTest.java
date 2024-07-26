@@ -37,35 +37,30 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
-    private final String keyType;
-    private final int keySize;
+    private String keyType;
+    private int keySize;
 
-    public BouncyCastleGeneratorHostKeyProviderTest(String keyType, int keySize) {
+    public void initBouncyCastleGeneratorHostKeyProviderTest(String keyType, int keySize) {
         this.keyType = keyType;
         this.keySize = keySize;
     }
 
-    @Parameters(name = "{0} / {1}")
     public static List<Object[]> parameters() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             return Collections.emptyList();
@@ -87,8 +82,10 @@ public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         return params;
     }
 
-    @Test
-    public void testKeyReadWrite() throws IOException, GeneralSecurityException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0} / {1}")
+    public void keyReadWrite(String keyType, int keySize) throws IOException, GeneralSecurityException {
+        initBouncyCastleGeneratorHostKeyProviderTest(keyType, keySize);
         KeyPair expected;
         if (BuiltinIdentities.Constants.RSA.equalsIgnoreCase(keyType)) {
             expected = KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, keySize);
@@ -96,7 +93,7 @@ public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
             expected = KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, keySize);
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
             ECCurves curve = ECCurves.fromCurveSize(keySize);
-            assertNotNull("No curve for key size=" + keySize, curve);
+            assertNotNull(curve, "No curve for key size=" + keySize);
             expected = KeyUtils.generateKeyPair(curve.getKeyType(), curve.getKeySize());
         } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyType)) {
             KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
@@ -124,7 +121,7 @@ public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         Iterable<KeyPair> keys = provider.loadKeys(null);
         KeyPair actual = null;
         for (KeyPair k : keys) {
-            assertNull("Unexpected multiple keys loaded", actual);
+            assertNull(actual, "Unexpected multiple keys loaded");
             actual = k;
         }
 

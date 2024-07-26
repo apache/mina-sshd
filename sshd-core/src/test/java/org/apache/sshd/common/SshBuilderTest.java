@@ -25,17 +25,19 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SshBuilderTest extends BaseTestSupport {
     public SshBuilderTest() {
         super();
@@ -46,13 +48,13 @@ public class SshBuilderTest extends BaseTestSupport {
      * the {@code ingoreUnsupported} parameter and in the defined preference order
      */
     @Test
-    public void testSetUpDefaultCiphers() {
+    void setUpDefaultCiphers() {
         for (boolean ignoreUnsupported : new boolean[] { true, false }) {
             List<NamedFactory<Cipher>> ciphers = BaseBuilder.setUpDefaultCiphers(ignoreUnsupported);
             int numCiphers = GenericUtils.size(ciphers);
             // make sure returned list size matches expected count
             if (ignoreUnsupported) {
-                assertEquals("Incomplete full ciphers size", BaseBuilder.DEFAULT_CIPHERS_PREFERENCE.size(), numCiphers);
+                assertEquals(BaseBuilder.DEFAULT_CIPHERS_PREFERENCE.size(), numCiphers, "Incomplete full ciphers size");
             } else {
                 int expectedCount = 0;
                 for (BuiltinCiphers c : BaseBuilder.DEFAULT_CIPHERS_PREFERENCE) {
@@ -60,7 +62,7 @@ public class SshBuilderTest extends BaseTestSupport {
                         expectedCount++;
                     }
                 }
-                assertEquals("Incomplete supported ciphers size", expectedCount, numCiphers);
+                assertEquals(expectedCount, numCiphers, "Incomplete supported ciphers size");
             }
 
             // make sure order is according to the default preference list
@@ -72,11 +74,11 @@ public class SshBuilderTest extends BaseTestSupport {
                 }
 
                 String expectedName = c.getName();
-                assertTrue("Out of actual ciphers for expected=" + expectedName, nameIndex < numCiphers);
+                assertTrue(nameIndex < numCiphers, "Out of actual ciphers for expected=" + expectedName);
 
                 String actualName = cipherNames.get(nameIndex);
-                assertEquals("Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported,
-                        expectedName, actualName);
+                assertEquals(expectedName, actualName,
+                        "Mismatched cipher at position " + nameIndex + " for ignoreUnsupported=" + ignoreUnsupported);
                 nameIndex++;
             }
         }

@@ -22,31 +22,34 @@ package org.apache.sshd.server.forward;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ForwardingFilterTest extends BaseTestSupport {
     public ForwardingFilterTest() {
         super();
     }
 
     @Test
-    public void testFromStringForwardingFilterType() {
+    void fromStringForwardingFilterType() {
         for (String name : new String[] { null, "", getCurrentTestName() }) {
-            assertNull("Unexpected value for name='" + name + "'", ForwardingFilter.Type.fromString(name));
+            assertNull(ForwardingFilter.Type.fromString(name), "Unexpected value for name='" + name + "'");
         }
 
         for (ForwardingFilter.Type expected : ForwardingFilter.Type.VALUES) {
             for (String name : new String[] { expected.name(), expected.getName() }) {
                 for (int index = 0; index < name.length(); index++) {
                     ForwardingFilter.Type actual = ForwardingFilter.Type.fromString(name);
-                    assertSame("Mismatched instance for name=" + name, expected, actual);
+                    assertSame(expected, actual, "Mismatched instance for name=" + name);
                     name = shuffleCase(name); // prepare for next iteration
                 }
             }
@@ -54,12 +57,12 @@ public class ForwardingFilterTest extends BaseTestSupport {
     }
 
     @Test
-    public void testAcceptAllForwardingFilter() {
+    void acceptAllForwardingFilter() {
         testStaticDecisionForwardingFilter(AcceptAllForwardingFilter.INSTANCE, true);
     }
 
     @Test
-    public void testRejectAllForwardingFilter() {
+    void rejectAllForwardingFilter() {
         testStaticDecisionForwardingFilter(RejectAllForwardingFilter.INSTANCE, false);
     }
 

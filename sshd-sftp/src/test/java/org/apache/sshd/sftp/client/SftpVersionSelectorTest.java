@@ -28,25 +28,27 @@ import java.util.Random;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SftpVersionSelectorTest extends JUnitTestSupport {
     public SftpVersionSelectorTest() {
         super();
     }
 
     @Test
-    public void testCurrentVersionSelector() {
+    void currentVersionSelector() {
         List<Integer> available = new ArrayList<>();
         Random rnd = new Random(System.nanoTime());
         ClientSession session = Mockito.mock(ClientSession.class);
@@ -54,8 +56,9 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
              expected <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
              expected++) {
             for (boolean initial : new boolean[] { true, false }) {
-                assertEquals("Mismatched directly selected for initial=" + initial + "/available=" + available, expected,
-                        SftpVersionSelector.CURRENT.selectVersion(session, initial, expected, available));
+                assertEquals(expected,
+                        SftpVersionSelector.CURRENT.selectVersion(session, initial, expected, available),
+                        "Mismatched directly selected for initial=" + initial + "/available=" + available);
                 available.add(expected);
             }
         }
@@ -66,22 +69,24 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
             for (boolean initial : new boolean[] { true, false }) {
                 for (int index = 0; index < available.size(); index++) {
                     Collections.shuffle(available, rnd);
-                    assertEquals("Mismatched suffling selected for initial=" + initial + ", current=" + expected
-                                 + ", available=" + available,
-                            expected, SftpVersionSelector.CURRENT.selectVersion(session, initial, expected, available));
+                    assertEquals(
+                            expected, SftpVersionSelector.CURRENT.selectVersion(session, initial, expected,
+                                    available),
+                            "Mismatched suffling selected for initial=" + initial + ", current=" + expected
+                                                + ", available=" + available);
                 }
             }
         }
     }
 
     @Test
-    public void testFixedVersionSelector() {
+    void fixedVersionSelector() {
         final int fixedValue = 7365;
         testVersionSelector(SftpVersionSelector.fixedVersionSelector(fixedValue), fixedValue);
     }
 
     @Test
-    public void testPreferredVersionSelector() {
+    void preferredVersionSelector() {
         List<Integer> available = new ArrayList<>();
         for (int version = SftpSubsystemEnvironment.LOWER_SFTP_IMPL;
              version <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
@@ -103,9 +108,9 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
                      current <= SftpSubsystemEnvironment.HIGHER_SFTP_IMPL;
                      current++) {
                     assertEquals(
+                            expected, selector.selectVersion(session, initial, current, available),
                             "Mismatched selected for current= " + current + ", available=" + available + ", preferred="
-                                 + preferred,
-                            expected, selector.selectVersion(session, initial, current, available));
+                                                                                                    + preferred);
 
                     try {
                         Collections.shuffle(unavailable, rnd);
@@ -124,12 +129,12 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testMaximumVersionSelector() {
+    void maximumVersionSelector() {
         testVersionSelector(SftpVersionSelector.MAXIMUM, SftpSubsystemEnvironment.HIGHER_SFTP_IMPL);
     }
 
     @Test
-    public void testMinimumVersionSelector() {
+    void minimumVersionSelector() {
         testVersionSelector(SftpVersionSelector.MINIMUM, SftpSubsystemEnvironment.LOWER_SFTP_IMPL);
     }
 
@@ -148,8 +153,8 @@ public class SftpVersionSelectorTest extends JUnitTestSupport {
              current++) {
             for (boolean initial : new boolean[] { true, false }) {
                 for (int index = 0; index < available.size(); index++) {
-                    assertEquals("Mismatched selection for current=" + current + ", available=" + available,
-                            expected, selector.selectVersion(session, initial, current, available));
+                    assertEquals(expected, selector.selectVersion(session, initial, current, available),
+                            "Mismatched selection for current=" + current + ", available=" + available);
                     Collections.shuffle(available, rnd);
                 }
             }

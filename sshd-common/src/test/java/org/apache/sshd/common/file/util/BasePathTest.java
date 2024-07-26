@@ -34,16 +34,22 @@ import java.util.Set;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
+
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 @SuppressWarnings("checkstyle:MethodCount")
 public class BasePathTest extends JUnitTestSupport {
     private TestFileSystem fileSystem;
@@ -52,13 +58,13 @@ public class BasePathTest extends JUnitTestSupport {
         super();
     }
 
-    @Before
-    public void setUp() {
+    @BeforeEach
+    void setUp() {
         fileSystem = new TestFileSystem(Mockito.mock(FileSystemProvider.class));
     }
 
     @Test
-    public void testBasicPathParsing() {
+    void basicPathParsing() {
         assertPathEquals("/", "/");
         assertPathEquals("/foo", "/foo");
         assertPathEquals("/foo", "/", "foo");
@@ -73,7 +79,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testPathParsingWithExtraSeparators() {
+    void pathParsingWithExtraSeparators() {
         assertPathEquals("/foo/bar", "///foo/bar");
         assertPathEquals("/foo/bar", "/foo///bar//");
         assertPathEquals("/foo/bar/baz", "/foo", "/bar", "baz/");
@@ -81,14 +87,14 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testRootPath() {
+    void rootPath() {
         new PathTester(fileSystem, "/")
                 .root("/")
                 .test("/");
     }
 
     @Test
-    public void testRelativePathSingleName() {
+    void relativePathSingleName() {
         new PathTester(fileSystem, "test")
                 .names("test")
                 .test("test");
@@ -98,21 +104,21 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testRelativePathTwoNames() {
+    void relativePathTwoNames() {
         new PathTester(fileSystem, "foo/bar")
                 .names("foo", "bar")
                 .test("foo/bar");
     }
 
     @Test
-    public void testRelativePathFourNames() {
+    void relativePathFourNames() {
         new PathTester(fileSystem, "foo/bar/baz/test")
                 .names("foo", "bar", "baz", "test")
                 .test("foo/bar/baz/test");
     }
 
     @Test
-    public void testAbsolutePathSingleName() {
+    void absolutePathSingleName() {
         new PathTester(fileSystem, "/foo")
                 .root("/")
                 .names("foo")
@@ -120,7 +126,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testAbsolutePathTwoNames() {
+    void absolutePathTwoNames() {
         new PathTester(fileSystem, "/foo/bar")
                 .root("/")
                 .names("foo", "bar")
@@ -128,7 +134,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testAbsoluteMultiNamePathFourNames() {
+    void absoluteMultiNamePathFourNames() {
         new PathTester(fileSystem, "/foo/bar/baz/test")
                 .root("/")
                 .names("foo", "bar", "baz", "test")
@@ -136,7 +142,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveFromRoot() {
+    void resolveFromRoot() {
         Path root = parsePath("/");
         assertResolvedPathEquals("/foo", root, "foo");
         assertResolvedPathEquals("/foo/bar", root, "foo/bar");
@@ -146,7 +152,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveFromAbsolute() {
+    void resolveFromAbsolute() {
         Path path = parsePath("/foo");
         assertResolvedPathEquals("/foo/bar", path, "bar");
         assertResolvedPathEquals("/foo/bar/baz/test", path, "bar/baz/test");
@@ -155,7 +161,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveFromRelative() {
+    void resolveFromRelative() {
         Path path = parsePath("foo");
         assertResolvedPathEquals("foo/bar", path, "bar");
         assertResolvedPathEquals("foo/bar/baz/test", path, "bar/baz/test");
@@ -164,7 +170,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveWithThisAndParentDirNames() {
+    void resolveWithThisAndParentDirNames() {
         Path path = parsePath("/foo");
         assertResolvedPathEquals("/foo/bar/../baz", path, "bar/../baz");
         assertResolvedPathEquals("/foo/bar/../baz", path, "bar", "..", "baz");
@@ -173,24 +179,24 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveGivenAbsolutePath() {
+    void resolveGivenAbsolutePath() {
         assertResolvedPathEquals("/test", parsePath("/foo"), "/test");
         assertResolvedPathEquals("/test", parsePath("foo"), "/test");
     }
 
     @Test
-    public void testResolveGivenEmptyPath() {
+    void resolveGivenEmptyPath() {
         assertResolvedPathEquals("/foo", parsePath("/foo"), "");
         assertResolvedPathEquals("foo", parsePath("foo"), "");
     }
 
     @Test
-    public void testResolveAgainstEmptyPath() {
+    void resolveAgainstEmptyPath() {
         assertResolvedPathEquals("foo/bar", parsePath(""), "foo/bar");
     }
 
     @Test
-    public void testResolveSiblingGivenEmptyPath() {
+    void resolveSiblingGivenEmptyPath() {
         Path path = parsePath("foo/bar");
         Path resolved = path.resolveSibling("");
         assertPathEquals("foo", resolved);
@@ -201,7 +207,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveSiblingAgainstEmptyPath() {
+    void resolveSiblingAgainstEmptyPath() {
         Path path = parsePath("");
         Path resolved = path.resolveSibling("foo");
         assertPathEquals("foo", resolved);
@@ -212,24 +218,24 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testRelativizeBothAbsolute() {
+    void relativizeBothAbsolute() {
         assertRelativizedPathEquals("b/c", parsePath("/a"), "/a/b/c");
         assertRelativizedPathEquals("c/d", parsePath("/a/b"), "/a/b/c/d");
     }
 
     @Test
-    public void testRelativizeBothRelative() {
+    void relativizeBothRelative() {
         assertRelativizedPathEquals("b/c", parsePath("a"), "a/b/c");
         assertRelativizedPathEquals("d", parsePath("a/b/c"), "a/b/c/d");
     }
 
     @Test
-    public void testRelativizeAgainstEmptyPath() {
+    void relativizeAgainstEmptyPath() {
         assertRelativizedPathEquals("foo/bar", parsePath(""), "foo/bar");
     }
 
     @Test
-    public void testRelativizeOneAbsoluteOneRelative() {
+    void relativizeOneAbsoluteOneRelative() {
         try {
             Path result = parsePath("/foo/bar").relativize(parsePath("foo"));
             fail("Unexpected 2-level result: " + result);
@@ -246,34 +252,34 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testNormalizeWithParentDirName() {
+    void normalizeWithParentDirName() {
         assertNormalizedPathEquals("/foo/baz", "/foo/bar/../baz");
         assertNormalizedPathEquals("/foo/baz", "/foo", "bar", "..", "baz");
     }
 
     @Test
-    public void testNormalizeWithThisDirName() {
+    void normalizeWithThisDirName() {
         assertNormalizedPathEquals("/foo/bar/baz", "/foo/bar/./baz");
         assertNormalizedPathEquals("/foo/bar/baz", "/foo", "bar", ".", "baz");
     }
 
     @Test
-    public void testNormalizeWithThisAndParentDirNames() {
+    void normalizeWithThisAndParentDirNames() {
         assertNormalizedPathEquals("foo/test", "foo/./bar/../././baz/../test");
     }
 
     @Test
-    public void testNormalizeWithLeadingParentDirNames() {
+    void normalizeWithLeadingParentDirNames() {
         assertNormalizedPathEquals("../../foo/baz", "../../foo/bar/../baz");
     }
 
     @Test
-    public void testNormalizeWithLeadingThisAndParentDirNames() {
+    void normalizeWithLeadingThisAndParentDirNames() {
         assertNormalizedPathEquals("../../foo/baz", "./.././.././foo/bar/../baz");
     }
 
     @Test
-    public void testNormalizeWithExtraParentDirNamesAtRoot() {
+    void normalizeWithExtraParentDirNamesAtRoot() {
         assertNormalizedPathEquals("/", "/..");
         assertNormalizedPathEquals("/", "/../../..");
         assertNormalizedPathEquals("/", "/foo/../../..");
@@ -281,7 +287,7 @@ public class BasePathTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testPathWithExtraSlashes() {
+    void pathWithExtraSlashes() {
         assertPathEquals("/foo/bar/baz", parsePath("/foo/bar/baz/"));
         assertPathEquals("/foo/bar/baz", parsePath("/foo//bar///baz"));
         assertPathEquals("/foo/bar/baz", parsePath("///foo/bar/baz"));
@@ -410,7 +416,7 @@ public class BasePathTest extends JUnitTestSupport {
         }
 
         public void test(Path path) {
-            assertEquals("Mismatched path value", string, path.toString());
+            assertEquals(string, path.toString(), "Mismatched path value");
 
             testRoot(path);
             testNames(path);
@@ -422,23 +428,23 @@ public class BasePathTest extends JUnitTestSupport {
 
         protected void testRoot(Path path) {
             if (root != null) {
-                assertTrue(path + ".isAbsolute() ?", path.isAbsolute());
-                assertNotNull(path + ".getRoot() <> null ?", path.getRoot());
-                assertEquals("Mismatched root path value", root, path.getRoot().toString());
+                assertTrue(path.isAbsolute(), path + ".isAbsolute() ?");
+                assertNotNull(path.getRoot(), path + ".getRoot() <> null ?");
+                assertEquals(root, path.getRoot().toString(), "Mismatched root path value");
             } else {
-                assertFalse(path + ".is(Not)Absolute() ?", path.isAbsolute());
-                assertNull(path + ".getRoot() == null ?", path.getRoot());
+                assertFalse(path.isAbsolute(), path + ".is(Not)Absolute() ?");
+                assertNull(path.getRoot(), path + ".getRoot() == null ?");
             }
         }
 
         protected void testNames(Path path) {
-            assertEquals("Mismatched names count", names.size(), path.getNameCount());
+            assertEquals(names.size(), path.getNameCount(), "Mismatched names count");
             assertListEquals("Mismatched path names", names, names(path));
 
             for (int i = 0; i < names.size(); i++) {
                 String nameAtIndex = names.get(i);
                 Path pathAtIndex = path.getName(i);
-                assertEquals("Mismatched component name at index=" + i, nameAtIndex, pathAtIndex.toString());
+                assertEquals(nameAtIndex, pathAtIndex.toString(), "Mismatched component name at index=" + i);
                 // don't test individual names if this is an individual name
                 if (names.size() > 1) {
                     new PathTester(fileSystem, nameAtIndex)
@@ -449,7 +455,7 @@ public class BasePathTest extends JUnitTestSupport {
 
             if (names.size() > 0) {
                 String fileName = names.get(names.size() - 1);
-                assertEquals("Mismatched last component name", fileName, path.getFileName().toString());
+                assertEquals(fileName, path.getFileName().toString(), "Mismatched last component name");
                 // don't test individual names if this is an individual name
                 if (names.size() > 1) {
                     new PathTester(fileSystem, fileName)
@@ -462,7 +468,7 @@ public class BasePathTest extends JUnitTestSupport {
         protected void testParents(Path path) {
             Path parent = path.getParent();
             if (((root != null) && (names.size() >= 1)) || (names.size() > 1)) {
-                assertNotNull("No parent", parent);
+                assertNotNull(parent, "No parent");
             }
 
             if (parent != null) {
@@ -506,8 +512,8 @@ public class BasePathTest extends JUnitTestSupport {
             if ((root != null) || (!names.isEmpty())) {
                 Path other = path;
                 while (other != null) {
-                    assertTrue(path + ".startsWith(" + other + ")[path] ?", path.startsWith(other));
-                    assertTrue(path + ".startsWith(" + other + ")[string] ?", path.startsWith(other.toString()));
+                    assertTrue(path.startsWith(other), path + ".startsWith(" + other + ")[path] ?");
+                    assertTrue(path.startsWith(other.toString()), path + ".startsWith(" + other + ")[string] ?");
                     other = other.getParent();
                 }
             }
@@ -518,8 +524,8 @@ public class BasePathTest extends JUnitTestSupport {
             if ((root != null) || (!names.isEmpty())) {
                 Path other = path;
                 while (other != null) {
-                    assertTrue(path + ".endsWith(" + other + ")[path] ?", path.endsWith(other));
-                    assertTrue(path + ".endsWith(" + other + ")[string] ?", path.endsWith(other.toString()));
+                    assertTrue(path.endsWith(other), path + ".endsWith(" + other + ")[path] ?");
+                    assertTrue(path.endsWith(other.toString()), path + ".endsWith(" + other + ")[string] ?");
 
                     int otherNameCount = other.getNameCount();
                     if ((other.getRoot() != null) && (otherNameCount > 0)) {

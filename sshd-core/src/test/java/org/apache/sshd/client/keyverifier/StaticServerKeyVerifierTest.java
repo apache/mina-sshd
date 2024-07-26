@@ -29,30 +29,31 @@ import java.util.Random;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class StaticServerKeyVerifierTest extends BaseTestSupport {
     public StaticServerKeyVerifierTest() {
         super();
     }
 
     @Test
-    public void testAcceptAllServerKeyVerifier() throws Exception {
+    void acceptAllServerKeyVerifier() throws Exception {
         testStaticServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE);
     }
 
     @Test
-    public void testRejectAllServerKeyVerifier() throws Exception {
+    void rejectAllServerKeyVerifier() throws Exception {
         testStaticServerKeyVerifier(RejectAllServerKeyVerifier.INSTANCE);
     }
 
@@ -78,7 +79,7 @@ public class StaticServerKeyVerifierTest extends BaseTestSupport {
             }
 
             Object result = method.invoke(authenticator, invArgs);
-            assertTrue("No boolean result", result instanceof Boolean);
+            assertTrue(result instanceof Boolean, "No boolean result");
             assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
         }
     }

@@ -24,6 +24,8 @@ import java.util.Collection;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
 
+import static org.junit.jupiter.api.Assertions.assertSame;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -40,7 +42,7 @@ public abstract class SecurityProviderRegistrarTestSupport extends JUnitTestSupp
             String prefix, SecurityProviderRegistrar registrar, P expected) {
         for (int index = 1; index <= Byte.SIZE; index++) {
             Provider actual = registrar.getSecurityProvider();
-            assertSame(prefix + ": Mismatched provider instance at invocation #" + index, expected, actual);
+            assertSame(expected, actual, prefix + ": Mismatched provider instance at invocation #" + index);
         }
 
         return expected;

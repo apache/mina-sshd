@@ -19,14 +19,14 @@
 
 package org.apache.sshd.common.cipher;
 
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class ARCFOUR128Test extends BaseCipherTest {
     public ARCFOUR128Test() {
         super();
@@ -34,7 +34,7 @@ public class ARCFOUR128Test extends BaseCipherTest {
 
     @Test
     @SuppressWarnings("deprecation")
-    public void testEncryptDecrypt() throws Exception {
+    void encryptDecrypt() throws Exception {
         testEncryptDecrypt(BuiltinCiphers.arcfour128);
     }
 }

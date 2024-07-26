@@ -24,45 +24,50 @@ import java.util.Collection;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ThreadUtilsTest extends JUnitTestSupport {
     public ThreadUtilsTest() {
         super();
     }
 
     @Test
-    public void testProtectExecutorServiceShutdown() {
+    void protectExecutorServiceShutdown() {
         for (boolean shutdownOnExit : new boolean[] { true, false }) {
-            assertNull("Unexpected instance for shutdown=" + shutdownOnExit,
-                    ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit));
+            assertNull(ThreadUtils.protectExecutorServiceShutdown(null, shutdownOnExit),
+                    "Unexpected instance for shutdown=" + shutdownOnExit);
         }
 
         CloseableExecutorService service = ThreadUtils.newSingleThreadExecutor("pool");
         try {
-            assertSame("Unexpected wrapped instance", service, ThreadUtils.protectExecutorServiceShutdown(service, true));
+            assertSame(service, ThreadUtils.protectExecutorServiceShutdown(service, true), "Unexpected wrapped instance");
 
             CloseableExecutorService wrapped = ThreadUtils.protectExecutorServiceShutdown(service, false);
             try {
-                assertNotSame("No wrapping occurred", service, wrapped);
+                assertNotSame(service, wrapped, "No wrapping occurred");
 
                 wrapped.shutdown();
-                assertTrue("Wrapped service not shutdown", wrapped.isShutdown());
-                assertFalse("Protected service is shutdown", service.isShutdown());
+                assertTrue(wrapped.isShutdown(), "Wrapped service not shutdown");
+                assertFalse(service.isShutdown(), "Protected service is shutdown");
 
                 Collection<?> running = wrapped.shutdownNow();
-                assertTrue("Non-empty runners list", running.isEmpty());
-                assertTrue("Wrapped service not shutdownNow", wrapped.isShutdown());
-                assertFalse("Protected service is shutdownNow", service.isShutdown());
+                assertTrue(running.isEmpty(), "Non-empty runners list");
+                assertTrue(wrapped.isShutdown(), "Wrapped service not shutdownNow");
+                assertFalse(service.isShutdown(), "Protected service is shutdownNow");
             } finally {
                 wrapped.shutdownNow(); // just in case
             }

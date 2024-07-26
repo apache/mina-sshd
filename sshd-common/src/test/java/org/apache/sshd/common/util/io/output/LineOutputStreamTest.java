@@ -31,39 +31,33 @@ import java.util.Arrays;
 import java.util.List;
 
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class LineOutputStreamTest extends JUnitTestSupport {
-    private final boolean withCR;
+    private boolean withCR;
 
-    public LineOutputStreamTest(boolean withCR) {
+    public void initLineOutputStreamTest(boolean withCR) {
         this.withCR = withCR;
     }
 
-    @Parameters(name = "CR={0}")
     public static List<Object[]> parameters() {
         return Arrays.asList(new Object[] { Boolean.TRUE }, new Object[] { Boolean.FALSE });
     }
 
-    @Test
-    public void testLineParsing() throws IOException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "CR={0}")
+    public void lineParsing(boolean withCR) throws IOException {
+        initLineOutputStreamTest(withCR);
         List<String> expected = new ArrayList<>();
         String prefix = getClass().getName() + "#" + getCurrentTestName() + "-";
         for (int index = 1; index < Byte.MAX_VALUE; index++) {

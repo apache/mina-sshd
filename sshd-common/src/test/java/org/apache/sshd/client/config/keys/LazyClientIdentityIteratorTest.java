@@ -29,24 +29,28 @@ import java.util.List;
 
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
     public LazyClientIdentityIteratorTest() {
         super();
     }
 
     @Test
-    public void testLazyKeysLoader() {
+    void lazyKeysLoader() {
         List<CountingClientIdentityProvider> providers = new ArrayList<>();
         for (int index = 1; index <= Byte.SIZE; index++) {
             PublicKey pub = Mockito.mock(PublicKey.class);
@@ -66,14 +70,14 @@ public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
 
         for (int index = 0, count = providers.size(); index < count; index++) {
             CountingClientIdentityProvider p = providers.get(index);
-            assertEquals("Mismatched provider #" + index + " pre-fetch load count", 0, p.getLoadCount());
+            assertEquals(0, p.getLoadCount(), "Mismatched provider #" + index + " pre-fetch load count");
             KeyPair expected = p.getKeyPair();
 
-            assertTrue("No more keys after " + index + " values", keys.hasNext());
+            assertTrue(keys.hasNext(), "No more keys after " + index + " values");
             KeyPair actual = keys.next();
 
-            assertSame("Mismatched identity after " + index + " values", expected, actual);
-            assertEquals("Mismatched provider #" + index + " post-fetch load count", 1, p.getLoadCount());
+            assertSame(expected, actual, "Mismatched identity after " + index + " values");
+            assertEquals(1, p.getLoadCount(), "Mismatched provider #" + index + " post-fetch load count");
         }
     }
 

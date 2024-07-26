@@ -29,29 +29,30 @@ import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.password.StaticPasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class PasswordAuthenticatorTest extends BaseTestSupport {
     public PasswordAuthenticatorTest() {
         super();
     }
 
     @Test
-    public void testAcceptAllPasswordAuthenticator() throws Exception {
+    void acceptAllPasswordAuthenticator() throws Exception {
         testStaticPasswordAuthenticator(AcceptAllPasswordAuthenticator.INSTANCE);
     }
 
     @Test
-    public void testRejectAllPasswordAuthenticator() throws Exception {
+    void rejectAllPasswordAuthenticator() throws Exception {
         testStaticPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
     }
 
@@ -71,7 +72,7 @@ public class PasswordAuthenticatorTest extends BaseTestSupport {
             }
 
             Object result = method.invoke(authenticator, invArgs);
-            assertTrue("No boolean result", result instanceof Boolean);
+            assertTrue(result instanceof Boolean, "No boolean result");
             assertEquals("Mismatched result for " + Arrays.toString(invArgs), expected, ((Boolean) result).booleanValue());
         }
     }

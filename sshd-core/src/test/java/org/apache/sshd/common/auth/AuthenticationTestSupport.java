@@ -29,8 +29,12 @@ import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Before;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -45,14 +49,14 @@ public abstract class AuthenticationTestSupport extends BaseTestSupport {
         super();
     }
 
-    @Before
+    @BeforeEach
     public void setUp() throws Exception {
         sshd = setupTestServer();
         sshd.start();
         port = sshd.getPort();
     }
 
-    @After
+    @AfterEach
     public void tearDown() throws Exception {
         if (sshd != null) {
             sshd.stop(true);
@@ -60,7 +64,7 @@ public abstract class AuthenticationTestSupport extends BaseTestSupport {
     }
 
     protected static void assertAuthenticationResult(String message, AuthFuture future, boolean expected) throws IOException {
-        assertTrue(message + ": failed to get result on time", future.await(AUTH_TIMEOUT));
+        assertTrue(future.await(AUTH_TIMEOUT), message + ": failed to get result on time");
         assertEquals(message + ": mismatched authentication result", expected, future.isSuccess());
     }
 
@@ -83,9 +87,9 @@ public abstract class AuthenticationTestSupport extends BaseTestSupport {
             public String[] interactive(
                     ClientSession session, String name, String instruction,
                     String lang, String[] prompt, boolean[] echo) {
-                assertSame("Mismatched session instance", s, session);
-                assertEquals("Mismatched prompt size", 1, GenericUtils.length(prompt));
-                assertTrue("Mismatched prompt: " + prompt[0], prompt[0].toLowerCase().contains("password"));
+                assertSame(s, session, "Mismatched session instance");
+                assertEquals(1, GenericUtils.length(prompt), "Mismatched prompt size");
+                assertTrue(prompt[0].toLowerCase().contains("password"), "Mismatched prompt: " + prompt[0]);
                 return response;
             }
 

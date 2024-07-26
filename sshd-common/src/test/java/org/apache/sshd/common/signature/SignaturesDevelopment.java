@@ -27,14 +27,14 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.Ignore;
+import org.junit.jupiter.api.Disabled;
 
 /**
  * A &quot;scratch-pad&quot; class for testing signatures related code during development
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Ignore("Used only for development")
+@Disabled("Used only for development")
 public class SignaturesDevelopment extends JUnitTestSupport {
     public SignaturesDevelopment() {
         super();

@@ -39,16 +39,21 @@ import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
@@ -60,8 +65,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         sshd = setupTestServer();
         SftpSubsystemFactory.Builder builder = new SftpSubsystemFactory.Builder();
         builder.addSftpEventListener(SimpleAccessControlSftpEventListener.READ_ONLY_ACCESSOR);
@@ -73,8 +78,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
         port = sshd.getPort();
     }
 
-    @After
-    public void tearDown() throws Exception {
+    @AfterEach
+    void tearDown() throws Exception {
         if (sshd != null) {
             try {
                 sshd.stop(true);
@@ -85,7 +90,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReadOnlyFileAccess() throws Exception {
+    void readOnlyFileAccess() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -108,8 +113,8 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                     try (CloseableHandle handle = sftp.open(file, OpenMode.Read)) {
                         byte[] actual = new byte[data.length];
                         int readLen = sftp.read(handle, 0L, actual);
-                        assertEquals("Mismatched read data length", data.length, readLen);
-                        assertArrayEquals("Mismatched read file contents", data, actual);
+                        assertEquals(data.length, readLen, "Mismatched read data length");
+                        assertArrayEquals(data, actual, "Mismatched read file contents");
                     }
 
                     try (CloseableHandle handle
@@ -118,7 +123,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         fail("Unexpected file write success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
-                        assertEquals("Unexpected write SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);
+                        assertEquals(SftpConstants.SSH_FX_PERMISSION_DENIED, status, "Unexpected write SFTP status code");
                     }
 
                     SftpClient.Attributes attrs = sftp.stat(file);
@@ -128,8 +133,9 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         fail("Unexpected attributes modification success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
-                        assertEquals("Unexpected setAttributes SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED,
-                                status);
+                        assertEquals(SftpConstants.SSH_FX_PERMISSION_DENIED,
+                                status,
+                                "Unexpected setAttributes SFTP status code");
                     }
                 }
             } finally {
@@ -139,7 +145,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
     }
 
     @Test
-    public void testReadOnlyDirectoryAccess() throws Exception {
+    void readOnlyDirectoryAccess() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -160,7 +166,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                 try (SftpClient sftp = SftpClientFactory.instance().createSftpClient(session)) {
                     String folder = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, targetPath);
                     for (SftpClient.DirEntry entry : sftp.readDir(folder)) {
-                        assertNotNull("No entry", entry);
+                        assertNotNull(entry, "No entry");
                     }
 
                     String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
@@ -169,7 +175,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         fail("Unexpected file remove success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
-                        assertEquals("Unexpected remove SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);
+                        assertEquals(SftpConstants.SSH_FX_PERMISSION_DENIED, status, "Unexpected remove SFTP status code");
                     }
 
                     try {
@@ -177,7 +183,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         fail("Unexpected folder creation success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
-                        assertEquals("Unexpected mkdir SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);
+                        assertEquals(SftpConstants.SSH_FX_PERMISSION_DENIED, status, "Unexpected mkdir SFTP status code");
                     }
 
                     try {
@@ -185,7 +191,7 @@ public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
                         fail("Unexpected folder removal success");
                     } catch (SftpException e) {
                         int status = e.getStatus();
-                        assertEquals("Unexpected rmdir SFTP status code", SftpConstants.SSH_FX_PERMISSION_DENIED, status);
+                        assertEquals(SftpConstants.SSH_FX_PERMISSION_DENIED, status, "Unexpected rmdir SFTP status code");
                     }
                 }
             } finally {

@@ -42,24 +42,21 @@ import org.apache.sshd.sftp.client.extensions.MD5HandleExtension;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport {
     private static final List<Integer> DATA_SIZES = Collections.unmodifiableList(
             Arrays.asList(
@@ -68,29 +65,30 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                     IoUtils.DEFAULT_COPY_SIZE,
                     Byte.SIZE * IoUtils.DEFAULT_COPY_SIZE));
 
-    private final int size;
+    private int size;
 
-    public AbstractMD5HashExtensionTest(int size) throws IOException {
+    public void initAbstractMD5HashExtensionTest(int size) throws IOException {
         this.size = size;
     }
 
-    @Parameters(name = "dataSize={0}")
     public static Collection<Object[]> parameters() {
         return parameterize(DATA_SIZES);
     }
 
-    @BeforeClass
-    public static void checkMD5Supported() {
-        Assume.assumeTrue("MD5 not supported", BuiltinDigests.md5.isSupported());
+    @BeforeAll
+    static void checkMD5Supported() {
+        Assumptions.assumeTrue(BuiltinDigests.md5.isSupported(), "MD5 not supported");
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
-    @Test
-    public void testMD5HashExtension() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "dataSize={0}")
+    public void md5HashExtension(int size) throws Exception {
+        initAbstractMD5HashExtensionTest(size);
         testMD5HashExtension(size);
     }
 
@@ -138,7 +136,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                 byte[] actual = file.getHash(srcFolder, 0L, 0L, quickHash);
                 fail("Unexpected file success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
             } catch (IOException e) { // expected - not allowed to hash a folder
-                assertTrue("Not an SftpException for file hash on " + srcFolder, e instanceof SftpException);
+                assertTrue(e instanceof SftpException, "Not an SftpException for file hash on " + srcFolder);
             }
 
             MD5HandleExtension hndl = assertExtensionCreated(sftp, MD5HandleExtension.class);
@@ -147,7 +145,7 @@ public class AbstractMD5HashExtensionTest extends AbstractSftpClientTestSupport 
                     byte[] actual = hndl.getHash(dirHandle, 0L, 0L, quickHash);
                     fail("Unexpected handle success on folder=" + srcFolder + ": " + BufferUtils.toHex(':', actual));
                 } catch (IOException e) { // expected - not allowed to hash a folder
-                    assertTrue("Not an SftpException for handle hash on " + srcFolder, e instanceof SftpException);
+                    assertTrue(e instanceof SftpException, "Not an SftpException for handle hash on " + srcFolder);
                 }
             }
 

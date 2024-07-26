@@ -25,30 +25,31 @@ import org.apache.sshd.common.config.VersionProperties;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class VersionPropertiesTest extends JUnitTestSupport {
     public VersionPropertiesTest() {
         super();
     }
 
     @Test
-    public void testNonEmptyProperties() {
+    void nonEmptyProperties() {
         Map<?, ?> props = VersionProperties.getVersionProperties();
         assertTrue(MapEntryUtils.isNotEmpty(props));
     }
 
     @Test
-    public void testReportedVersionAvailable() {
+    void reportedVersionAvailable() {
         Map<String, String> props = VersionProperties.getVersionProperties();
         String version = props.get(VersionProperties.REPORTED_VERSION);
         assertTrue(GenericUtils.isNotEmpty(version));

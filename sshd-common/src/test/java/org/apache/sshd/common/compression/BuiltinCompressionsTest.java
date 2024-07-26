@@ -33,52 +33,59 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.compression.BuiltinCompressions.ParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BuiltinCompressionsTest extends JUnitTestSupport {
     public BuiltinCompressionsTest() {
         super();
     }
 
     @Test
-    public void testFromFactoryName() {
+    void fromFactoryName() {
         for (BuiltinCompressions expected : BuiltinCompressions.VALUES) {
             String name = expected.getName();
 
             for (int index = 0; index < name.length(); index++) {
                 BuiltinCompressions actual = BuiltinCompressions.fromFactoryName(name);
-                assertSame(name, expected, actual);
+                assertSame(expected, actual, name);
                 name = shuffleCase(name);
             }
         }
     }
 
     @Test
-    public void testAllConstantsCovered() throws Exception {
+    void allConstantsCovered() throws Exception {
         Set<BuiltinCompressions> avail = EnumSet.noneOf(BuiltinCompressions.class);
         Field[] fields = BuiltinCompressions.Constants.class.getFields();
         for (Field f : fields) {
             String name = (String) f.get(null);
             BuiltinCompressions value = BuiltinCompressions.fromFactoryName(name);
-            assertNotNull("No match found for " + name, value);
-            assertTrue(name + " re-specified", avail.add(value));
+            assertNotNull(value, "No match found for " + name);
+            assertTrue(avail.add(value), name + " re-specified");
         }
 
         assertEquals("Incomplete coverage", BuiltinCompressions.VALUES, avail);
     }
 
     @Test
-    public void testParseCompressionsList() {
+    void parseCompressionsList() {
         List<String> builtin = NamedResource.getNameList(BuiltinCompressions.VALUES);
         List<String> unknown
                 = Arrays.asList(getClass().getPackage().getName(), getClass().getSimpleName(), getCurrentTestName());
@@ -115,16 +122,16 @@ public class BuiltinCompressionsTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testResolveFactoryOnBuiltinValues() {
+    void resolveFactoryOnBuiltinValues() {
         for (NamedFactory<Compression> expected : BuiltinCompressions.VALUES) {
             String name = expected.getName();
             NamedFactory<Compression> actual = BuiltinCompressions.resolveFactory(name);
-            assertSame(name, expected, actual);
+            assertSame(expected, actual, name);
         }
     }
 
     @Test
-    public void testNotAllowedToRegisterBuiltinFactories() {
+    void notAllowedToRegisterBuiltinFactories() {
         for (CompressionFactory expected : BuiltinCompressions.VALUES) {
             try {
                 BuiltinCompressions.registerExtension(expected);
@@ -135,38 +142,40 @@ public class BuiltinCompressionsTest extends JUnitTestSupport {
         }
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void testNotAllowedToOverrideRegisteredFactories() {
-        CompressionFactory expected = Mockito.mock(CompressionFactory.class);
-        Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
+    @Test
+    void notAllowedToOverrideRegisteredFactories() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            CompressionFactory expected = Mockito.mock(CompressionFactory.class);
+            Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
-        String name = expected.getName();
-        try {
-            for (int index = 1; index <= Byte.SIZE; index++) {
-                BuiltinCompressions.registerExtension(expected);
-                assertEquals("Unexpected success at attempt #" + index, 1, index);
+            String name = expected.getName();
+            try {
+                for (int index = 1; index <= Byte.SIZE; index++) {
+                    BuiltinCompressions.registerExtension(expected);
+                    assertEquals(1, index, "Unexpected success at attempt #" + index);
+                }
+            } finally {
+                BuiltinCompressions.unregisterExtension(name);
             }
-        } finally {
-            BuiltinCompressions.unregisterExtension(name);
-        }
+        });
     }
 
     @Test
-    public void testResolveFactoryOnRegisteredExtension() {
+    void resolveFactoryOnRegisteredExtension() {
         CompressionFactory expected = Mockito.mock(CompressionFactory.class);
         Mockito.when(expected.getName()).thenReturn(getCurrentTestName());
 
         String name = expected.getName();
         try {
-            assertNull("Extension already registered", BuiltinCompressions.resolveFactory(name));
+            assertNull(BuiltinCompressions.resolveFactory(name), "Extension already registered");
             BuiltinCompressions.registerExtension(expected);
 
             NamedFactory<Compression> actual = BuiltinCompressions.resolveFactory(name);
-            assertSame("Mismatched resolved instance", expected, actual);
+            assertSame(expected, actual, "Mismatched resolved instance");
         } finally {
             NamedFactory<Compression> actual = BuiltinCompressions.unregisterExtension(name);
-            assertSame("Mismatched unregistered instance", expected, actual);
-            assertNull("Extension not un-registered", BuiltinCompressions.resolveFactory(name));
+            assertSame(expected, actual, "Mismatched unregistered instance");
+            assertNull(BuiltinCompressions.resolveFactory(name), "Extension not un-registered");
         }
     }
 }

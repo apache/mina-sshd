@@ -45,9 +45,13 @@ import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Multi-thread tests for {@link SftpFileSystem}.
@@ -68,8 +72,8 @@ public class SftpServerTest extends BaseTestSupport {
         super();
     }
 
-    @Before
-    public void setup() throws Exception {
+    @BeforeEach
+    void setup() throws Exception {
         server = CoreTestSupportUtils.setupTestFullSupportServer(SftpServerTest.class);
         serverHasNoSftpSubsystem = new CountDownLatch(1);
         SftpSubsystemFactory factory = new SftpSubsystemFactory();
@@ -96,8 +100,8 @@ public class SftpServerTest extends BaseTestSupport {
         client.start();
     }
 
-    @After
-    public void shutdown() throws Exception {
+    @AfterEach
+    void shutdown() throws Exception {
         if (client != null) {
             client.stop();
         }
@@ -120,12 +124,12 @@ public class SftpServerTest extends BaseTestSupport {
         });
         worker.start();
         worker.join(TimeUnit.SECONDS.toMillis(3));
-        assertFalse("Thread should have terminated", worker.isAlive());
+        assertFalse(worker.isAlive(), "Thread should have terminated");
         return actual.get();
     }
 
     @Test
-    public void testSequentialThreads() throws Exception {
+    void sequentialThreads() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -138,27 +142,27 @@ public class SftpServerTest extends BaseTestSupport {
         try (ClientSession session = createAuthenticatedClientSession(client, server.getPort())) {
             try (SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
                 Path remote = fs.getPath(fileName);
-                assertTrue("Should be an SftpPath", remote instanceof SftpPath);
+                assertTrue(remote instanceof SftpPath, "Should be an SftpPath");
                 String actual = download(remote);
-                assertEquals("Mismatched content", expected, actual);
+                assertEquals(expected, actual, "Mismatched content");
                 // And again
                 actual = download(remote);
-                assertEquals("Mismatched content", expected, actual);
+                assertEquals(expected, actual, "Mismatched content");
                 // And again
                 actual = download(remote);
-                assertEquals("Mismatched content", expected, actual);
+                assertEquals(expected, actual, "Mismatched content");
                 // Yes, we had three threads, but no concurrency at all. There should be only a single server-side
                 // SftpSubsystem.
-                assertEquals("Unexpected number of SftpSubsystems", 1, numberOfSubsystems.get());
+                assertEquals(1, numberOfSubsystems.get(), "Unexpected number of SftpSubsystems");
             }
-            assertTrue("Session should still be open", session.isOpen());
-            assertTrue("Server did not close SftpSubsystem", serverHasNoSftpSubsystem.await(3, TimeUnit.SECONDS));
-            assertEquals("SftpSubsystem count should be zero", 0, numberOfSubsystems.get());
+            assertTrue(session.isOpen(), "Session should still be open");
+            assertTrue(serverHasNoSftpSubsystem.await(3, TimeUnit.SECONDS), "Server did not close SftpSubsystem");
+            assertEquals(0, numberOfSubsystems.get(), "SftpSubsystem count should be zero");
         }
     }
 
     @Test
-    public void testConcurrentThreads() throws Exception {
+    void concurrentThreads() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -171,7 +175,7 @@ public class SftpServerTest extends BaseTestSupport {
         try (ClientSession session = createAuthenticatedClientSession(client, server.getPort())) {
             try (SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
                 Path remote = fs.getPath(fileName);
-                assertTrue("Should be an SftpPath", remote instanceof SftpPath);
+                assertTrue(remote instanceof SftpPath, "Should be an SftpPath");
                 AtomicReference<String> actual1 = new AtomicReference<>();
                 CountDownLatch secondThreadIsReady = new CountDownLatch(1);
                 Thread worker1 = new Thread(() -> {
@@ -221,20 +225,20 @@ public class SftpServerTest extends BaseTestSupport {
                 worker2.start();
                 worker1.join(TimeUnit.SECONDS.toMillis(3));
                 worker2.join(TimeUnit.SECONDS.toMillis(3));
-                assertFalse("Worker 1 should have finished", worker1.isAlive());
-                assertFalse("Worker 2 should have finished", worker2.isAlive());
-                assertEquals("Mismatched content", expected, actual1.get());
-                assertEquals("Mismatched content", expected, actual2.get());
-                assertEquals("Unexpected number of SftpSubsystems", 2, numberOfChannels.get());
+                assertFalse(worker1.isAlive(), "Worker 1 should have finished");
+                assertFalse(worker2.isAlive(), "Worker 2 should have finished");
+                assertEquals(expected, actual1.get(), "Mismatched content");
+                assertEquals(expected, actual2.get(), "Mismatched content");
+                assertEquals(2, numberOfChannels.get(), "Unexpected number of SftpSubsystems");
             }
-            assertTrue("Session should still be open", session.isOpen());
-            assertTrue("Server did not close SftpSubsystem", serverHasNoSftpSubsystem.await(3, TimeUnit.SECONDS));
-            assertEquals("SftpSubsystem count", 0, numberOfSubsystems.get());
+            assertTrue(session.isOpen(), "Session should still be open");
+            assertTrue(serverHasNoSftpSubsystem.await(3, TimeUnit.SECONDS), "Server did not close SftpSubsystem");
+            assertEquals(0, numberOfSubsystems.get(), "SftpSubsystem count");
         }
     }
 
     @Test
-    public void testHandOffStream() throws Exception {
+    void handOffStream() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -247,7 +251,7 @@ public class SftpServerTest extends BaseTestSupport {
         try (ClientSession session = createAuthenticatedClientSession(client, server.getPort())) {
             try (SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
                 Path remote = fs.getPath(fileName);
-                assertTrue("Should be an SftpPath", remote instanceof SftpPath);
+                assertTrue(remote instanceof SftpPath, "Should be an SftpPath");
                 InputStream is = Files.newInputStream(remote);
                 AtomicReference<String> actual = new AtomicReference<>();
                 Thread worker = new Thread(() -> {
@@ -262,14 +266,14 @@ public class SftpServerTest extends BaseTestSupport {
                 });
                 worker.start();
                 worker.join(TimeUnit.SECONDS.toMillis(3));
-                assertFalse("Worker should have terminated", worker.isAlive());
-                assertEquals("Mismatched content", expected, actual.get());
+                assertFalse(worker.isAlive(), "Worker should have terminated");
+                assertEquals(expected, actual.get(), "Mismatched content");
             }
         }
     }
 
     @Test
-    public void testDirectoryStream() throws Exception {
+    void directoryStream() throws Exception {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -283,7 +287,7 @@ public class SftpServerTest extends BaseTestSupport {
         try (ClientSession session = createAuthenticatedClientSession(client, server.getPort())) {
             try (SftpFileSystem fs = SftpClientFactory.instance().createSftpFileSystem(session)) {
                 Path remote = fs.getPath(dirName);
-                assertTrue("Should be an SftpPath", remote instanceof SftpPath);
+                assertTrue(remote instanceof SftpPath, "Should be an SftpPath");
                 int numberOfFiles = 0;
                 try (DirectoryStream<Path> dir = Files.newDirectoryStream(remote)) {
                     // Pretend we did something with the directory listing.
@@ -293,7 +297,7 @@ public class SftpServerTest extends BaseTestSupport {
                         }
                     }
                 }
-                assertEquals("Unexpected number of files", 1, numberOfFiles); // We don't get . and ..
+                assertEquals(1, numberOfFiles, "Unexpected number of files"); // We don't get . and ..
             }
         }
     }

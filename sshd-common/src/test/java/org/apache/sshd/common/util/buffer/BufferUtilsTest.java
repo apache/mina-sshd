@@ -23,24 +23,27 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class BufferUtilsTest extends JUnitTestSupport {
     public BufferUtilsTest() {
         super();
     }
 
     @Test
-    public void testHexEncodeDecode() {
+    void hexEncodeDecode() {
         String expValue = getClass().getName() + "#" + getCurrentTestName();
         byte[] expData = expValue.getBytes(StandardCharsets.UTF_8);
         for (char sep : new char[] { BufferUtils.EMPTY_HEX_SEPARATOR, ':' }) {
@@ -49,12 +52,12 @@ public class BufferUtilsTest extends JUnitTestSupport {
             String actValue = new String(actData, StandardCharsets.UTF_8);
             String sepName = (BufferUtils.EMPTY_HEX_SEPARATOR == sep) ? "EMPTY" : Character.toString(sep);
             outputDebugMessage("Decode(sep=%s) expected=%s, actual=%s", sepName, expValue, actValue);
-            assertArrayEquals("Mismatched result for sep='" + sepName + "'", expData, actData);
+            assertArrayEquals(expData, actData, "Mismatched result for sep='" + sepName + "'");
         }
     }
 
     @Test
-    public void testGetCompactClone() {
+    void getCompactClone() {
         byte[] expected = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
         final int testOffset = Byte.SIZE / 2;
         byte[] data = new byte[expected.length + 2 * testOffset];
@@ -63,11 +66,11 @@ public class BufferUtilsTest extends JUnitTestSupport {
         System.arraycopy(expected, 0, data, testOffset, expected.length);
 
         Buffer buf = ByteArrayBuffer.getCompactClone(data, testOffset, expected.length);
-        assertEquals("Mismatched cloned buffer read position", 0, buf.rpos());
-        assertEquals("Mismatched cloned buffer available size", expected.length, buf.available());
+        assertEquals(0, buf.rpos(), "Mismatched cloned buffer read position");
+        assertEquals(expected.length, buf.available(), "Mismatched cloned buffer available size");
 
         byte[] actual = buf.array();
-        assertNotSame("Original data not cloned", data, actual);
-        assertArrayEquals("Mismatched cloned contents", expected, actual);
+        assertNotSame(data, actual, "Original data not cloned");
+        assertArrayEquals(expected, actual, "Mismatched cloned contents");
     }
 }

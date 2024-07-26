@@ -27,62 +27,66 @@ import java.util.EnumSet;
 import org.apache.sshd.common.kex.KexProposalOption.Constants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class KexProposalOptionTest extends JUnitTestSupport {
     public KexProposalOptionTest() {
         super();
     }
 
     @Test
-    public void testFromUnmatchedName() {
+    void fromUnmatchedName() {
         for (String n : new String[] { null, "", getCurrentTestName() }) {
             KexProposalOption o = KexProposalOption.fromName(n);
-            assertNull("Unexpected value for name='" + n + "'", o);
+            assertNull(o, "Unexpected value for name='" + n + "'");
         }
     }
 
     @Test
-    public void testFromMatchedName() {
+    void fromMatchedName() {
         for (KexProposalOption expected : KexProposalOption.VALUES) {
             String n = expected.name();
 
             for (int index = 0; index < n.length(); index++) {
                 KexProposalOption actual = KexProposalOption.fromName(n);
-                assertSame("Mismatched option for name=" + n, expected, actual);
+                assertSame(expected, actual, "Mismatched option for name=" + n);
                 n = shuffleCase(n); // prepare for next iteration
             }
         }
     }
 
     @Test
-    public void testFromUnmatchedProposalIndex() {
+    void fromUnmatchedProposalIndex() {
         for (int index : new int[] { -1, KexProposalOption.VALUES.size() }) {
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
-            assertNull("Unexpected value for index=" + index, o);
+            assertNull(o, "Unexpected value for index=" + index);
         }
     }
 
     @Test
-    public void testFromMatchedProposalIndex() {
+    void fromMatchedProposalIndex() {
         for (KexProposalOption expected : KexProposalOption.VALUES) {
             int index = expected.getProposalIndex();
             KexProposalOption actual = KexProposalOption.fromProposalIndex(index);
-            assertSame("Mismatched values for index=" + index, expected, actual);
+            assertSame(expected, actual, "Mismatched values for index=" + index);
         }
     }
 
     @Test
-    public void testByProposalIndexSortOrder() {
+    void byProposalIndexSortOrder() {
         for (int index = 0; index < KexProposalOption.VALUES.size(); index++) {
             if (index < 1) {
                 continue;
@@ -93,12 +97,12 @@ public class KexProposalOptionTest extends JUnitTestSupport {
 
             int i1 = o1.getProposalIndex();
             int i2 = o2.getProposalIndex();
-            assertTrue("Non increasing index for " + o1 + "[" + i1 + "] vs. " + o2 + "[" + i2 + "]", i1 < i2);
+            assertTrue(i1 < i2, "Non increasing index for " + o1 + "[" + i1 + "] vs. " + o2 + "[" + i2 + "]");
         }
     }
 
     @Test
-    public void testAllConstantsCovered() throws Exception {
+    void allConstantsCovered() throws Exception {
         Field[] fields = Constants.class.getFields();
 
         Collection<KexProposalOption> options = EnumSet.allOf(KexProposalOption.class);
@@ -115,10 +119,10 @@ public class KexProposalOptionTest extends JUnitTestSupport {
 
             int index = f.getInt(null);
             KexProposalOption o = KexProposalOption.fromProposalIndex(index);
-            assertNotNull("No matching option for index=" + index, o);
-            assertTrue("Option not in known options: " + o, options.remove(o));
+            assertNotNull(o, "No matching option for index=" + index);
+            assertTrue(options.remove(o), "Option not in known options: " + o);
         }
 
-        assertTrue("Not all options covered: " + options, GenericUtils.isEmpty(options));
+        assertTrue(GenericUtils.isEmpty(options), "Not all options covered: " + options);
     }
 }

@@ -23,7 +23,9 @@ import java.nio.charset.StandardCharsets;
 
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ChaCha20CipherTest extends JUnitTestSupport {
     public ChaCha20CipherTest() {
@@ -31,7 +33,7 @@ public class ChaCha20CipherTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testEncryptDecrypt() throws Exception {
+    void encryptDecrypt() throws Exception {
         ChaCha20Cipher cipher = new ChaCha20Cipher();
         byte[] key = new byte[cipher.getKdfSize()];
         for (int i = 0; i < key.length; i++) {

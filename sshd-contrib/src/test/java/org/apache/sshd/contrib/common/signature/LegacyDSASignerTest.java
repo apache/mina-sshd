@@ -36,56 +36,54 @@ import org.apache.sshd.common.signature.SignatureDSA;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class LegacyDSASignerTest extends JUnitTestSupport {
-    private final int keySize;
-    private final KeyPair kp;
+    private int keySize;
+    private KeyPair kp;
 
-    public LegacyDSASignerTest(int keySize)
+    public void initLegacyDSASignerTest(int keySize)
             throws IOException, GeneralSecurityException {
         this.keySize = keySize;
 
         String resourceName = KeyPairProvider.SSH_DSS + "-" + keySize;
         URL url = getClass().getResource(resourceName);
-        assertNotNull("Missing test key file " + resourceName, url);
+        assertNotNull(url, "Missing test key file " + resourceName);
 
         Collection<KeyPair> keys = DSSPEMResourceKeyPairParser.INSTANCE.loadKeyPairs(null, url, null);
         ValidateUtils.checkNotNullAndNotEmpty(keys, "No keys loaded from %s", resourceName);
         kp = GenericUtils.head(keys);
 
         int l = KeyUtils.getKeySize(kp.getPublic());
-        assertEquals("Mismatched read public key size", keySize, l);
+        assertEquals(keySize, l, "Mismatched read public key size");
 
         l = KeyUtils.getKeySize(kp.getPrivate());
-        assertEquals("mismatched read private key size", keySize, l);
+        assertEquals(keySize, l, "mismatched read private key size");
     }
 
-    @Parameters(name = "key-size={0}")
     public static List<Object[]> parameters() {
         return parameterize(Arrays.asList(1024, 2048));
     }
 
-    @Test
-    public void testReflexiveSigning() throws GeneralSecurityException {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "key-size={0}")
+    public void reflexiveSigning(int keySize) throws Exception {
+        initLegacyDSASignerTest(keySize);
         java.security.Signature signer = new LegacyDSASigner(JceRandomFactory.INSTANCE);
         signer.initSign(kp.getPrivate());
 
@@ -99,9 +97,11 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
         assertTrue(signer.verify(signature));
     }
 
-    @Test
-    public void testBuiltinVerifier() throws GeneralSecurityException {
-        Assume.assumeTrue("Skip SHA-1 with too large a key", keySize <= 1024);
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "key-size={0}")
+    public void builtinVerifier(int keySize) throws Exception {
+        initLegacyDSASignerTest(keySize);
+        Assumptions.assumeTrue(keySize <= 1024, "Skip SHA-1 with too large a key");
 
         java.security.Signature signer = new LegacyDSASigner(JceRandomFactory.INSTANCE);
         signer.initSign(kp.getPrivate());
@@ -117,9 +117,11 @@ public class LegacyDSASignerTest extends JUnitTestSupport {
         assertTrue(verifier.verify(signature));
     }
 
-    @Test
-    public void testBuiltinSigner() throws GeneralSecurityException {
-        Assume.assumeTrue("Skip SHA-1 with too large a key", keySize <= 1024);
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "key-size={0}")
+    public void builtinSigner(int keySize) throws Exception {
+        initLegacyDSASignerTest(keySize);
+        Assumptions.assumeTrue(keySize <= 1024, "Skip SHA-1 with too large a key");
 
         java.security.Signature signer = SecurityUtils.getSignature(SignatureDSA.DEFAULT_ALGORITHM);
         signer.initSign(kp.getPrivate());

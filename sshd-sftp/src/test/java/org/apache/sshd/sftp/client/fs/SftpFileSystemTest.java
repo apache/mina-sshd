@@ -88,19 +88,30 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
-import org.hamcrest.MatcherAssert;
-import org.junit.Assume;
-import org.junit.Before;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNotSame;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
+@TestMethodOrder(MethodName.class)
 @SuppressWarnings("checkstyle:MethodCount")
 public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
@@ -110,28 +121,28 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         super();
     }
 
-    @Before
-    public void setUp() throws Exception {
+    @BeforeEach
+    void setUp() throws Exception {
         setupServer();
     }
 
     @Test
-    public void testFileSystem() throws Exception {
+    void fileSystem() throws Exception {
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             testFileSystem(fs, ((SftpFileSystem) fs).getVersion());
         }
     }
 
     @Test
-    public void testFileSystemWriteAppend() throws Exception {
+    void fileSystemWriteAppend() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -150,19 +161,20 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 out.write(buf);
             }
             byte[] data = Files.readAllBytes(remoteFile);
-            assertEquals("Unexpected length", 64005, data.length);
+            assertEquals(64005, data.length, "Unexpected length");
             assertArrayEquals("Hello".getBytes(StandardCharsets.UTF_8), Arrays.copyOf(data, 5));
             for (int i = 5; i < buf.length; i++) {
-                assertEquals("Mismatched data at " + i, (byte) (i - 5), data[i]);
-                assertEquals("Mismatched data at " + (i + buf.length), (byte) (i - 5), data[i + buf.length]);
+                assertEquals((byte) (i - 5), data[i], "Mismatched data at " + i);
+                assertEquals((byte) (i - 5), data[i + buf.length], "Mismatched data at " + (i + buf.length));
             }
         }
     }
 
-    @Test // See GH-325
-    public void testDeleteLink() throws Exception {
+    // See GH-325
+    @Test
+    void deleteLink() throws Exception {
         // This test creates symbolic links.
-        Assume.assumeFalse(OsUtils.isWin32());
+        Assumptions.assumeFalse(OsUtils.isWin32());
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -170,7 +182,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
         List<Path> toRemove = new ArrayList<>();
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -198,10 +210,11 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         }
     }
 
-    @Test // See GH-325
-    public void testDeleteNonexistingLink() throws Exception {
+    // See GH-325
+    @Test
+    void deleteNonexistingLink() throws Exception {
         // This test creates symbolic links.
-        Assume.assumeFalse(OsUtils.isWin32());
+        Assumptions.assumeFalse(OsUtils.isWin32());
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -209,7 +222,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
         List<Path> toRemove = new ArrayList<>();
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -232,10 +245,11 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         }
     }
 
-    @Test // See GH-325
-    public void testDeleteDirectoryLink() throws Exception {
+    // See GH-325
+    @Test
+    void deleteDirectoryLink() throws Exception {
         // This test creates symbolic links.
-        Assume.assumeFalse(OsUtils.isWin32());
+        Assumptions.assumeFalse(OsUtils.isWin32());
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -243,7 +257,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
         List<Path> toRemove = new ArrayList<>();
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -271,15 +285,16 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         }
     }
 
-    @Test // See GH-325
-    public void testDeleteNonexistingFile() throws Exception {
+    // See GH-325
+    @Test
+    void deleteNonexistingFile() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -318,8 +333,9 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         return sshd;
     }
 
-    @Test // see SSHD-1217
-    public void testFileSystemListDirIndirect() throws Exception {
+    // see SSHD-1217
+    @Test
+    void fileSystemListDirIndirect() throws Exception {
         // Instrument the upstream server to verify what gets called there
         SftpSubsystemFactory factory = (SftpSubsystemFactory) NamedResource.findByName(SftpConstants.SFTP_SUBSYSTEM_NAME,
                 String.CASE_INSENSITIVE_ORDER, sshd.getSubsystemFactories());
@@ -347,12 +363,12 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         CommonTestSupportUtils.deleteRecursive(lclSftp);
 
         FileSystem secondHop = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions());
-        assertTrue("Not an SftpFileSystem", secondHop instanceof SftpFileSystem);
+        assertTrue(secondHop instanceof SftpFileSystem, "Not an SftpFileSystem");
         SshServer intermediary = createIntermediaryServer(secondHop);
 
         try (FileSystem fs = FileSystems.newFileSystem(
                 createFileSystemURI(getCurrentTestName(), intermediary.getPort(), Collections.emptyMap()), defaultOptions())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
 
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
@@ -368,7 +384,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             assertHierarchyTargetFolderExists(remoteDir);
             // Clear counters; verifying the remote dir calls (L)STAT
             statCount.set(0);
-            assertEquals("READ_DIR should not have been called yet", 0, readDirCount.get());
+            assertEquals(0, readDirCount.get(), "READ_DIR should not have been called yet");
 
             SftpPath sftpPath = (SftpPath) remoteDir;
 
@@ -386,10 +402,10 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                     "{}: directory listing with {} files from intermediary server took {}ms, got {} entries; upstream READDIR called {} times, (L)STAT called {} times",
                     getCurrentTestName(), numberOfFiles, System.currentTimeMillis() - start, i, readDirCount, statCount);
             assertEquals(numberOfFiles + 2, i); // . and ..
-            assertTrue("Upstream server not called", readDirCount.get() > 0);
+            assertTrue(readDirCount.get() > 0, "Upstream server not called");
             // The current implementation stats 3 times: once to detect whether the directory exists, is a directory,
             // and is readable; once again for the "." entry, and the parent directory once for "..".
-            MatcherAssert.assertThat(
+            assertThat(
                     "Files.getAttributes() should have been called at most a few times for the directory itself",
                     statCount.get(), new BaseMatcher<Integer>() {
 
@@ -423,8 +439,8 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 }
                 long elapsed = System.currentTimeMillis() - start;
                 directTime += elapsed;
-                assertTrue("Upstream server not called", readDirCount.get() > 0);
-                assertEquals("(L)STAT should not have been called on upstream server", 0, statCount.get());
+                assertTrue(readDirCount.get() > 0, "Upstream server not called");
+                assertEquals(0, statCount.get(), "(L)STAT should not have been called on upstream server");
                 LOG.info(
                         "{}: directory listing with {} files from upstream server took {}ms, got {} entries: READDIR called {} times, (L)STAT called {} times",
                         getCurrentTestName(), numberOfFiles, elapsed, i, readDirCount, statCount);
@@ -442,7 +458,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 }
                 elapsed = System.currentTimeMillis() - start;
                 indirectTime += elapsed;
-                assertTrue("Upstream server not called", readDirCount.get() > 0);
+                assertTrue(readDirCount.get() > 0, "Upstream server not called");
                 LOG.info(
                         "{}: directory listing with {} files from intermediary server took {}ms, got {} entries: READDIR called {} times, (L)STAT called {} times",
                         getCurrentTestName(), numberOfFiles, elapsed, i, readDirCount, statCount);
@@ -459,8 +475,9 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         }
     }
 
-    @Test // SSHD-1220
-    public void testAttributeCache() throws Exception {
+    // SSHD-1220
+    @Test
+    void attributeCache() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
                 getCurrentTestName());
@@ -470,7 +487,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 MapBuilder.<String, Object> builder()
                         .put(SftpModuleProperties.READ_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE)
                         .put(SftpModuleProperties.WRITE_BUFFER_SIZE.getName(), IoUtils.DEFAULT_COPY_SIZE).build())) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Path parentPath = targetPath.getParent();
             Path clientFolder = lclSftp.resolve("client");
             assertHierarchyTargetFolderExists(clientFolder);
@@ -485,43 +502,44 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             try (DirectoryStream<Path> directory = Files.newDirectoryStream(remoteFile.getParent())) {
                 for (Path p : directory) {
                     n++;
-                    assertTrue("Expected an SftpPath", p instanceof SftpPath);
+                    assertTrue(p instanceof SftpPath, "Expected an SftpPath");
                     SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
-                    assertNotNull("Path should have cached attributes", cached);
-                    assertEquals("Unexpected size reported", 5, cached.getSize());
+                    assertNotNull(cached, "Path should have cached attributes");
+                    assertEquals(5, cached.getSize(), "Unexpected size reported");
                     // Now modify the file and fetch attributes again
                     Files.write(p, "Bye".getBytes(StandardCharsets.UTF_8));
                     BasicFileAttributes attributes = Files.readAttributes(p, BasicFileAttributes.class);
-                    assertNotEquals("Sizes should be different", attributes.size(), cached.getSize());
-                    assertEquals("Unexpected size after modification", 3, attributes.size());
-                    assertNull("Path should not have cached attributes anymore", ((SftpPath) p).getAttributes());
+                    assertNotEquals(attributes.size(), cached.getSize(), "Sizes should be different");
+                    assertEquals(3, attributes.size(), "Unexpected size after modification");
+                    assertNull(((SftpPath) p).getAttributes(), "Path should not have cached attributes anymore");
                 }
             }
-            assertEquals("Unexpected number of files", 2, n);
+            assertEquals(2, n, "Unexpected number of files");
             // And again
             List<Path> obtained = new ArrayList<>(2);
             try (DirectoryStream<Path> directory = Files.newDirectoryStream(remoteFile.getParent())) {
                 for (Path p : directory) {
-                    assertTrue("Expected an SftpPath", p instanceof SftpPath);
+                    assertTrue(p instanceof SftpPath, "Expected an SftpPath");
                     SftpClient.Attributes cached = ((SftpPath) p).getAttributes();
-                    assertNotNull("Path should have cached attributes", cached);
-                    assertEquals("Unexpected size reported", 3, cached.getSize());
+                    assertNotNull(cached, "Path should have cached attributes");
+                    assertEquals(3, cached.getSize(), "Unexpected size reported");
                     obtained.add(p);
                 }
             }
-            assertEquals("Unexpected number of files", 2, obtained.size());
+            assertEquals(2, obtained.size(), "Unexpected number of files");
             // Now modify the files and fetch attributes again
             for (Path p : obtained) {
                 Files.write(p, "Again".getBytes(StandardCharsets.UTF_8));
                 BasicFileAttributes attributes = Files.readAttributes(p, BasicFileAttributes.class);
                 // If this fails because the size is 3, we mistakenly got data from previously cached SFTP attributes
-                assertEquals("Unexpected file size reported via attributes", 5, attributes.size());
+                assertEquals(5, attributes.size(), "Unexpected file size reported via attributes");
             }
         }
     }
 
-    @Test // see SSHD-578
-    public void testFileSystemURIParameters() throws Exception {
+    // see SSHD-578
+    @Test
+    void fileSystemURIParameters() throws Exception {
         Map<String, Object> params = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         params.put("test-class-name", getClass().getSimpleName());
         params.put("test-pkg-name", getClass().getPackage().getName());
@@ -532,7 +550,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         try (SftpFileSystem fs = (SftpFileSystem) FileSystems.newFileSystem(createDefaultFileSystemURI(params),
                 Collections.<String, Object> emptyMap())) {
             try (SftpClient sftpClient = fs.getClient()) {
-                assertEquals("Mismatched negotiated version", expectedVersion, sftpClient.getVersion());
+                assertEquals(expectedVersion, sftpClient.getVersion(), "Mismatched negotiated version");
 
                 Session session = sftpClient.getClientSession();
                 params.forEach((key, expected) -> {
@@ -541,14 +559,14 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                     }
 
                     Object actual = session.getObject(key);
-                    assertEquals("Mismatched value for param '" + key + "'", expected, actual);
+                    assertEquals(expected, actual, "Mismatched value for param '" + key + "'");
                 });
             }
         }
     }
 
     @Test
-    public void testAttributes() throws IOException {
+    void attributes() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
                 SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(), getCurrentTestName());
@@ -568,7 +586,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             Files.write(file, (getCurrentTestName() + "\n").getBytes(StandardCharsets.UTF_8));
 
             Map<String, Object> attrs = Files.readAttributes(file, "posix:*");
-            assertNotNull("No attributes read for " + file, attrs);
+            assertNotNull(attrs, "No attributes read for " + file);
 
             Files.setAttribute(file, "basic:size", 2L);
             Files.setAttribute(file, "posix:permissions", PosixFilePermissions.fromString("rwxr-----"));
@@ -594,7 +612,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
     }
 
     @Test
-    public void testRootFileSystem() throws IOException {
+    void rootFileSystem() throws IOException {
         Path targetPath = detectTargetFolder();
         Path rootNative = targetPath.resolve("root").toAbsolutePath();
         CommonTestSupportUtils.deleteRecursive(rootNative);
@@ -606,8 +624,9 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         }
     }
 
-    @Test // see SSHD-697
-    public void testFileChannel() throws IOException {
+    // see SSHD-697
+    @Test
+    void fileChannel() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
                 SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
@@ -626,24 +645,24 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             try (FileChannel fc = provider.newFileChannel(file,
                     EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
                 int writeLen = fc.write(ByteBuffer.wrap(expected));
-                assertEquals("Mismatched written length", expected.length, writeLen);
+                assertEquals(expected.length, writeLen, "Mismatched written length");
 
                 FileChannel fcPos = fc.position(0L);
-                assertSame("Mismatched positioned file channel", fc, fcPos);
+                assertSame(fc, fcPos, "Mismatched positioned file channel");
 
                 byte[] actual = new byte[expected.length];
                 int readLen = fc.read(ByteBuffer.wrap(actual));
-                assertEquals("Mismatched read len", writeLen, readLen);
-                assertArrayEquals("Mismatched read data", expected, actual);
+                assertEquals(writeLen, readLen, "Mismatched read len");
+                assertArrayEquals(expected, actual, "Mismatched read data");
             }
         }
 
         byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
+        assertArrayEquals(expected, actual, "Mismatched persisted data");
     }
 
     @Test
-    public void testFileCopy() throws IOException {
+    void fileCopy() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
@@ -664,28 +683,28 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             try (FileChannel fc = provider.newFileChannel(file,
                     EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.READ, StandardOpenOption.WRITE))) {
                 int writeLen = fc.write(ByteBuffer.wrap(expected));
-                assertEquals("Mismatched written length", expected.length, writeLen);
+                assertEquals(expected.length, writeLen, "Mismatched written length");
 
                 FileChannel fcPos = fc.position(0L);
-                assertSame("Mismatched positioned file channel", fc, fcPos);
+                assertSame(fc, fcPos, "Mismatched positioned file channel");
 
                 byte[] actual = new byte[expected.length];
                 int readLen = fc.read(ByteBuffer.wrap(actual));
-                assertEquals("Mismatched read len", writeLen, readLen);
-                assertArrayEquals("Mismatched read data", expected, actual);
+                assertEquals(writeLen, readLen, "Mismatched read len");
+                assertArrayEquals(expected, actual, "Mismatched read data");
             }
             Path sibling = file.getParent().resolve(file.getFileName().toString() + '2');
             Files.copy(file, sibling);
         }
 
         byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
+        assertArrayEquals(expected, actual, "Mismatched persisted data");
         actual = Files.readAllBytes(lclFile2);
-        assertArrayEquals("Mismatched copied data", expected, actual);
+        assertArrayEquals(expected, actual, "Mismatched copied data");
     }
 
     @Test
-    public void testFileWriteRead() throws IOException {
+    void fileWriteRead() throws IOException {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
@@ -706,40 +725,40 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 try (ByteArrayOutputStream out = new ByteArrayOutputStream();
                      InputStream in = client.read(remFilePath)) {
                     IoUtils.copy(in, out);
-                    assertArrayEquals("Mismatched persisted data", expected, out.toByteArray());
+                    assertArrayEquals(expected, out.toByteArray(), "Mismatched persisted data");
                 }
             }
         }
 
         byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
+        assertArrayEquals(expected, actual, "Mismatched persisted data");
     }
 
     @Test
-    public void testFileStore() throws IOException {
+    void fileStore() throws IOException {
         try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
             Iterable<FileStore> iter = fs.getFileStores();
-            assertTrue("Not a list", iter instanceof List<?>);
+            assertTrue(iter instanceof List<?>, "Not a list");
 
             List<FileStore> list = (List<FileStore>) iter;
-            assertEquals("Mismatched stores count", 1, list.size());
+            assertEquals(1, list.size(), "Mismatched stores count");
 
             FileStore store = list.get(0);
-            assertEquals("Mismatched type", SftpConstants.SFTP_SUBSYSTEM_NAME, store.type());
-            assertFalse("Read-only ?", store.isReadOnly());
+            assertEquals(SftpConstants.SFTP_SUBSYSTEM_NAME, store.type(), "Mismatched type");
+            assertFalse(store.isReadOnly(), "Read-only ?");
 
             for (String name : fs.supportedFileAttributeViews()) {
-                assertTrue("Unsupported view name: " + name, store.supportsFileAttributeView(name));
+                assertTrue(store.supportsFileAttributeView(name), "Unsupported view name: " + name);
             }
 
             for (Class<? extends FileAttributeView> type : SftpFileSystemProvider.UNIVERSAL_SUPPORTED_VIEWS) {
-                assertTrue("Unsupported view type: " + type.getSimpleName(), store.supportsFileAttributeView(type));
+                assertTrue(store.supportsFileAttributeView(type), "Unsupported view type: " + type.getSimpleName());
             }
         }
     }
 
     @Test
-    public void testMultipleFileStoresOnSameProvider() throws IOException {
+    void multipleFileStoresOnSameProvider() throws IOException {
         SftpFileSystemProvider provider = new SftpFileSystemProvider(client);
         Collection<SftpFileSystem> fsList = new LinkedList<>();
         try {
@@ -751,17 +770,17 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 fsList.add(expected);
 
                 String id = expected.getId();
-                assertTrue("Non unique file system id: " + id, idSet.add(id));
+                assertTrue(idSet.add(id), "Non unique file system id: " + id);
 
                 SftpFileSystem actual = provider.getFileSystem(id);
-                assertSame("Mismatched cached instances for " + id, expected, actual);
+                assertSame(expected, actual, "Mismatched cached instances for " + id);
                 outputDebugMessage("Created file system id: %s", id);
             }
 
             for (SftpFileSystem fs : fsList) {
                 String id = fs.getId();
                 fs.close();
-                assertNull("File system not removed from cache: " + id, provider.getFileSystem(id));
+                assertNull(provider.getFileSystem(id), "File system not removed from cache: " + id);
             }
         } finally {
             IOException err = null;
@@ -780,7 +799,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
     }
 
     @Test
-    public void testSftpVersionSelector() throws Exception {
+    void sftpVersionSelector() throws Exception {
         AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = (session, initial, current, available) -> {
             int value = initial
@@ -795,18 +814,18 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
         try (ClientSession session = createAuthenticatedClientSession();
              FileSystem fs = createSftpFileSystem(session, selector)) {
-            assertTrue("Not an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
             Collection<String> views = fs.supportedFileAttributeViews();
-            assertTrue("Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views,
-                    views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS));
+            assertTrue(views.containsAll(SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS),
+                    "Universal views (" + SftpFileSystem.UNIVERSAL_SUPPORTED_VIEWS + ") not supported: " + views);
             int expectedVersion = selected.get();
-            assertEquals("Mismatched negotiated version", expectedVersion, ((SftpFileSystem) fs).getVersion());
+            assertEquals(expectedVersion, ((SftpFileSystem) fs).getVersion(), "Mismatched negotiated version");
             testFileSystem(fs, expectedVersion);
         }
     }
 
     @Test
-    public void testSessionNotClosed() throws Exception {
+    void sessionNotClosed() throws Exception {
         try (ClientSession session = createAuthenticatedClientSession()) {
             List<Channel> channels = new ArrayList<>();
             session.addChannelListener(new ChannelListener() {
@@ -827,14 +846,14 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             } finally {
                 fs.close();
             }
-            assertFalse("File system should not be open", fs.isOpen());
-            assertEquals("No open channels expected", "[]", channels.toString());
-            assertTrue("Non-owned session should still be open", session.isOpen());
+            assertFalse(fs.isOpen(), "File system should not be open");
+            assertEquals("[]", channels.toString(), "No open channels expected");
+            assertTrue(session.isOpen(), "Non-owned session should still be open");
         }
     }
 
     @Test
-    public void testSessionClosed() throws Exception {
+    void sessionClosed() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
@@ -847,7 +866,7 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         ClientSession session;
         FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap());
         try {
-            assertTrue("Should be an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Should be an SftpFileSystem");
             Path remotePath = fs.getPath(CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), lclFile));
             Files.write(remotePath, expected);
             session = ((SftpFileSystem) fs).getClientSession();
@@ -855,13 +874,13 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             fs.close();
         }
         byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
-        assertFalse("File system should not be open", fs.isOpen());
-        assertFalse("Owned session should not be open", session.isOpen());
+        assertArrayEquals(expected, actual, "Mismatched persisted data");
+        assertFalse(fs.isOpen(), "File system should not be open");
+        assertFalse(session.isOpen(), "Owned session should not be open");
     }
 
     @Test
-    public void testSessionRecreate() throws Exception {
+    void sessionRecreate() throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
@@ -874,33 +893,33 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         ClientSession session;
         FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap());
         try {
-            assertTrue("Should be an SftpFileSystem", fs instanceof SftpFileSystem);
+            assertTrue(fs instanceof SftpFileSystem, "Should be an SftpFileSystem");
             Path remotePath = fs.getPath(CommonTestSupportUtils.resolveRelativeRemotePath(targetPath.getParent(), lclFile));
             Files.write(remotePath, "foo".getBytes(StandardCharsets.US_ASCII));
             session = ((SftpFileSystem) fs).getClientSession();
             session.close();
             Files.write(remotePath, expected);
             ClientSession session2 = ((SftpFileSystem) fs).getClientSession();
-            assertNotNull("Expected a session", session2);
-            assertNotSame("Expected different sessions", session, session2);
+            assertNotNull(session2, "Expected a session");
+            assertNotSame(session, session2, "Expected different sessions");
             session = session2;
-            assertTrue("Second session should still be open", session.isOpen());
-            assertTrue("Recreated session should be owned by the file system",
-                    session.getAttribute(SftpFileSystem.OWNED_SESSION));
+            assertTrue(session.isOpen(), "Second session should still be open");
+            assertTrue(session.getAttribute(SftpFileSystem.OWNED_SESSION),
+                    "Recreated session should be owned by the file system");
         } finally {
             fs.close();
         }
         byte[] actual = Files.readAllBytes(lclFile);
-        assertArrayEquals("Mismatched persisted data", expected, actual);
-        assertFalse("File system should not be open", fs.isOpen());
-        assertFalse("Owned session should not be open", session.isOpen());
+        assertArrayEquals(expected, actual, "Mismatched persisted data");
+        assertFalse(fs.isOpen(), "File system should not be open");
+        assertFalse(session.isOpen(), "Owned session should not be open");
     }
 
     @Test
-    public void testFileSystemProviderServiceEntry() throws IOException {
+    void fileSystemProviderServiceEntry() throws IOException {
         Path configFile = CommonTestSupportUtils.resolve(detectSourcesFolder(),
                 MAIN_SUBFOLDER, "filtered-resources", "META-INF", "services", FileSystemProvider.class.getName());
-        assertTrue("Missing " + configFile, Files.exists(configFile));
+        assertTrue(Files.exists(configFile), "Missing " + configFile);
 
         boolean found = false;
         try (InputStream stream = Files.newInputStream(configFile);
@@ -913,12 +932,12 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                     continue;
                 }
 
-                assertFalse("Multiple configurations: " + line, found);
-                assertEquals("Mismatched configuration", SftpFileSystemProvider.class.getName(), line);
+                assertFalse(found, "Multiple configurations: " + line);
+                assertEquals(SftpFileSystemProvider.class.getName(), line, "Mismatched configuration");
                 found = true;
             }
         }
 
-        assertTrue("No configuration found", found);
+        assertTrue(found, "No configuration found");
     }
 }

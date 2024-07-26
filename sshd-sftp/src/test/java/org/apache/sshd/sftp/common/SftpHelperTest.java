@@ -21,17 +21,18 @@ package org.apache.sshd.sftp.common;
 
 import org.apache.sshd.sftp.client.SftpClient.Attributes;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SftpHelperTest extends JUnitTestSupport {
 
     public SftpHelperTest() {
@@ -39,12 +40,12 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testPermissionsToFile() {
+    void permissionsToFile() {
         assertEquals(SftpConstants.SSH_FILEXFER_TYPE_SOCKET, SftpHelper.permissionsToFileType(SftpConstants.S_IFSOCK));
     }
 
     @Test
-    public void testCompleteAttributesNoLongName() {
+    void completeAttributesNoLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -54,7 +55,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesLongName() {
+    void completeAttributesLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -64,7 +65,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesLongNameDir() {
+    void completeAttributesLongNameDir() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1FF);
@@ -74,7 +75,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesLongNameT() {
+    void completeAttributesLongNameT() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1FD);
@@ -84,7 +85,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesLongNameS() {
+    void completeAttributesLongNameS() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1BD);
@@ -94,7 +95,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesLongNameLink() {
+    void completeAttributesLongNameLink() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1FF);
@@ -104,7 +105,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesSolarWindsLongName() {
+    void completeAttributesSolarWindsLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -114,7 +115,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesWinLongName() {
+    void completeAttributesWinLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -124,7 +125,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesOsxLongName() {
+    void completeAttributesOsxLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -134,7 +135,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesUnknownLongName() {
+    void completeAttributesUnknownLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -144,7 +145,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesBrokenLongName() {
+    void completeAttributesBrokenLongName() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);
@@ -154,7 +155,7 @@ public class SftpHelperTest extends JUnitTestSupport {
     }
 
     @Test
-    public void testCompleteAttributesBrokenLongName2() {
+    void completeAttributesBrokenLongName2() {
         Attributes attrs = new Attributes();
         attrs.setType(SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN);
         attrs.setPermissions(0x1B6);

@@ -21,55 +21,57 @@ package org.apache.sshd.sftp.common;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class SftpConstantsTest extends JUnitTestSupport {
     public SftpConstantsTest() {
         super();
     }
 
     @Test
-    public void testRenameModesNotMarkedAsOpcodes() {
+    void renameModesNotMarkedAsOpcodes() {
         for (int cmd : new int[] {
                 SftpConstants.SSH_FXP_RENAME_OVERWRITE,
                 SftpConstants.SSH_FXP_RENAME_ATOMIC,
                 SftpConstants.SSH_FXP_RENAME_NATIVE
         }) {
             String name = SftpConstants.getCommandMessageName(cmd);
-            assertFalse("Mismatched name for " + cmd + ": " + name, name.startsWith("SSH_FXP_RENAME_"));
+            assertFalse(name.startsWith("SSH_FXP_RENAME_"), "Mismatched name for " + cmd + ": " + name);
         }
     }
 
     @Test
-    public void testRealPathModesNotMarkedAsOpcodes() {
+    void realPathModesNotMarkedAsOpcodes() {
         for (int cmd = SftpConstants.SSH_FXP_REALPATH_NO_CHECK; cmd <= SftpConstants.SSH_FXP_REALPATH_STAT_IF; cmd++) {
             String name = SftpConstants.getCommandMessageName(cmd);
-            assertFalse("Mismatched name for " + cmd + ": " + name, name.startsWith("SSH_FXP_REALPATH_"));
+            assertFalse(name.startsWith("SSH_FXP_REALPATH_"), "Mismatched name for " + cmd + ": " + name);
         }
     }
 
     @Test
-    public void testSubstatusNameResolution() {
+    void substatusNameResolution() {
         for (int status = SftpConstants.SSH_FX_OK; status <= SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK; status++) {
             String name = SftpConstants.getStatusName(status);
-            assertTrue("Failed to convert status=" + status + ": " + name, name.startsWith("SSH_FX_"));
+            assertTrue(name.startsWith("SSH_FX_"), "Failed to convert status=" + status + ": " + name);
         }
     }
 
     @Test
-    public void testSubstatusMessageResolution() {
+    void substatusMessageResolution() {
         for (int status = SftpConstants.SSH_FX_OK; status <= SftpConstants.SSH_FX_NO_MATCHING_BYTE_RANGE_LOCK; status++) {
             String message = SftpHelper.resolveStatusMessage(status);
-            assertTrue("Missing message for status=" + status, GenericUtils.isNotEmpty(message));
+            assertTrue(GenericUtils.isNotEmpty(message), "Missing message for status=" + status);
         }
     }
 }

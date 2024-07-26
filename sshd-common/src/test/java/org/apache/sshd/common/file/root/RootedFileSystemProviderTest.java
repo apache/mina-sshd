@@ -48,13 +48,18 @@ import java.util.TreeSet;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.Assert;
-import org.junit.Assume;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 /**
  * Tests the RootedFileSystemProvider implementation of {@link java.nio.file.spi.FileSystemProvider} checking that
@@ -65,8 +70,8 @@ import org.junit.runners.MethodSorters;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class RootedFileSystemProviderTest extends AssertableFile {
     private static final String SKIP_ON_WINDOWS = "Test fails due to windows normalizing paths before opening them, " +
                                                   "allowing one to open a file like \"C:\\directory_doesnt_exist\\..\\myfile.txt\" whereas this is blocked in unix";
@@ -87,17 +92,17 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testRoot() {
+    void root() {
         Path root = fileSystem.getRoot();
-        assertTrue("Exists? " + root, exists(root));
-        assertTrue("Dir? " + root, isDir(root));
-        assertTrue("Readable? " + root, isReadable(root));
-        assertTrue(root + " rooted at " + rootSandbox + " ?", isRootedAt(rootSandbox, root));
+        assertTrue(exists(root), "Exists? " + root);
+        assertTrue(isDir(root), "Dir? " + root);
+        assertTrue(isReadable(root), "Readable? " + root);
+        assertTrue(isRootedAt(rootSandbox, root), root + " rooted at " + rootSandbox + " ?");
     }
 
     /* mkdir */
     @Test
-    public void testMkdir() throws IOException {
+    void mkdir() throws IOException {
         Path created = fileHelper.createDirectory(fileSystem.getPath(getCurrentTestName()));
         try {
             assertTrue(exists(created) && isDir(created) && isReadable(created));
@@ -107,31 +112,34 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testMkdirInvalid() {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void mkdirInvalid() {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
 
         String parent = DOESNT_EXIST + getCurrentTestName();
-        assertThrows(String.format("Unexpected success in creating directory %s", parent), NoSuchFileException.class,
-                () -> fileHelper.createDirectory(fileSystem.getPath(parent)));
+        assertThrows(NoSuchFileException.class,
+                () -> fileHelper.createDirectory(fileSystem.getPath(parent)),
+                String.format("Unexpected success in creating directory %s", parent));
     }
 
     /* rmdir */
     @Test
-    public void testRmdir() throws IOException {
+    void rmdir() throws IOException {
         Path created = fileHelper.createDirectory(fileSystem.getPath(getCurrentTestName()));
         Path deleted = fileHelper.deleteDirectory(created);
         notExists(deleted);
     }
 
-    @Test(expected = NoSuchFileException.class)
-    public void testRmdirInvalid() throws IOException {
-        Path deleted = fileHelper.deleteDirectory(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in removing directory %s", deleted.toString()));
+    @Test
+    void rmdirInvalid() throws IOException {
+        assertThrows(NoSuchFileException.class, () -> {
+            Path deleted = fileHelper.deleteDirectory(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
+            fail(String.format("Unexpected success in removing directory %s", deleted.toString()));
+        });
     }
 
     /* chdir */
     @Test
-    public void testChdir() throws IOException {
+    void chdir() throws IOException {
         Path created = fileHelper.createDirectory(fileSystem.getPath(getCurrentTestName()));
         Path createdFile = fileHelper.createFile(created.resolve(getCurrentTestName()));
         try {
@@ -142,7 +150,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
                             fileSystem.getPath(created.getFileName() + "/" + p.getFileName()));
                 }
             }
-            assertTrue(createdFile + " found in ch directory", hasFile);
+            assertTrue(hasFile, createdFile + " found in ch directory");
         } finally {
             Files.delete(createdFile);
             Files.delete(created);
@@ -151,51 +159,56 @@ public class RootedFileSystemProviderTest extends AssertableFile {
 
     /* write */
     @Test
-    public void testWriteFile() throws IOException {
+    void writeFile() throws IOException {
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         assertTrue(exists(created) && isReadable(created));
     }
 
     @Test
-    public void testWriteFileInvalid() {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void writeFileInvalid() {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
 
         String written = DOESNT_EXIST + getCurrentTestName();
-        assertThrows(String.format("Unexpected success in writing file %s", written), NoSuchFileException.class,
-                () -> fileHelper.createFile(fileSystem.getPath(written)));
+        assertThrows(NoSuchFileException.class,
+                () -> fileHelper.createFile(fileSystem.getPath(written)),
+                String.format("Unexpected success in writing file %s", written));
     }
 
     /* read */
     @Test
-    public void testReadFile() throws IOException {
+    void readFile() throws IOException {
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         isNonEmpty(fileHelper.readFile(created));
     }
 
-    @Test(expected = NoSuchFileException.class)
-    public void testReadFileInvalid() throws IOException {
-        Path read = fileSystem.getPath(DOESNT_EXIST + getCurrentTestName());
-        fileHelper.readFile(read);
-        fail(String.format("Unexpected success in reading file %s", read.toString()));
+    @Test
+    void readFileInvalid() throws IOException {
+        assertThrows(NoSuchFileException.class, () -> {
+            Path read = fileSystem.getPath(DOESNT_EXIST + getCurrentTestName());
+            fileHelper.readFile(read);
+            fail(String.format("Unexpected success in reading file %s", read.toString()));
+        });
     }
 
     /* rm */
     @Test
-    public void testDeleteFile() throws IOException {
+    void deleteFile() throws IOException {
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path deleted = fileHelper.deleteFile(created);
         notExists(deleted);
     }
 
-    @Test(expected = NoSuchFileException.class)
-    public void testDeleteFileInvalid() throws IOException {
-        Path deleted = fileHelper.deleteFile(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
-        fail(String.format("Unexpected success in deleting file %s", deleted.toString()));
+    @Test
+    void deleteFileInvalid() throws IOException {
+        assertThrows(NoSuchFileException.class, () -> {
+            Path deleted = fileHelper.deleteFile(fileSystem.getPath(DOESNT_EXIST + getCurrentTestName()));
+            fail(String.format("Unexpected success in deleting file %s", deleted.toString()));
+        });
     }
 
     /* cp */
     @Test
-    public void testCopyFile() throws IOException {
+    void copyFile() throws IOException {
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path destination = fileSystem.getPath(getCurrentTestName() + "dest");
         try {
@@ -208,19 +221,19 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testCopyFileInvalid() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void copyFileInvalid() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
 
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         String copy = DOESNT_EXIST + getCurrentTestName();
-        assertThrows(String.format("Unexpected success in copying file to %s", copy),
-                NoSuchFileException.class,
-                () -> fileHelper.copyFile(created, fileSystem.getPath(copy)));
+        assertThrows(NoSuchFileException.class,
+                () -> fileHelper.copyFile(created, fileSystem.getPath(copy)),
+                String.format("Unexpected success in copying file to %s", copy));
     }
 
     /* mv */
     @Test
-    public void testMoveFile() throws IOException {
+    void moveFile() throws IOException {
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path destination = fileSystem.getPath(getCurrentTestName() + "dest");
         fileHelper.moveFile(created, destination);
@@ -228,18 +241,19 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testMoveFileInvalid() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void moveFileInvalid() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
 
         Path created = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         String moved = DOESNT_EXIST + getCurrentTestName();
-        assertThrows(String.format("Unexpected success in moving file to %s", moved), NoSuchFileException.class,
-                () -> fileHelper.moveFile(created, fileSystem.getPath(moved)));
+        assertThrows(NoSuchFileException.class,
+                () -> fileHelper.moveFile(created, fileSystem.getPath(moved)),
+                String.format("Unexpected success in moving file to %s", moved));
     }
 
     /* link */
     @Test
-    public void testCreateLink() throws IOException {
+    void createLink() throws IOException {
         Path existing = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         Path link = fileSystem.getPath(getCurrentTestName() + "link");
         try {
@@ -252,37 +266,37 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testJailbreakLink() {
+    void jailbreakLink() {
         testJailbreakLink("../");
     }
 
     @Test
-    public void testJailbreakLink2() {
+    void jailbreakLink2() {
         testJailbreakLink("../test/");
     }
 
     @Test
-    public void testJailbreakLink3() {
+    void jailbreakLink3() {
         testJailbreakLink("/..");
     }
 
     @Test
-    public void testJailbreakLink4() {
+    void jailbreakLink4() {
         testJailbreakLink("/./..");
     }
 
     @Test
-    public void testJailbreakLink5() {
+    void jailbreakLink5() {
         testJailbreakLink("/./../");
     }
 
     @Test
-    public void testJailbreakLink6() {
+    void jailbreakLink6() {
         testJailbreakLink("./../");
     }
 
     @Test
-    public void testJailbreakLink7() {
+    void jailbreakLink7() {
         String fileName = "/testdir/testdir2/../../..";
         testJailbreakLink(fileName);
     }
@@ -290,33 +304,34 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     private void testJailbreakLink(String jailbrokenTarget) {
         Path target = fileSystem.getPath(jailbrokenTarget);
         Path linkPath = fileSystem.getPath("/testLink");
-        Assert.assertThrows(InvalidPathException.class, () -> fileSystem.provider().createSymbolicLink(linkPath, target));
-        Assert.assertFalse(Files.exists(linkPath));
+        assertThrows(InvalidPathException.class, () -> fileSystem.provider().createSymbolicLink(linkPath, target));
+        assertFalse(Files.exists(linkPath));
     }
 
     @Test
-    public void testCreateLinkInvalid() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void createLinkInvalid() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
 
         Path existing = fileHelper.createFile(fileSystem.getPath(getCurrentTestName()));
         String link = DOESNT_EXIST + getCurrentTestName() + "link";
-        assertThrows(String.format("Unexpected success in linking file %s", link), NoSuchFileException.class,
-                () -> fileHelper.createLink(fileSystem.getPath(link), existing));
+        assertThrows(NoSuchFileException.class,
+                () -> fileHelper.createLink(fileSystem.getPath(link), existing),
+                String.format("Unexpected success in linking file %s", link));
     }
 
     @Test
-    public void testNewByteChannelProviderMismatchException() throws IOException {
+    void newByteChannelProviderMismatchException() throws IOException {
         RootedFileSystemProvider provider = new RootedFileSystemProvider();
         Path tempFolder = getTempTargetFolder();
         Path file = Files.createTempFile(tempFolder, getCurrentTestName(), ".txt");
         try (FileSystem fs = provider.newFileSystem(tempFolder, Collections.emptyMap());
              Channel channel = provider.newByteChannel(fs.getPath(file.getFileName().toString()), Collections.emptySet())) {
-            assertTrue("Channel not open", channel.isOpen());
+            assertTrue(channel.isOpen(), "Channel not open");
         }
     }
 
     @Test
-    public void testResolveRoot() throws IOException {
+    void resolveRoot() throws IOException {
         Path root = GenericUtils.head(fileSystem.getRootDirectories());
         Path dir = root.resolve("tsd");
         fileHelper.createDirectory(dir);
@@ -326,7 +341,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
             try (DirectoryStream<Path> ds = Files.newDirectoryStream(dir)) {
                 f2 = ds.iterator().next();
             }
-            assertTrue("Unrooted path found", f2 instanceof RootedPath);
+            assertTrue(f2 instanceof RootedPath, "Unrooted path found");
             assertEquals(f1, f2);
         } finally {
             fileHelper.deleteFile(f1);
@@ -335,37 +350,37 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testBreakOutOfChroot1() throws IOException {
+    void breakOutOfChroot1() throws IOException {
         String fileName = "../" + getCurrentTestName();
         testBreakOutOfChroot(fileName, fileName);
     }
 
     @Test
-    public void testBreakOutOfChroot2() throws IOException {
+    void breakOutOfChroot2() throws IOException {
         String fileName = "./../" + getCurrentTestName();
         testBreakOutOfChroot(fileName, fileName);
     }
 
     @Test
-    public void testBreakOutOfChroot3() throws IOException {
+    void breakOutOfChroot3() throws IOException {
         String fileName = "/../" + getCurrentTestName();
         testBreakOutOfChroot(fileName, fileName);
     }
 
     @Test
-    public void testBreakOutOfChroot4() throws IOException {
+    void breakOutOfChroot4() throws IOException {
         String fileName = "/.././" + getCurrentTestName();
         testBreakOutOfChroot(fileName, fileName);
     }
 
     @Test
-    public void testBreakOutOfChroot5() throws IOException {
+    void breakOutOfChroot5() throws IOException {
         String fileName = "/./../" + getCurrentTestName();
         testBreakOutOfChroot(fileName, fileName);
     }
 
     @Test
-    public void testBreakOutOfChroot6() throws IOException {
+    void breakOutOfChroot6() throws IOException {
         String fileName = "//../" + getCurrentTestName();
         testBreakOutOfChroot(fileName, "/../" + getCurrentTestName());
     }
@@ -381,7 +396,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
         RootedPath breakoutAttempt = fileSystem.getPath(fileName);
 
         // make sure that our rooted fs behaves like a proper unix fs
-        Assert.assertEquals(expected, breakoutAttempt.toString());
+        assertEquals(expected, breakoutAttempt.toString());
 
         Path expectedDir = fileSystem.getRoot().resolve(getCurrentTestName());
         Path newDir = fileHelper.createDirectory(breakoutAttempt);
@@ -408,36 +423,36 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testValidSymlink1() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void validSymlink1() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
         String fileName = "/testdir/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
-    public void testValidSymlink2() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void validSymlink2() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
         String fileName = "/testdir/testdir2/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
-    public void testValidSymlink3() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void validSymlink3() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
         String fileName = "/testdir/../testdir3/";
         testValidSymlink(fileName, true);
     }
 
     @Test
-    public void testValidSymlink4() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void validSymlink4() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
         String fileName = "testdir/../testdir3/../";
         testValidSymlink(fileName, true);
     }
 
     @Test
-    public void testValidSymlink5() throws IOException {
-        Assume.assumeFalse(SKIP_ON_WINDOWS, OsUtils.isWin32());
+    void validSymlink5() throws IOException {
+        Assumptions.assumeFalse(OsUtils.isWin32(), SKIP_ON_WINDOWS);
         String fileName = "testdir/../testdir3/../testfile";
         testValidSymlink(fileName, false);
     }
@@ -451,13 +466,13 @@ public class RootedFileSystemProviderTest extends AssertableFile {
             toDelete.add(linkPath);
 
             // ensure that nothing processed the symlink.
-            Assert.assertEquals(Paths.get(symlink).toString(),
+            assertEquals(Paths.get(symlink).toString(),
                     fileSystem.provider().readSymbolicLink(linkPath).toString());
-            Assert.assertFalse(Files.exists(target));
-            Assert.assertEquals(Files.exists(linkPath), Files.exists(target));
+            assertFalse(Files.exists(target));
+            assertEquals(Files.exists(linkPath), Files.exists(target));
 
             // If we don't follow the link, we simply check that the link exists, which it does as we created it.
-            Assert.assertTrue(Files.exists(linkPath, LinkOption.NOFOLLOW_LINKS));
+            assertTrue(Files.exists(linkPath, LinkOption.NOFOLLOW_LINKS));
 
             createParentDirs(targetIsDirectory ? target : target.getParent(), toDelete);
 
@@ -466,7 +481,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
                 toDelete.add(target);
             }
 
-            Assert.assertTrue(Files.exists(linkPath));
+            assertTrue(Files.exists(linkPath));
         } finally {
             for (int i = toDelete.size() - 1; i >= 0; i--) {
                 Path path = toDelete.get(i);
@@ -491,7 +506,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testFileNamedSlashOnUnixBasedOS() throws IOException {
+    void fileNamedSlashOnUnixBasedOS() throws IOException {
         // skip ths test on Win32
         if (!"\\".equals(File.separator)) {
             Path slashFile = fileSystem.getPath("\\");
@@ -505,7 +520,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     }
 
     @Test
-    public void testStreams() throws IOException {
+    void streams() throws IOException {
         byte[] data = "This is test data".getBytes(StandardCharsets.UTF_8);
         RootedPath testPath = fileSystem.getPath("testfile.txt");
         try (OutputStream is = Files.newOutputStream(testPath)) {

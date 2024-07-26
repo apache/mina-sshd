@@ -20,8 +20,8 @@
 package org.apache.sshd.common.util.security;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -36,12 +36,12 @@ public abstract class SecurityUtilsTestSupport extends JUnitTestSupport {
     }
 
     // NOTE: Using the BouncyCastle provider instead of the name does not work as expected so we take no chances
-    @BeforeClass
+    @BeforeAll
     public static void useNamedBouncyCastleProvider() {
         System.setProperty(BC_NAMED_USAGE_PROP, Boolean.TRUE.toString());
     }
 
-    @AfterClass
+    @AfterAll
     public static void unsetBouncyCastleProviderUsagePreference() {
         System.clearProperty(BC_NAMED_USAGE_PROP);
     }

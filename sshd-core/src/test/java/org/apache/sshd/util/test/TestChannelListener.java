@@ -30,7 +30,8 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
-import org.junit.Assert;
+
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -68,7 +69,7 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
 
     @Override
     public void channelInitialized(Channel channel) {
-        Assert.assertTrue("Same channel instance re-initialized: " + channel, activeChannels.add(channel));
+        assertTrue(activeChannels.add(channel), "Same channel instance re-initialized: " + channel);
         activeChannelsCounter.release();
         modificationsCounter.release();
         log.info("channelInitialized({})", channel);
@@ -84,8 +85,8 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
 
     @Override
     public void channelOpenSuccess(Channel channel) {
-        Assert.assertTrue("Open channel not activated: " + channel, activeChannels.contains(channel));
-        Assert.assertTrue("Same channel instance re-opened: " + channel, openChannels.add(channel));
+        assertTrue(activeChannels.contains(channel), "Open channel not activated: " + channel);
+        assertTrue(openChannels.add(channel), "Same channel instance re-opened: " + channel);
         openChannelsCounter.release();
         modificationsCounter.release();
         log.info("channelOpenSuccess({})", channel);
@@ -101,8 +102,8 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
 
     @Override
     public void channelOpenFailure(Channel channel, Throwable reason) {
-        Assert.assertTrue("Failed channel not activated: " + channel, activeChannels.contains(channel));
-        Assert.assertTrue("Same channel instance re-failed: " + channel, failedChannels.add(channel));
+        assertTrue(activeChannels.contains(channel), "Failed channel not activated: " + channel);
+        assertTrue(failedChannels.add(channel), "Same channel instance re-failed: " + channel);
         failedChannelsCounter.release();
         modificationsCounter.release();
         warn("channelOpenFailure({}) {} : {}", channel, reason.getClass().getSimpleName(), reason.getMessage(), reason);
@@ -114,7 +115,7 @@ public class TestChannelListener extends AbstractLoggingBean implements ChannelL
 
     @Override
     public void channelClosed(Channel channel, Throwable reason) {
-        Assert.assertTrue("Unknown closed channel instance: " + channel, activeChannels.remove(channel));
+        assertTrue(activeChannels.remove(channel), "Unknown closed channel instance: " + channel);
         activeChannelsCounter.release();
         closedChannelsCounter.release();
         modificationsCounter.release();

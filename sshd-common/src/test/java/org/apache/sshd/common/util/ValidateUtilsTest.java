@@ -20,25 +20,28 @@
 package org.apache.sshd.common.util;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runners.MethodSorters;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
+
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@Category(NoIoTestCase.class)
+@TestMethodOrder(MethodName.class)
+@Tag("NoIoTestCase")
 public class ValidateUtilsTest extends JUnitTestSupport {
     public ValidateUtilsTest() {
         super();
     }
 
-    @Test(expected = IllegalArgumentException.class)
-    public void checkNotNull() {
-        ValidateUtils.checkNotNull(getClass(), getCurrentTestName());
-        ValidateUtils.checkNotNull(null, getCurrentTestName());
+    @Test
+    void checkNotNull() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            ValidateUtils.checkNotNull(getClass(), getCurrentTestName());
+            ValidateUtils.checkNotNull(null, getCurrentTestName());
+        });
     }
 }

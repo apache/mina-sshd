@@ -23,35 +23,29 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
-    private final String value;
-    private final Boolean expected;
+    private String value;
+    private Boolean expected;
 
-    public PropertyResolverParseBooleanTest(String value, Boolean expected) {
+    public void initPropertyResolverParseBooleanTest(String value, Boolean expected) {
         this.value = value;
         this.expected = expected;
     }
 
-    @Parameters(name = "value={0}, expected={1}")
     public static List<Object[]> parameters() {
         List<Object[]> result = new ArrayList<>();
         result.add(new Object[] { null, null });
@@ -66,20 +60,24 @@ public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
         return result;
     }
 
-    @Test
-    public void testSimpleParseBoolean() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "value={0}, expected={1}")
+    public void simpleParseBoolean(String value, Boolean expected) {
+        initPropertyResolverParseBooleanTest(value, expected);
         Boolean actual = PropertyResolverUtils.parseBoolean(value);
         assertSame(expected, actual);
     }
 
-    @Test
-    public void testCaseInsensitiveParseBoolean() {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "value={0}, expected={1}")
+    public void caseInsensitiveParseBoolean(String value, Boolean expected) {
+        initPropertyResolverParseBooleanTest(value, expected);
         if (!GenericUtils.isEmpty(value)) {
             String v = value;
             for (int index = 1, count = v.length(); index <= (2 * count); index++) {
                 v = shuffleCase(v);
                 Boolean actual = PropertyResolverUtils.parseBoolean(v);
-                assertSame("Mismatched result for '" + v + "'", expected, actual);
+                assertSame(expected, actual, "Mismatched result for '" + v + "'");
             }
         }
     }

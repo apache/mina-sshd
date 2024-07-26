@@ -31,12 +31,14 @@ import java.util.Collections;
 
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.After;
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Port forwarding tests
@@ -57,7 +59,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      *
      * This server sends PAYLOAD and then closes.
      */
-    @Before
+    @BeforeEach
     public void startTestServer() throws Exception {
         InetSocketAddress sockAddr = new InetSocketAddress(TEST_LOCALHOST, 0);
         testServerSock = AsynchronousServerSocketChannel.open().bind(sockAddr);
@@ -107,7 +109,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
                 });
     }
 
-    @After
+    @AfterEach
     public void stopTestServer() throws Exception {
         testServerSock.close();
     }
@@ -136,8 +138,8 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
             }
         } catch (IOException e) {
             String readData = sb.toString();
-            assertEquals("Mismatched data length", PAYLOAD.length(), readData.length());
-            assertEquals("Mismatched read data", PAYLOAD, readData);
+            assertEquals(PAYLOAD.length(), readData.length(), "Mismatched data length");
+            assertEquals(PAYLOAD, readData, "Mismatched read data");
         }
     }
 
@@ -156,7 +158,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
                 outputDebugMessage("readInOneBuffer(port=%d) - Got %d bytes from the server", serverPort, readCount);
 
                 String actual = new String(buf, 0, readCount, StandardCharsets.UTF_8);
-                assertEquals("Mismatched read data", PAYLOAD, actual);
+                assertEquals(PAYLOAD, actual, "Mismatched read data");
             }
         }
     }
@@ -184,7 +186,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
                     outputDebugMessage("readInTwoBuffersWithPause(port=%d) - 2nd half is %d bytes", serverPort, read2);
 
                     String half2 = new String(b2, 0, read2, StandardCharsets.UTF_8);
-                    assertEquals("Mismatched read data", PAYLOAD, half1 + half2);
+                    assertEquals(PAYLOAD, half1 + half2, "Mismatched read data");
                 } catch (IOException e) {
                     log.error("Disconnected ({}) before all data read: {}", e.getClass().getSimpleName(), e.getMessage());
                     throw e;
@@ -215,7 +217,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      * PROVIDED AS TEST THAT HAS ALWAYS PASSED
      */
     @Test
-    public void testRemotePortForwardOneBuffer() throws Exception {
+    public void remotePortForwardOneBuffer() throws Exception {
         SshdSocketAddress pf = startRemotePF();
         try {
             readInOneBuffer(pf.getPort());
@@ -230,7 +232,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      * THIS IS THE TEST OF SSHD-85
      */
     @Test
-    public void testRemotePortForwardTwoBuffers() throws Exception {
+    public void remotePortForwardTwoBuffers() throws Exception {
         SshdSocketAddress pf = startRemotePF();
         try {
             readInTwoBuffersWithPause(pf.getPort());
@@ -240,7 +242,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     @Test
-    public void testRemotePortForwardLoop() throws Exception {
+    public void remotePortForwardLoop() throws Exception {
         SshdSocketAddress pf = startRemotePF();
         try {
             readInLoop(pf.getPort());
@@ -250,7 +252,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     @Test
-    public void testLocalPortForwardOneBuffer() throws Exception {
+    public void localPortForwardOneBuffer() throws Exception {
         SshdSocketAddress pf = startLocalPF();
         try {
             readInOneBuffer(pf.getPort());
@@ -265,7 +267,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
      * THIS IS THE TEST OF SSHD-85
      */
     @Test
-    public void testLocalPortForwardTwoBuffers() throws Exception {
+    public void localPortForwardTwoBuffers() throws Exception {
         SshdSocketAddress pf = startLocalPF();
         try {
             readInTwoBuffersWithPause(pf.getPort());
@@ -275,7 +277,7 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     @Test
-    public void testLocalPortForwardLoop() throws Exception {
+    public void localPortForwardLoop() throws Exception {
         SshdSocketAddress pf = startLocalPF();
         try {
             readInLoop(pf.getPort());
@@ -285,20 +287,20 @@ public abstract class AbstractServerCloseTestSupport extends BaseTestSupport {
     }
 
     @Test
-    public void testHasLocalPortForwardingStarted() throws Exception {
+    public void hasLocalPortForwardingStarted() throws Exception {
         SshdSocketAddress pf = startLocalPF();
         try {
-            Assert.assertTrue(hasLocalPFStarted(pf.getPort()));
+            assertTrue(hasLocalPFStarted(pf.getPort()));
         } finally {
             stopLocalPF(pf);
         }
     }
 
     @Test
-    public void testHasRemotePortForwardingStarted() throws Exception {
+    public void hasRemotePortForwardingStarted() throws Exception {
         SshdSocketAddress pf = startRemotePF();
         try {
-            Assert.assertTrue(hasRemotePFStarted(pf.getPort()));
+            assertTrue(hasRemotePFStarted(pf.getPort()));
         } finally {
             stopRemotePF(pf);
         }

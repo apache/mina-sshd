@@ -29,41 +29,36 @@ import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.apache.sshd.util.test.JUnit4ClassRunnerWithParametersFactory;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.apache.sshd.util.test.NoIoTestCase;
-import org.junit.AfterClass;
-import org.junit.FixMethodOrder;
-import org.junit.Test;
-import org.junit.experimental.categories.Category;
-import org.junit.runner.RunWith;
-import org.junit.runners.MethodSorters;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
-import org.junit.runners.Parameterized.UseParametersRunnerFactory;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.MethodSource;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@FixMethodOrder(MethodSorters.NAME_ASCENDING)
-@RunWith(Parameterized.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-@UseParametersRunnerFactory(JUnit4ClassRunnerWithParametersFactory.class)
-@Category({ NoIoTestCase.class })
+@TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
+@Tag("NoIoTestCase")
 public class KeyRandomArtTest extends JUnitTestSupport {
     private static final Collection<KeyPair> KEYS = new LinkedList<>();
 
-    private final String algorithm;
-    private final int keySize;
-    private final KeyPair keyPair;
+    private String algorithm;
+    private int keySize;
+    private KeyPair keyPair;
 
-    public KeyRandomArtTest(String algorithm, int keySize) throws Exception {
+    public void initKeyRandomArtTest(String algorithm, int keySize) throws Exception {
         this.algorithm = algorithm;
         this.keySize = keySize;
         this.keyPair = CommonTestSupportUtils.generateKeyPair(algorithm, keySize);
         KEYS.add(this.keyPair);
     }
 
-    @Parameters(name = "algorithm={0}, key-size={1}")
     public static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (int keySize : RSA_SIZES) {
@@ -88,20 +83,22 @@ public class KeyRandomArtTest extends JUnitTestSupport {
         return params;
     }
 
-    @AfterClass
-    public static void dumpAllArts() throws Exception {
+    @AfterAll
+    static void dumpAllArts() throws Exception {
         KeyRandomArt.combine(null, System.out, ' ', session -> KEYS);
     }
 
-    @Test
-    public void testRandomArtString() throws Exception {
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "algorithm={0}, key-size={1}")
+    public void randomArtString(String algorithm, int keySize) throws Exception {
+        initKeyRandomArtTest(algorithm, keySize);
         KeyRandomArt art = new KeyRandomArt(keyPair.getPublic());
-        assertEquals("Mismatched algorithm", algorithm, art.getAlgorithm());
-        assertEquals("Mismatched key size", keySize, art.getKeySize());
+        assertEquals(algorithm, art.getAlgorithm(), "Mismatched algorithm");
+        assertEquals(keySize, art.getKeySize(), "Mismatched key size");
 
         String s = art.toString();
         String[] lines = GenericUtils.split(s, '\n');
-        assertEquals("Mismatched lines count", KeyRandomArt.FLDSIZE_Y + 2, lines.length);
+        assertEquals(KeyRandomArt.FLDSIZE_Y + 2, lines.length, "Mismatched lines count");
 
         for (int index = 0; index < lines.length; index++) {
             String l = lines[index];
@@ -111,8 +108,8 @@ public class KeyRandomArtTest extends JUnitTestSupport {
             }
             System.out.append('\t').println(l);
 
-            assertTrue("Mismatched line length #" + (index + 1) + ": " + l.length(),
-                    l.length() >= (KeyRandomArt.FLDSIZE_X + 2));
+            assertTrue(l.length() >= (KeyRandomArt.FLDSIZE_X + 2),
+                    "Mismatched line length #" + (index + 1) + ": " + l.length());
         }
     }
 }
