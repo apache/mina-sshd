@@ -52,7 +52,7 @@ jobs:
           maven-version: '3.9.8'
 
       - name: Build with maven
-        run: mvn -B --errors --activate-profiles ci --no-transfer-progress package -DskipTests
+        run: mvn -B --errors --activate-profiles ci,format-check --no-transfer-progress package -DskipTests
 
   test:
     needs: compile
