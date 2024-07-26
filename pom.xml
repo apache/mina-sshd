@@ -113,7 +113,7 @@
         <slf4j.version>1.7.32</slf4j.version>
         <slf4j.upper.bound>3</slf4j.upper.bound>
         <logback.version>1.2.13</logback.version>
-        <spring.version>5.3.28</spring.version>
+        <spring.version>5.3.37</spring.version>
             <!-- NOTE: upgrading jGit to 6.x requires Java 11 -->
         <jgit.version>5.13.3.202401111512-r</jgit.version>
         <junit.version>4.13.2</junit.version>
