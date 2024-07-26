@@ -83,6 +83,10 @@
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
         <minimalMavenBuildVersion>3.9.8</minimalMavenBuildVersion>
 
+        <format.impsort.action>sort</format.impsort.action>
+        <format.formatter.action>format</format.formatter.action>
+
+
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2024-07-23T13:00:38Z</project.build.outputTimestamp>
 
@@ -133,6 +137,14 @@
     </properties>
 
     <profiles>
+        <profile>
+            <id>format-check</id>
+            <properties>
+                <format.impsort.action>check</format.impsort.action>
+                <format.formatter.action>validate</format.formatter.action>
+            </properties>
+        </profile>
+
         <profile>
             <id>toolchains</id>
             <activation>
@@ -1029,7 +1041,7 @@
                         <id>format</id>
                         <phase>process-sources</phase>
                         <goals>
-                            <goal>format</goal>
+                            <goal>${format.formatter.action}</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -1042,7 +1054,7 @@
                         <id>sort-imports</id>
                         <phase>process-sources</phase>
                         <goals>
-                            <goal>sort</goal>
+                            <goal>${format.impsort.action}</goal>
                         </goals>
                     </execution>
                 </executions>
