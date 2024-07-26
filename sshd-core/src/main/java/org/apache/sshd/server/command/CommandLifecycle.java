@@ -31,9 +31,11 @@ public interface CommandLifecycle {
     /**
      * Starts the command execution. All streams must have been set <U>before</U> calling this method. The command
      * should implement {@link java.lang.Runnable}, and this method should spawn a new thread like:
-     * 
+     *
      * <pre>
-     * {@code Thread(this).start(); }
+     * {@code
+     * Thread(this).start();
+     * }
      * </pre>
      *
      * @param  channel     The {@link ChannelSession} through which the command has been received

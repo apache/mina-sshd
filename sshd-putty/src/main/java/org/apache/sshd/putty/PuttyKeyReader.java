@@ -30,7 +30,7 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * Helper class for {@code Putty} key files decoders
- * 
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PuttyKeyReader implements Closeable {

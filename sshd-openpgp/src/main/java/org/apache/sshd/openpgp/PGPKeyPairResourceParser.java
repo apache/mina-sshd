@@ -81,7 +81,7 @@ public class PGPKeyPairResourceParser
         int numLines = GenericUtils.size(lines);
         StringBuilder sb = new StringBuilder(
                 beginMarker.length() + endMarker.length() + 4 + numLines * 80)
-                        .append(beginMarker);
+                .append(beginMarker);
         if (numLines > 0) {
             for (String l : lines) {
                 sb.append(eol).append(l);

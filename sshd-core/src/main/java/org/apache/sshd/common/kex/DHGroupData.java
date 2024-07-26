@@ -194,7 +194,7 @@ public final class DHGroupData {
      * <LI>Remaining lines are appended to one big string assumed to contain the HEX-encoded value</LI>
      * </P>
      * </UL>
-     * 
+     *
      * @param  br          The {@link BufferedReader} to read the data from
      * @return             The prime value bytes suitable for building a {@code BigInteger}
      * @throws IOException If invalid data or no encoded value found

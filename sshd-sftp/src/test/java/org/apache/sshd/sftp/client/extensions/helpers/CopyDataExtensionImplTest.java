@@ -118,7 +118,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
                        + "-" + dataSize
                        + "-" + readOffset + "/" + readLength + "/" + writeOffset
                        + IoUtils.EOL)
-                               .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(dataSize + seed.length)) {
             while (baos.size() < dataSize) {
                 baos.write(seed);

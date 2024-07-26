@@ -77,7 +77,7 @@ public interface ServerSession
      * <LI>Sends the {@code SSH_MSG_USERAUTH_SUCCESS} message.</LI>
      * </P>
      * </UL>
-     * 
+     *
      * @param  username    The authenticated username
      * @param  authService The service to start
      * @param  buffer      Any extra data received to use to start the service

@@ -134,7 +134,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                        + "-" + expectedAlgorithm
                        + "-" + inputDataSize + "/" + hashBlockSize
                        + IoUtils.EOL)
-                               .getBytes(StandardCharsets.UTF_8);
+                .getBytes(StandardCharsets.UTF_8);
 
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream(inputDataSize + seed.length)) {
             while (baos.size() < inputDataSize) {
