@@ -96,7 +96,7 @@
         <maven.compiler.source>${javac.source}</maven.compiler.source>
         <ant.version>1.10.14</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
-        <build-helper-maven-plugin.version>3.5.0</build-helper-maven-plugin.version>
+        <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
 
         <javac.target>${javac.source}</javac.target>
         <required.java.version>[${javac.target},)</required.java.version>
@@ -714,9 +714,9 @@
         <pluginManagement>
             <plugins>
                 <plugin>
-                    <groupId>org.apache.maven.plugins</groupId>
+                    <groupId>org.codehaus.mojo</groupId>
                     <artifactId>build-helper-maven-plugin</artifactId>
-                    <version>3.6.0</version>
+                    <version>${build-helper-maven-plugin.version}</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.rat</groupId>
