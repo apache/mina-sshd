@@ -936,7 +936,6 @@
                        <printFailingErrors>true</printFailingErrors>
                        <skipPmdError>false</skipPmdError>
                        <analysisCache>true</analysisCache> <!-- enable incremental analysis -->
-                       <showPmdLog>false</showPmdLog>
                        <excludeRoots>
                            <excludeRoot>target/generated-sources/java</excludeRoot>
                        </excludeRoots>
