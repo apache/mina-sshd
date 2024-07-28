@@ -40,8 +40,11 @@
                 <include>**/*.bin</include>
                 <include>**/*.jnilib</include>
                 <include>**/*.cert</include>
+                <include>**/*.sh</include>
+                <include>**/.mvn/*</include>
 
                 <include>sshd-openpgp/src/test/resources/**/*</include>
+                <include>sshd-core/src/test/resources/org/apache/sshd/client/opensshcerts/**/*</include>
             </includes>
             <excludes>
                 <exclude>**/eclipse-classes/**</exclude>
@@ -72,6 +75,7 @@
                 <exclude>**/*.bin</exclude>
                 <exclude>**/*.jnilib</exclude>
                 <exclude>**/*.cert</exclude>
+                <exclude>**/*.sh</exclude>
                 <exclude>**/target/**</exclude>
                 <exclude>**/build/**</exclude>
                 <exclude>**/eclipse-classes/**</exclude>
@@ -90,6 +94,7 @@
                 <exclude>**/key.pem</exclude>
 
                 <exclude>sshd-core/src/docs/*.txt</exclude>
+                <exclude>sshd-core/src/test/resources/org/apache/sshd/client/opensshcerts/**/*</exclude>
                 <exclude>sshd-openpgp/src/test/resources/**/*</exclude>
             </excludes>
             <lineEnding>dos</lineEnding>
