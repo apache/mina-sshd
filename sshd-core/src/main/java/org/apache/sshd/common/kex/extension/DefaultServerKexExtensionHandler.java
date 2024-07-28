@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.kex.extension;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -27,6 +28,7 @@ import java.util.function.BiConsumer;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.extension.parser.GlobalRequestsOk;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -130,6 +132,16 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
         }
     }
 
+    @Override
+    public boolean handleKexExtensionRequest(
+            Session session, int index, int count, String name, byte[] data)
+            throws IOException {
+        if (GlobalRequestsOk.NAME.equals(name)) {
+            GlobalRequestsOk.INSTANCE.parseExtension(data);
+        }
+        return true;
+    }
+
     /**
      * Collects extension info records, handing them off to the given {@code marshaller} for writing into an
      * {@link KexExtensions#SSH_MSG_EXT_INFO} message.
@@ -157,5 +169,7 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
                         ServerSignatureAlgorithms.NAME);
             }
         }
+        // global-requests-ok
+        marshaller.accept(GlobalRequestsOk.NAME, "");
     }
 }
