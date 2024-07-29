@@ -32,7 +32,7 @@
 
     <properties>
         <projectRoot>${project.basedir}/..</projectRoot>
-        <apacheds.version>2.0.0.AM26</apacheds.version>
+        <apacheds.version>2.0.0.AM27</apacheds.version>
         <surefire.argLine>--add-opens=java.base/sun.security.util=ALL-UNNAMED --add-opens=java.base/sun.security.x509=ALL-UNNAMED</surefire.argLine>
     </properties>
 
