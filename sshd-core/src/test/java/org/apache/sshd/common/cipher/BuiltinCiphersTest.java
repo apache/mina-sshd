@@ -163,7 +163,12 @@ public class BuiltinCiphersTest extends BaseTestSupport {
         byte[] key = new byte[cipher.getKdfSize()];
         rnd.nextBytes(key);
         byte[] iv = new byte[cipher.getIVSize()];
-        rnd.nextBytes(iv);
+        // ChaCha20 has an SSH packet sequence number as IV! Do not use random IVs with ChaCha20!
+        if (cipher.getAlgorithm().startsWith("ChaCha20")) {
+            iv[iv.length - 1] = 42;
+        } else {
+            rnd.nextBytes(iv);
+        }
         cipher.init(Cipher.Mode.Encrypt, key, iv);
 
         byte[] data = new byte[cipher.getCipherBlockSize() + cipher.getAuthenticationTagSize()];
