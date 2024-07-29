@@ -117,7 +117,7 @@
             <!-- NOTE: upgrading jGit to 6.x requires Java 11 -->
         <jgit.version>5.13.3.202401111512-r</jgit.version>
         <junit.version>4.13.2</junit.version>
-        <bytebuddy.version>1.12.6</bytebuddy.version>
+        <bytebuddy.version>1.14.18</bytebuddy.version>
         <testcontainers.version>1.16.2</testcontainers.version>
         <grpc.version>1.65.1</grpc.version> <!-- Used only in tests -->
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
