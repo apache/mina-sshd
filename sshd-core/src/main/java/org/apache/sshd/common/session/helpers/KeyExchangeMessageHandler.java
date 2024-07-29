@@ -40,6 +40,7 @@ import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexState;
+import org.apache.sshd.common.kex.extension.KexExtensions;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -236,7 +237,7 @@ public class KeyExchangeMessageHandler {
         int cmd = bufData[buffer.rpos()] & 0xFF;
         boolean enqueued = false;
         boolean isLowLevelMessage = cmd <= SshConstants.SSH_MSG_KEX_LAST && cmd != SshConstants.SSH_MSG_SERVICE_REQUEST
-                && cmd != SshConstants.SSH_MSG_SERVICE_ACCEPT;
+                && cmd != SshConstants.SSH_MSG_SERVICE_ACCEPT && cmd != KexExtensions.SSH_MSG_EXT_INFO;
         IoWriteFuture future = null;
         try {
             if (isLowLevelMessage) {

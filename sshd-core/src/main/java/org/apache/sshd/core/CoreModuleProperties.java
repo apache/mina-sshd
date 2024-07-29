@@ -26,6 +26,7 @@ import org.apache.sshd.client.config.keys.ClientIdentityLoader;
 import org.apache.sshd.common.Property;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
+import org.apache.sshd.common.kex.extension.parser.NoFlowControl;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -799,6 +800,13 @@ public final class CoreModuleProperties {
                     p);
         }
     });
+
+    /**
+     * Configuration value to enable {@code no-flow-control}. When set to {@code true}, the option will be used if the
+     * connected peer also supports it. A value of {@code false} disables the {@code no-flow-control} completely, while
+     * the default {@code null} value, will support it, but not request it.
+     */
+    public static final Property<Boolean> NO_FLOW_CONTROL = Property.bool(NoFlowControl.NAME);
 
     private CoreModuleProperties() {
         throw new UnsupportedOperationException("No instance");

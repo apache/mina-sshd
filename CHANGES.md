@@ -44,6 +44,7 @@
 ## New Features
 
 * New utility methods `SftpClient.put(Path localFile, String remoteFileName)` and `SftpClient.put(InputStream in, String remoteFileName)` facilitate SFTP file uploading.
+* [GH-539](https://github.com/apache/mina-sshd/issues/539) Implement no-flow-control extension 
 
 ## Potential compatibility issues
 

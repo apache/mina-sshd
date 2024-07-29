@@ -31,6 +31,9 @@ import org.apache.sshd.common.util.buffer.Buffer;
 public class NoFlowControl extends AbstractKexExtensionParser<String> {
     public static final String NAME = "no-flow-control";
 
+    public static final String SUPPORTED = "s";
+    public static final String PREFERRED = "p";
+
     public static final NoFlowControl INSTANCE = new NoFlowControl();
 
     public NoFlowControl() {

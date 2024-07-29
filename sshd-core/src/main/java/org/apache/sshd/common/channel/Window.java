@@ -25,6 +25,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Predicate;
 
 import org.apache.sshd.common.PropertyResolver;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -45,6 +46,8 @@ import org.apache.sshd.core.CoreModuleProperties;
 public abstract class Window extends AbstractLoggingBean implements ChannelHolder, Closeable {
 
     protected final Object lock = new Object();
+
+    protected boolean noFlowControl;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private final AtomicBoolean initialized = new AtomicBoolean(false);
@@ -94,6 +97,8 @@ public abstract class Window extends AbstractLoggingBean implements ChannelHolde
         }
 
         synchronized (lock) {
+            Session session = channelInstance.getSession(); // this should only be null during tests
+            this.noFlowControl = session != null && session.isNoFlowControl();
             this.maxSize = size;
             this.packetSize = packetSize;
             updateSize(size);

@@ -19,23 +19,29 @@
 
 package org.apache.sshd.common.kex.extension;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.function.BiConsumer;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.extension.parser.NoFlowControl;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * A basic default implementation of a server-side {@link KexExtensionHandler} handling the
- * {@link ServerSignatureAlgorithms} KEX extension.
+ * {@link ServerSignatureAlgorithms} KEX extension along with the {@link NoFlowControl} extension.
  *
  * @see <a href="https://tools.ietf.org/html/rfc8308">RFC 8308</a>
  */
@@ -130,6 +136,23 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
         }
     }
 
+    @Override
+    public boolean handleKexExtensionRequest(
+            Session session, int index, int count, String name, byte[] data)
+            throws IOException {
+        if (NoFlowControl.NAME.equals(name)) {
+            String o = NoFlowControl.INSTANCE.parseExtension(data);
+            Optional<Boolean> nfc = CoreModuleProperties.NO_FLOW_CONTROL.get(session);
+            if (NoFlowControl.PREFERRED.equals(o) && nfc.orElse(Boolean.TRUE)
+                    || NoFlowControl.SUPPORTED.equals(o) && nfc.orElse(Boolean.FALSE)) {
+                AbstractSession abstractSession
+                        = ValidateUtils.checkInstanceOf(session, AbstractSession.class, "Not a supported session: %s", session);
+                abstractSession.activateNoFlowControl();
+            }
+        }
+        return true;
+    }
+
     /**
      * Collects extension info records, handing them off to the given {@code marshaller} for writing into an
      * {@link KexExtensions#SSH_MSG_EXT_INFO} message.
@@ -144,6 +167,7 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
      */
     @SuppressWarnings("javadoc")
     public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
+        // server-sig-algs
         if (phase == KexPhase.NEWKEYS) {
             Collection<String> algorithms = session.getSignatureFactoriesNames();
             if (!GenericUtils.isEmpty(algorithms)) {
@@ -156,6 +180,12 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
                 log.warn("collectExtensions({})[{}]: extension info {} has no algorithms; skipping", session, phase,
                         ServerSignatureAlgorithms.NAME);
             }
+        }
+        // no-flow-control
+        Boolean nfc = CoreModuleProperties.NO_FLOW_CONTROL.get(session).orElse(null);
+        if (nfc != Boolean.FALSE) {
+            marshaller.accept(NoFlowControl.NAME,
+                    nfc != null ? NoFlowControl.PREFERRED : NoFlowControl.SUPPORTED);
         }
     }
 }
