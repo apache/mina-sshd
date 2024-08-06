@@ -1178,7 +1178,7 @@
                         <id>download-sources</id>
                         <phase>install</phase>
                         <goals>    <!-- automatically download the dependency sources - useful for debugging -->
-                            <goal>sources</goal>
+                            <goal>resolve-sources</goal>
                         </goals>
                         <configuration>
                                 <!-- no need to download our own sources - especially snapshot -->
