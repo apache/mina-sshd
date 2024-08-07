@@ -143,7 +143,7 @@
                 <format.formatter.action>validate</format.formatter.action>
             </properties>
         </profile>
-
+                
         <profile>
             <id>toolchains</id>
             <activation>
@@ -683,7 +683,7 @@
         </dependency>
 
             <!-- Test dependencies -->
-       <dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
             <scope>test</scope>
@@ -730,6 +730,8 @@
                             <exclude>docs/**</exclude>
                             <exclude>sshd-sources/**</exclude>
                             <exclude>src/test/resources/**</exclude>
+                            <exclude>src/main/resources/org/apache/sshd/benchmarks/**</exclude>
+                            <exclude>src/main/java/org/apache/sshd/benchmarks/**/*.md</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>**/target/**</exclude>
                             <!-- formatter plugin cache folder -->
@@ -937,6 +939,7 @@
                        <skipPmdError>false</skipPmdError>
                        <analysisCache>true</analysisCache> <!-- enable incremental analysis -->
                        <excludeRoots>
+                           <excludeRoot>target/generated-sources/annotations</excludeRoot>
                            <excludeRoot>target/generated-sources/java</excludeRoot>
                        </excludeRoots>
                        <excludes>
@@ -1379,6 +1382,7 @@
     </reporting>
 
     <modules>
+        <module>sshd-benchmarks</module>
         <module>sshd-common</module>
         <module>sshd-putty</module>
         <module>sshd-openpgp</module>
