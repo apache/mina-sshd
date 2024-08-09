@@ -70,6 +70,9 @@ implementation of the logging API can be selected from the many existing adaptor
 * *sshd-contrib* - **experimental** code that is currently under review and may find its way into one of the other artifacts
 (or become an entirely new artifact - e.g., *sshd-putty* evolved this way).
 
+* *sshd-benchmarks* - contains some JMH benchmarks for SSH operations. The benchmarks are intended to be run by developers locally;
+the artifact is not part of the binary distribution, and is not deployed to any maven repository.
+
 # [Optional dependencies](./docs/dependencies.md)
 
 # Quick reference
