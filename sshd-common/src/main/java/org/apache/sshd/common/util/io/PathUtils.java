@@ -19,6 +19,11 @@
 
 package org.apache.sshd.common.util.io;
 
+import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.functors.UnaryEquator;
+
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -26,10 +31,6 @@ import java.util.Comparator;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Supplier;
-
-import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.functors.UnaryEquator;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -53,10 +54,18 @@ public final class PathUtils {
     private static final AtomicReference<Supplier<? extends Path>> USER_HOME_RESOLVER_HOLDER = new AtomicReference<>();
 
     private static final class LazyDefaultUserHomeFolderHolder {
-        private static final Path PATH
-                = Paths.get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), "No user home"))
-                        .toAbsolutePath()
-                        .normalize();
+        private static final Path PATH;
+
+        static {
+            String exceptionMessage = OsUtils.isAndroid() ? "No user home folder available. You should call " +
+                    "org.apache.sshd.common.util.io.PathUtils.setUserHomeFolderResolver() " +
+                    "method to set user home folder as there is no home folder on Android"
+                    : "No user home folder available";
+            PATH = Paths
+                    .get(ValidateUtils.checkNotNullAndNotEmpty(System.getProperty("user.home"), exceptionMessage))
+                    .toAbsolutePath()
+                    .normalize();
+        }
 
         private LazyDefaultUserHomeFolderHolder() {
             throw new UnsupportedOperationException("No instance allowed");
