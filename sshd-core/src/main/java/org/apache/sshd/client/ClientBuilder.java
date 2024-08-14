@@ -114,15 +114,15 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         super.fillWithDefaultValues();
 
         if (signatureFactories == null) {
-            signatureFactories = setUpDefaultSignatureFactories(false);
+            signatureFactories = setUpDefaultSignatureFactories(true);
         }
 
         if (compressionFactories == null) {
-            compressionFactories = setUpDefaultCompressionFactories(false);
+            compressionFactories = setUpDefaultCompressionFactories(true);
         }
 
         if (keyExchangeFactories == null) {
-            keyExchangeFactories = setUpDefaultKeyExchanges(false);
+            keyExchangeFactories = setUpDefaultKeyExchanges(true);
         }
 
         if (kexExtensionHandler == null) {
