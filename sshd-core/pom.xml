@@ -255,13 +255,13 @@
                                 </goals>
                                 <configuration>
                                     <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
-                                    <systemProperties>
+                                    <systemPropertyVariables>
                                         <!-- Enable using deprecated ssh-rsa signature keys with JSch 0.2.x -->
                                         <jsch.server_host_key>ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,rsa-sha2-512,rsa-sha2-256,ssh-rsa</jsch.server_host_key>
                                         <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
                                         <!-- deprecated -->
                                         <org.apache.sshd.registerBouncyCastle>false</org.apache.sshd.registerBouncyCastle>
-                                    </systemProperties>
+                                    </systemPropertyVariables>
                                     <excludes>
                                         <!-- These tests fail inexplicably without Bouncycastle -->
                                         <exclude>**/*LoadTest.java</exclude>
