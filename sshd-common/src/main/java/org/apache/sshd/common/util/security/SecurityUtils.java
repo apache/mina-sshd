@@ -92,7 +92,8 @@ public final class SecurityUtils {
     /**
      * Bouncycastle JCE provider name
      */
-    public static final String BOUNCY_CASTLE = "BC";
+    public static final String BOUNCY_CASTLE
+            = System.getProperty("org.apache.sshd.common.util.security.bouncycastle.provider.name", "BC");
 
     /**
      * EDDSA support - should match {@code EdDSAKey.KEY_ALGORITHM}
@@ -164,6 +165,12 @@ public final class SecurityUtils {
     public static final String EDDSA_SUPPORTED_PROP = "org.apache.sshd.eddsaSupport";
 
     public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
+
+    /**
+     * class name of the default random factory to use, the class must have a default empty constructor. If empty
+     * standard algorithm will be used
+     */
+    public static final String PROP_RANDOM_FACTORY_CLASS = "org.apache.sshd.random.defaultFactory";
 
     private static final AtomicInteger MIN_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
@@ -552,6 +559,16 @@ public final class SecurityUtils {
      *         {@link JceRandomFactory} one
      */
     public static RandomFactory getRandomFactory() {
+        String factoryClassName = System.getProperty(PROP_RANDOM_FACTORY_CLASS);
+        if (factoryClassName != null) {
+            try {
+                return ThreadUtils.createDefaultInstance(SecurityUtils.class, RandomFactory.class,
+                        factoryClassName);
+            } catch (ReflectiveOperationException e) {
+                throw new IllegalArgumentException("instance of " + factoryClassName + " cannot be created");
+            }
+        }
+
         if (isBouncyCastleRegistered()) {
             return BouncyCastleRandomFactory.INSTANCE;
         } else {
