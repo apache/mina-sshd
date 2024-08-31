@@ -68,6 +68,11 @@ public class SunJCESecurityProviderRegistrar extends AbstractSecurityProviderReg
     }
 
     @Override
+    public String getProviderName() {
+        return "SunJCE";
+    }
+
+    @Override
     public String getDefaultSecurityEntitySupportValue(Class<?> entityType) {
         return "";
     }
@@ -91,7 +96,7 @@ public class SunJCESecurityProviderRegistrar extends AbstractSecurityProviderReg
 
     @Override
     public Provider getSecurityProvider() {
-        return Security.getProvider("SunJCE");
+        return Security.getProvider(getProviderName());
     }
 
     @Override

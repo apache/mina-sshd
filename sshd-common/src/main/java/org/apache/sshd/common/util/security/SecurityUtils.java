@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory;
  */
 public final class SecurityUtils {
     /**
-     * Bouncycastle JCE provider name
+     * Bouncy Castle {@link SecurityProviderRegistrar} name.
      */
     public static final String BOUNCY_CASTLE = "BC";
 
@@ -552,7 +552,7 @@ public final class SecurityUtils {
      *         {@link JceRandomFactory} one
      */
     public static RandomFactory getRandomFactory() {
-        if (isBouncyCastleRegistered()) {
+        if (isBouncyCastleRegistered() && BouncyCastleRandomFactory.INSTANCE.isSupported()) {
             return BouncyCastleRandomFactory.INSTANCE;
         } else {
             return JceRandomFactory.INSTANCE;

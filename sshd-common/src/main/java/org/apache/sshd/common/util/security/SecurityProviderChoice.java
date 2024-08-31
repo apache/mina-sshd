@@ -61,6 +61,17 @@ public interface SecurityProviderChoice extends NamedResource {
     }
 
     /**
+     * Retrieves the underlying {@link Provider}'s name.
+     *
+     * @return the {@link Provider}'s name
+     */
+    default String getProviderName() {
+        // By default, assume choice name and provider name are the same. For a SecurityProviderRegistrar, these may be
+        // different!
+        return getName();
+    }
+
+    /**
      * @return The security {@link Provider} to use in case {@link #isNamedProviderUsed()} is {@code false}. Can be
      *         {@code null} if {@link #isNamedProviderUsed()} is {@code true}, but not recommended.
      */
