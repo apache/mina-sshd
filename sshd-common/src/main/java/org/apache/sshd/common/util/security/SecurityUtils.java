@@ -43,6 +43,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -559,16 +560,10 @@ public final class SecurityUtils {
      *         {@link JceRandomFactory} one
      */
     public static RandomFactory getRandomFactory() {
-        String factoryClassName = System.getProperty(PROP_RANDOM_FACTORY_CLASS);
-        if (factoryClassName != null) {
-            try {
-                return ThreadUtils.createDefaultInstance(SecurityUtils.class, RandomFactory.class,
-                        factoryClassName);
-            } catch (ReflectiveOperationException e) {
-                throw new IllegalArgumentException("instance of " + factoryClassName + " cannot be created");
-            }
+        RandomFactory randomFactory = ServiceLoader.load(RandomFactory.class).iterator().next();
+        if (randomFactory != null) {
+            return randomFactory;
         }
-
         if (isBouncyCastleRegistered()) {
             return BouncyCastleRandomFactory.INSTANCE;
         } else {
