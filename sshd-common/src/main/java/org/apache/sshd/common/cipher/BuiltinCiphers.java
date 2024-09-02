@@ -193,7 +193,8 @@ public enum BuiltinCiphers implements CipherFactory {
          * unlimited-strength files need be installed and then the JVM re-started. Therefore, the answer is not going to
          * change while the JVM is running
          */
-        this.supported = Constants.NONE.equals(factoryName) || Cipher.checkSupported(this.transformation, this.keysize);
+        this.supported = Constants.NONE.equals(factoryName) || Constants.CC20P1305_OPENSSH.equals(factoryName)
+                || Cipher.checkSupported(this.transformation, this.keysize);
     }
 
     @Override
