@@ -64,6 +64,13 @@ public interface KeyEncapsulationMethod {
     interface Server {
 
         /**
+         * Retrieves the required length of the KEM public key, in bytes.
+         *
+         * @return the length of the key
+         */
+        int getPublicKeyLength();
+
+        /**
          * Initializes the KEM with a public key received from a client and prepares an encapsulated secret.
          *
          * @param  publicKey                data received from the client, expected to contain the public key at the

@@ -34,7 +34,7 @@
 
 # [Version 2.13.1 to 2.13.2](./docs/changes/2.13.2.md)
 
-# [Version 2.13.1 to 2.14.0](./docs/changes/2.14.0.md)
+# [Version 2.13.2 to 2.14.0](./docs/changes/2.14.0.md)
 
 # Planned for next version
 
@@ -43,6 +43,8 @@
 * [GH-618](https://github.com/apache/mina-sshd/issues/618) Fix reading an `OpenSshCertificate` from a `Buffer`
 
 ## New Features
+
+* [GH-606](https://github.com/apache/mina-sshd/issues/606) Support ML-KEM PQC key exchange
 
 ## Potential compatibility issues
 

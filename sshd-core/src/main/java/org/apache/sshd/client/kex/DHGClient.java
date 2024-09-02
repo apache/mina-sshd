@@ -33,12 +33,12 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.AbstractDH;
+import org.apache.sshd.common.kex.CurveSizeIndicator;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
-import org.apache.sshd.common.kex.XDH;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
@@ -154,14 +154,15 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         } else {
             try {
                 int l = kemClient.getEncapsulationLength();
-                if (dh instanceof XDH) {
-                    if (f.length != l + ((XDH) dh).getKeySize()) {
+                if (dh instanceof CurveSizeIndicator) {
+                    int expectedLength = l + ((CurveSizeIndicator) dh).getByteLength();
+                    if (f.length != expectedLength) {
                         throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                                "Wrong F length (should be 1071 bytes): " + f.length);
+                                "Wrong F length (should be " + expectedLength + " bytes): " + f.length);
                     }
-                } else {
+                } else if (f.length <= l) {
                     throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                            "Key encapsulation only supported for XDH");
+                            "Strange F length: " + f.length + "  <= " + l);
                 }
                 dh.setF(Arrays.copyOfRange(f, l, f.length));
                 Digest keyHash = dh.getHash();
@@ -170,6 +171,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                 keyHash.update(dh.getK());
                 k = keyHash.digest();
             } catch (IllegalArgumentException ex) {
+                log.error("Key encapsulation error", ex);
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Key encapsulation error: " + ex.getMessage());
             }

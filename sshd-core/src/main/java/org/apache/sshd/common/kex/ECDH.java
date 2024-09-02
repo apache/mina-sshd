@@ -43,31 +43,41 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public class ECDH extends AbstractDH {
     public static final String KEX_TYPE = "ECDH";
 
+    private final boolean raw;
+
     private ECCurves curve;
     private ECParameterSpec params;
     private ECPoint f;
 
-    public ECDH() throws Exception {
-        this((ECParameterSpec) null);
-    }
-
     public ECDH(String curveName) throws Exception {
-        this(ValidateUtils.checkNotNull(ECCurves.fromCurveName(curveName), "Unknown curve name: %s", curveName));
+        this(curveName, false);
     }
 
     public ECDH(ECCurves curve) throws Exception {
-        this(Objects.requireNonNull(curve, "No known curve instance provided").getParameters());
-        this.curve = curve;
+        this(curve, false);
     }
 
     public ECDH(ECParameterSpec paramSpec) throws Exception {
+        this(paramSpec, false);
+    }
+
+    public ECDH(String curveName, boolean raw) throws Exception {
+        this(ValidateUtils.checkNotNull(ECCurves.fromCurveName(curveName), "Unknown curve name: %s", curveName), raw);
+    }
+
+    public ECDH(ECCurves curve, boolean raw) throws Exception {
+        this(Objects.requireNonNull(curve, "No known curve instance provided").getParameters(), raw);
+        this.curve = curve;
+    }
+
+    public ECDH(ECParameterSpec paramSpec, boolean raw) throws Exception {
         myKeyAgree = SecurityUtils.getKeyAgreement(KEX_TYPE);
-        params = paramSpec; // do not check for null-ity since in some cases it can be
+        params = Objects.requireNonNull(paramSpec, "No EC curve parameters provided");
+        this.raw = raw;
     }
 
     @Override
     protected byte[] calculateE() throws Exception {
-        Objects.requireNonNull(params, "No ECParameterSpec(s)");
         KeyPairGenerator myKpairGen = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
         myKpairGen.initialize(params);
 
@@ -81,22 +91,17 @@ public class ECDH extends AbstractDH {
 
     @Override
     protected byte[] calculateK() throws Exception {
-        Objects.requireNonNull(params, "No ECParameterSpec(s)");
         Objects.requireNonNull(f, "Missing 'f' value");
         ECPublicKeySpec keySpec = new ECPublicKeySpec(f, params);
         KeyFactory myKeyFac = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         PublicKey yourPubKey = myKeyFac.generatePublic(keySpec);
         myKeyAgree.doPhase(yourPubKey, true);
-        return stripLeadingZeroes(myKeyAgree.generateSecret());
-    }
-
-    public void setCurveParameters(ECParameterSpec paramSpec) {
-        params = paramSpec;
+        byte[] secret = myKeyAgree.generateSecret();
+        return raw ? secret : stripLeadingZeroes(secret);
     }
 
     @Override
     public void setF(byte[] f) {
-        Objects.requireNonNull(params, "No ECParameterSpec(s)");
         Objects.requireNonNull(f, "No 'f' value specified");
         this.f = ECCurves.octetStringToEcPoint(f);
     }
@@ -117,12 +122,14 @@ public class ECDH extends AbstractDH {
 
     @Override
     public Digest getHash() throws Exception {
+        return findCurve().getDigestForParams();
+    }
+
+    private ECCurves findCurve() {
         if (curve == null) {
-            Objects.requireNonNull(params, "No ECParameterSpec(s)");
             curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Unknown curve parameters");
         }
-
-        return curve.getDigestForParams();
+        return curve;
     }
 
     @Override

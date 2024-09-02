@@ -98,8 +98,13 @@ final class SNTRUP761 {
         }
 
         @Override
+        public int getPublicKeyLength() {
+            return SNTRUPrimeParameters.sntrup761.getPublicKeyBytes();
+        }
+
+        @Override
         public byte[] init(byte[] publicKey) {
-            int pkBytes = SNTRUPrimeParameters.sntrup761.getPublicKeyBytes();
+            int pkBytes = getPublicKeyLength();
             if (publicKey.length < pkBytes) {
                 throw new IllegalArgumentException("KEM public key too short: " + publicKey.length);
             }

@@ -89,6 +89,9 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
             Arrays.asList(
                     BuiltinDHFactories.sntrup761x25519,
                     BuiltinDHFactories.sntrup761x25519_openssh,
+                    BuiltinDHFactories.mlkem768x25519,
+                    BuiltinDHFactories.mlkem1024nistp384,
+                    BuiltinDHFactories.mlkem768nistp256,
                     BuiltinDHFactories.curve25519,
                     BuiltinDHFactories.curve25519_libssh,
                     BuiltinDHFactories.curve448,

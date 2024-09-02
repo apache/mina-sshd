@@ -29,7 +29,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
  *
  * @see <a href="https://www.rfc-editor.org/info/rfc8731">RFC 8731</a>
  */
-public abstract class XDH extends AbstractDH {
+public abstract class XDH extends AbstractDH implements CurveSizeIndicator {
 
     protected final MontgomeryCurve curve;
     protected final boolean raw;
@@ -41,8 +41,9 @@ public abstract class XDH extends AbstractDH {
         myKeyAgree = curve.createKeyAgreement();
     }
 
-    public int getKeySize() {
-        return curve.getKeySize();
+    @Override
+    public int getByteLength() {
+        return curve.getByteLength();
     }
 
     @Override

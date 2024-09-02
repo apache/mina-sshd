@@ -42,7 +42,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @see <a href="https://tools.ietf.org/html/rfc7748">RFC 7748</a>
  * @see <a href="https://tools.ietf.org/html/rfc8731">RFC 8731</a>
  */
-public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
+public enum MontgomeryCurve implements KeySizeIndicator, CurveSizeIndicator, OptionalFeature {
 
     /**
      * The "magic" bytes below are the beginning of a DER encoding of the ASN.1 of the SubjectPublicKeyInfo as specified
@@ -130,8 +130,13 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
     }
 
     @Override
-    public int getKeySize() {
+    public int getByteLength() {
         return keySize;
+    }
+
+    @Override
+    public int getKeySize() {
+        return getByteLength() * Byte.SIZE;
     }
 
     @Override
@@ -152,13 +157,13 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
     public byte[] encode(PublicKey key) throws InvalidKeyException {
         // Per the ASN.1 of SubjectPublicKeyInfo, the key must be the last keySize bytes of the X.509 encoding
         byte[] subjectPublicKeyInfo = key.getEncoded();
-        byte[] result = Arrays.copyOfRange(subjectPublicKeyInfo, subjectPublicKeyInfo.length - getKeySize(),
+        byte[] result = Arrays.copyOfRange(subjectPublicKeyInfo, subjectPublicKeyInfo.length - getByteLength(),
                 subjectPublicKeyInfo.length);
         return result;
     }
 
     public PublicKey decode(byte[] key) throws InvalidKeySpecException {
-        int size = getKeySize();
+        int size = getByteLength();
         int offset = key.length - size;
         // We're lenient here and accept a key prefixed by a zero byte.
         if (offset < 0 || offset > 1) {

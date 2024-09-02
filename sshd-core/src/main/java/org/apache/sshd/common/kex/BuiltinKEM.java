@@ -26,6 +26,44 @@ import org.apache.sshd.common.OptionalFeature;
  */
 public enum BuiltinKEM implements KeyEncapsulationMethod, NamedResource, OptionalFeature {
 
+    mlkem768("mlkem768") {
+
+        @Override
+        public Client getClient() {
+            return MLKEM.getClient(MLKEM.Parameters.mlkem768);
+        }
+
+        @Override
+        public Server getServer() {
+            return MLKEM.getServer(MLKEM.Parameters.mlkem768);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return MLKEM.Parameters.mlkem768.isSupported();
+        }
+
+    },
+
+    mlkem1024("mlkem1024") {
+
+        @Override
+        public Client getClient() {
+            return MLKEM.getClient(MLKEM.Parameters.mlkem1024);
+        }
+
+        @Override
+        public Server getServer() {
+            return MLKEM.getServer(MLKEM.Parameters.mlkem1024);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return MLKEM.Parameters.mlkem1024.isSupported();
+        }
+
+    },
+
     sntrup761("sntrup761") {
 
         @Override

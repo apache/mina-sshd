@@ -30,6 +30,7 @@
 * [RFC 8731 - Secure Shell (SSH) Key Exchange Method Using Curve25519 and Curve448](https://tools.ietf.org/html/rfc8731)
 * [Key Exchange (KEX) Method Updates and Recommendations for Secure Shell](https://tools.ietf.org/html/draft-ietf-curdle-ssh-kex-sha2-03)
 * [Secure Shell (SSH) Key Exchange Method Using Hybrid Streamlined NTRU Prime sntrup761 and X25519 with SHA-512: sntrup761x25519-sha512](https://www.ietf.org/archive/id/draft-josefsson-ntruprime-ssh-02.html)
+* [PQ/T Hybrid Key Exchange in SSH](https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04)
 
 ### OpenSSH
 
@@ -96,10 +97,11 @@ aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3
 
 * diffie-hellman-group1-sha1, diffie-hellman-group-exchange-sha256, diffie-hellman-group14-sha1, diffie-hellman-group14-sha256
 , diffie-hellman-group15-sha512, diffie-hellman-group16-sha512, diffie-hellman-group17-sha512, diffie-hellman-group18-sha512
-, ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521, curve25519-sha256, curve25519-sha256@libssh.org, curve448-sha512,
-sntrup761x25519-sha512@openssh.com
-    * On Java versions before Java 11, [Bouncy Castle](./dependencies.md#bouncy-castle) is required for curve25519-sha256, curve25519-sha256@libssh.org, or curve448-sha512.
-    * [Bouncy Castle](./dependencies.md#bouncy-castle) is required for sntrup761x25519-sha512@openssh.com.
+, ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521, curve25519-sha256, curve25519-sha256@<!-- -->libssh.org, curve448-sha512
+    * On Java versions before Java 11, [Bouncy Castle](./dependencies.md#bouncy-castle) is required for curve25519-sha256, curve25519-sha256@<!-- -->libssh.org, or curve448-sha512.
+
+* If [Bouncy Castle](./dependencies.md#bouncy-castle) is present, the following post-quantum cryptography (PQC) hybrid key exchanges are also supported: sntrup761x25519-sha512, sntrup761x25519-sha512@<!-- -->openssh.com, mlkem768x25519-sha256, mlkem768nistp256-sha256, and
+mlkem1024nistp384-sha384.
 
 ### Compressions
 
@@ -108,9 +110,10 @@ sntrup761x25519-sha512@openssh.com
 ### Signatures/Keys
 
 * ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
-, ssh-ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@openssh.com
-, ssh-rsa-cert-v01@openssh.com, ssh-dss-cert-v01@openssh.com, ssh-ed25519-cert-v01@openssh.com
-, ecdsa-sha2-nistp256-cert-v01@openssh.com, ecdsa-sha2-nistp384-cert-v01@openssh.com, ecdsa-sha2-nistp521-cert-v01@openssh.com
+, ssh-ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
+, ssh-rsa-cert-v01@<!-- -->openssh.com, ssh-dss-cert-v01<!-- -->@openssh.com, ssh-ed25519-cert-v01@<!-- -->openssh.com
+, ecdsa-sha2-nistp256-cert-v01@<!-- -->openssh.com, ecdsa-sha2-nistp384-cert-v01<!-- -->@openssh.com
+, ecdsa-sha2-nistp521-cert-v01<!-- -->@openssh.com
 
 **Note:** The above list contains all the supported security settings in the code. However, in accordance with the latest recommendations
 the default client/server setup includes only the security settings that are currently considered safe to use. Users who wish to include

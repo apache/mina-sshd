@@ -27,12 +27,12 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.AbstractDH;
+import org.apache.sshd.common.kex.CurveSizeIndicator;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
-import org.apache.sshd.common.kex.XDH;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -111,17 +111,20 @@ public class DHGServer extends AbstractDHServerKeyExchange {
             try {
                 KeyEncapsulationMethod.Server kemServer = kem.getServer();
 
-                byte[] f = kemServer.init(e);
-                if (dh instanceof XDH) {
-                    if (f.length != ((XDH) dh).getKeySize()) {
+                if (dh instanceof CurveSizeIndicator) {
+                    int expectedLength = kemServer.getPublicKeyLength() + ((CurveSizeIndicator) dh).getByteLength();
+                    if (e.length != expectedLength) {
                         throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                                "Wrong E length (should be 1190 bytes): " + e.length);
+                                "Wrong E length (should be " + expectedLength + " bytes): " + e.length);
                     }
                 } else {
-                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                            "Key encapsulation only supported for XDH");
+                    int minLength = kemServer.getPublicKeyLength();
+                    if (e.length <= minLength) {
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                                "Strange E length: " + e.length + "  <= " + minLength);
+                    }
                 }
-                dh.setF(f);
+                dh.setF(kemServer.init(e));
                 byte[] dhK = dh.getK();
                 Digest keyHash = dh.getHash();
                 keyHash.init();
@@ -134,6 +137,7 @@ public class DHGServer extends AbstractDHServerKeyExchange {
                 System.arraycopy(dh.getE(), 0, newF, l, dh.getE().length);
                 setF(newF);
             } catch (IllegalArgumentException ex) {
+                log.error("Key encapsulation error", ex);
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Key encapsulation error: " + ex.getMessage());
             }

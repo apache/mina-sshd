@@ -303,6 +303,86 @@ public enum BuiltinDHFactories implements DHFactory {
         }
     },
     /**
+     * @see <a href= "https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04">PQ/T Hybrid Key
+     *      Exchange in SSH</a>
+     */
+    mlkem768x25519(Constants.MLKEM768_25519_SHA256) {
+        @Override
+        public XDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new XDH(MontgomeryCurve.x25519, true) {
+
+                @Override
+                public KeyEncapsulationMethod getKeyEncapsulation() {
+                    return BuiltinKEM.mlkem768;
+                }
+
+                @Override
+                public Digest getHash() throws Exception {
+                    return BuiltinDigests.sha256.create();
+                }
+            };
+        }
+
+        @Override
+        public boolean isSupported() {
+            return MontgomeryCurve.x25519.isSupported() && BuiltinDigests.sha256.isSupported()
+                    && BuiltinKEM.mlkem768.isSupported();
+        }
+    },
+    /**
+     * @see <a href= "https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04">PQ/T Hybrid Key
+     *      Exchange in SSH</a>
+     */
+    mlkem768nistp256(Constants.MLKEM768_NISTP256_SHA256) {
+        @Override
+        public ECDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new ECDH(ECCurves.nistp256, true) {
+
+                @Override
+                public KeyEncapsulationMethod getKeyEncapsulation() {
+                    return BuiltinKEM.mlkem768;
+                }
+
+            };
+        }
+
+        @Override
+        public boolean isSupported() {
+            return ECCurves.nistp256.isSupported() && BuiltinKEM.mlkem768.isSupported();
+        }
+    },
+    /**
+     * @see <a href= "https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04">PQ/T Hybrid Key
+     *      Exchange in SSH</a>
+     */
+    mlkem1024nistp384(Constants.MLKEM1024_NISTP384_SHA384) {
+        @Override
+        public ECDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new ECDH(ECCurves.nistp384, true) {
+
+                @Override
+                public KeyEncapsulationMethod getKeyEncapsulation() {
+                    return BuiltinKEM.mlkem1024;
+                }
+
+            };
+        }
+
+        @Override
+        public boolean isSupported() {
+            return ECCurves.nistp384.isSupported() && BuiltinKEM.mlkem1024.isSupported();
+        }
+    },
+    /**
      * @see <a href=
      *      "https://www.ietf.org/archive/id/draft-josefsson-ntruprime-ssh-02.html">draft-josefsson-ntruprime-ssh-02.html</a>
      */
@@ -524,6 +604,9 @@ public enum BuiltinDHFactories implements DHFactory {
         public static final String CURVE25519_SHA256 = "curve25519-sha256";
         public static final String CURVE25519_SHA256_LIBSSH = CURVE25519_SHA256 + "@libssh.org";
         public static final String CURVE448_SHA512 = "curve448-sha512";
+        public static final String MLKEM768_25519_SHA256 = "mlkem768x25519-sha256";
+        public static final String MLKEM768_NISTP256_SHA256 = "mlkem768nistp256-sha256";
+        public static final String MLKEM1024_NISTP384_SHA384 = "mlkem1024nistp384-sha384";
         public static final String SNTRUP761_25519_SHA512 = "sntrup761x25519-sha512";
         public static final String SNTRUP761_25519_SHA512_OPENSSH = SNTRUP761_25519_SHA512 + "@openssh.com";
 
