@@ -61,7 +61,7 @@ public class SunJCESecurityProviderRegistrar extends AbstractSecurityProviderReg
 
     @Override
     public boolean isEnabled() {
-        if (!super.isEnabled()) {
+        if (SecurityUtils.isFipsMode() || !super.isEnabled()) {
             return false;
         }
         return isSupported();

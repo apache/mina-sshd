@@ -165,6 +165,15 @@ public final class SecurityUtils {
 
     public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
 
+    /**
+     * A boolean system property that can be set to {@code "true"} to enable FIPS mode. In FIPS mode, crypto-algorithms
+     * not approved in FIPS-140 will not be available.
+     * <p>
+     * <b>Note:</b> if this system property is not {@code "true"}, it can be overridden via {@link #setFipsMode()}.
+     * </p>
+     */
+    public static final String FIPS_ENABLED = "org.apache.sshd.security.fipsEnabled";
+
     private static final AtomicInteger MIN_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
@@ -181,10 +190,42 @@ public final class SecurityUtils {
 
     private static final AtomicReference<SecurityProviderChoice> DEFAULT_PROVIDER_HOLDER = new AtomicReference<>();
 
+    private static final AtomicReference<Boolean> FIPS_MODE = new AtomicReference<>();
+
     private static Boolean hasEcc;
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    /**
+     * Unconditionally set FIPS mode, overriding the {@link #FIPS_ENABLED} system property.
+     *
+     * @throws IllegalStateException if a call to {@link #isFipsMode()} had already occurred and returned {@code false}.
+     */
+    public static void setFipsMode() {
+        if (!FIPS_MODE.compareAndSet(null, Boolean.TRUE)) {
+            if (!Boolean.TRUE.equals(FIPS_MODE.get())) {
+                throw new IllegalStateException("FIPS mode was already set to FALSE");
+            }
+        }
+    }
+
+    /**
+     * Tells whether FIPS mode is enabled, either through the system property {@link #FIPS_ENABLED} or via
+     * {@link #setFipsMode()}.
+     *
+     * @return {@code true} if FIPS mode is enabled, {@code false} otherwise.
+     */
+    public static boolean isFipsMode() {
+        Boolean value = FIPS_MODE.get();
+        if (FIPS_MODE.get() == null) {
+            value = Boolean.getBoolean(FIPS_ENABLED);
+            if (!FIPS_MODE.compareAndSet(null, value)) {
+                value = FIPS_MODE.get();
+            }
+        }
+        return value;
     }
 
     /**
@@ -565,6 +606,9 @@ public final class SecurityUtils {
      * @return {@code true} if EDDSA curves (e.g., {@code ed25519}) are supported
      */
     public static boolean isEDDSACurveSupported() {
+        if (isFipsMode()) {
+            return false;
+        }
         register();
 
         SecurityProviderRegistrar r = getRegisteredProvider(EDDSA);

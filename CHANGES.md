@@ -41,24 +41,47 @@
 * [GH-524](https://github.com/apache/mina-sshd/issues/524) Performance improvements
 * [GH-533](https://github.com/apache/mina-sshd/issues/533) Fix multi-step authentication
 * [GH-582](https://github.com/apache/mina-sshd/issues/582) Fix filtering in `NamedFactory`
+* [GH-590](https://github.com/apache/mina-sshd/issues/590) Better support for FIPS
 
 ## New Features
 
 * New utility methods `SftpClient.put(Path localFile, String remoteFileName)` and
 `SftpClient.put(InputStream in, String remoteFileName)` facilitate SFTP file uploading.
 
+### [GH-590](https://github.com/apache/mina-sshd/issues/590) Better support for FIPS
+
+Besides fixing a bug with bc-fips (the `RandomGenerator` class exists in normal Bouncy Castle,
+but not in the FIPS version, but Apache MINA sshd referenced it even if only bc-fips was present), 
+support was improved for running in an environment restricted by FIPS.
+
+There is a new system property `org.apache.sshd.security.fipsEnabled`. If set to `true`, a number
+of crypto-algorithms not approved by FIPS 140 are disabled:
+
+* key exchange methods sntrup761x25519-sha512, sntrup761x25519-sha512<!-- -->@openssh.com, curve25519-sha256, curve25519-sha256<!-- -->@libssh.org, curve448-sha512.
+* the chacha20-poly1305 cipher.
+* the bcrypt KDF used in encrypted private key files in [OpenSSH format](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.key).
+* all ed25519 keys and signatures.
+
+Additionally, the new "SunJCEWrapper" `SecurityProviderRegistrar` (see below) and the
+`EdDSASecurityProviderRegistrar` are disabled, and the `BouncyCastleScurityProviderRegistrar`
+looks only for the "BCFIPS" security provider, not for the normal "BC" provider.
+
+If the system property is _not_ set to `true`, FIPS mode can be enabled programmatically
+by calling `SecurityUtils.setFipsMode()` before any other call to Apache MINA sshd.
+
 ## Potential compatibility issues
 
 ### New security provider registrar
 There is a new `SecurityProviderRegistrar` that is registered by default
-if there is a `SunJCE` security provider and that uses the AES and
+if there is a `SunJCE` security provider. It uses the AES and
 HmacSHA* implementations from `SunJCE` even if Bouncy Castle is also
 registered. `SunJCE` has native implementations, whereas Bouncy Castle
 may not.
 
 The new registrar has the name "SunJCEWrapper" and can be configured
 like any other registrar. It can be disabled via the system property
-`org.apache.sshd.security.provider.SunJCEWrapper.enabled=false`.
+`org.apache.sshd.security.provider.SunJCEWrapper.enabled=false`. It is also
+disabled in FIPS mode (see above).
 
 ### [GH-582](https://github.com/apache/mina-sshd/issues/582) Fix filtering in `NamedFactory`
 

@@ -44,7 +44,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
 
     @Override
     public boolean isEnabled() {
-        if (!super.isEnabled()) {
+        if (SecurityUtils.isFipsMode() || !super.isEnabled()) {
             return false;
         }
 

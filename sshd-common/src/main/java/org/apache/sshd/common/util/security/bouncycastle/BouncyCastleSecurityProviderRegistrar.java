@@ -132,8 +132,11 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
             if (supported != null) {
                 return supported.booleanValue();
             }
-
-            Class<?> clazz = ThreadUtils.resolveDefaultClass(getClass(), PROVIDER_CLASS);
+            boolean requireFips = SecurityUtils.isFipsMode();
+            Class<?> clazz = null;
+            if (!requireFips) {
+                clazz = ThreadUtils.resolveDefaultClass(getClass(), PROVIDER_CLASS);
+            }
             if (clazz == null) {
                 clazz = ThreadUtils.resolveDefaultClass(getClass(), FIPS_PROVIDER_CLASS);
             }
@@ -145,7 +148,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
                 Provider provider = Security.getProvider(BCFIPS_PROVIDER_NAME);
                 if (provider != null) {
                     providerName = BCFIPS_PROVIDER_NAME;
-                } else {
+                } else if (!requireFips) {
                     provider = Security.getProvider(BC_PROVIDER_NAME);
                     if (provider != null) {
                         providerName = BC_PROVIDER_NAME;

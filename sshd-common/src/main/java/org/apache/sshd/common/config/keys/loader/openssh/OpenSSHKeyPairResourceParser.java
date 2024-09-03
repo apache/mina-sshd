@@ -196,6 +196,9 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         OpenSSHKdfOptions options;
         // TODO define a factory class where users can register extra KDF options
         if (BCryptKdfOptions.NAME.equalsIgnoreCase(kdfName)) {
+            if (SecurityUtils.isFipsMode()) {
+                throw new NoSuchAlgorithmException(BCryptKdfOptions.NAME + " is disabled in FIPS mode");
+            }
             options = new BCryptKdfOptions();
         } else {
             options = new RawKdfOptions();

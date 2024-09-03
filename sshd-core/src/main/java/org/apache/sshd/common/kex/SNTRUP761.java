@@ -21,6 +21,7 @@ package org.apache.sshd.common.kex;
 import java.security.SecureRandom;
 import java.util.Arrays;
 
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.SecretWithEncapsulation;
 import org.bouncycastle.pqc.crypto.ntruprime.SNTRUPrimeKEMExtractor;
@@ -41,6 +42,9 @@ final class SNTRUP761 {
     }
 
     static boolean isSupported() {
+        if (SecurityUtils.isFipsMode()) {
+            return false;
+        }
         try {
             return SNTRUPrimeParameters.sntrup761.getSessionKeySize() == 256; // BC < 1.78 had only 128
         } catch (Throwable e) {
