@@ -301,7 +301,7 @@ public interface ClientSession
 
         try (OutputStream channelErr = (stderr == null) ? new NullOutputStream() : new NoCloseOutputStream(stderr);
              OutputStream channelOut = (stdout == null) ? new NullOutputStream() : new NoCloseOutputStream(stdout);
-             ClientChannel channel = createExecChannel(command)) {
+             ClientChannel channel = createExecChannel(command, charset, null, Collections.emptyMap())) {
             channel.setOut(channelOut);
             channel.setErr(channelErr);
             channel.open().await(); // TODO use verify and a configurable timeout

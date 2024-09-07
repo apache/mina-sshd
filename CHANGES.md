@@ -43,6 +43,7 @@
 * [GH-582](https://github.com/apache/mina-sshd/issues/582) Fix filtering in `NamedFactory`
 * [GH-587](https://github.com/apache/mina-sshd/issues/587) Prevent `NullPointerException`on closed channel in `NettyIoSession`
 * [GH-590](https://github.com/apache/mina-sshd/issues/590) Better support for FIPS
+* [GH-597](https://github.com/apache/mina-sshd/issues/597) Pass on `Charset` in `ClientSession.executeRemoteCommand()`
 
 ## New Features
 
