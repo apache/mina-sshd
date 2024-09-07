@@ -41,6 +41,7 @@
 * [GH-524](https://github.com/apache/mina-sshd/issues/524) Performance improvements
 * [GH-533](https://github.com/apache/mina-sshd/issues/533) Fix multi-step authentication
 * [GH-582](https://github.com/apache/mina-sshd/issues/582) Fix filtering in `NamedFactory`
+* [GH-587](https://github.com/apache/mina-sshd/issues/587) Prevent `NullPointerException`on closed channel in `NettyIoSession`
 * [GH-590](https://github.com/apache/mina-sshd/issues/590) Better support for FIPS
 
 ## New Features
