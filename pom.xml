@@ -59,8 +59,8 @@
     </mailingLists>
 
     <issueManagement>
-        <system>JIRA</system>
-        <url>https://issues.apache.org/jira/browse/SSHD</url>
+        <system>GitHub</system>
+        <url>https://github.com/apache/mina-sshd/issues</url>
     </issueManagement>
 
     <scm>
