@@ -107,8 +107,6 @@
                         <configuration>
                             <includes>
                                 <include>org/apache/sshd/util/test/**/*</include>
-                                <!-- Use the same configuration for all tests logging -->
-                                <include>logback-test.xml</include>
                             </includes>
                         </configuration>
                     </execution>
