@@ -32,14 +32,6 @@
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
 
-    <licenses>
-        <license>
-            <name>Apache 2.0 License</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
-
     <mailingLists>
         <mailingList>
             <name>Users mailing list</name>
