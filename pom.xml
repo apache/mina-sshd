@@ -505,7 +505,7 @@
             <dependency>
                 <groupId>com.github.mwiede</groupId>
                 <artifactId>jsch</artifactId>
-                <version>0.2.18</version>
+                <version>0.2.19</version>
             </dependency>
 
                 <!-- Transitive dependencies by various 3rd party packages -->
