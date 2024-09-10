@@ -34,15 +34,15 @@ import org.openjdk.jmh.runner.options.OptionsBuilder;
 
 public final class RunBenchmarks {
 
-    @Option(name = "--run", aliases = "{ -r }", metaVar = "REGEX",
+    @Option(name = "--run", aliases = { "-r" }, metaVar = "REGEX",
             usage = "Tests to run. If not given, runs all SftpUploadBenchmarks.")
     private String include = "SftpUploadBenchmark";
 
-    @Option(name = "--server", aliases = "{ -s }", metaVar = "USER@HOSTNAME:PORT",
+    @Option(name = "--server", aliases = { "-s" }, metaVar = "USER@HOSTNAME:PORT",
             usage = "Specifies the hostname to connect to. At least USER and HOSTNAME must be given. If absent, a local container will be used (and the docker engine must be running).")
     private String server;
 
-    @Option(name = "--identity", aliases = "{ -i }", metaVar = "PRIVATE_KEY_FILE",
+    @Option(name = "--identity", aliases = { "-i" }, metaVar = "PRIVATE_KEY_FILE",
             usage = "The SSH private key to connect to the host. Mandatory if --server is given; otherwise ignored. If it starts with ~/ or ~\\, the ~ is replaced by the user's home directory.")
     private String userKey;
 
