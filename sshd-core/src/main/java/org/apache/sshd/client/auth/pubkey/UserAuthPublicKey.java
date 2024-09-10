@@ -473,9 +473,12 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
     @Override
     public void signalAuthMethodSuccess(ClientSession session, String service, Buffer buffer) throws Exception {
+        PublicKeyIdentity successfulKey = current;
+        KeyPair identity = (successfulKey == null) ? null : successfulKey.getKeyIdentity();
+        current = null;
         PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
         if (reporter != null) {
-            reporter.signalAuthenticationSuccess(session, service, (current == null) ? null : current.getKeyIdentity());
+            reporter.signalAuthenticationSuccess(session, service, identity);
         }
     }
 
@@ -483,9 +486,30 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     public void signalAuthMethodFailure(
             ClientSession session, String service, boolean partial, List<String> serverMethods, Buffer buffer)
             throws Exception {
+        PublicKeyIdentity keyUsed = current;
+        if (partial) {
+            // Actually a pubkey success, but we must continue with either this or another authentication method.
+            //
+            // Prevent re-use of this key if this instance of UserAuthPublicKey is used again. See OpenBSD sshd_config,
+            // AuthenticationMethods: "If the publickey method is listed more than once, sshd(8) verifies that keys
+            // that have been used successfully are not reused for subsequent authentications. For example,
+            // "publickey,publickey" requires successful authentication using two different public keys."
+            //
+            // https://man.openbsd.org/sshd_config#AuthenticationMethods
+            //
+            // If the successful key was an RSA key, and we succeeded with an rsa-sha2-512 signature, we might otherwise
+            // re-try that same key with an rsa-sha2-256 and ssh-rsa signature, which would be wrong. We have to
+            // continue with the next available key from the iterator.
+            //
+            // Note that if a server imposes an order on the keys used in such a case (say, it requires successful
+            // pubkey authentication first with key A, then with key B), it is the user's responsibility to ensure that
+            // the iterator has the keys in that order, for instance by specifying them in that order in "IdentityFile"
+            // directives in the host entry in the client-side ~/.ssh/config.
+            current = null;
+        }
         PublicKeyAuthenticationReporter reporter = session.getPublicKeyAuthenticationReporter();
         if (reporter != null) {
-            KeyPair identity = (current == null) ? null : current.getKeyIdentity();
+            KeyPair identity = (keyUsed == null) ? null : keyUsed.getKeyIdentity();
             reporter.signalAuthenticationFailure(session, service, identity, partial, serverMethods);
         }
     }

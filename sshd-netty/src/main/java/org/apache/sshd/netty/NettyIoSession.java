@@ -21,6 +21,7 @@ package org.apache.sshd.netty;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -134,11 +135,19 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         ByteBuf buf = Unpooled.buffer(bufLen);
         buf.writeBytes(buffer.array(), buffer.rpos(), bufLen);
         DefaultIoWriteFuture msg = new DefaultIoWriteFuture(getRemoteAddress(), null);
-        ChannelPromise next = context.newPromise();
+        ChannelHandlerContext ctx = context;
+        if (ctx == null) {
+            msg.setValue(new ClosedChannelException());
+            return msg;
+        }
+        ChannelPromise next = ctx.newPromise();
         prev.addListener(whatever -> {
-            ChannelHandlerContext ctx = context;
-            if (ctx != null) {
-                ctx.writeAndFlush(buf, next);
+            ChannelHandlerContext c = context;
+            if (c != null) {
+                c.writeAndFlush(buf, next);
+            } else {
+                msg.setValue(new ClosedChannelException());
+                next.cancel(true);
             }
         });
         prev = next;

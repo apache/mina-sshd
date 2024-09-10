@@ -168,11 +168,11 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
         }
 
         if (cipherFactories == null) {
-            cipherFactories = setUpDefaultCiphers(false);
+            cipherFactories = setUpDefaultCiphers(true);
         }
 
         if (macFactories == null) {
-            macFactories = setUpDefaultMacs(false);
+            macFactories = setUpDefaultMacs(true);
         }
 
         if (fileSystemFactory == null) {

@@ -114,7 +114,7 @@ public class BouncyCastleKeyPairResourceParser extends AbstractKeyPairResourcePa
 
             JcaPEMKeyConverter pemConverter = new JcaPEMKeyConverter();
             if (registrar.isNamedProviderUsed()) {
-                pemConverter.setProvider(registrar.getName());
+                pemConverter.setProvider(registrar.getProviderName());
             } else {
                 pemConverter.setProvider(registrar.getSecurityProvider());
             }

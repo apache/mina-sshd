@@ -890,25 +890,36 @@ public abstract class AbstractSession extends SessionHelper {
                 sendKexInit();
                 break;
             case BOTH:
-                DefaultKeyExchangeFuture initFuture;
-                synchronized (kexState) {
-                    initFuture = kexInitializedFuture;
-                    if (initFuture == null) {
-                        initFuture = new DefaultKeyExchangeFuture(toString(), null);
-                        kexInitializedFuture = initFuture;
-                    }
-                }
-                // requestNewKeyExchange() is running in some other thread: wait until it has set up our own proposal.
-                // The timeout is a last resort only to avoid blocking indefinitely in case something goes
-                // catastrophically wrong somewhere; it should never be hit. If it is, an exception will be thrown.
+                // We are in the process of sending our own KEX_INIT. Do the negotiation once that's done.
                 //
                 // See https://issues.apache.org/jira/browse/SSHD-1197
-                initFuture.await(CoreModuleProperties.KEX_PROPOSAL_SETUP_TIMEOUT.getRequired(this));
                 break;
             default:
                 throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
         }
+        // Note: we should not wait here; it might block (in particular with the MINA transport back-end).
+        DefaultKeyExchangeFuture initFuture;
+        synchronized (kexState) {
+            initFuture = kexInitializedFuture;
+            if (initFuture == null) {
+                initFuture = new DefaultKeyExchangeFuture(toString(), null);
+                kexInitializedFuture = initFuture;
+            }
+        }
+        initFuture.addListener(f -> {
+            if (f.isDone()) {
+                try {
+                    performKexNegotiation();
+                } catch (Exception e) {
+                    exceptionCaught(e);
+                }
+            } else {
+                exceptionCaught(f.getException());
+            }
+        });
+    }
 
+    protected void performKexNegotiation() throws Exception {
         Map<KexProposalOption, String> result = negotiate();
         String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
         Collection<? extends KeyExchangeFactory> kexFactories = getKeyExchangeFactories();

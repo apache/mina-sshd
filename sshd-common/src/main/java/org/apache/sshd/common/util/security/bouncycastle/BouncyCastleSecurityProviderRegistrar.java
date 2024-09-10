@@ -18,9 +18,11 @@
  */
 package org.apache.sshd.common.util.security.bouncycastle;
 
+import java.lang.reflect.Field;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.Provider;
+import java.security.Security;
 import java.security.Signature;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,9 +39,17 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
 public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProviderRegistrar {
     // We want to use reflection API so as not to require BouncyCastle to be present in the classpath
     public static final String PROVIDER_CLASS = "org.bouncycastle.jce.provider.BouncyCastleProvider";
+    public static final String FIPS_PROVIDER_CLASS = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider";
+    private static final String BCFIPS_PROVIDER_NAME = "BCFIPS";
+    private static final String BC_PROVIDER_NAME = "BC";
+    private static final String NAME_FIELD = "PROVIDER_NAME";
+
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
     private final AtomicReference<String> allSupportHolder = new AtomicReference<>();
+
+    private String providerClass;
+    private String providerName;
 
     public BouncyCastleSecurityProviderRegistrar() {
         super(SecurityUtils.BOUNCY_CASTLE);
@@ -56,13 +66,18 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     }
 
     @Override
+    public String getProviderName() {
+        return providerName;
+    }
+
+    @Override
     public Provider getSecurityProvider() {
         try {
-            return getOrCreateProvider(PROVIDER_CLASS);
+            return getOrCreateProvider(providerClass);
         } catch (ReflectiveOperationException t) {
             Throwable e = ExceptionUtils.peelException(t);
             log.error("getSecurityProvider({}) failed ({}) to instantiate {}: {}",
-                    getName(), e.getClass().getSimpleName(), PROVIDER_CLASS, e.getMessage());
+                    getName(), e.getClass().getSimpleName(), providerClass, e.getMessage());
             if (e instanceof RuntimeException) {
                 throw (RuntimeException) e;
             }
@@ -117,9 +132,45 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
             if (supported != null) {
                 return supported.booleanValue();
             }
-
-            Class<?> clazz = ThreadUtils.resolveDefaultClass(getClass(), PROVIDER_CLASS);
-            supported = clazz != null;
+            boolean requireFips = SecurityUtils.isFipsMode();
+            Class<?> clazz = null;
+            if (!requireFips) {
+                clazz = ThreadUtils.resolveDefaultClass(getClass(), PROVIDER_CLASS);
+            }
+            if (clazz == null) {
+                clazz = ThreadUtils.resolveDefaultClass(getClass(), FIPS_PROVIDER_CLASS);
+            }
+            if (clazz != null) {
+                // Apache MINA sshd assumes that if we can get at the provider class, we can also get any other class we
+                // need. However, and BC-based optional stuff should actually check if it does have the concrete
+                // classes it needs accessible. The FIPS version has only a subset of the full BC.
+                providerClass = clazz.getName();
+                Provider provider = Security.getProvider(BCFIPS_PROVIDER_NAME);
+                if (provider != null) {
+                    providerName = BCFIPS_PROVIDER_NAME;
+                } else if (!requireFips) {
+                    provider = Security.getProvider(BC_PROVIDER_NAME);
+                    if (provider != null) {
+                        providerName = BC_PROVIDER_NAME;
+                    }
+                }
+                if (providerName == null) {
+                    Field f;
+                    try {
+                        f = clazz.getField(NAME_FIELD);
+                        Object nameValue = f.get(null);
+                        if (nameValue instanceof String) {
+                            providerName = nameValue.toString();
+                        }
+                    } catch (Exception e) {
+                        log.warn("Alleged Bouncy Castle class {} has no {}; ignoring this provider.", providerClass, NAME_FIELD,
+                                e);
+                    }
+                }
+                supported = Boolean.valueOf(providerName != null);
+            } else {
+                supported = Boolean.FALSE;
+            }
             supportHolder.set(supported);
         }
 

@@ -1147,10 +1147,11 @@ public class ServerTest extends BaseTestSupport {
 
         @Override
         public void destroy(ChannelSession channel) {
-            synchronized (name) {
+            Object lock = new Object();
+            synchronized (lock) {
                 if ("block".equals(name)) {
                     try {
-                        name.wait();
+                        lock.wait();
                     } catch (InterruptedException e) {
                         e.printStackTrace(); // NOPMD
                     }

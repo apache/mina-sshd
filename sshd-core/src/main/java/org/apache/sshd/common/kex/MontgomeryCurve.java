@@ -136,7 +136,7 @@ public enum MontgomeryCurve implements KeySizeIndicator, OptionalFeature {
 
     @Override
     public boolean isSupported() {
-        return supported;
+        return supported && !SecurityUtils.isFipsMode();
     }
 
     public KeyAgreement createKeyAgreement() throws GeneralSecurityException {

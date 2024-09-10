@@ -107,3 +107,30 @@ In any case, the values are auto-detected by the code but the user can intervene
 * Setting a value of zero indicates a **lazy** auto-detection of the supported range the next time these values are needed.
 
 Furthermore, if all possible primes have been exhausted the code no longer falls back to DH group exchange using SHA-1 unless the `ALLOW_DHG1_KEX_FALLBACK` core module property is set.
+
+## FIPS Mode
+
+Apache MINA sshd supports running in environments restricted by FIPS 140 through a special "FIPS mode".
+In FIPS mode, crypto-algorithms not approved by FIPS-140 are disabled.
+
+FIPS mode can be switched on in two ways:
+* via System property `org.apache.sshd.security.fipsEnabled=true`, or
+* if the system property is not set to `true` also programmatically via a call to `SecurityUtils.setFipsMode()` before any other call to the library.
+
+In FIPS mode, the following algorithms are disabled completely:
+* key exchange methods sntrup761x25519-sha512, sntrup761x25519-sha512<!-- -->@openssh.com, curve25519-sha256, curve25519-sha256<!-- -->@libssh.org, and curve448-sha512.
+* the chacha20-poly1305 cipher.
+* the bcrypt KDF used in encrypted private key files in [OpenSSH format](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.key).
+* all ed25519 keys and signatures.
+
+The `BouncyCastleSecurityProviderRegistrar` only considers the "BCFIPS" provider from `bc-fips`
+and disregards the "BC" provider from normal Bouncy Castle. The registrar for _EdDSA_ is disabled.
+For random numbers, `SecureRandom.getInstanceStrong()` is used.
+
+This FIPS mode does not automatically make an application using Apache MINA sshd FIPS-140-compliant.
+It only ensures that the Apache MINA sshd library does not provide or use algorithms that should not
+be used in FIPS-140-compliant applications running in approved mode.
+
+It is usually necessary to configure the JVM for full FIPS 140 compliance, for instance, by defining
+appropriate security providers statically. Any such configuration is beyond the scope of the Apache MINA
+sshd library.

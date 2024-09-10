@@ -20,4 +20,28 @@ updates:
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
-      interval: "weekly"
+      interval: "daily"
+    ignore:
+      # Those upgrades all require JDK > 8, so need to be postponed to 3.x
+      - dependency-name: "org.springframework:spring-core"
+        versions: [">= 6.0.0"]
+      - dependency-name: "org.springframework:spring-framework-bom"
+        versions: [">= 6.0.0"]
+      - dependency-name: "org.eclipse.jgit:org.eclipse.jgit"
+        versions: [ ">= 6.0.0" ]
+      - dependency-name: "org.eclipse.jgit:org.eclipse.jgit.ssh.apache"
+        versions: [ ">= 6.0.0" ]
+      - dependency-name: "org.eclipse.jgit:org.eclipse.jgit.pgm"
+        versions: [ ">= 6.0.0" ]
+      - dependency-name: "org.mockito:mockito-core"
+        versions: [ ">= 5.0.0" ]
+      - dependency-name: "org.slf4j:slf4j-api"
+        versions: [ ">= 2.0.0" ]
+      - dependency-name: "org.slf4j:slf4j-over-slf4j"
+        versions: [ ">= 2.0.0" ]
+      - dependency-name: "org.slf4j:jul-to-slf4j"
+        versions: [ ">= 2.0.0" ]
+      - dependency-name: "org.slf4j:slf4j-jdk14"
+        versions: [ ">= 2.0.0" ]
+      - dependency-name: "org.slf4j:slf4j-simple"
+        versions: [ ">= 2.0.0" ]

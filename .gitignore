@@ -5,6 +5,7 @@ Servers/
 .settings/
 RemoteSystemsTempFiles/
 .classpath
+.factorypath
 .project
 # Puthon related files
 .pydevproject

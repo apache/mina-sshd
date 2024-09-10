@@ -130,15 +130,15 @@ public class ServerBuilder extends BaseBuilder<SshServer, ServerBuilder> {
         super.fillWithDefaultValues();
 
         if (compressionFactories == null) {
-            compressionFactories = setUpDefaultCompressionFactories(false);
+            compressionFactories = setUpDefaultCompressionFactories(true);
         }
 
         if (signatureFactories == null) {
-            signatureFactories = setUpDefaultSignatureFactories(false);
+            signatureFactories = setUpDefaultSignatureFactories(true);
         }
 
         if (keyExchangeFactories == null) {
-            keyExchangeFactories = setUpDefaultKeyExchanges(false);
+            keyExchangeFactories = setUpDefaultKeyExchanges(true);
         }
 
         if (kexExtensionHandler == null) {

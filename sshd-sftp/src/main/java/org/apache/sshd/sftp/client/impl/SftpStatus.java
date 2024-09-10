@@ -20,6 +20,7 @@ package org.apache.sshd.sftp.client.impl;
 
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.sftp.common.SftpConstants;
+import org.apache.sshd.sftp.common.SftpException;
 
 /**
  * A representation of a SSH_FXP_STATUS record.
@@ -69,7 +70,12 @@ public final class SftpStatus {
         return new SftpStatus(code, message, language);
     }
 
-    public static SftpStatus parse(SftpResponse response) {
+    public static SftpStatus parse(SftpResponse response) throws SftpException {
+        if (response.getType() != SftpConstants.SSH_FXP_STATUS) {
+            throw new SftpException(
+                    SftpConstants.SSH_FX_BAD_MESSAGE, "Unexpected SFTP response: expected SSH_FXP_STATUS but got "
+                                                      + SftpConstants.getCommandMessageName(response.getType()));
+        }
         return parse(response.getBuffer());
     }
 }

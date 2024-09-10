@@ -26,7 +26,6 @@ import javax.crypto.AEADBadTagException;
 
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.Poly1305Mac;
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 
@@ -38,11 +37,11 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 public class ChaCha20Cipher implements Cipher {
     protected final ChaChaEngine headerEngine = new ChaChaEngine();
     protected final ChaChaEngine bodyEngine = new ChaChaEngine();
-    protected final Mac mac = new Poly1305Mac();
+    protected final Mac mac;
     protected Mode mode;
 
     public ChaCha20Cipher() {
-        // empty
+        this.mac = new Poly1305Mac();
     }
 
     @Override
@@ -131,7 +130,7 @@ public class ChaCha20Cipher implements Cipher {
 
     @Override
     public int getKeySize() {
-        return 256;
+        return 512;
     }
 
     protected static class ChaChaEngine {
@@ -142,15 +141,24 @@ public class ChaCha20Cipher implements Cipher {
         private static final int KEY_INTS = KEY_BYTES / Integer.BYTES;
         private static final int COUNTER_OFFSET = 12;
         private static final int NONCE_OFFSET = 14;
-        private static final int NONCE_BYTES = 8;
-        private static final int NONCE_INTS = NONCE_BYTES / Integer.BYTES;
         private static final int[] ENGINE_STATE_HEADER = unpackSigmaString(
                 "expand 32-byte k".getBytes(StandardCharsets.US_ASCII));
 
         protected final int[] engineState = new int[BLOCK_INTS];
         protected final byte[] keyStream = new byte[BLOCK_BYTES];
-        protected final byte[] nonce = new byte[NONCE_BYTES];
+        protected final byte[] nonce = new byte[Integer.BYTES];
         protected long initialNonce;
+        protected long nonceVal;
+
+        // Elements 12 to 15 in the engineState are the counter and the nonce. The counter is a 64bit little-
+        // endian value; the nonce is a 64bit big-endian value.
+        //
+        // The counter always starts at zero, is incremented with each full block (64 bytes), and in SSH never
+        // overflows 32bits because it counts only inside a single SSH packet. The nonce in SSH is the packet
+        // sequence number, which is a 32bit unsigned int that wraps around on overflow.
+        //
+        // Therefore, engineState[13] and engineState[14] are always zero. engineState[12] is the counter, and
+        // engineState[15] is the packet sequence number in inverse byte order.
 
         protected ChaChaEngine() {
             System.arraycopy(ENGINE_STATE_HEADER, 0, engineState, 0, 4);
@@ -161,21 +169,25 @@ public class ChaCha20Cipher implements Cipher {
         }
 
         protected void initNonce(byte[] nonce) {
-            initialNonce = BufferUtils.getLong(nonce, 0, NumberUtils.length(nonce));
-            unpackIntsLE(nonce, 0, NONCE_INTS, engineState, NONCE_OFFSET);
-            System.arraycopy(nonce, 0, this.nonce, 0, NONCE_BYTES);
+            long hiBits = BufferUtils.getUInt(nonce, 0, Integer.BYTES);
+            ValidateUtils.checkState(hiBits == 0, "ChaCha20 nonce is not a valid SSH packet sequence number");
+            initialNonce = BufferUtils.getUInt(nonce, Integer.BYTES, Integer.BYTES);
+            nonceVal = initialNonce;
+            engineState[NONCE_OFFSET] = 0;
+            engineState[NONCE_OFFSET + 1] = Poly1305Mac.unpackIntLE(nonce, Integer.BYTES);
         }
 
         protected void advanceNonce() {
-            long counter = BufferUtils.getLong(nonce, 0, NONCE_BYTES) + 1;
-            ValidateUtils.checkState(counter != initialNonce, "Packet sequence number cannot be reused with the same key");
-            BufferUtils.putLong(counter, nonce, 0, NONCE_BYTES);
-            unpackIntsLE(nonce, 0, NONCE_INTS, engineState, NONCE_OFFSET);
+            // SSH packet sequence number wraps around on uint32 overflow.
+            nonceVal = (nonceVal + 1) & 0xFFFF_FFFFL;
+            ValidateUtils.checkState(nonceVal != initialNonce, "Packet sequence number cannot be reused with the same key");
+            BufferUtils.putUInt(nonceVal, nonce, 0, Integer.BYTES);
+            engineState[NONCE_OFFSET + 1] = Poly1305Mac.unpackIntLE(nonce, 0);
         }
 
         protected void initCounter(long counter) {
             engineState[COUNTER_OFFSET] = (int) counter;
-            engineState[COUNTER_OFFSET + 1] = (int) (counter >>> Integer.SIZE);
+            engineState[COUNTER_OFFSET + 1] = 0; // Always zero; and counter never overflows in SSH.
         }
 
         // one-shot usage
@@ -187,11 +199,7 @@ public class ChaCha20Cipher implements Cipher {
                     out[outOffset++] = (byte) (in[offset++] ^ keyStream[i]);
                 }
                 length -= want;
-                int lo = ++engineState[COUNTER_OFFSET];
-                if (lo == 0) {
-                    // overflow
-                    ++engineState[COUNTER_OFFSET + 1];
-                }
+                ++engineState[COUNTER_OFFSET]; // Never overflows in SSH
             }
         }
 
@@ -216,10 +224,10 @@ public class ChaCha20Cipher implements Cipher {
             int x9 = engine[9];
             int x10 = engine[10];
             int x11 = engine[11];
-            int x12 = engine[12];
-            int x13 = engine[13];
-            int x14 = engine[14];
-            int x15 = engine[15];
+            int x12 = engine[12]; // counter
+            int x13 = engine[13]; // 0
+            int x14 = engine[14]; // 0
+            int x15 = engine[15]; // nonce
 
             for (int i = 0; i < 10; i++) {
                 // Columns

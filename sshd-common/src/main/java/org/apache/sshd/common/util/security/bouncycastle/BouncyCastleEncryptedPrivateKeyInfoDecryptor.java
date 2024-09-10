@@ -52,7 +52,7 @@ public enum BouncyCastleEncryptedPrivateKeyInfoDecryptor implements Decryptor {
         try {
             JcePKCSPBEInputDecryptorProviderBuilder builder = new JcePKCSPBEInputDecryptorProviderBuilder();
             if (registrar.isNamedProviderUsed()) {
-                builder.setProvider(registrar.getName());
+                builder.setProvider(registrar.getProviderName());
             } else {
                 builder.setProvider(registrar.getSecurityProvider());
             }

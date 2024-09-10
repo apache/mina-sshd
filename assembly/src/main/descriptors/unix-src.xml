@@ -40,6 +40,7 @@
                 <include>**/*.bin</include>
                 <include>**/*.jnilib</include>
                 <include>**/*.cert</include>
+                <include>**/.mvn/*</include>
 
                 <include>sshd-openpgp/src/test/resources/**/*</include>
             </includes>

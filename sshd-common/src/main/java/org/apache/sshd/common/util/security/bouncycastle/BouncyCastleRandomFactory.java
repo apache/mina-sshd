@@ -21,6 +21,7 @@ package org.apache.sshd.common.util.security.bouncycastle;
 import org.apache.sshd.common.random.AbstractRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.bouncycastle.crypto.prng.RandomGenerator;
 
 /**
  * Named factory for the BouncyCastle <code>Random</code>
@@ -35,7 +36,11 @@ public final class BouncyCastleRandomFactory extends AbstractRandomFactory {
 
     @Override
     public boolean isSupported() {
-        return SecurityUtils.isBouncyCastleRegistered();
+        try {
+            return SecurityUtils.isBouncyCastleRegistered() && RandomGenerator.class.getName() != null;
+        } catch (Throwable e) {
+            return false;
+        }
     }
 
     @Override

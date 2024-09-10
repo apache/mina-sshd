@@ -48,18 +48,36 @@ public interface NamedFactory<T> extends Factory<T>, NamedResource {
         }
     }
 
+    /**
+     * Converts a list of factories to a list of transformed factories, optionally excluding unsupported factories.
+     *
+     * @param  <S>               initial factory type
+     * @param  <E>               transformed factory type
+     * @param  ignoreUnsupported whether to filter out unsupported factories from {@code preferred}
+     * @param  preferred         initial list to filter
+     * @param  xform             the transformation to apply
+     * @return                   the filtered list of transformed factories
+     */
     static <S extends OptionalFeature, E extends NamedResource> List<E> setUpTransformedFactories(
             boolean ignoreUnsupported, Collection<? extends S> preferred, Function<? super S, ? extends E> xform) {
         return preferred.stream()
-                .filter(f -> ignoreUnsupported || f.isSupported())
+                .filter(f -> ignoreUnsupported ? f.isSupported() : true)
                 .map(xform)
                 .collect(Collectors.toList());
     }
 
+    /**
+     * Filters out unsupported factories from a given list if {@code ignoreUnsupported == true}.
+     *
+     * @param  <E>               factory type
+     * @param  ignoreUnsupported whether to filter out unsupported factories from {@code preferred}
+     * @param  preferred         initial list to filter
+     * @return                   the filtered list of factories
+     */
     static <E extends NamedResource & OptionalFeature> List<E> setUpBuiltinFactories(
             boolean ignoreUnsupported, Collection<? extends E> preferred) {
         return preferred.stream()
-                .filter(f -> ignoreUnsupported || f.isSupported())
+                .filter(f -> ignoreUnsupported ? f.isSupported() : true)
                 .collect(Collectors.toList());
     }
 }

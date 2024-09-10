@@ -31,6 +31,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -39,6 +40,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.config.NamedFactoriesListParseResult;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Provides easy access to the currently implemented ciphers
@@ -46,27 +48,32 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public enum BuiltinCiphers implements CipherFactory {
-    none(Constants.NONE, 0, 0, 0, "None", 0, "None", 8) {
+    none(Constants.NONE, 0, 0, "None", 0, "None", 8) {
         @Override
         public Cipher create() {
             return new CipherNone();
         }
+
+        @Override
+        public boolean isSupported() {
+            return !SecurityUtils.isFipsMode();
+        }
     },
-    aes128cbc(Constants.AES128_CBC, 16, 0, 16, "AES", 128, "AES/CBC/NoPadding", 16) {
+    aes128cbc(Constants.AES128_CBC, 16, 0, "AES", 128, "AES/CBC/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
                     getTransformation(), getCipherBlockSize());
         }
     },
-    aes128ctr(Constants.AES128_CTR, 16, 0, 16, "AES", 128, "AES/CTR/NoPadding", 16) {
+    aes128ctr(Constants.AES128_CTR, 16, 0, "AES", 128, "AES/CTR/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseCTRCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
                     getTransformation(), getCipherBlockSize());
         }
     },
-    aes128gcm(Constants.AES128_GCM, 12, 16, 16, "AES", 128, "AES/GCM/NoPadding", 16) {
+    aes128gcm(Constants.AES128_GCM, 12, 16, "AES", 128, "AES/GCM/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseGCMCipher(
@@ -74,7 +81,7 @@ public enum BuiltinCiphers implements CipherFactory {
                     getKeySize(), getTransformation(), getCipherBlockSize());
         }
     },
-    aes256gcm(Constants.AES256_GCM, 12, 16, 32, "AES", 256, "AES/GCM/NoPadding", 16) {
+    aes256gcm(Constants.AES256_GCM, 12, 16, "AES", 256, "AES/GCM/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseGCMCipher(
@@ -82,28 +89,28 @@ public enum BuiltinCiphers implements CipherFactory {
                     getKeySize(), getTransformation(), getCipherBlockSize());
         }
     },
-    aes192cbc(Constants.AES192_CBC, 16, 0, 24, "AES", 192, "AES/CBC/NoPadding", 16) {
+    aes192cbc(Constants.AES192_CBC, 16, 0, "AES", 192, "AES/CBC/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
                     getTransformation(), getCipherBlockSize());
         }
     },
-    aes192ctr(Constants.AES192_CTR, 16, 0, 24, "AES", 192, "AES/CTR/NoPadding", 16) {
+    aes192ctr(Constants.AES192_CTR, 16, 0, "AES", 192, "AES/CTR/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseCTRCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
                     getTransformation(), getCipherBlockSize());
         }
     },
-    aes256cbc(Constants.AES256_CBC, 16, 0, 32, "AES", 256, "AES/CBC/NoPadding", 16) {
+    aes256cbc(Constants.AES256_CBC, 16, 0, "AES", 256, "AES/CBC/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
                     getTransformation(), getCipherBlockSize());
         }
     },
-    aes256ctr(Constants.AES256_CTR, 16, 0, 32, "AES", 256, "AES/CTR/NoPadding", 16) {
+    aes256ctr(Constants.AES256_CTR, 16, 0, "AES", 256, "AES/CTR/NoPadding", 16) {
         @Override
         public Cipher create() {
             return new BaseCTRCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
@@ -115,7 +122,7 @@ public enum BuiltinCiphers implements CipherFactory {
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
      */
     @Deprecated
-    arcfour128(Constants.ARCFOUR128, 8, 0, 16, "ARCFOUR", 128, "RC4", 8) {
+    arcfour128(Constants.ARCFOUR128, 8, 0, "ARCFOUR", 128, "RC4", 8) {
         @Override
         public Cipher create() {
             return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize(), getCipherBlockSize());
@@ -126,7 +133,7 @@ public enum BuiltinCiphers implements CipherFactory {
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
      */
     @Deprecated
-    arcfour256(Constants.ARCFOUR256, 8, 0, 32, "ARCFOUR", 256, "RC4", 8) {
+    arcfour256(Constants.ARCFOUR256, 8, 0, "ARCFOUR", 256, "RC4", 8) {
         @Override
         public Cipher create() {
             return new BaseRC4Cipher(getIVSize(), getKdfSize(), getKeySize(), getCipherBlockSize());
@@ -137,25 +144,30 @@ public enum BuiltinCiphers implements CipherFactory {
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
      */
     @Deprecated
-    blowfishcbc(Constants.BLOWFISH_CBC, 8, 0, 16, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8) {
+    blowfishcbc(Constants.BLOWFISH_CBC, 8, 0, "Blowfish", 128, "Blowfish/CBC/NoPadding", 8) {
         @Override
         public Cipher create() {
             return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
                     getTransformation(), getCipherBlockSize());
         }
     },
-    cc20p1305_openssh(Constants.CC20P1305_OPENSSH, 8, 16, 64, "ChaCha", 256, "ChaCha", 8) {
+    cc20p1305_openssh(Constants.CC20P1305_OPENSSH, 8, 16, "ChaCha", 512, "ChaCha", 8) {
         @Override
         public Cipher create() {
             return new ChaCha20Cipher();
         }
+
+        @Override
+        public boolean isSupported() {
+            return !SecurityUtils.isFipsMode();
+        }
     },
     /**
      * @deprecated
      * @see        <A HREF="https://issues.apache.org/jira/browse/SSHD-1004">SSHD-1004</A>
      */
     @Deprecated
-    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 0, 24, "DESede", 192, "DESede/CBC/NoPadding", 8) {
+    tripledescbc(Constants.TRIPLE_DES_CBC, 8, 0, "DESede", 192, "DESede/CBC/NoPadding", 8) {
         @Override
         public Cipher create() {
             return new BaseCBCCipher(getIVSize(), getAuthenticationTagSize(), getKdfSize(), getAlgorithm(), getKeySize(),
@@ -170,30 +182,22 @@ public enum BuiltinCiphers implements CipherFactory {
     private final String factoryName;
     private final int ivsize;
     private final int authSize;
-    private final int kdfSize;
-    private final int keysize;
+    private final int keySize;
     private final int blkSize;
     private final String algorithm;
     private final String transformation;
-    private final boolean supported;
+    private final AtomicReference<Boolean> supported = new AtomicReference<>();
 
     BuiltinCiphers(
-                   String factoryName, int ivsize, int authSize, int kdfSize,
-                   String algorithm, int keySize, String transformation, int blkSize) {
+                   String factoryName, int ivsize, int authSize, String algorithm, int keySizeInBits, String transformation,
+                   int blkSize) {
         this.factoryName = factoryName;
         this.ivsize = ivsize;
         this.authSize = authSize;
-        this.kdfSize = kdfSize;
-        this.keysize = keySize;
+        this.keySize = keySizeInBits;
         this.algorithm = algorithm;
         this.transformation = transformation;
         this.blkSize = blkSize;
-        /*
-         * This can be done once since in order to change the support the JVM needs to be stopped, some
-         * unlimited-strength files need be installed and then the JVM re-started. Therefore, the answer is not going to
-         * change while the JVM is running
-         */
-        this.supported = Constants.NONE.equals(factoryName) || Cipher.checkSupported(this.transformation, this.keysize);
     }
 
     @Override
@@ -212,12 +216,19 @@ public enum BuiltinCiphers implements CipherFactory {
      */
     @Override
     public boolean isSupported() {
-        return supported;
+        Boolean value = supported.get();
+        if (value == null) {
+            value = Cipher.checkSupported(this.transformation, this.keySize);
+            if (!supported.compareAndSet(null, value)) {
+                value = supported.get();
+            }
+        }
+        return value.booleanValue();
     }
 
     @Override
     public int getKeySize() {
-        return keysize;
+        return keySize;
     }
 
     @Override
@@ -232,7 +243,7 @@ public enum BuiltinCiphers implements CipherFactory {
 
     @Override
     public int getKdfSize() {
-        return kdfSize;
+        return keySize / Byte.SIZE;
     }
 
     @Override

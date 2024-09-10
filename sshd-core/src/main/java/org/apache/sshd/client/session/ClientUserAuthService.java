@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.client.auth.UserAuth;
 import org.apache.sshd.client.auth.UserAuthFactory;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
+import org.apache.sshd.client.auth.pubkey.UserAuthPublicKey;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.DefaultAuthFuture;
 import org.apache.sshd.common.NamedResource;
@@ -66,8 +67,9 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
     private final Map<String, Object> properties = new ConcurrentHashMap<>();
 
     private String service;
-    private UserAuth userAuth;
+    private UserAuth currentUserAuth;
     private int currentMethod;
+    private UserAuth pubkeyAuth;
 
     private final Object initLock = new Object();
     private boolean started;
@@ -150,6 +152,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
 
         // start from scratch
         serverMethods = null;
+        pubkeyAuth = null;
         currentMethod = 0;
         clearUserAuth();
 
@@ -284,15 +287,17 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         if (cmd == SshConstants.SSH_MSG_USERAUTH_SUCCESS) {
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) SSH_MSG_USERAUTH_SUCCESS Succeeded with {}",
-                        session, (userAuth == null) ? "<unknown>" : userAuth.getName());
+                        session, (currentUserAuth == null) ? "<unknown>" : currentUserAuth.getName());
             }
 
-            if (userAuth != null) {
+            if (currentUserAuth != null) {
                 try {
-                    userAuth.signalAuthMethodSuccess(session, service, buffer);
+                    currentUserAuth.signalAuthMethodSuccess(session, service, buffer);
                 } finally {
                     clearUserAuth();
                 }
+            } else {
+                destroyPubkeyAuth();
             }
             session.setAuthenticated();
             ((ClientSessionImpl) session).switchToNextService();
@@ -309,43 +314,82 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             return;
         }
         if (cmd == SshConstants.SSH_MSG_USERAUTH_FAILURE) {
-            String mths = buffer.getString();
+            String methods = buffer.getString();
             boolean partial = buffer.getBoolean();
             if (log.isDebugEnabled()) {
                 log.debug("processUserAuth({}) Received SSH_MSG_USERAUTH_FAILURE - partial={}, methods={}",
-                        session, partial, mths);
+                        session, partial, methods);
             }
-            if (partial || (serverMethods == null)) {
-                serverMethods = Arrays.asList(GenericUtils.split(mths, ','));
-                currentMethod = 0;
-                if (userAuth != null) {
-                    try {
-                        userAuth.signalAuthMethodFailure(session, service, partial, Collections.unmodifiableList(serverMethods),
-                                buffer);
-                    } finally {
-                        clearUserAuth();
+            List<String> allowedMethods;
+            if (GenericUtils.isEmpty(methods)) {
+                if (serverMethods == null) {
+                    // RFC 4252 section 5.2 says that in the SSH_MSG_USERAUTH_FAILURE response
+                    // to a 'none' request a server MAY return a list of methods. Here it didn't,
+                    // so we just assume all methods that the client knows are fine.
+                    //
+                    // https://datatracker.ietf.org/doc/html/rfc4252#section-5.2
+                    allowedMethods = new ArrayList<>(clientMethods);
+                } else if (partial) {
+                    // Don't reset to an empty list; keep going with the previous methods. Sending
+                    // a partial success without methods that may continue makes no sense and would
+                    // be a server bug.
+                    //
+                    // currentUserAuth should always be set here!
+                    if (log.isDebugEnabled()) {
+                        log.debug(
+                                "processUserAuth({}) : potential bug in {} server: SSH_MSG_USERAUTH_FAILURE with partial success after {} authentication, but without continuation methods",
+                                session, session.getServerVersion(),
+                                currentUserAuth != null ? currentUserAuth.getName() : "UNKNOWN");
+                    }
+                    allowedMethods = serverMethods;
+                } else {
+                    allowedMethods = new ArrayList<>();
+                }
+            } else {
+                allowedMethods = Arrays.asList(GenericUtils.split(methods, ','));
+            }
+            if (currentUserAuth != null) {
+                try {
+                    currentUserAuth.signalAuthMethodFailure(session, service, partial,
+                            Collections.unmodifiableList(allowedMethods), buffer);
+                } catch (Exception e) {
+                    clearUserAuth();
+                    throw e;
+                }
+
+                // Check if the current method is still allowed.
+                if (allowedMethods.indexOf(currentUserAuth.getName()) < 0) {
+                    if (currentUserAuth == pubkeyAuth) {
+                        // Don't destroy it yet, we might still need it later on
+                        currentUserAuth = null;
+                    } else {
+                        destroyUserAuth();
                     }
                 }
             }
+            if (partial || (serverMethods == null)) {
+                currentMethod = 0;
+            }
+            serverMethods = allowedMethods;
 
             tryNext(cmd, authFuture);
             return;
         }
 
-        if (userAuth == null) {
+        if (currentUserAuth == null) {
             throw new IllegalStateException("Received unknown packet: " + SshConstants.getCommandMessageName(cmd));
         }
 
         if (log.isDebugEnabled()) {
             log.debug("processUserAuth({}) delegate processing of {} to {}",
-                    session, SshConstants.getCommandMessageName(cmd), userAuth.getName());
+                    session, SshConstants.getCommandMessageName(cmd), currentUserAuth.getName());
         }
 
         buffer.rpos(buffer.rpos() - 1);
-        if (!userAuth.process(buffer)) {
+        if (!currentUserAuth.process(buffer)) {
             tryNext(cmd, authFuture);
         } else {
-            authFuture.setCancellable(userAuth.isCancellable());
+            authFuture.setCancellable(currentUserAuth.isCancellable());
         }
     }
 
@@ -353,21 +397,28 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
         ClientSession session = getClientSession();
         // Loop until we find something to try
         for (boolean debugEnabled = log.isDebugEnabled();; debugEnabled = log.isDebugEnabled()) {
-            if (userAuth == null) {
+            if (currentUserAuth == null) {
                 if (debugEnabled) {
-                    log.debug("tryNext({}) starting authentication mechanisms: client={}, server={}",
-                            session, clientMethods, serverMethods);
+                    log.debug("tryNext({}) starting authentication mechanisms: client={}, client index={}, server={}", session,
+                            clientMethods, currentMethod, serverMethods);
                 }
-            } else if (!userAuth.process(null)) {
+            } else if (!currentUserAuth.process(null)) {
                 if (debugEnabled) {
-                    log.debug("tryNext({}) no initial request sent by method={}", session, userAuth.getName());
+                    log.debug("tryNext({}) no initial request sent by method={}", session, currentUserAuth.getName());
                 }
-                clearUserAuth();
+                if (currentUserAuth == pubkeyAuth) {
+                    // Don't destroy it yet. It might re-appear later if the server requires multiple methods.
+                    // It doesn't have any more keys, but we don't want to re-create it from scratch and re-try
+                    // all the keys already tried again.
+                    currentUserAuth = null;
+                } else {
+                    destroyUserAuth();
+                }
                 currentMethod++;
             } else {
                 if (debugEnabled) {
                     log.debug("tryNext({}) successfully processed initial buffer by method={}",
-                            session, userAuth.getName());
+                            session, currentUserAuth.getName());
                 }
                 return;
             }
@@ -385,7 +436,7 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                     log.debug("tryNext({}) exhausted all methods - client={}, server={}",
                             session, clientMethods, serverMethods);
                 }
-
+                clearUserAuth();
                 // also wake up anyone sitting in waitFor
                 authFuture.setException(new SshException(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
                         "No more authentication methods available"));
@@ -398,30 +449,58 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 clearUserAuth();
                 return;
             }
-            userAuth = UserAuthMethodFactory.createUserAuth(session, authFactories, method);
-            if (userAuth == null) {
-                throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
+            if (UserAuthPublicKey.NAME.equals(method) && pubkeyAuth != null) {
+                currentUserAuth = pubkeyAuth;
+            } else {
+                currentUserAuth = UserAuthMethodFactory.createUserAuth(session, authFactories, method);
+                if (currentUserAuth == null) {
+                    throw new UnsupportedOperationException("Failed to find a user-auth factory for method=" + method);
+                }
             }
-
             if (debugEnabled) {
                 log.debug("tryNext({}) attempting method={}", session, method);
             }
-
-            userAuth.init(session, service);
-            authFuture.setCancellable(userAuth.isCancellable());
+            if (currentUserAuth != pubkeyAuth) {
+                currentUserAuth.init(session, service);
+            }
+            if (UserAuthPublicKey.NAME.equals(currentUserAuth.getName())) {
+                pubkeyAuth = currentUserAuth;
+            }
+            authFuture.setCancellable(currentUserAuth.isCancellable());
             if (authFuture.isCanceled()) {
                 authFuture.getCancellation().setCanceled();
                 clearUserAuth();
+                return;
             }
         }
     }
 
     private void clearUserAuth() {
-        if (userAuth != null) {
+        if (currentUserAuth == pubkeyAuth) {
+            pubkeyAuth = null;
+            destroyUserAuth();
+        } else {
+            destroyUserAuth();
+            destroyPubkeyAuth();
+        }
+    }
+
+    private void destroyUserAuth() {
+        if (currentUserAuth != null) {
             try {
-                userAuth.destroy();
+                currentUserAuth.destroy();
             } finally {
-                userAuth = null;
+                currentUserAuth = null;
+            }
+        }
+    }
+
+    private void destroyPubkeyAuth() {
+        if (pubkeyAuth != null) {
+            try {
+                pubkeyAuth.destroy();
+            } finally {
+                pubkeyAuth = null;
             }
         }
     }

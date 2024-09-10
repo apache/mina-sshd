@@ -307,14 +307,14 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
      */
     static boolean registerSecurityProvider(SecurityProviderRegistrar registrar) {
         String name = ValidateUtils.checkNotNullAndNotEmpty(
-                (registrar == null) ? null : registrar.getName(), "No name for registrar=%s", registrar);
+                (registrar == null) ? null : registrar.getProviderName(), "No name for registrar=%s", registrar);
         Provider p = Security.getProvider(name);
         if (p != null) {
             return false;
         }
 
         p = ValidateUtils.checkNotNull(
-                registrar.getSecurityProvider(), "No provider created for registrar of %s", name);
+                registrar.getSecurityProvider(), "No provider created for registrar %s of %s", registrar.getName(), name);
         if (registrar.isNamedProviderUsed()) {
             Security.addProvider(p);
         }

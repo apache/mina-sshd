@@ -67,6 +67,7 @@ public final class GenericUtils {
     /**
      * The complement of {@link String#CASE_INSENSITIVE_ORDER}
      */
+    @SuppressWarnings("PMD.UseEqualsToCompareStrings")
     public static final Comparator<String> CASE_SENSITIVE_ORDER = (s1, s2) -> {
         if (s1 == s2) {
             return 0;

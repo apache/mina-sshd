@@ -60,12 +60,12 @@ public interface SecurityEntityFactory<T> {
             if ((defaultProvider == null) || (defaultProvider == SecurityProviderChoice.EMPTY)) {
                 return toDefaultFactory(entityType);
             } else if (defaultProvider.isNamedProviderUsed()) {
-                return toNamedProviderFactory(entityType, defaultProvider.getName());
+                return toNamedProviderFactory(entityType, defaultProvider.getProviderName());
             } else {
                 return toProviderInstanceFactory(entityType, defaultProvider.getSecurityProvider());
             }
         } else if (registrar.isNamedProviderUsed()) {
-            return toNamedProviderFactory(entityType, registrar.getName());
+            return toNamedProviderFactory(entityType, registrar.getProviderName());
         } else {
             return toProviderInstanceFactory(entityType, registrar.getSecurityProvider());
         }

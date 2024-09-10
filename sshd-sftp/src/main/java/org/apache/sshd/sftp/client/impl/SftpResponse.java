@@ -71,7 +71,8 @@ public final class SftpResponse {
         int length = buffer.getInt();
         int type = buffer.getUByte();
         int id = buffer.getInt();
-        validateIncomingResponse(cmd, id, type, length, buffer);
+        // No need to validate the length here: the way we assemble these buffers guarantees that
+        // the length is reasonable and does not exceed buffer.available().
         return new SftpResponse(cmd, id, type, length, buffer);
     }
 

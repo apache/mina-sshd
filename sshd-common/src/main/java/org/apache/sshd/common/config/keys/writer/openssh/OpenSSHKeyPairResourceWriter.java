@@ -27,6 +27,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -50,8 +51,11 @@ import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHParserContext;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCrypt;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
 import org.apache.sshd.common.config.keys.writer.KeyPairResourceWriter;
+import org.apache.sshd.common.random.JceRandomFactory;
+import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * A {@link KeyPairResourceWriter} for writing keys in the modern OpenSSH format, using the OpenBSD bcrypt KDF for
@@ -272,14 +276,18 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
         @Override
         protected byte[] deriveEncryptionKey(PrivateKeyEncryptionContext context, int keyLength)
                 throws IOException, GeneralSecurityException {
+            if (SecurityUtils.isFipsMode()) {
+                throw new NoSuchAlgorithmException(BCryptKdfOptions.NAME + " is disabled in FIPS mode");
+            }
+
             byte[] iv = context.getInitVector();
             if (iv == null) {
                 iv = generateInitializationVector(context);
             }
 
             byte[] salt = new byte[BCRYPT_SALT_LENGTH];
-            SecureRandom random = new SecureRandom();
-            random.nextBytes(salt);
+            Random random = JceRandomFactory.INSTANCE.create();
+            random.fill(salt);
 
             byte[] kdfOutput = new byte[keyLength + iv.length];
             BCrypt bcrypt = new BCrypt();

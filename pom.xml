@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>32</version>
+        <version>33</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
@@ -31,14 +31,6 @@
     <name>Apache Mina SSHD</name>
     <packaging>pom</packaging>
     <inceptionYear>2008</inceptionYear>
-
-    <licenses>
-        <license>
-            <name>Apache 2.0 License</name>
-            <url>https://www.apache.org/licenses/LICENSE-2.0</url>
-            <distribution>repo</distribution>
-        </license>
-    </licenses>
 
     <mailingLists>
         <mailingList>
@@ -67,8 +59,8 @@
     </mailingLists>
 
     <issueManagement>
-        <system>JIRA</system>
-        <url>https://issues.apache.org/jira/browse/SSHD</url>
+        <system>GitHub</system>
+        <url>https://github.com/apache/mina-sshd/issues</url>
     </issueManagement>
 
     <scm>
@@ -81,7 +73,7 @@
     <properties>
         <minimalJavaBuildVersion>17</minimalJavaBuildVersion>
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
-        <minimalMavenBuildVersion>3.9</minimalMavenBuildVersion>
+        <minimalMavenBuildVersion>3.9.8</minimalMavenBuildVersion>
 
         <format.impsort.action>sort</format.impsort.action>
         <format.formatter.action>format</format.formatter.action>
@@ -96,7 +88,7 @@
         <maven.compiler.source>${javac.source}</maven.compiler.source>
         <ant.version>1.10.14</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
-        <build-helper-maven-plugin.version>3.5.0</build-helper-maven-plugin.version>
+        <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
 
         <javac.target>${javac.source}</javac.target>
         <required.java.version>[${javac.target},)</required.java.version>
@@ -110,22 +102,22 @@
             
             Execution verify-style of goal org.apache.maven.plugins:maven-checkstyle-plugin:3.1.2:check failed.: NullPointerException
             -->
-        <slf4j.version>1.7.32</slf4j.version>
+        <slf4j.version>1.7.36</slf4j.version>
         <slf4j.upper.bound>3</slf4j.upper.bound>
         <logback.version>1.2.13</logback.version>
-        <spring.version>5.3.28</spring.version>
+        <spring.version>5.3.39</spring.version>
             <!-- NOTE: upgrading jGit to 6.x requires Java 11 -->
         <jgit.version>5.13.3.202401111512-r</jgit.version>
-        <bytebuddy.version>1.12.6</bytebuddy.version>
-        <testcontainers.version>1.19.7</testcontainers.version>
-        <grpc.version>1.27.2</grpc.version> <!-- Used only in tests -->
+        <bytebuddy.version>1.14.18</bytebuddy.version>
+        <testcontainers.version>1.20.1</testcontainers.version>
+        <grpc.version>1.65.1</grpc.version> <!-- Used only in tests -->
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
 
-        <maven.archiver.version>3.6.1</maven.archiver.version>
+        <maven.archiver.version>3.6.2</maven.archiver.version>
         <plexus.archiver.version>4.8.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>6.47.0</pmd.version>
+        <pmd.version>7.4.0</pmd.version>
 
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -142,7 +134,7 @@
                 <format.formatter.action>validate</format.formatter.action>
             </properties>
         </profile>
-
+                
         <profile>
             <id>toolchains</id>
             <activation>
@@ -226,7 +218,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>9.0.9</version>
+                        <version>10.0.4</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
@@ -280,7 +272,7 @@
                            <dependency>
                                 <groupId>com.google.errorprone</groupId>
                                 <artifactId>error_prone_core</artifactId>
-                	            <version>2.0.15</version>
+                	            <version>2.29.2</version>
                             </dependency>
             		    </dependencies>
                     </plugin>
@@ -513,14 +505,14 @@
             <dependency>
                 <groupId>com.github.mwiede</groupId>
                 <artifactId>jsch</artifactId>
-                <version>0.2.18</version>
+                <version>0.2.19</version>
             </dependency>
 
                 <!-- Transitive dependencies by various 3rd party packages -->
             <dependency>
                 <groupId>commons-io</groupId>
                 <artifactId>commons-io</artifactId>
-                <version>2.11.0</version>
+                <version>2.16.1</version>
             </dependency>
             <dependency>
                 <groupId>commons-lang</groupId>
@@ -686,7 +678,7 @@
         </dependency>
 
             <!-- Test dependencies -->
-       <dependency>
+        <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>jul-to-slf4j</artifactId>
             <scope>test</scope>
@@ -712,6 +704,11 @@
         <pluginManagement>
             <plugins>
                 <plugin>
+                    <groupId>org.codehaus.mojo</groupId>
+                    <artifactId>build-helper-maven-plugin</artifactId>
+                    <version>${build-helper-maven-plugin.version}</version>
+                </plugin>
+                <plugin>
                     <groupId>org.apache.rat</groupId>
                     <artifactId>apache-rat-plugin</artifactId>
                     <configuration>
@@ -723,6 +720,8 @@
                             <exclude>docs/**</exclude>
                             <exclude>sshd-sources/**</exclude>
                             <exclude>src/test/resources/**</exclude>
+                            <exclude>src/main/resources/org/apache/sshd/benchmarks/**</exclude>
+                            <exclude>src/main/java/org/apache/sshd/benchmarks/**/*.md</exclude>
                             <exclude>**/stty-output-*.txt</exclude>
                             <exclude>**/target/**</exclude>
                             <!-- formatter plugin cache folder -->
@@ -832,7 +831,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-checkstyle-plugin</artifactId>
-                    <version>3.3.0</version>
+                    <version>3.4.0</version>
                     <configuration>
                         <logViolationsToConsole>true</logViolationsToConsole>
                         <includeTestSourceDirectory>true</includeTestSourceDirectory>
@@ -923,14 +922,14 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.17.0</version>
+                   <version>3.24.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
                        <skipPmdError>false</skipPmdError>
                        <analysisCache>true</analysisCache> <!-- enable incremental analysis -->
-                       <showPmdLog>false</showPmdLog>
                        <excludeRoots>
+                           <excludeRoot>target/generated-sources/annotations</excludeRoot>
                            <excludeRoot>target/generated-sources/java</excludeRoot>
                            <excludeRoot>src/test/java</excludeRoot>
                        </excludeRoots>
@@ -1173,7 +1172,7 @@
                         <id>download-sources</id>
                         <phase>install</phase>
                         <goals>    <!-- automatically download the dependency sources - useful for debugging -->
-                            <goal>sources</goal>
+                            <goal>resolve-sources</goal>
                         </goals>
                         <configuration>
                                 <!-- no need to download our own sources - especially snapshot -->
@@ -1355,12 +1354,13 @@
            <plugin>    <!-- used by PMD to create a source XREF -->
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jxr-plugin</artifactId>
-               <version>3.1.1</version>
+               <version>3.4.0</version>
            </plugin>
        </plugins>
     </reporting>
 
     <modules>
+        <module>sshd-benchmarks</module>
         <module>sshd-common</module>
         <module>sshd-putty</module>
         <module>sshd-openpgp</module>

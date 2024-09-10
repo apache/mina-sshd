@@ -100,7 +100,7 @@ public abstract class AbstractSecurityProviderRegistrar
                 return provider;
             }
 
-            provider = Security.getProvider(getName());
+            provider = Security.getProvider(getProviderName());
             if (provider == null) {
                 provider = createProviderInstance(providerClassName);
                 created = true;

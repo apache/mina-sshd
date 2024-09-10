@@ -60,6 +60,11 @@ jobs:
           restore-keys: |
             ubuntu-latest-maven-
 
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.9.8'
+
       - name: Check version (SNAPSHOT)
         # Only deploy SNAPSHOT versions. We do not use "exit 1" because we still want the workflow
         # to report success, we just want this job to do nothing.
