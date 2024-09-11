@@ -110,7 +110,7 @@
         <jgit.version>5.13.3.202401111512-r</jgit.version>
         <bytebuddy.version>1.14.18</bytebuddy.version>
         <testcontainers.version>1.20.1</testcontainers.version>
-        <grpc.version>1.65.1</grpc.version> <!-- Used only in tests -->
+        <grpc.version>1.66.0</grpc.version> <!-- Used only in tests -->
         <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
         <jna.version>5.8.0</jna.version>
 
