@@ -51,6 +51,20 @@ public class JceRandom extends AbstractRandom {
         }
     }
 
+    private static final class Cache {
+
+        static final SecureRandom INSTANCE = getRandom();
+
+        private Cache() {
+            // No instantiation
+            super();
+        }
+    }
+
+    public static SecureRandom getGlobalInstance() {
+        return Cache.INSTANCE;
+    }
+
     @Override
     public String getName() {
         return NAME;

@@ -40,6 +40,7 @@ import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.OpenSshCertificate.Type;
 import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactory;
@@ -241,7 +242,7 @@ public class OpenSshCertificateBuilder {
         if (nonce != null) {
             cert.setNonce(nonce);
         } else {
-            SecureRandom rand = new SecureRandom();
+            SecureRandom rand = JceRandom.getGlobalInstance();
             byte[] tempNonce = new byte[32];
             rand.nextBytes(tempNonce);
             cert.setNonce(tempNonce);

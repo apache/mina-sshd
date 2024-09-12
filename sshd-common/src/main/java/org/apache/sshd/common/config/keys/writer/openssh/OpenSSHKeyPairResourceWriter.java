@@ -30,7 +30,6 @@ import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Objects;
@@ -51,6 +50,7 @@ import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHParserContext;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCrypt;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
 import org.apache.sshd.common.config.keys.writer.KeyPairResourceWriter;
+import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.GenericUtils;
@@ -148,7 +148,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
     public static byte[] encodePrivateKey(KeyPair key, String keyType, int blockSize, String comment)
             throws IOException, GeneralSecurityException {
         try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
-            int check = new SecureRandom().nextInt();
+            int check = JceRandom.getGlobalInstance().nextInt();
             KeyEntryResolver.encodeInt(out, check);
             KeyEntryResolver.encodeInt(out, check);
             KeyEntryResolver.encodeString(out, keyType);

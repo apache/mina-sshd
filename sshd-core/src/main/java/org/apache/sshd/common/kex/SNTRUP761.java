@@ -18,9 +18,9 @@
  */
 package org.apache.sshd.common.kex;
 
-import java.security.SecureRandom;
 import java.util.Arrays;
 
+import org.apache.sshd.common.random.JceRandom;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.SecretWithEncapsulation;
@@ -64,7 +64,7 @@ final class SNTRUP761 {
         @Override
         public void init() {
             SNTRUPrimeKeyPairGenerator gen = new SNTRUPrimeKeyPairGenerator();
-            gen.init(new SNTRUPrimeKeyGenerationParameters(new SecureRandom(), SNTRUPrimeParameters.sntrup761));
+            gen.init(new SNTRUPrimeKeyGenerationParameters(JceRandom.getGlobalInstance(), SNTRUPrimeParameters.sntrup761));
             AsymmetricCipherKeyPair pair = gen.generateKeyPair();
             extractor = new SNTRUPrimeKEMExtractor((SNTRUPrimePrivateKeyParameters) pair.getPrivate());
             publicKey = (SNTRUPrimePublicKeyParameters) pair.getPublic();
@@ -104,7 +104,7 @@ final class SNTRUP761 {
                 throw new IllegalArgumentException("KEM public key too short: " + publicKey.length);
             }
             byte[] pk = Arrays.copyOf(publicKey, pkBytes);
-            SNTRUPrimeKEMGenerator kemGenerator = new SNTRUPrimeKEMGenerator(new SecureRandom());
+            SNTRUPrimeKEMGenerator kemGenerator = new SNTRUPrimeKEMGenerator(JceRandom.getGlobalInstance());
             SNTRUPrimePublicKeyParameters params = new SNTRUPrimePublicKeyParameters(SNTRUPrimeParameters.sntrup761, pk);
             value = kemGenerator.generateEncapsulated(params);
             return Arrays.copyOfRange(publicKey, pkBytes, publicKey.length);
