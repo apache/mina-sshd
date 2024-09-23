@@ -149,11 +149,6 @@
                 <version>${testcontainers.version}</version>
                 <scope>import</scope>
             </dependency>
-            <dependency>
-                <groupId>net.java.dev.jna</groupId>
-                <artifactId>jna</artifactId>
-                <version>${jna.version}</version>
-            </dependency>
         </dependencies>
     </dependencyManagement>
 
