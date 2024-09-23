@@ -89,13 +89,6 @@
 
     <dependencyManagement>
         <dependencies>
-                <!-- Referenced indirectly by testcontainers -->
-            <dependency>
-                <groupId>net.java.dev.jna</groupId>
-                <artifactId>jna</artifactId>
-                <version>5.8.0</version>
-            </dependency>
-        
             <dependency>
                 <groupId>org.testcontainers</groupId>
                 <artifactId>testcontainers-bom</artifactId>
