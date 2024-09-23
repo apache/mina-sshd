@@ -111,8 +111,6 @@
         <bytebuddy.version>1.14.18</bytebuddy.version>
         <testcontainers.version>1.20.1</testcontainers.version>
         <grpc.version>1.66.0</grpc.version> <!-- Used only in tests -->
-        <!-- addresses multi transitive versions of jna under org.testcontainers:testcontainers:1.15.3 -->
-        <jna.version>5.8.0</jna.version>
 
         <maven.archiver.version>3.6.2</maven.archiver.version>
         <plexus.archiver.version>4.8.0</plexus.archiver.version>
