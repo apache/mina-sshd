@@ -32,15 +32,13 @@ import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class OpenSSHCertificateParserTest extends BaseTestSupport {
@@ -108,6 +106,13 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
                     typedCert.getExtensions());
             assertEquals(params.sigAlgorithm, typedCert.getSignatureAlgorithm());
             verifySignature(typedCert);
+            Buffer buffer = new ByteArrayBuffer();
+            buffer.putPublicKey(typedCert);
+            PublicKey readFromBuffer = buffer.getPublicKey();
+            assertTrue(readFromBuffer instanceof OpenSshCertificate,
+                    () -> "Expected an OpenSshCertificate but got " + readFromBuffer.getClass().getName());
+            OpenSshCertificate readBack = (OpenSshCertificate) readFromBuffer;
+            verifySignature(readBack);
         }
     }
 

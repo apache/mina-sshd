@@ -40,6 +40,8 @@
 
 ## Bug Fixes
 
+* [GH-618](https://github.com/apache/mina-sshd/issues/618) Fix reading an `OpenSshCertificate` from a `Buffer`
+
 ## New Features
 
 ## Potential compatibility issues

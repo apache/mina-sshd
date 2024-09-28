@@ -164,6 +164,14 @@ public class ByteArrayBuffer extends Buffer {
     }
 
     @Override
+    public byte[] getBytesConsumed(int from) {
+        if (from >= rpos) {
+            return new byte[0];
+        }
+        return Arrays.copyOfRange(data, from, rpos);
+    }
+
+    @Override
     public byte rawByte(int pos) {
         return data[pos];
     }

@@ -54,6 +54,7 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
     public OpenSshCertificate getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
         OpenSshCertificateImpl certificate = new OpenSshCertificateImpl();
         certificate.setKeyType(keyType);
+        final int pos = buffer.rpos();
 
         certificate.setNonce(buffer.getBytes());
 
@@ -84,7 +85,10 @@ public class OpenSSHCertPublicKeyParser extends AbstractBufferPublicKeyParser<Op
             throw new InvalidKeyException("Could not parse public CA key with ID: " + certificate.getId(), ex);
         }
 
-        certificate.setMessage(buffer.getBytesConsumed());
+        Buffer tmp = new ByteArrayBuffer();
+        tmp.putString(keyType);
+        tmp.putRawBytes(buffer.getBytesConsumed(pos));
+        certificate.setMessage(tmp.getCompactData());
         certificate.setSignature(buffer.getBytes());
 
         if (buffer.rpos() != buffer.wpos()) {
