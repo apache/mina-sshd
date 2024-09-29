@@ -32,6 +32,7 @@ import org.apache.sshd.git.GitModuleProperties;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
@@ -40,7 +41,9 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.transport.CredentialsProvider;
 import org.eclipse.jgit.transport.GitProtocolConstants;
+import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.UploadPack;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -77,9 +80,11 @@ public class GitPackCommandTest extends BaseTestSupport {
 
         Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
         try (SshServer sshd = setupTestServer()) {
+            GitPackTestConfig packConfig = new GitPackTestConfig();
             Path serverRootDir = gitRootDir.resolve("server");
             sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
-            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir)));
+            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir))
+                    .withGitPackConfiguration(packConfig));
             sshd.start();
 
             int port = sshd.getPort();
@@ -124,6 +129,9 @@ public class GitPackCommandTest extends BaseTestSupport {
                     git.fetch().call();
                     assertTrue(client.isStarted(),
                             "Client not started after fetch using GIT_PROTOCOL='version=2' env. variable");
+
+                    assertTrue(packConfig.receivePackCalled, "ReceivePack was not configured");
+                    assertTrue(packConfig.uploadPackCalled, "UploadPack was not configured");
                 } finally {
                     client.stop();
                 }
@@ -132,6 +140,21 @@ public class GitPackCommandTest extends BaseTestSupport {
             } finally {
                 sshd.stop();
             }
+        }
+    }
+
+    private static class GitPackTestConfig implements GitPackConfiguration {
+        boolean receivePackCalled;
+        boolean uploadPackCalled;
+
+        @Override
+        public void configureReceivePack(ServerSession session, ReceivePack pack) {
+            receivePackCalled = true;
+        }
+
+        @Override
+        public void configureUploadPack(ServerSession session, UploadPack pack) {
+            uploadPackCalled = true;
         }
     }
 }
