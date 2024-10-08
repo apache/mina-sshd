@@ -34,6 +34,8 @@ public class GitPackCommandFactory extends AbstractGitCommandFactory {
     public static final String GIT_FACTORY_NAME = "git-pack";
     public static final String GIT_COMMAND_PREFIX = "git-";
 
+    private GitPackConfiguration packConfiguration;
+
     public GitPackCommandFactory() {
         this(null);
     }
@@ -61,6 +63,25 @@ public class GitPackCommandFactory extends AbstractGitCommandFactory {
 
     @Override
     public GitPackCommand createGitCommand(String command) {
-        return new GitPackCommand(getGitLocationResolver(), command, resolveExecutorService(command));
+        GitPackCommand cmd = new GitPackCommand(getGitLocationResolver(), command, resolveExecutorService(command));
+        if (packConfiguration != null) {
+            cmd.setPackConfiguration(packConfiguration);
+        }
+        return cmd;
+    }
+
+    /**
+     * Sets the {@link GitPackConfiguration} that will be set for all {@link GitPackCommand}s created by this factory.
+     * <p>
+     * Every time a {@link GitPackCommand} creates a JGit {@code UploadPack} or {@code ReceivePack}, the corresponding
+     * method of the {@link GitPackConfiguration} set here is called. This allows you to configure JGit further, e.g. to
+     * set pre- and post-receive hooks.
+     *
+     * @param  configuration the configuration to use for git pack commands.
+     * @return               Self instance
+     */
+    public GitPackCommandFactory withGitPackConfiguration(GitPackConfiguration configuration) {
+        this.packConfiguration = configuration;
+        return this;
     }
 }

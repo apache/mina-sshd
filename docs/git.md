@@ -39,6 +39,26 @@ sshd.setCommandFactory(new GitPackCommandFactory().withGitLocationResolver(resol
 
 ```
 
+To further control what happens in response to `git-receive-pack` and `git-upload-pack`, you can implement a `GitPackConfiguration` which will be used
+to configure JGit's `ReceivePack` and `UploadPack`, respectively:
+
+```java
+sshd.setCommandFactory(new GitPackCommandFactory()
+    .withGitPackConfiguration(new GitPackConfiguration() {
+        @Override
+        public void configureReceivePack(ServerSession session, ReceivePack pack) {
+            pack.setPreReceiveHook(...);
+            // ...
+        }
+        
+        @Override
+        public void configureUploadPack(ServerSession session, UploadPack pack) {
+            pack.setRefFilter(...);
+            // ...
+        }
+    }));
+```
+
 These command factories also accept a delegate to which non-_git_ commands are routed:
 
 ```java

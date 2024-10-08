@@ -45,6 +45,9 @@ import org.eclipse.jgit.util.FS;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitPackCommand extends AbstractGitCommand {
+
+    private GitPackConfiguration packConfiguration = GitPackConfiguration.NOTHING;
+
     /**
      * @param rootDirResolver Resolver for GIT root directory
      * @param command         Command to execute
@@ -61,7 +64,7 @@ public class GitPackCommand extends AbstractGitCommand {
         String command = getCommand();
         try {
             List<String> strs = parseDelimitedString(command, " ", true);
-            String[] args = strs.toArray(new String[strs.size()]);
+            String[] args = strs.toArray(new String[0]);
             for (int i = 0; i < args.length; i++) {
                 String argVal = args[i];
                 if (argVal.startsWith("'") && argVal.endsWith("'")) {
@@ -83,6 +86,7 @@ public class GitPackCommand extends AbstractGitCommand {
             String subCommand = args[0];
             if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
                 UploadPack uploadPack = new UploadPack(db);
+                packConfiguration.configureUploadPack(getSession(), uploadPack);
                 Environment environment = getEnvironment();
                 Map<String, String> envVars = environment.getEnv();
                 String protocol = MapEntryUtils.isEmpty(envVars)
@@ -92,7 +96,9 @@ public class GitPackCommand extends AbstractGitCommand {
                 }
                 uploadPack.upload(getInputStream(), getOutputStream(), getErrorStream());
             } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(subCommand)) {
-                new ReceivePack(db).receive(getInputStream(), getOutputStream(), getErrorStream());
+                ReceivePack receivePack = new ReceivePack(db);
+                packConfiguration.configureReceivePack(getSession(), receivePack);
+                receivePack.receive(getInputStream(), getOutputStream(), getErrorStream());
             } else {
                 throw new IllegalArgumentException("Unknown git command: " + command);
             }
@@ -117,5 +123,10 @@ public class GitPackCommand extends AbstractGitCommand {
 
         ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", args[0]);
         return rootDir.resolve(pathArg);
+    }
+
+    public void setPackConfiguration(GitPackConfiguration packConfiguration) {
+        this.packConfiguration = ValidateUtils.checkNotNull(packConfiguration,
+                "Pack configuration must not be null");
     }
 }
