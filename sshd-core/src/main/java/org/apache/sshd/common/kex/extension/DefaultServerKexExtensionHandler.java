@@ -27,6 +27,7 @@ import java.util.function.BiConsumer;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.extension.parser.PingPong;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
@@ -157,5 +158,7 @@ public class DefaultServerKexExtensionHandler extends AbstractLoggingBean implem
                         ServerSignatureAlgorithms.NAME);
             }
         }
+        // ping@openssh.com
+        marshaller.accept(PingPong.NAME, "0");
     }
 }
