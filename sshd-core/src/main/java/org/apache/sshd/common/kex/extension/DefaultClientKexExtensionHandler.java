@@ -23,16 +23,21 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.function.BiConsumer;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.kex.extension.parser.GlobalRequestsOk;
 import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
 /**
@@ -88,6 +93,8 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             } else {
                 session.setAttribute(HOSTBOUND_AUTHENTICATION, version);
             }
+        } else if (GlobalRequestsOk.NAME.equals(name)) {
+            GlobalRequestsOk.INSTANCE.parseExtension(data);
         }
         return true;
     }
@@ -132,5 +139,36 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
             session.setAttribute(SERVER_ALGORITHMS, known);
             session.setSignatureFactories(clientAlgorithms);
         }
+    }
+
+    @Override
+    public void sendKexExtensions(Session session, KexPhase phase) throws Exception {
+        Map<String, Object> extensions = new LinkedHashMap<>();
+        collectExtensions(session, phase, extensions::put);
+        if (!extensions.isEmpty()) {
+            Buffer buffer = session.createBuffer(KexExtensions.SSH_MSG_EXT_INFO);
+            KexExtensions.putExtensions(extensions.entrySet(), buffer);
+            if (log.isDebugEnabled()) {
+                log.debug("sendKexExtensions({})[{}]: sending SSH_MSG_EXT_INFO with {} info records", session, phase,
+                        extensions.size());
+            }
+            session.writePacket(buffer);
+        }
+    }
+
+    /**
+     * Collects extension info records, handing them off to the given {@code marshaller} for writing into an
+     * {@link KexExtensions#SSH_MSG_EXT_INFO} message.
+     * <p>
+     * This default implementation marshals a {@link GlobalRequestsOk} extension}.
+     * </p>
+     *
+     * @param session    {@link Session} to send the KEX extension information for
+     * @param phase      {@link KexPhase} of the SSH protocol
+     * @param marshaller {@link BiConsumer} writing the extensions into an SSH message
+     */
+    public void collectExtensions(Session session, KexPhase phase, BiConsumer<String, Object> marshaller) {
+        // global-requests-ok
+        marshaller.accept(GlobalRequestsOk.NAME, "");
     }
 }
