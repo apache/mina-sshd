@@ -16,17 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.security.eddsa.bouncycastle;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
-import java.security.KeyPairGenerator;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
+package org.apache.sshd.common.util.security.eddsa.generic;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.impl.AbstractPublicKeyEntryDecoder;
@@ -38,36 +28,43 @@ import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey;
 import org.bouncycastle.jcajce.spec.OpenSSHPrivateKeySpec;
 import org.bouncycastle.jcajce.spec.RawEncodedKeySpec;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.*;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public final class BouncyCastleEd25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> {
+public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey> extends AbstractPublicKeyEntryDecoder<PUB, PRV> {
     public static final int MAX_ALLOWED_SEED_LEN = 1024; // in reality it is much less than this
 
-    public static final BouncyCastleEd25519PublicKeyDecoder INSTANCE = new BouncyCastleEd25519PublicKeyDecoder();
+    protected final EdDSASupport<PUB, PRV> edDSASupport;
 
-    private BouncyCastleEd25519PublicKeyDecoder() {
-        super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
-              Collections.unmodifiableList(
-                      Collections.singletonList(
-                              KeyPairProvider.SSH_ED25519)));
+    public GenericEd25519PublicKeyDecoder(Class<PUB> pubType, Class<PRV> prvType, EdDSASupport<PUB, PRV> edDSASupport) {
+        super(pubType, prvType, Collections.singletonList(KeyPairProvider.SSH_ED25519));
+        this.edDSASupport = edDSASupport;
     }
 
     @Override
-    public EdDSAPublicKey clonePublicKey(EdDSAPublicKey key) throws GeneralSecurityException {
+    public PUB clonePublicKey(PUB key) throws GeneralSecurityException {
         if (key == null) {
             return null;
         } else {
-            return generatePublicKey(new RawEncodedKeySpec(key.getPointEncoding()));
+            return generatePublicKey(edDSASupport.createPublicKeySpec(key));
         }
     }
 
     @Override
-    public EdDSAPrivateKey clonePrivateKey(EdDSAPrivateKey key) throws GeneralSecurityException {
+    public PRV clonePrivateKey(PRV key) throws GeneralSecurityException {
         if (key == null) {
             return null;
         } else {
-            return generatePrivateKey(new OpenSSHPrivateKeySpec(key.getEncoded()));
+            return generatePrivateKey(edDSASupport.createPrivateKeySpec(key));
         }
     }
 
@@ -77,10 +74,10 @@ public final class BouncyCastleEd25519PublicKeyDecoder extends AbstractPublicKey
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, EdDSAPublicKey key) throws IOException {
+    public String encodePublicKey(OutputStream s, PUB key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
         KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_ED25519);
-        byte[] seed = getSeedValue(key);
+        byte[] seed = edDSASupport.getPublicKeyData(key);
         KeyEntryResolver.writeRLEBytes(s, seed);
         return KeyPairProvider.SSH_ED25519;
     }
@@ -91,15 +88,11 @@ public final class BouncyCastleEd25519PublicKeyDecoder extends AbstractPublicKey
     }
 
     @Override
-    public EdDSAPublicKey decodePublicKey(
+    public PUB decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         byte[] seed = KeyEntryResolver.readRLEBytes(keyData, MAX_ALLOWED_SEED_LEN);
-        return EdDSAPublicKey.class.cast(SecurityUtils.generateEDDSAPublicKey(keyType, seed));
+        return edDSASupport.generateEDDSAPublicKey(seed);
     }
 
-    public static byte[] getSeedValue(EdDSAPublicKey key) {
-        // a bit of reverse-engineering on the EdDSAPublicKeySpec
-        return (key == null) ? null : key.getPointEncoding();
-    }
 }

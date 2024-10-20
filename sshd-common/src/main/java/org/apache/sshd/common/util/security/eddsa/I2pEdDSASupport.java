@@ -20,9 +20,12 @@
 package org.apache.sshd.common.util.security.eddsa;
 
 import java.security.*;
+import java.security.spec.KeySpec;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
+import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.signature.Signature;
@@ -80,12 +83,12 @@ public class I2pEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivat
     }
 
     @Override
-    public PublicKey generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException {
-        return EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
+    public EdDSAPublicKey generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException {
+        return (EdDSAPublicKey) EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
     }
 
     @Override
-    public PrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException {
+    public EdDSAPrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException {
         return Ed25519PEMResourceKeyParser.generateEdDSAPrivateKey(seed);
     }
 
@@ -99,4 +102,18 @@ public class I2pEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivat
         return EdDSASecurityProviderUtils.putEDDSAKeyPair(buffer, pubKey, prvKey);
     }
 
+    @Override
+    public KeySpec createPublicKeySpec(EdDSAPublicKey publicKey) {
+        return new EdDSAPublicKeySpec(publicKey.getA(), publicKey.getParams());
+    }
+
+    @Override
+    public KeySpec createPrivateKeySpec(EdDSAPrivateKey privateKey) {
+        return new EdDSAPrivateKeySpec(privateKey.getSeed(), privateKey.getParams());
+    }
+
+    @Override
+    public byte[] getPublicKeyData(EdDSAPublicKey publicKey) {
+        return publicKey == null ? null : publicKey.getAbyte();
+    }
 }
