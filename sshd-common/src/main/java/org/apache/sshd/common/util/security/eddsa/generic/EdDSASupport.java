@@ -22,6 +22,7 @@ package org.apache.sshd.common.util.security.eddsa.generic;
 import java.io.IOException;
 import java.io.StreamCorruptedException;
 import java.security.*;
+import java.security.spec.KeySpec;
 
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
@@ -82,12 +83,18 @@ public interface EdDSASupport<PUB extends PublicKey, PRV extends PrivateKey> {
 
     PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException;
 
-    PublicKey generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException;
+    PUB generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException;
 
-    PrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException, IOException;
+    PRV generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException, IOException;
 
     <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key);
 
     <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey);
+
+    KeySpec createPublicKeySpec(PUB publicKey);
+
+    KeySpec createPrivateKeySpec(PRV privateKey);
+
+    byte[] getPublicKeyData(PUB publicKey);
 
 }
