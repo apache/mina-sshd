@@ -23,11 +23,13 @@ import java.security.KeyPairGenerator;
 import java.security.Provider;
 import java.security.Signature;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -99,5 +101,13 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
         }
 
         return supported.booleanValue();
+    }
+
+    @Override
+    public Optional<EdDSASupport<?, ?>> getEdDSASupport() {
+        if (!isSupported()) {
+            return Optional.empty();
+        }
+        return Optional.of(new I2pEdDSASupport());
     }
 }

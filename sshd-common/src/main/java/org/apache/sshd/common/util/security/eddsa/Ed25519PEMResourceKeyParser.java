@@ -48,6 +48,7 @@ import org.apache.sshd.common.util.io.der.ASN1Type;
 import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -67,10 +68,7 @@ public class Ed25519PEMResourceKeyParser extends AbstractPEMResourceKeyPairParse
     public static final String END_ED25519_MARKER = "END ED25519 PRIVATE KEY";
     public static final List<String> ENDERS = GenericUtils.unmodifiableList(END_MARKER, END_ED25519_MARKER);
 
-    /**
-     * @see <A HREF="https://tools.ietf.org/html/rfc8410#section-3">RFC8412 section 3</A>
-     */
-    public static final String ED25519_OID = "1.3.101.112";
+    public static final String ED25519_OID = EdDSASupport.ED25519_OID;
 
     public static final Ed25519PEMResourceKeyParser INSTANCE = new Ed25519PEMResourceKeyParser();
 
