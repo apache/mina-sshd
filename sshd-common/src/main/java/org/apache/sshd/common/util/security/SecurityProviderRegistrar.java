@@ -26,12 +26,7 @@ import java.security.Provider;
 import java.security.Security;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.function.Predicate;
 
 import javax.crypto.Cipher;
@@ -45,6 +40,7 @@ import org.apache.sshd.common.SyspropsMapWrapper;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IgnoringEmptyMap;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -186,6 +182,10 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
      */
     default boolean isCertificateFactorySupported(String type) {
         return isSecurityEntitySupported(CertificateFactory.class, type);
+    }
+
+    default Optional<EdDSASupport<?, ?>> getEdDSASupport() {
+        return Optional.empty();
     }
 
     /**

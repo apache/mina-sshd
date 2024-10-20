@@ -254,7 +254,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
             keyAlgorithm = KeyUtils.EC_ALGORITHM;
         } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyAlgorithm)) {
-            keyAlgorithm = SecurityUtils.EDDSA;
+//            keyAlgorithm = SecurityUtils.EDDSA;
         }
 
         if (Objects.equals(alg, keyAlgorithm)) {

@@ -35,17 +35,7 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -77,7 +67,7 @@ import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleEncryptedPr
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleKeyPairResourceParser;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
-import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.slf4j.Logger;
@@ -102,6 +92,8 @@ public final class SecurityUtils {
     // A copy-paste from the original, but we don't want to drag the classes into the classpath
     // See EdDSAEngine.SIGNATURE_ALGORITHM
     public static final String CURVE_ED25519_SHA512 = "NONEwithEdDSA";
+
+    public static final String ED25519 = "Ed25519";
 
     /**
      * System property used to configure the value for the minimum supported Diffie-Hellman Group Exchange key size. If
@@ -606,67 +598,93 @@ public final class SecurityUtils {
      * @return {@code true} if EDDSA curves (e.g., {@code ed25519}) are supported
      */
     public static boolean isEDDSACurveSupported() {
+        return getEdDSASupport().isPresent();
+    }
+
+    public static Optional<EdDSASupport<?, ?>> getEdDSASupport() {
         if (isFipsMode()) {
-            return false;
+            return Optional.empty();
         }
         register();
 
-        SecurityProviderRegistrar r = getRegisteredProvider(EDDSA);
-        return (r != null) && r.isEnabled() && r.isSupported();
+        synchronized (REGISTERED_PROVIDERS) {
+            for (Map.Entry<String, SecurityProviderRegistrar> entry : REGISTERED_PROVIDERS.entrySet()) {
+                Optional<EdDSASupport<?, ?>> support = entry.getValue().getEdDSASupport();
+                if (support.isPresent()) {
+                    return support;
+                }
+            }
+        }
+        return Optional.empty();
     }
 
     /* -------------------------------------------------------------------- */
 
     public static PublicKeyEntryDecoder<? extends PublicKey, ? extends PrivateKey> getEDDSAPublicKeyEntryDecoder() {
-        if (!isEDDSACurveSupported()) {
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
             throw new UnsupportedOperationException(EDDSA + " provider N/A");
         }
 
-        return EdDSASecurityProviderUtils.getEDDSAPublicKeyEntryDecoder();
+        return support.get().getEDDSAPublicKeyEntryDecoder();
     }
 
     public static PrivateKeyEntryDecoder<? extends PublicKey, ? extends PrivateKey> getOpenSSHEDDSAPrivateKeyEntryDecoder() {
-        if (!isEDDSACurveSupported()) {
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
             throw new UnsupportedOperationException(EDDSA + " provider N/A");
         }
 
-        return EdDSASecurityProviderUtils.getOpenSSHEDDSAPrivateKeyEntryDecoder();
+        return support.get().getOpenSSHEDDSAPrivateKeyEntryDecoder();
     }
 
     public static org.apache.sshd.common.signature.Signature getEDDSASigner() {
-        if (isEDDSACurveSupported()) {
-            return EdDSASecurityProviderUtils.getEDDSASignature();
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (support.isPresent()) {
+            return support.get().getEDDSASigner();
         }
 
         throw new UnsupportedOperationException(EDDSA + " Signer not available");
     }
 
     public static int getEDDSAKeySize(Key key) {
-        return EdDSASecurityProviderUtils.getEDDSAKeySize(key);
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        return support.map(edDSASupport -> edDSASupport.getEDDSAKeySize(key)).orElse(-1);
     }
 
     public static Class<? extends PublicKey> getEDDSAPublicKeyType() {
-        return isEDDSACurveSupported() ? EdDSASecurityProviderUtils.getEDDSAPublicKeyType() : PublicKey.class;
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
+            return PublicKey.class;
+        }
+        return support.get().getEDDSAPublicKeyType();
     }
 
     public static Class<? extends PrivateKey> getEDDSAPrivateKeyType() {
-        return isEDDSACurveSupported() ? EdDSASecurityProviderUtils.getEDDSAPrivateKeyType() : PrivateKey.class;
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
+            return PrivateKey.class;
+        }
+        return support.get().getEDDSAPrivateKeyType();
     }
 
     public static boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {
-        return isEDDSACurveSupported() ? EdDSASecurityProviderUtils.compareEDDSAPPublicKeys(k1, k2) : false;
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        return support.map(edDSASupport -> edDSASupport.compareEDDSAPPublicKeys(k1, k2)).orElse(false);
     }
 
     public static boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2) {
-        return isEDDSACurveSupported() ? EdDSASecurityProviderUtils.compareEDDSAPrivateKeys(k1, k2) : false;
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        return support.map(edDSASupport -> edDSASupport.compareEDDSAPrivateKeys(k1, k2)).orElse(false);
     }
 
     public static PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
-        if (!isEDDSACurveSupported()) {
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
             throw new NoSuchAlgorithmException(EDDSA + " provider not supported");
         }
 
-        return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(key);
+        return support.get().recoverEDDSAPublicKey(key);
     }
 
     public static PublicKey generateEDDSAPublicKey(String keyType, byte[] seed) throws GeneralSecurityException {
@@ -674,19 +692,34 @@ public final class SecurityUtils {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
         }
 
-        if (!isEDDSACurveSupported()) {
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
             throw new NoSuchAlgorithmException(EDDSA + " provider not supported");
         }
 
-        return EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
+        return support.get().generateEDDSAPublicKey(seed);
+    }
+
+    public static PrivateKey generateEDDSAPrivateKey(String keyType, byte[] seed) throws GeneralSecurityException, IOException {
+        if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
+            throw new InvalidKeyException("Unsupported key type: " + keyType);
+        }
+
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
+            throw new NoSuchAlgorithmException(EDDSA + " provider not supported");
+        }
+
+        return support.get().generateEDDSAPrivateKey(seed);
     }
 
     public static <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key) {
-        if (!isEDDSACurveSupported()) {
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
             throw new UnsupportedOperationException(EDDSA + " provider not supported");
         }
 
-        return EdDSASecurityProviderUtils.putRawEDDSAPublicKey(buffer, key);
+        return support.get().putRawEDDSAPublicKey(buffer, key);
     }
 
     public static <B extends Buffer> B putEDDSAKeyPair(B buffer, KeyPair kp) {
@@ -694,11 +727,12 @@ public final class SecurityUtils {
     }
 
     public static <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey) {
-        if (!isEDDSACurveSupported()) {
+        Optional<EdDSASupport<?, ?>> support = getEdDSASupport();
+        if (!support.isPresent()) {
             throw new UnsupportedOperationException(EDDSA + " provider not supported");
         }
 
-        return EdDSASecurityProviderUtils.putEDDSAKeyPair(buffer, pubKey, prvKey);
+        return support.get().putEDDSAKeyPair(buffer, pubKey, prvKey);
     }
 
     public static KeyPair extractEDDSAKeyPair(Buffer buffer, String keyType) throws GeneralSecurityException {
