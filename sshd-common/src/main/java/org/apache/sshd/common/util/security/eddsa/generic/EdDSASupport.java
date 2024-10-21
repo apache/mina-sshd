@@ -81,7 +81,7 @@ public interface EdDSASupport<PUB extends PublicKey, PRV extends PrivateKey> {
 
     boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2);
 
-    PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException;
+    PUB recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException;
 
     PUB generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException;
 
@@ -96,5 +96,7 @@ public interface EdDSASupport<PUB extends PublicKey, PRV extends PrivateKey> {
     KeySpec createPrivateKeySpec(PRV privateKey);
 
     byte[] getPublicKeyData(PUB publicKey);
+
+    byte[] getPrivateKeyData(PRV privateKey) throws IOException;
 
 }

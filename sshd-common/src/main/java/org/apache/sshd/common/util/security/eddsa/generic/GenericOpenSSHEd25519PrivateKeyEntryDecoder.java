@@ -17,12 +17,11 @@
  * under the License.
  */
 
-package org.apache.sshd.common.util.security.eddsa.bouncycastle;
+package org.apache.sshd.common.util.security.eddsa.generic;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.*;
-import java.security.spec.PKCS8EncodedKeySpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
@@ -36,35 +35,25 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
-import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
-import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
-import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey;
-import org.bouncycastle.jcajce.spec.OpenSSHPrivateKeySpec;
-import org.bouncycastle.jcajce.spec.RawEncodedKeySpec;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder
-        extends AbstractPrivateKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> {
-    public static final BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder INSTANCE
-            = new BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder();
+public class GenericOpenSSHEd25519PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
+        extends AbstractPrivateKeyEntryDecoder<PUB, PRV> {
     private static final int PK_SIZE = 32;
     private static final int SK_SIZE = 32;
     private static final int KEYPAIR_SIZE = PK_SIZE + SK_SIZE;
 
-    public BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder() {
-        super(EdDSAPublicKey.class, EdDSAPrivateKey.class,
-              Collections.unmodifiableList(
-                      Collections.singletonList(
-                              KeyPairProvider.SSH_ED25519)));
+    protected final EdDSASupport<PUB, PRV> edDSASupport;
+
+    public GenericOpenSSHEd25519PrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, EdDSASupport<PUB, PRV> edDSASupport) {
+        super(pubType, prvType, Collections.singletonList(KeyPairProvider.SSH_ED25519));
+        this.edDSASupport = edDSASupport;
     }
 
     @Override
-    public EdDSAPrivateKey decodePrivateKey(
+    public PRV decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
@@ -102,17 +91,10 @@ public class BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder
             }
 
             byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
-            Ed25519PrivateKeyParameters parameters = new Ed25519PrivateKeyParameters(sk);
-            PrivateKeyInfo info = PrivateKeyInfoFactory.createPrivateKeyInfo(parameters);
-            EdDSAPrivateKey privateKey = generatePrivateKey(new PKCS8EncodedKeySpec(info.getEncoded()));
-
-            // the private key class contains the calculated public key (Abyte)
-            // pointers to the corresponding code:
-            // EdDSAPrivateKeySpec.EdDSAPrivateKeySpec(byte[], EdDSAParameterSpec): A = spec.getB().scalarMultiply(a);
-            // EdDSAPrivateKey.EdDSAPrivateKey(EdDSAPrivateKeySpec): this.Abyte = this.A.toByteArray();
+            PRV privateKey = edDSASupport.generateEDDSAPrivateKey(sk);
 
             // we can now verify the generated pk matches the one we read
-            if (!Arrays.equals(privateKey.getPublicKey().getPointEncoding(), pk)) {
+            if (!Arrays.equals(edDSASupport.getPublicKeyData(recoverPublicKey(privateKey)), pk)) {
                 throw new InvalidKeyException("The provided pk does NOT match the computed pk for the given sk.");
             }
 
@@ -125,7 +107,7 @@ public class BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder
     }
 
     @Override
-    public String encodePrivateKey(SecureByteArrayOutputStream s, EdDSAPrivateKey key, EdDSAPublicKey pubKey)
+    public String encodePrivateKey(SecureByteArrayOutputStream s, PRV key, PUB pubKey)
             throws IOException {
         Objects.requireNonNull(key, "No private key provided");
 
@@ -133,9 +115,8 @@ public class BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder
         // we are expected to write the following arrays (type:size):
         // [pk:32], [sk:32,pk:32]
 
-        Ed25519PrivateKeyParameters parameters = (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(key.getEncoded());
-        byte[] sk = parameters.getEncoded();
-        byte[] pk = key.getPublicKey().getPointEncoding();
+        byte[] sk = edDSASupport.getPrivateKeyData(key);
+        byte[] pk = edDSASupport.getPublicKeyData(pubKey);
 
         Objects.requireNonNull(sk, "No seed");
 
@@ -155,25 +136,25 @@ public class BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder
     }
 
     @Override
-    public EdDSAPublicKey recoverPublicKey(EdDSAPrivateKey prvKey) throws GeneralSecurityException {
-        return (EdDSAPublicKey) SecurityUtils.recoverEDDSAPublicKey(prvKey);
+    public PUB recoverPublicKey(PRV prvKey) throws GeneralSecurityException {
+        return edDSASupport.recoverEDDSAPublicKey(prvKey);
     }
 
     @Override
-    public EdDSAPublicKey clonePublicKey(EdDSAPublicKey key) throws GeneralSecurityException {
+    public PUB clonePublicKey(PUB key) throws GeneralSecurityException {
         if (key == null) {
             return null;
         } else {
-            return generatePublicKey(new RawEncodedKeySpec(key.getPointEncoding()));
+            return generatePublicKey(edDSASupport.createPublicKeySpec(key));
         }
     }
 
     @Override
-    public EdDSAPrivateKey clonePrivateKey(EdDSAPrivateKey key) throws GeneralSecurityException {
+    public PRV clonePrivateKey(PRV key) throws GeneralSecurityException {
         if (key == null) {
             return null;
         } else {
-            return generatePrivateKey(new OpenSSHPrivateKeySpec(key.getEncoded()));
+            return generatePrivateKey(edDSASupport.createPrivateKeySpec(key));
         }
     }
 
