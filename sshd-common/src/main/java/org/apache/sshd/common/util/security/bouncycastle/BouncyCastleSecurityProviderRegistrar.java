@@ -41,7 +41,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     private static final String BCFIPS_PROVIDER_NAME = "BCFIPS";
     private static final String BC_PROVIDER_NAME = "BC";
     private static final String NAME_FIELD = "PROVIDER_NAME";
-    private static final String ED_DSA_KEY_CLASS_NAME = "org.bouncycastle.jcajce.interfaces.EdDSAKey";
+    private static final String EDDSA_KEY_CLASS_NAME = "org.bouncycastle.jcajce.interfaces.EdDSAKey";
 
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
@@ -156,7 +156,6 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
         return supported.booleanValue();
     }
 
-
     @Override
     public Optional<EdDSASupport<?, ?>> getEdDSASupport() {
         if (!isEdDSASupported()) {
@@ -176,7 +175,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
             if (edDSASupported != null) {
                 return edDSASupported.booleanValue();
             }
-            Class<?> clazz = ThreadUtils.resolveDefaultClass(getClass(), ED_DSA_KEY_CLASS_NAME);
+            Class<?> clazz = ThreadUtils.resolveDefaultClass(getClass(), EDDSA_KEY_CLASS_NAME);
             edDSASupported = Boolean.valueOf(clazz != null);
             edDSASupportHolder.set(edDSASupported);
             return edDSASupported;

@@ -108,6 +108,6 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
         if (!isSupported()) {
             return Optional.empty();
         }
-        return Optional.of(new I2pEdDSASupport());
+        return Optional.of(new NetI2pCryptoEdDSASupport());
     }
 }

@@ -33,9 +33,10 @@ import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
-public class I2pEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
+public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
 
-    public I2pEdDSASupport() {
+    public NetI2pCryptoEdDSASupport() {
+        super();
     }
 
     @Override
