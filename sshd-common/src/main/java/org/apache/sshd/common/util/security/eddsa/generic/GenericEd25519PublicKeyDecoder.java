@@ -18,29 +18,25 @@
  */
 package org.apache.sshd.common.util.security.eddsa.generic;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.security.*;
+import java.util.Collections;
+import java.util.Map;
+import java.util.Objects;
+
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.impl.AbstractPublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
-import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey;
-import org.bouncycastle.jcajce.spec.OpenSSHPrivateKeySpec;
-import org.bouncycastle.jcajce.spec.RawEncodedKeySpec;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.security.*;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Map;
-import java.util.Objects;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey> extends AbstractPublicKeyEntryDecoder<PUB, PRV> {
+public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey>
+        extends AbstractPublicKeyEntryDecoder<PUB, PRV> {
     public static final int MAX_ALLOWED_SEED_LEN = 1024; // in reality it is much less than this
 
     protected final EdDSASupport<PUB, PRV> edDSASupport;

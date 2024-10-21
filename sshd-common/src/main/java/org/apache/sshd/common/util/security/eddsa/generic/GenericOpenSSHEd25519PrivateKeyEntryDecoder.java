@@ -47,7 +47,8 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder<PUB extends PublicKey, 
 
     protected final EdDSASupport<PUB, PRV> edDSASupport;
 
-    public GenericOpenSSHEd25519PrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, EdDSASupport<PUB, PRV> edDSASupport) {
+    public GenericOpenSSHEd25519PrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType,
+                                                       EdDSASupport<PUB, PRV> edDSASupport) {
         super(pubType, prvType, Collections.singletonList(KeyPairProvider.SSH_ED25519));
         this.edDSASupport = edDSASupport;
     }

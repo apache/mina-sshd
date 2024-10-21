@@ -874,7 +874,8 @@ public final class KeyUtils {
             } else {
                 return curve.getKeyType();
             }
-        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm()) || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm())) {
+        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())
+                || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm())) {
             return KeyPairProvider.SSH_ED25519;
         }
 
@@ -1074,7 +1075,7 @@ public final class KeyUtils {
                 && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
         } else if ((k1 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k1.getAlgorithm())
-            && (k2 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k2.getAlgorithm())) {
+                && (k2 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
         } else if ((k1 instanceof SkED25519PublicKey) && (k2 instanceof SkED25519PublicKey)) {
             return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));

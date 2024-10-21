@@ -47,6 +47,7 @@ import org.bouncycastle.jcajce.spec.RawEncodedKeySpec;
 public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
 
     public BouncyCastleEdDSASupport() {
+        super();
     }
 
     @Override
@@ -152,7 +153,8 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
 
     @Override
     public byte[] getPrivateKeyData(EdDSAPrivateKey privateKey) throws IOException {
-        Ed25519PrivateKeyParameters parameters = (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(privateKey.getEncoded());
+        Ed25519PrivateKeyParameters parameters
+                = (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(privateKey.getEncoded());
         return parameters.getEncoded();
     }
 }
