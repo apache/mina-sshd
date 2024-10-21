@@ -255,7 +255,7 @@ public abstract class AbstractGeneratorHostKeyProvider
             keyAlgorithm = KeyUtils.EC_ALGORITHM;
         }
 
-        if (Objects.equals(alg, keyAlgorithm) || edDsaAlgorithmsMatch(alg, keyAlgorithm)) {
+        if (Objects.equals(alg, keyAlgorithm) || edDSAAlgorithmsMatch(alg, keyAlgorithm)) {
             if (log.isDebugEnabled()) {
                 log.debug("resolveKeyPair({}) loaded key={}-{}",
                         keyPath, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
@@ -395,7 +395,7 @@ public abstract class AbstractGeneratorHostKeyProvider
         return generator.generateKeyPair();
     }
 
-    boolean edDsaAlgorithmsMatch(String expectedAlgorithm, String keyAlgorithm) {
+    boolean edDSAAlgorithmsMatch(String expectedAlgorithm, String keyAlgorithm) {
         return (expectedAlgorithm.equalsIgnoreCase(SecurityUtils.EDDSA)
                 || expectedAlgorithm.equalsIgnoreCase(SecurityUtils.ED25519)) &&
                 (keyAlgorithm.equalsIgnoreCase(SecurityUtils.EDDSA) || keyAlgorithm.equalsIgnoreCase(SecurityUtils.ED25519));
