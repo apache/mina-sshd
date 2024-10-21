@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.security.eddsa;
 
+import java.io.IOException;
 import java.security.*;
 import java.security.spec.KeySpec;
 
@@ -78,7 +79,7 @@ public class I2pEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivat
     }
 
     @Override
-    public PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
+    public EdDSAPublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
         return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(key);
     }
 
@@ -115,5 +116,10 @@ public class I2pEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivat
     @Override
     public byte[] getPublicKeyData(EdDSAPublicKey publicKey) {
         return publicKey == null ? null : publicKey.getAbyte();
+    }
+
+    @Override
+    public byte[] getPrivateKeyData(EdDSAPrivateKey privateKey) throws IOException {
+        return privateKey.getSeed();
     }
 }

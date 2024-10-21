@@ -32,9 +32,11 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.security.eddsa.generic.GenericEd25519PublicKeyDecoder;
+import org.apache.sshd.common.util.security.eddsa.generic.GenericOpenSSHEd25519PrivateKeyEntryDecoder;
 import org.apache.sshd.common.util.security.eddsa.generic.GenericSignatureEd25519;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
+import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.jcajce.interfaces.EdDSAKey;
 import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
@@ -54,7 +56,7 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
 
     @Override
     public PrivateKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> getOpenSSHEDDSAPrivateKeyEntryDecoder() {
-        return BouncyCastleOpenSSHEd25519PrivateKeyEntryDecoder.INSTANCE;
+        return new GenericOpenSSHEd25519PrivateKeyEntryDecoder<>(EdDSAPublicKey.class, EdDSAPrivateKey.class, this);
     }
 
     @Override
@@ -96,7 +98,7 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     }
 
     @Override
-    public PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
+    public EdDSAPublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
         if (!(key instanceof EdDSAPrivateKey)) {
             throw new InvalidKeyException("Private key is not " + SecurityUtils.EDDSA);
         }
@@ -146,5 +148,11 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     @Override
     public byte[] getPublicKeyData(EdDSAPublicKey publicKey) {
         return publicKey == null ? null : publicKey.getPointEncoding();
+    }
+
+    @Override
+    public byte[] getPrivateKeyData(EdDSAPrivateKey privateKey) throws IOException {
+        Ed25519PrivateKeyParameters parameters = (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(privateKey.getEncoded());
+        return parameters.getEncoded();
     }
 }
