@@ -270,23 +270,13 @@ public enum BuiltinDHFactories implements DHFactory {
     },
     curve25519_libssh(Constants.CURVE25519_SHA256_LIBSSH) {
         @Override
-        public XDH create(Object... params) throws Exception {
-            if (!GenericUtils.isEmpty(params)) {
-                throw new IllegalArgumentException("No accepted parameters for " + getName());
-            }
-            return new XDH(MontgomeryCurve.x25519, false) {
-
-                @Override
-                public Digest getHash() throws Exception {
-                    return BuiltinDigests.sha256.create();
-                }
-
-            };
+        public AbstractDH create(Object... params) throws Exception {
+            return curve25519.create(params);
         }
 
         @Override
         public boolean isSupported() {
-            return MontgomeryCurve.x25519.isSupported() && BuiltinDigests.sha256.isSupported();
+            return curve25519.isSupported();
         }
     },
     /**
@@ -348,28 +338,13 @@ public enum BuiltinDHFactories implements DHFactory {
      */
     sntrup761x25519_openssh(Constants.SNTRUP761_25519_SHA512_OPENSSH) {
         @Override
-        public XDH create(Object... params) throws Exception {
-            if (!GenericUtils.isEmpty(params)) {
-                throw new IllegalArgumentException("No accepted parameters for " + getName());
-            }
-            return new XDH(MontgomeryCurve.x25519, true) {
-
-                @Override
-                public KeyEncapsulationMethod getKeyEncapsulation() {
-                    return BuiltinKEM.sntrup761;
-                }
-
-                @Override
-                public Digest getHash() throws Exception {
-                    return BuiltinDigests.sha512.create();
-                }
-            };
+        public AbstractDH create(Object... params) throws Exception {
+            return sntrup761x25519.create(params);
         }
 
         @Override
         public boolean isSupported() {
-            return MontgomeryCurve.x25519.isSupported() && BuiltinDigests.sha512.isSupported()
-                    && BuiltinKEM.sntrup761.isSupported();
+            return sntrup761x25519.isSupported();
         }
     };
 
@@ -547,10 +522,10 @@ public enum BuiltinDHFactories implements DHFactory {
         public static final String ECDH_SHA2_NISTP384 = "ecdh-sha2-nistp384";
         public static final String ECDH_SHA2_NISTP521 = "ecdh-sha2-nistp521";
         public static final String CURVE25519_SHA256 = "curve25519-sha256";
-        public static final String CURVE25519_SHA256_LIBSSH = "curve25519-sha256@libssh.org";
+        public static final String CURVE25519_SHA256_LIBSSH = CURVE25519_SHA256 + "@libssh.org";
         public static final String CURVE448_SHA512 = "curve448-sha512";
         public static final String SNTRUP761_25519_SHA512 = "sntrup761x25519-sha512";
-        public static final String SNTRUP761_25519_SHA512_OPENSSH = "sntrup761x25519-sha512@openssh.com";
+        public static final String SNTRUP761_25519_SHA512_OPENSSH = SNTRUP761_25519_SHA512 + "@openssh.com";
 
         private Constants() {
             throw new UnsupportedOperationException("No instance allowed");
