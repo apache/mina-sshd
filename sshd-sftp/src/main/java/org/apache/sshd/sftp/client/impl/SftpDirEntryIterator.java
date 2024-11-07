@@ -77,7 +77,7 @@ public class SftpDirEntryIterator extends AbstractLoggingBean implements SftpCli
      */
     public SftpDirEntryIterator(SftpClient client, String path, Handle dirHandle, boolean closeOnFinished) {
         this.client = Objects.requireNonNull(client, "No SFTP client instance");
-        this.dirPath = ValidateUtils.checkNotNullAndNotEmpty(path, "No path");
+        this.dirPath = ValidateUtils.hasContent(path, "No path");
         this.dirHandle = Objects.requireNonNull(dirHandle, "No directory handle");
         this.closeOnFinished = closeOnFinished;
         this.dirEntries = load(dirHandle);

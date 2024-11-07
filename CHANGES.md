@@ -41,10 +41,11 @@
 ## Bug Fixes
 
 * [GH-618](https://github.com/apache/mina-sshd/issues/618) Fix reading an `OpenSshCertificate` from a `Buffer`
+* [GH-628](https://github.com/apache/mina-sshd/issues/628) SFTP: fix reading directories with trailing blanks in the name
 
 ## New Features
 
-* [GH-606](https://github.com/apache/mina-sshd/issues/606) Support ML-KEM PQC key exchange
+* [GH-606](https://github.com/apache/mina-sshd/issues/606) Support ML-KEM PQC hybrid key exchanges
 
 ## Potential compatibility issues
 

@@ -42,7 +42,7 @@ public class SftpIterableDirEntry implements SftpClientHolder, Iterable<DirEntry
      */
     public SftpIterableDirEntry(SftpClient client, String path) {
         this.client = Objects.requireNonNull(client, "No client instance");
-        this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote path");
+        this.path = ValidateUtils.hasContent(path, "No remote path");
     }
 
     @Override

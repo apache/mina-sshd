@@ -51,6 +51,27 @@ public final class ValidateUtils {
         return t;
     }
 
+    public static String hasContent(String t, String message) {
+        if (t == null || t.isEmpty()) {
+            throwIllegalArgumentException(message);
+        }
+        return t;
+    }
+
+    public static String hasContent(String t, String message, Object arg) {
+        if (t == null || t.isEmpty()) {
+            throwIllegalArgumentException(message, arg);
+        }
+        return t;
+    }
+
+    public static String hasContent(String t, String message, Object... args) {
+        if (t == null || t.isEmpty()) {
+            throwIllegalArgumentException(message, args);
+        }
+        return t;
+    }
+
     public static String checkNotNullAndNotEmpty(String t, String message) {
         t = checkNotNull(t, message).trim();
         checkTrue(GenericUtils.length(t) > 0, message);

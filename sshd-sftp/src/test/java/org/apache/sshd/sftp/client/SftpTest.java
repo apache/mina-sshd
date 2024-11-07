@@ -118,15 +118,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -1192,6 +1183,40 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
             // cleanup
             sftp.rmdir(dir);
+        }
+    }
+
+    @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // SSHD-1215
+    public void listDirWithBlank(int handleSize) throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "Windows does not allow trailing blanks anyway");
+        initSftpTest(handleSize);
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        Path parentPath = targetPath.getParent();
+        Path clientFolder = assertHierarchyTargetFolderExists(lclSftp.resolve("withBlank "));
+        String fileName = "file ";
+        Path clientFile = clientFolder.resolve(fileName);
+
+        byte[] foo = { 'f', 'o', 'o' };
+        Files.write(clientFile, foo);
+
+        String dir = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
+
+        try (SftpClient sftp = createSingleSessionClient()) {
+            List<String> expected = new ArrayList<>();
+            expected.add(".");
+            expected.add("..");
+            expected.add(fileName);
+            List<String> actual = new ArrayList<>();
+            sftp.readDir(dir).iterator().forEachRemaining(e -> actual.add(e.getFilename()));
+            assertEquals(expected, actual, "Unexpected directory entries");
+            try (InputStream in = sftp.read(dir + '/' + fileName)) {
+                assertArrayEquals(foo, IoUtils.toByteArray(in), "Wrong file content");
+            }
         }
     }
 
