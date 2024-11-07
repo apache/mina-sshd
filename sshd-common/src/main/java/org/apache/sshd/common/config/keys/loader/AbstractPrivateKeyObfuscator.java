@@ -102,7 +102,7 @@ public abstract class AbstractPrivateKeyObfuscator implements PrivateKeyObfuscat
         byte[] initVector = Objects.requireNonNull(encContext.getInitVector(), "No encryption init vector");
         ValidateUtils.checkTrue(initVector.length > 0, "Empty encryption init vector");
 
-        String password = ValidateUtils.checkNotNullAndNotEmpty(encContext.getPassword(), "No encryption password");
+        String password = ValidateUtils.hasContent(encContext.getPassword(), "No encryption password");
         byte[] passBytes = password.getBytes(StandardCharsets.UTF_8);
         byte[] prevHash = GenericUtils.EMPTY_BYTE_ARRAY;
         try {

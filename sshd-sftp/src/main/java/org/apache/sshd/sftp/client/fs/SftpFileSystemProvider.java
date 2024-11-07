@@ -1568,7 +1568,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
     }
 
     public static String encodeCredentials(String username, String password) {
-        ValidateUtils.checkNotNullAndNotEmpty(username, "No username provided");
+        ValidateUtils.hasContent(username, "No username provided");
 
         /*
          * There is no way to properly encode/decode credentials that already contain colon. See also

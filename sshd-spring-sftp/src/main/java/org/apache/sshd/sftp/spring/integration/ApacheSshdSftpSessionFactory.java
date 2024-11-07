@@ -135,7 +135,7 @@ public class ApacheSshdSftpSessionFactory
      */
     @Override
     public void setUsername(String user) {
-        this.userValue = ValidateUtils.checkNotNullAndNotEmpty(user, "No user specified: %s", user);
+        this.userValue = ValidateUtils.hasContent(user, "No user specified: %s", user);
     }
 
     @Override
@@ -447,7 +447,7 @@ public class ApacheSshdSftpSessionFactory
 
     protected ClientSession createClientSession() throws Exception {
         String hostname = ValidateUtils.checkNotNullAndNotEmpty(getHost(), "Host must not be empty");
-        String username = ValidateUtils.checkNotNullAndNotEmpty(getUsername(), "User must not be empty");
+        String username = ValidateUtils.hasContent(getUsername(), "User must not be empty");
         ClientSession session
                 = createClientSession(hostname, username, getPort(), getEffectiveTimeoutValue(getConnectTimeout()));
         try {

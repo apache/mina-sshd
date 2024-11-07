@@ -121,7 +121,7 @@ public class GitPackCommand extends AbstractGitCommand {
             pathArg = pathArg.substring(1);
         }
 
-        ValidateUtils.checkNotNullAndNotEmpty(pathArg, "No %s command sub-path specified", args[0]);
+        ValidateUtils.hasContent(pathArg, "No %s command sub-path specified", args[0]);
         return rootDir.resolve(pathArg);
     }
 

@@ -59,7 +59,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void download(String[] remote, String local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
+        local = ValidateUtils.hasContent(local, "Invalid argument local: %s", local);
         remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", (Object) remote);
 
         if (remote.length > 1) {
@@ -87,7 +87,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
     @Override
     public void download(String remote, Path local, Collection<Option> options) throws IOException {
         local = ValidateUtils.checkNotNull(local, "Invalid argument local: %s", local);
-        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
+        remote = ValidateUtils.hasContent(remote, "Invalid argument remote: %s", remote);
 
         LinkOption[] opts = IoUtils.getLinkOptions(true);
         if (Files.isDirectory(local, opts)) {
@@ -114,7 +114,7 @@ public abstract class AbstractScpClient extends AbstractLoggingBean implements S
 
     @Override
     public void download(String remote, String local, Collection<Option> options) throws IOException {
-        local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
+        local = ValidateUtils.hasContent(local, "Invalid argument local: %s", local);
 
         ClientSession session = getClientSession();
         FactoryManager manager = session.getFactoryManager();

@@ -72,7 +72,7 @@ public class DefaultAuthorizedKeysAuthenticator extends AuthorizedKeysAuthentica
 
     public DefaultAuthorizedKeysAuthenticator(String user, Path path, boolean strict, LinkOption... options) {
         super(path, options);
-        this.user = ValidateUtils.checkNotNullAndNotEmpty(user, "No username provided");
+        this.user = ValidateUtils.hasContent(user, "No username provided");
         this.strict = strict;
     }
 

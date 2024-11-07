@@ -70,7 +70,7 @@ public class NativeFileSystemFactory extends AbstractLoggingBean implements File
      * @see                #isCreateHome()
      */
     public void setUsersHomeDir(String usersHomeDir) {
-        this.usersHomeDir = ValidateUtils.checkNotNullAndNotEmpty(usersHomeDir, "No users home dir");
+        this.usersHomeDir = ValidateUtils.hasContent(usersHomeDir, "No users home dir");
     }
 
     /**

@@ -104,10 +104,10 @@ public class DefaultScpClient extends AbstractScpClient {
     public void upload(
             InputStream local, String remote, long size, Collection<PosixFilePermission> perms, ScpTimestampCommandDetails time)
             throws IOException {
-        int namePos = ValidateUtils.checkNotNullAndNotEmpty(remote, "No remote location specified").lastIndexOf('/');
+        int namePos = ValidateUtils.hasContent(remote, "No remote location specified").lastIndexOf('/');
         String name = (namePos < 0)
                 ? remote
-                : ValidateUtils.checkNotNullAndNotEmpty(remote.substring(namePos + 1), "No name value in remote=%s", remote);
+                : ValidateUtils.hasContent(remote.substring(namePos + 1), "No name value in remote=%s", remote);
         Collection<Option> options = (time != null) ? EnumSet.of(Option.PreserveAttributes) : Collections.emptySet();
         String cmd = ScpClient.createSendCommand(remote, options);
         ClientSession session = getClientSession();
@@ -134,7 +134,7 @@ public class DefaultScpClient extends AbstractScpClient {
             String remote, Collection<Option> options, Collection<T> local, AbstractScpClient.ScpOperationExecutor<T> executor)
             throws IOException {
         local = ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local);
-        remote = ValidateUtils.checkNotNullAndNotEmpty(remote, "Invalid argument remote: %s", remote);
+        remote = ValidateUtils.hasContent(remote, "Invalid argument remote: %s", remote);
         if (local.size() > 1) {
             options = addTargetIsDirectory(options);
         }

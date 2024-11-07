@@ -295,7 +295,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @param id The identity path to add - never {@code null}
      */
     public void addIdentity(String id) {
-        String path = ValidateUtils.checkNotNullAndNotEmpty(id, "No identity provided");
+        String path = ValidateUtils.hasContent(id, "No identity provided");
         identities.add(path);
         appendPropertyValue(IDENTITY_FILE_CONFIG_PROP, id);
     }
@@ -890,8 +890,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                             PathUtils.appendUserHome(sb);
                             break;
                         case LOCAL_USER_MACRO:
-                            sb.append(ValidateUtils.checkNotNullAndNotEmpty(OsUtils.getCurrentUser(),
-                                    "No local user name value"));
+                            sb.append(OsUtils.getCurrentUser());
                             break;
                         case LOCAL_HOST_MACRO: {
                             InetAddress address = Objects.requireNonNull(InetAddress.getLocalHost(), "No local address");
@@ -902,7 +901,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                             sb.append(ValidateUtils.checkNotNullAndNotEmpty(host, "No remote host provided"));
                             break;
                         case REMOTE_USER_MACRO:
-                            sb.append(ValidateUtils.checkNotNullAndNotEmpty(username, "No remote user provided"));
+                            sb.append(ValidateUtils.hasContent(username, "No remote user provided"));
                             break;
                         case REMOTE_PORT_MACRO:
                             ValidateUtils.checkTrue(port > 0, "Bad remote port value: %d", port);

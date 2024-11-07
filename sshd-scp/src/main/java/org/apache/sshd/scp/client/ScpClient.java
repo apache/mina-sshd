@@ -103,7 +103,7 @@ public interface ScpClient extends SessionHolder<ClientSession>, ClientSessionHo
     }
 
     default void upload(String local, String remote, Collection<Option> options) throws IOException {
-        upload(new String[] { ValidateUtils.checkNotNullAndNotEmpty(local, "Invalid argument local: %s", local) }, remote,
+        upload(new String[] { ValidateUtils.hasContent(local, "Invalid argument local: %s", local) }, remote,
                 options);
     }
 

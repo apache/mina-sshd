@@ -99,7 +99,7 @@ public class SftpClientDirectoryScanner extends PathScanningMatcher {
      *                form when scanning. May not be {@code null}/empty
      */
     public void setBasedir(String basedir) {
-        this.basedir = ValidateUtils.checkNotNullAndNotEmpty(basedir, "No base directory provided");
+        this.basedir = ValidateUtils.hasContent(basedir, "No base directory provided");
     }
 
     @Override

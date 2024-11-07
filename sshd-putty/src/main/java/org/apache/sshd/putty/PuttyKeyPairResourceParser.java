@@ -143,10 +143,10 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
             Map<String, String> headers)
             throws GeneralSecurityException {
         Objects.requireNonNull(prvBytes, "No encrypted key bytes");
-        ValidateUtils.checkNotNullAndNotEmpty(algName, "No encryption algorithm", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(algName, "No encryption algorithm");
         ValidateUtils.checkTrue(numBits > 0, "Invalid encryption key size: %d", numBits);
-        ValidateUtils.checkNotNullAndNotEmpty(algMode, "No encryption mode", GenericUtils.EMPTY_OBJECT_ARRAY);
-        ValidateUtils.checkNotNullAndNotEmpty(password, "No encryption password", GenericUtils.EMPTY_OBJECT_ARRAY);
+        ValidateUtils.checkNotNullAndNotEmpty(algMode, "No encryption mode");
+        ValidateUtils.hasContent(password, "No encryption password");
 
         if (!"AES".equalsIgnoreCase(algName)) {
             throw new NoSuchAlgorithmException("decodePrivateKeyBytes(" + algName + "-" + numBits + "-" + algMode + ") N/A");

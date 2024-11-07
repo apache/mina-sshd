@@ -641,7 +641,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
+            ValidateUtils.hasContent(args, "No remote directory specified");
 
             String newPath = resolveRemotePath(args);
             SftpClient sftp = getClient();
@@ -695,7 +695,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
+            ValidateUtils.hasContent(args, "No remote directory specified");
 
             String path = resolveRemotePath(args);
             SftpClient sftp = getClient();
@@ -908,7 +908,7 @@ public class SftpCommandMain extends SshClientCliSupport implements SftpClientHo
         public boolean executeCommand(
                 String args, BufferedReader stdin, PrintStream stdout, PrintStream stderr)
                 throws Exception {
-            ValidateUtils.checkNotNullAndNotEmpty(args, "No remote directory specified");
+            ValidateUtils.hasContent(args, "No remote directory specified");
 
             String path = resolveRemotePath(args);
             SftpClient sftp = getClient();

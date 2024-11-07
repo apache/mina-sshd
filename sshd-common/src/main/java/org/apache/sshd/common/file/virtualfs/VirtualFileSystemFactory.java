@@ -57,12 +57,12 @@ public class VirtualFileSystemFactory implements FileSystemFactory {
     }
 
     public void setUserHomeDir(String userName, Path userHomeDir) {
-        homeDirs.put(ValidateUtils.checkNotNullAndNotEmpty(userName, "No username"),
+        homeDirs.put(ValidateUtils.hasContent(userName, "No username"),
                 Objects.requireNonNull(userHomeDir, "No home dir"));
     }
 
     public Path getUserHomeDir(String userName) {
-        return homeDirs.get(ValidateUtils.checkNotNullAndNotEmpty(userName, "No username"));
+        return homeDirs.get(ValidateUtils.hasContent(userName, "No username"));
     }
 
     @Override

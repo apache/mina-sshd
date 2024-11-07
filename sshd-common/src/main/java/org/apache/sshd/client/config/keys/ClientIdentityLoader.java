@@ -80,7 +80,7 @@ public interface ClientIdentityLoader {
             Objects.requireNonNull(location, "No location provided");
 
             Path path = Paths
-                    .get(ValidateUtils.checkNotNullAndNotEmpty(location.getName(), "No location value for %s", location));
+                    .get(ValidateUtils.hasContent(location.getName(), "No location value for %s", location));
             path = path.toAbsolutePath();
             path = path.normalize();
             return path;

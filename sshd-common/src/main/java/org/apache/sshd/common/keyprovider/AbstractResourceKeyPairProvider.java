@@ -85,7 +85,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
             }
 
             for (Object r : resources) {
-                String resourceKey = ValidateUtils.checkNotNullAndNotEmpty(Objects.toString(r, null), "No resource key value");
+                String resourceKey = ValidateUtils.hasContent(Objects.toString(r, null), "No resource key value");
                 if (cacheMap.containsKey(resourceKey)) {
                     continue;
                 }
@@ -126,7 +126,7 @@ public abstract class AbstractResourceKeyPairProvider<R> extends AbstractKeyPair
         IoResource<?> ioResource
                 = ValidateUtils.checkNotNull(getIoResource(session, resource), "No I/O resource available for %s", resource);
         String resourceKey
-                = ValidateUtils.checkNotNullAndNotEmpty(ioResource.getName(), "No resource string value for %s", resource);
+                = ValidateUtils.hasContent(ioResource.getName(), "No resource string value for %s", resource);
         Iterable<KeyPair> ids;
         synchronized (cacheMap) {
             // check if lucky enough to have already loaded this file

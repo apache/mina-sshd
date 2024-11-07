@@ -78,7 +78,7 @@ public class SftpRemotePathChannel extends FileChannel {
                                  Collection<OpenMode> modes)
             throws IOException {
         this.log = LoggerFactory.getLogger(getClass());
-        this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote file path specified");
+        this.path = ValidateUtils.hasContent(path, "No remote file path specified");
         this.modes = Collections.unmodifiableSet(EnumSet.copyOf(modes));
         if (this.modes.isEmpty()) {
             throw new IllegalArgumentException("At least one OpenMode is required for a SftpRemotePathChannel");

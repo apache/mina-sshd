@@ -148,7 +148,7 @@ public interface SftpClient extends SubsystemClient {
 
         Handle(String path, byte[] id) {
             // clone the original so the handle is immutable
-            this.path = ValidateUtils.checkNotNullAndNotEmpty(path, "No remote path");
+            this.path = ValidateUtils.hasContent(path, "No remote path");
             this.id = ValidateUtils.checkNotNullAndNotEmpty(id, "No handle ID").clone();
         }
 
