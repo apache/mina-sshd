@@ -26,14 +26,8 @@ import org.apache.sshd.client.future.DefaultOpenFuture;
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
-import org.apache.sshd.common.channel.ChannelAsyncInputStream;
-import org.apache.sshd.common.channel.ChannelAsyncOutputStream;
-import org.apache.sshd.common.channel.ChannelOutputStream;
-import org.apache.sshd.common.channel.ChannelPipedInputStream;
-import org.apache.sshd.common.channel.ChannelPipedOutputStream;
 import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.session.Session;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 
@@ -42,14 +36,13 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ChannelDirectTcpip extends AbstractClientChannel {
+public class ChannelDirectTcpip extends AsyncCapableClientChannel {
 
     private final SshdSocketAddress local;
     private final SshdSocketAddress remote;
-    private ChannelPipedOutputStream pipe;
 
     public ChannelDirectTcpip(SshdSocketAddress local, SshdSocketAddress remote) {
-        super("direct-tcpip");
+        super("direct-tcpip", false);
         if (local == null) {
             try {
                 InetAddress localHost = InetAddress.getLocalHost();
@@ -93,34 +86,6 @@ public class ChannelDirectTcpip extends AbstractClientChannel {
         buffer.putUInt(local.getPort());
         writePacket(buffer);
         return openFuture;
-    }
-
-    @Override
-    protected void doOpen() throws IOException {
-        if (streaming == Streaming.Async) {
-            asyncIn = new ChannelAsyncOutputStream(this, SshConstants.SSH_MSG_CHANNEL_DATA);
-            asyncOut = new ChannelAsyncInputStream(this);
-        } else {
-            out = new ChannelOutputStream(
-                    this, getRemoteWindow(), log, SshConstants.SSH_MSG_CHANNEL_DATA, true);
-            invertedIn = out;
-
-            ChannelPipedInputStream pis = new ChannelPipedInputStream(this, getLocalWindow());
-            pipe = new ChannelPipedOutputStream(pis);
-            in = pis;
-            invertedOut = in;
-        }
-    }
-
-    @Override
-    protected void doWriteData(byte[] data, int off, long len) throws IOException {
-        ValidateUtils.checkTrue(len <= Integer.MAX_VALUE,
-                "Data length exceeds int boundaries: %d", len);
-        pipe.write(data, off, (int) len);
-        pipe.flush();
-
-        LocalWindow wLocal = getLocalWindow();
-        wLocal.release(len);
     }
 
     public SshdSocketAddress getLocalSocketAddress() {
