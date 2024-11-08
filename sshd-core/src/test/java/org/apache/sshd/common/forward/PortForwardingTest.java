@@ -65,10 +65,14 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelDirectTcpip;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
+import org.apache.sshd.common.channel.StreamingChannel.Streaming;
+import org.apache.sshd.common.io.IoInputStream;
+import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.ProxyUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -754,6 +758,32 @@ public class PortForwardingTest extends BaseTestSupport {
                     byte[] buf = new byte[bytes.length + Long.SIZE];
                     int n = input.read(buf);
                     String res = new String(buf, 0, n, StandardCharsets.UTF_8);
+                    assertEquals(expected, res, "Mismatched data");
+                }
+                channel.close(false);
+            }
+        }
+    }
+
+    @Test
+    void forwardingChannelAsync() throws Exception {
+        try (ClientSession session = createNativeSession(null)) {
+            SshdSocketAddress local = new SshdSocketAddress("", 0);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
+
+            try (ChannelDirectTcpip channel = session.createDirectTcpipChannel(local, remote)) {
+                channel.setStreaming(Streaming.Async);
+                channel.open().verify(OPEN_TIMEOUT);
+
+                String expected = getCurrentTestName();
+                byte[] bytes = expected.getBytes(StandardCharsets.UTF_8);
+
+                try (IoOutputStream output = channel.getAsyncIn();
+                     IoInputStream input = channel.getAsyncOut()) {
+                    output.writeBuffer(new ByteArrayBuffer(bytes)).verify(DEFAULT_TIMEOUT);
+                    ByteArrayBuffer buf = new ByteArrayBuffer();
+                    input.read(buf).verify(DEFAULT_TIMEOUT);
+                    String res = new String(buf.getCompactData(), StandardCharsets.UTF_8);
                     assertEquals(expected, res, "Mismatched data");
                 }
                 channel.close(false);
