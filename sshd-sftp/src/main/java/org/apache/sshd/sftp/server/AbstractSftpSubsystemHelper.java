@@ -2325,7 +2325,7 @@ public abstract class AbstractSftpSubsystemHelper
 
         int version = getVersion();
         if (version == SftpConstants.SFTP_V3) {
-            String longName = getLongName(f, shortName, options);
+            String longName = getLongName(f, shortName, attrs);
             accessor.putRemoteFileName(this, f, buffer, longName, false);
 
             if (log.isTraceEnabled()) {
