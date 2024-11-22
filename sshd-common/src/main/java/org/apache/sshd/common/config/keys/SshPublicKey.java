@@ -16,16 +16,22 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.config.keys.u2f;
+package org.apache.sshd.common.config.keys;
 
 import java.security.PublicKey;
 
-import org.apache.sshd.common.config.keys.SshPublicKey;
+/**
+ * A {@link PublicKey} that has an SSH key type.
+ *
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ */
+public interface SshPublicKey extends PublicKey {
 
-public interface SecurityKeyPublicKey<K extends PublicKey> extends SshPublicKey {
-    String getAppName();
+    /**
+     * Retrieves the SSH key type.
+     *
+     * @return the SSH key type, never {@code null}.
+     */
+    String getKeyType();
 
-    boolean isNoTouchRequired();
-
-    K getDelegatePublicKey();
 }

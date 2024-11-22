@@ -304,14 +304,36 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
             decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
         }
 
-        AuthorizedKeyEntry entry;
+        AuthorizedKeyEntry entry = null;
         // assume this is due to the fact that it starts with login options
         if (decoder == null) {
             Map.Entry<String, String> comps = resolveEntryComponents(line);
-            entry = parseAuthorizedKeyEntry(comps.getValue());
-            ValidateUtils.checkTrue(entry != null, "Bad format (no key data after login options): %s", line);
-            entry.setLoginOptions(parseLoginOptions(comps.getKey()));
-        } else {
+            String keyData = comps.getValue();
+            String options = comps.getKey();
+            if (keyData.startsWith("AAAA")) {
+                // OpenSSH known_hosts is defined to use base64, and the key data contains the binary encoded string for
+                // the key type again. So the base64 data always starts off with the uint32 length of the key type, with
+                // always starts with at least 3 zero bytes (assuming the key type has less than 256 characters). 3 zero
+                // bytes yield 4 A's in base64.
+                //
+                // So here we know that resolveEntryComponents() read ahead one token too far. This may happen if we
+                // don't support the key type (we have no decoder for it).
+                int i = options.lastIndexOf(' ');
+                if (i < 0) {
+                    // options must be equal to keyType. Just handle the original line.
+                    keyData = null;
+                } else {
+                    keyData = options.substring(i + 1) + ' ' + keyData;
+                    options = options.substring(0, i);
+                }
+            }
+            if (keyData != null) {
+                entry = parseAuthorizedKeyEntry(keyData, resolver);
+                ValidateUtils.checkTrue(entry != null, "Bad format (no key data after login options): %s", line);
+                entry.setLoginOptions(parseLoginOptions(options));
+            }
+        }
+        if (entry == null) {
             String encData = (endPos < (line.length() - 1)) ? line.substring(0, endPos).trim() : line;
             String comment = (endPos < (line.length() - 1)) ? line.substring(endPos + 1).trim() : null;
             entry = parsePublicKeyEntry(new AuthorizedKeyEntry(), encData, resolver);

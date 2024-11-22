@@ -252,9 +252,8 @@ public class KnownHostEntry extends HostPatternsHolder {
             entry.setHashedEntry(null);
             entry.setPatterns(parsePatterns(GenericUtils.split(hostPattern, ',')));
         }
-
-        AuthorizedKeyEntry key = ValidateUtils.checkNotNull(AuthorizedKeyEntry.parseAuthorizedKeyEntry(line),
-                "No valid key entry recovered from line=%s", data);
+        AuthorizedKeyEntry key = PublicKeyEntry.parsePublicKeyEntry(new AuthorizedKeyEntry(),
+                ValidateUtils.checkNotNullAndNotEmpty(line, "No valid key entry recovered from line=%s", data));
         entry.setKeyEntry(key);
         return entry;
     }

@@ -859,6 +859,8 @@ public final class KeyUtils {
     public static String getKeyType(Key key) {
         if (key == null) {
             return null;
+        } else if (key instanceof SshPublicKey) {
+            return ((SshPublicKey) key).getKeyType();
         } else if (key instanceof DSAKey) {
             return KeyPairProvider.SSH_DSS;
         } else if (key instanceof RSAKey) {
@@ -872,14 +874,8 @@ public final class KeyUtils {
             } else {
                 return curve.getKeyType();
             }
-        } else if (key instanceof SkEcdsaPublicKey) {
-            return SkECDSAPublicKeyEntryDecoder.KEY_TYPE;
         } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
             return KeyPairProvider.SSH_ED25519;
-        } else if (key instanceof SkED25519PublicKey) {
-            return SkED25519PublicKeyEntryDecoder.KEY_TYPE;
-        } else if (key instanceof OpenSshCertificate) {
-            return ((OpenSshCertificate) key).getKeyType();
         }
 
         return null;
@@ -1063,6 +1059,9 @@ public final class KeyUtils {
     }
 
     public static boolean compareKeys(PublicKey k1, PublicKey k2) {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        }
         if ((k1 instanceof RSAPublicKey) && (k2 instanceof RSAPublicKey)) {
             return compareRSAKeys(RSAPublicKey.class.cast(k1), RSAPublicKey.class.cast(k2));
         } else if ((k1 instanceof DSAPublicKey) && (k2 instanceof DSAPublicKey)) {

@@ -482,24 +482,32 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
             return sb;
         }
 
-        @SuppressWarnings("unchecked")
-        PublicKeyEntryDecoder<PublicKey, ?> decoder
-                = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(key);
-        if (decoder == null) {
-            throw new StreamCorruptedException("Cannot retrieve decoder for key=" + key.getAlgorithm());
-        }
+        String keyType;
+        byte[] bytes;
 
-        try (ByteArrayOutputStream s = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
-            String keyType = decoder.encodePublicKey(s, key);
-            byte[] bytes = s.toByteArray();
-            if (encoder == null) {
-                encoder = resolveKeyDataEntryResolver(keyType);
+        if (key instanceof UnsupportedSshPublicKey) {
+            UnsupportedSshPublicKey unsupported = (UnsupportedSshPublicKey) key;
+            keyType = unsupported.getKeyType();
+            bytes = unsupported.getKeyData();
+        } else {
+            @SuppressWarnings("unchecked")
+            PublicKeyEntryDecoder<PublicKey, ?> decoder = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils
+                    .getPublicKeyEntryDecoder(key);
+            if (decoder == null) {
+                throw new StreamCorruptedException("Cannot retrieve decoder for key=" + key.getAlgorithm());
             }
 
-            String encData = encoder.encodeEntryKeyData(bytes);
-            sb.append(keyType).append(' ').append(encData);
+            try (ByteArrayOutputStream s = new ByteArrayOutputStream(Byte.MAX_VALUE)) {
+                keyType = decoder.encodePublicKey(s, key);
+                bytes = s.toByteArray();
+            }
+        }
+        if (encoder == null) {
+            encoder = resolveKeyDataEntryResolver(keyType);
         }
 
+        String encData = encoder.encodeEntryKeyData(bytes);
+        sb.append(keyType).append(' ').append(encData);
         return sb;
     }
 

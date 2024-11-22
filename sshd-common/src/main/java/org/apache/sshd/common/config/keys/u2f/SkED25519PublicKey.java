@@ -21,6 +21,7 @@ package org.apache.sshd.common.config.keys.u2f;
 import java.util.Objects;
 
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 
 public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> {
 
@@ -41,6 +42,11 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
     @Override
     public String getAlgorithm() {
         return ALGORITHM;
+    }
+
+    @Override
+    public String getKeyType() {
+        return SkED25519PublicKeyEntryDecoder.KEY_TYPE;
     }
 
     @Override
@@ -99,4 +105,5 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
                 && this.noTouchRequired == other.noTouchRequired
                 && Objects.equals(this.delegatePublicKey, other.delegatePublicKey);
     }
+
 }

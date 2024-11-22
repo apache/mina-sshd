@@ -61,6 +61,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.UnsupportedSshPublicKey;
 import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
@@ -1015,7 +1016,9 @@ public abstract class Buffer implements Readable {
 
     public void putRawPublicKeyBytes(PublicKey key) {
         Objects.requireNonNull(key, "No key");
-        if (key instanceof RSAPublicKey) {
+        if (key instanceof UnsupportedSshPublicKey) {
+            putRawBytes(((UnsupportedSshPublicKey) key).getKeyData());
+        } else if (key instanceof RSAPublicKey) {
             RSAPublicKey rsaPub = (RSAPublicKey) key;
 
             putMPInt(rsaPub.getPublicExponent());

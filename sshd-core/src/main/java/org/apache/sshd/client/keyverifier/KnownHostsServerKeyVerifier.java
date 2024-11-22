@@ -53,6 +53,7 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
+import org.apache.sshd.common.config.keys.UnsupportedSshPublicKey;
 import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.SessionContext;
@@ -263,7 +264,7 @@ public class KnownHostsServerKeyVerifier
     }
 
     protected PublicKeyEntryResolver getFallbackPublicKeyEntryResolver() {
-        return PublicKeyEntryResolver.IGNORING;
+        return PublicKeyEntryResolver.UNSUPPORTED;
     }
 
     protected boolean acceptKnownHostEntries(
@@ -350,6 +351,11 @@ public class KnownHostsServerKeyVerifier
             ClientSession clientSession, SocketAddress remoteAddress, HostEntryPair match, PublicKey actual,
             Path file, Collection<HostEntryPair> knownHosts)
             throws Exception {
+        if (match.getServerKey() instanceof UnsupportedSshPublicKey) {
+            // Never replace unsupported keys, always add.
+            updateKnownHostsFile(clientSession, remoteAddress, actual, file, knownHosts);
+            return;
+        }
         KnownHostEntry entry = match.getHostEntry();
         String matchLine = ValidateUtils.checkNotNullAndNotEmpty(entry.getConfigLine(), "No entry config line");
         String newLine = prepareModifiedServerKeyLine(

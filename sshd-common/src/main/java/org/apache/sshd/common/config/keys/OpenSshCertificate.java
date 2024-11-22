@@ -35,7 +35,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <a href= "https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.certkeys?annotate=HEAD">PROTOCOL.certkeys</a>
  */
-public interface OpenSshCertificate extends PublicKey, PrivateKey {
+public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
 
     /**
      * {@link OpenSshCertificate}s have a type indicating whether the certificate if for a host key (certifying a host
@@ -89,13 +89,6 @@ public interface OpenSshCertificate extends PublicKey, PrivateKey {
      * @return the nonce.
      */
     byte[] getNonce();
-
-    /**
-     * Retrieves the SSH key type of this certificate.
-     *
-     * @return the key type, for instance "ssh-rsa-cert-v01@openssh.com"
-     */
-    String getKeyType();
 
     /**
      * Retrieves the certified public key.

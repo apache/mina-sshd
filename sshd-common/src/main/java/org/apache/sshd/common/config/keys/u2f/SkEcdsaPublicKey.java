@@ -21,6 +21,8 @@ package org.apache.sshd.common.config.keys.u2f;
 import java.security.interfaces.ECPublicKey;
 import java.util.Objects;
 
+import org.apache.sshd.common.config.keys.impl.SkECDSAPublicKeyEntryDecoder;
+
 public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
     public static final String ALGORITHM = "ECDSA-SK";
@@ -40,6 +42,11 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
     @Override
     public String getAlgorithm() {
         return ALGORITHM;
+    }
+
+    @Override
+    public String getKeyType() {
+        return SkECDSAPublicKeyEntryDecoder.KEY_TYPE;
     }
 
     @Override

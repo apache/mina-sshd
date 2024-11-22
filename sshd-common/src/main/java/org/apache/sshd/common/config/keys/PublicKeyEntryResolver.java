@@ -65,6 +65,22 @@ public interface PublicKeyEntryResolver {
     };
 
     /**
+     * A resolver that returns an {@link UnsupportedSshPublicKey} for any input.
+     */
+    PublicKeyEntryResolver UNSUPPORTED = new PublicKeyEntryResolver() {
+        @Override
+        public PublicKey resolve(SessionContext session, String keyType, byte[] keyData, Map<String, String> headers)
+                throws IOException, GeneralSecurityException {
+            return new UnsupportedSshPublicKey(keyType, keyData);
+        }
+
+        @Override
+        public String toString() {
+            return "UNSUPPORTED";
+        }
+    };
+
+    /**
      * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
      *                                  if not invoked within a session context (e.g., offline tool or session unknown).
      * @param  keyType                  The {@code OpenSSH} reported key type
