@@ -19,8 +19,8 @@
 package org.apache.sshd.common.util.security.bouncycastle;
 
 import java.lang.reflect.Field;
-import java.security.Provider;
-import java.security.Security;
+import java.security.*;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -101,6 +101,28 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
 
         allSupportHolder.set(allValue);
         return allValue;
+    }
+
+    @Override
+    public boolean isSecurityEntitySupported(Class<?> entityType, String name) {
+        if (!isSupported()) {
+            return false;
+        }
+
+        if (KeyPairGenerator.class.isAssignableFrom(entityType)
+                || KeyFactory.class.isAssignableFrom(entityType)) {
+            if (Objects.compare(name, SecurityUtils.EDDSA, String.CASE_INSENSITIVE_ORDER) == 0
+                    && SecurityUtils.isNetI2pCryptoEdDSARegistered()) {
+                return false;
+            }
+        } else if (Signature.class.isAssignableFrom(entityType)) {
+            if (Objects.compare(name, SecurityUtils.CURVE_ED25519_SHA512, String.CASE_INSENSITIVE_ORDER) == 0
+                    && SecurityUtils.isNetI2pCryptoEdDSARegistered()) {
+                return false;
+            }
+        }
+
+        return super.isSecurityEntitySupported(entityType, name);
     }
 
     @Override
