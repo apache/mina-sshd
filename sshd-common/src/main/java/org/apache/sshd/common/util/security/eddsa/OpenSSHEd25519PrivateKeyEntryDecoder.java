@@ -24,6 +24,9 @@ import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.util.security.eddsa.generic.GenericOpenSSHEd25519PrivateKeyEntryDecoder;
 
 /**
+ * An implementation of {@link GenericOpenSSHEd25519PrivateKeyEntryDecoder} tied to the {@code net.i2p.crypto} EdDSA
+ * security provider
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class OpenSSHEd25519PrivateKeyEntryDecoder

@@ -22,6 +22,8 @@ import net.i2p.crypto.eddsa.EdDSAEngine;
 import org.apache.sshd.common.util.security.eddsa.generic.GenericSignatureEd25519;
 
 /**
+ * An implementation of {@link GenericSignatureEd25519} tied to the {@code net.i2p.crypto} EdDSA security provider.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SignatureEd25519 extends GenericSignatureEd25519 {

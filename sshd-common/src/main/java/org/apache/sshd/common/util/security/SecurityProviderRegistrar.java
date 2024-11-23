@@ -184,6 +184,9 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
         return isSecurityEntitySupported(CertificateFactory.class, type);
     }
 
+    /**
+     * @return the EdDSA support implementation associated with the security provider (if applicable)
+     */
     default Optional<EdDSASupport<?, ?>> getEdDSASupport() {
         return Optional.empty();
     }
