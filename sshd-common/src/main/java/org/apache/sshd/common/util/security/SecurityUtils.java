@@ -601,6 +601,11 @@ public final class SecurityUtils {
         return getEdDSASupport().isPresent();
     }
 
+    public static boolean isNetI2pCryptoEdDSARegistered() {
+        register();
+        return isProviderRegistered(EDDSA);
+    }
+
     public static Optional<EdDSASupport<?, ?>> getEdDSASupport() {
         if (isFipsMode()) {
             return Optional.empty();
@@ -608,6 +613,15 @@ public final class SecurityUtils {
         register();
 
         synchronized (REGISTERED_PROVIDERS) {
+            // Prefer the net.i2p.crypto provider if it's available for backwards compatibility
+            SecurityProviderRegistrar netI2pCryptoProvider = REGISTERED_PROVIDERS.get(EDDSA);
+            if (netI2pCryptoProvider != null) {
+                Optional<EdDSASupport<?, ?>> support = netI2pCryptoProvider.getEdDSASupport();
+                if (support.isPresent()) {
+                    return support;
+                }
+            }
+
             for (Map.Entry<String, SecurityProviderRegistrar> entry : REGISTERED_PROVIDERS.entrySet()) {
                 Optional<EdDSASupport<?, ?>> support = entry.getValue().getEdDSASupport();
                 if (support.isPresent()) {
