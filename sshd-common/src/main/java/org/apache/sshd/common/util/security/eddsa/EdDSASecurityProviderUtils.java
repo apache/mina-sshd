@@ -41,6 +41,7 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -48,7 +49,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 public final class EdDSASecurityProviderUtils {
     // See EdDSANamedCurveTable
     public static final String CURVE_ED25519_SHA512 = "Ed25519";
-    public static final int KEY_SIZE = 256;
+    public static final int KEY_SIZE = EdDSASupport.KEY_SIZE;
 
     private EdDSASecurityProviderUtils() {
         throw new UnsupportedOperationException("No instance");
