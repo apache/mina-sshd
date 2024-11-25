@@ -21,7 +21,11 @@ package org.apache.sshd.common.util.security.eddsa.generic;
 
 import java.io.IOException;
 import java.io.StreamCorruptedException;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.KeySpec;
 
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;

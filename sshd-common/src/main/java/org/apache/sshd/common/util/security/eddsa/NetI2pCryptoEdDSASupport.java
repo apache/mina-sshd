@@ -20,7 +20,10 @@
 package org.apache.sshd.common.util.security.eddsa;
 
 import java.io.IOException;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.Key;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.spec.KeySpec;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;

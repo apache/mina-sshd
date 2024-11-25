@@ -19,7 +19,11 @@
 package org.apache.sshd.common.util.security.bouncycastle;
 
 import java.lang.reflect.Field;
-import java.security.*;
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.Provider;
+import java.security.Security;
+import java.security.Signature;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;

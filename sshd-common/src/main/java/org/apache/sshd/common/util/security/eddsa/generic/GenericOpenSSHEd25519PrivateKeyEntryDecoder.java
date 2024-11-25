@@ -21,7 +21,13 @@ package org.apache.sshd.common.util.security.eddsa.generic;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.security.*;
+import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
+import java.security.KeyFactory;
+import java.security.KeyPairGenerator;
+import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Locale;
