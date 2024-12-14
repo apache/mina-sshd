@@ -30,18 +30,13 @@ import org.apache.sshd.sftp.client.SftpClient;
 /**
  * A {@link java.nio.file.Path} on an {@link SftpFileSystem}.
  */
-public class SftpPath extends BasePath<SftpPath, SftpFileSystem> {
+public class SftpPath extends BasePath<SftpPath, SftpFileSystem> implements WithFileAttributes {
 
     public SftpPath(SftpFileSystem fileSystem, String root, List<String> names) {
         super(fileSystem, root, names);
     }
 
-    /**
-     * Retrieves the cached {@link SftpClient.Attributes} of this {@link SftpPath}, if it has any.
-     *
-     * @return the cached {@link SftpClient.Attributes} or {@code null} if there are none cached
-     */
-    @SuppressWarnings("javadoc")
+    @Override
     public SftpClient.Attributes getAttributes() {
         // Subclasses may override
         return null;

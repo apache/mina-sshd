@@ -26,11 +26,12 @@ import org.apache.sshd.common.util.io.functors.IOFunction;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
 import org.apache.sshd.sftp.client.fs.SftpPath;
+import org.apache.sshd.sftp.client.fs.WithFileAttributeCache;
 
 /**
  * An {@link SftpPath} that can cache {@code SftpClient.Attributes}.
  */
-public class SftpPathImpl extends SftpPath {
+public class SftpPathImpl extends SftpPath implements WithFileAttributeCache {
 
     private SftpClient.Attributes attributes;
 
@@ -77,23 +78,7 @@ public class SftpPathImpl extends SftpPath {
         }
     }
 
-    /**
-     * Sets the cached attributes to the argument if this {@link SftpPath} instance is currently caching attributes.
-     * Otherwise a no-op.
-     *
-     * @param attributes the {@code SftpClient.Attributes} to cache
-     */
-    public void cacheAttributes(SftpClient.Attributes attributes) {
-        if (cachingLevel > 0) {
-            setAttributes(attributes);
-        }
-    }
-
-    /**
-     * Unconditionally set the cached attributes, whether or not this instance's attribute cache is enabled.
-     *
-     * @param attributes the {@code SftpClient.Attributes} to cache
-     */
+    @Override
     public void setAttributes(SftpClient.Attributes attributes) {
         this.attributes = attributes;
     }
@@ -103,17 +88,7 @@ public class SftpPathImpl extends SftpPath {
         return attributes;
     }
 
-    /**
-     * Performs the given operation with attribute caching. If {@code SftpClient.Attributes} are fetched by the
-     * operation, they will be cached and subsequently these cached attributes will be re-used for this {@link SftpPath}
-     * instance throughout the operation. Calls to {@link #withAttributeCache(IOFunction)} may be nested. The cache is
-     * cleared at the start and at the end of the outermost invocation.
-     *
-     * @param  <T>         result type of the {@code operation}
-     * @param  operation   to perform; may return {@code null} if it has no result
-     * @return             the result of the {@code operation}
-     * @throws IOException if thrown by the {@code operation}
-     */
+    @Override
     public <T> T withAttributeCache(IOFunction<Path, T> operation) throws IOException {
         cacheAttributes(true);
         try {
@@ -123,22 +98,4 @@ public class SftpPathImpl extends SftpPath {
         }
     }
 
-    /**
-     * Performs the given operation with attribute caching, if the given {@link Path} can cache attributes, otherwise
-     * simply executes the operation.
-     *
-     * @param  <T>         result type of the {@code operation}
-     * @param  path        {@link Path} to operate on
-     * @param  operation   to perform; may return {@code null} if it has no result
-     * @return             the result of the {@code operation}
-     * @throws IOException if thrown by the {@code operation}
-     *
-     * @see                #withAttributeCache(IOFunction)
-     */
-    public static <T> T withAttributeCache(Path path, IOFunction<Path, T> operation) throws IOException {
-        if (path instanceof SftpPathImpl) {
-            return ((SftpPathImpl) path).withAttributeCache(operation);
-        }
-        return operation.apply(path);
-    }
 }

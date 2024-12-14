@@ -82,7 +82,7 @@ import org.apache.sshd.server.command.CommandDirectErrorStreamAware;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.fs.SftpPath;
-import org.apache.sshd.sftp.client.impl.SftpPathImpl;
+import org.apache.sshd.sftp.client.fs.WithFileAttributeCache;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.SftpHelper;
@@ -782,7 +782,7 @@ public class SftpSubsystem
 
     @Override
     protected String doOpenDir(int id, String path, Path dir, LinkOption... options) throws IOException {
-        SftpPathImpl.withAttributeCache(dir, p -> {
+        WithFileAttributeCache.withAttributeCache(dir, p -> {
             Boolean status = IoUtils.checkFileExistsAnySymlinks(p, !IoUtils.followLinks(options));
             if (status == null) {
                 throw signalOpenFailure(id, path, p, true,

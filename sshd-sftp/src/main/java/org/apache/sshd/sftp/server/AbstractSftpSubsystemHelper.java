@@ -94,8 +94,8 @@ import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.SftpModuleProperties;
 import org.apache.sshd.sftp.client.SftpClient;
 import org.apache.sshd.sftp.client.extensions.openssh.OpenSSHLimitsExtensionInfo;
-import org.apache.sshd.sftp.client.fs.SftpPath;
-import org.apache.sshd.sftp.client.impl.SftpPathImpl;
+import org.apache.sshd.sftp.client.fs.WithFileAttributeCache;
+import org.apache.sshd.sftp.client.fs.WithFileAttributes;
 import org.apache.sshd.sftp.common.SftpConstants;
 import org.apache.sshd.sftp.common.SftpException;
 import org.apache.sshd.sftp.common.SftpHelper;
@@ -1654,7 +1654,7 @@ public abstract class AbstractSftpSubsystemHelper
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
                 this, resolvedPath, SftpConstants.SSH_FXP_MKDIR, "", false);
         final boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_MKDIR, "", resolvedPath);
-        SftpPathImpl.withAttributeCache(resolvedPath, p -> {
+        WithFileAttributeCache.withAttributeCache(resolvedPath, p -> {
             Boolean symlinkCheck = validateParentExistWithNoSymlinksIfNeverFollowSymlinks(p, !followLinks);
             if (!Boolean.TRUE.equals(symlinkCheck)) {
                 throw new AccessDeniedException(p.toString(), p.toString(),
@@ -1715,7 +1715,7 @@ public abstract class AbstractSftpSubsystemHelper
         // never resolve links in the final path to remove as we want to remove the symlink, not the target
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
                 this, resolvedPath, SftpConstants.SSH_FXP_REMOVE, "", false);
-        SftpPathImpl.withAttributeCache(resolvedPath, p -> {
+        WithFileAttributeCache.withAttributeCache(resolvedPath, p -> {
             Boolean status = checkSymlinkState(p, followLinks, options);
             if (status == null) {
                 throw signalRemovalPreConditionFailure(id, path, p,
@@ -2253,8 +2253,8 @@ public abstract class AbstractSftpSubsystemHelper
             } else {
                 Path f = dir.next();
                 String shortName = getShortName(f);
-                if (f instanceof SftpPath) {
-                    SftpClient.Attributes attributes = ((SftpPath) f).getAttributes();
+                if (f instanceof WithFileAttributes) {
+                    SftpClient.Attributes attributes = ((WithFileAttributes) f).getAttributes();
                     if (attributes != null) {
                         entries.put(shortName, f);
                         writeDirEntry(session, id, buffer, nb, f, shortName, attributes);
@@ -2416,7 +2416,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected NavigableMap<String, Object> resolveFileAttributes(
             Path path, int flags, boolean neverFollowSymLinks, LinkOption... options)
             throws IOException {
-        return SftpPathImpl.withAttributeCache(path, file -> {
+        return WithFileAttributeCache.withAttributeCache(path, file -> {
             Boolean status = checkSymlinkState(file, neverFollowSymLinks, options);
             if (status == null) {
                 return handleUnknownStatusFileAttributes(file, flags, options);
@@ -2492,7 +2492,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected NavigableMap<String, Object> getAttributes(Path path, int flags, LinkOption... options)
             throws IOException {
         NavigableMap<String, Object> attrs
-                = SftpPathImpl.withAttributeCache(path, file -> resolveReportedFileAttributes(file, flags, options));
+                = WithFileAttributeCache.withAttributeCache(path, file -> resolveReportedFileAttributes(file, flags, options));
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         return accessor.resolveReportedFileAttributes(this, path, flags, attrs, options);
     }
