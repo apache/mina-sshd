@@ -18,11 +18,7 @@
  */
 package org.apache.sshd.common.random;
 
-import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 /**
  * A <code>Random</code> implementation using the built-in {@link SecureRandom} PRNG.
@@ -30,10 +26,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class JceRandom extends AbstractRandom {
-
     public static final String NAME = "JCE";
-
-    private static final Logger LOG = LoggerFactory.getLogger(JceRandom.class);
 
     private byte[] tmp = new byte[16];
     private final SecureRandom random = getRandom();
@@ -43,12 +36,7 @@ public class JceRandom extends AbstractRandom {
     }
 
     private static SecureRandom getRandom() {
-        try {
-            return SecureRandom.getInstanceStrong();
-        } catch (NoSuchAlgorithmException e) {
-            LOG.warn("No strong SecureRandom algorithm available; falling back to non-strong SecureRandom PRNG.");
-            return new SecureRandom();
-        }
+        return new SecureRandom();
     }
 
     private static final class Cache {
