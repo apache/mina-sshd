@@ -34,6 +34,7 @@ import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
 public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
@@ -125,5 +126,10 @@ public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     @Override
     public byte[] getPrivateKeyData(EdDSAPrivateKey privateKey) throws IOException {
         return privateKey.getSeed();
+    }
+
+    @Override
+    public String getKeyFactoryAlgorithm() {
+        return SecurityUtils.EDDSA;
     }
 }

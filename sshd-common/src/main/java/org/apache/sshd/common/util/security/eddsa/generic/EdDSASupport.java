@@ -190,4 +190,9 @@ public interface EdDSASupport<PUB extends PublicKey, PRV extends PrivateKey> {
      */
     byte[] getPrivateKeyData(PRV privateKey) throws IOException;
 
+    /**
+     * @return the algorithm name used by the provider's {@link java.security.KeyFactory}.
+     */
+    String getKeyFactoryAlgorithm();
+
 }

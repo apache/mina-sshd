@@ -46,7 +46,6 @@ import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.jcajce.interfaces.EdDSAKey;
 import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
 import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey;
-import org.bouncycastle.jcajce.spec.OpenSSHPrivateKeySpec;
 import org.bouncycastle.jcajce.spec.RawEncodedKeySpec;
 
 public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
@@ -115,7 +114,7 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     @Override
     public EdDSAPublicKey generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException {
         RawEncodedKeySpec keySpec = new RawEncodedKeySpec(seed);
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
+        KeyFactory factory = SecurityUtils.getKeyFactory(getKeyFactoryAlgorithm());
         return (EdDSAPublicKey) factory.generatePublic(keySpec);
     }
 
@@ -123,7 +122,7 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     public EdDSAPrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException, IOException {
         Ed25519PrivateKeyParameters parameters = new Ed25519PrivateKeyParameters(seed);
         PrivateKeyInfo info = PrivateKeyInfoFactory.createPrivateKeyInfo(parameters);
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
+        KeyFactory factory = SecurityUtils.getKeyFactory(getKeyFactoryAlgorithm());
         return (EdDSAPrivateKey) factory.generatePrivate(new PKCS8EncodedKeySpec(info.getEncoded()));
     }
 
@@ -148,7 +147,7 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
 
     @Override
     public KeySpec createPrivateKeySpec(EdDSAPrivateKey privateKey) {
-        return new OpenSSHPrivateKeySpec(privateKey.getEncoded());
+        return new PKCS8EncodedKeySpec(privateKey.getEncoded());
     }
 
     @Override
@@ -161,5 +160,10 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
         Ed25519PrivateKeyParameters parameters
                 = (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(privateKey.getEncoded());
         return parameters.getEncoded();
+    }
+
+    @Override
+    public String getKeyFactoryAlgorithm() {
+        return SecurityUtils.ED25519;
     }
 }
