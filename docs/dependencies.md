@@ -93,10 +93,10 @@ implementation. This is also an **optional** dependency and must be add explicit
 
 ## [ed25519-java](https://github.com/str4d/ed25519-java)
 
-Required for supporting [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys
-and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures. **Note:**
-the required Maven module(s) are defined as `optional` so must be added as an **explicit** dependency in
-order to be included in the classpath:
+Can optionally be provided to support [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys
+and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures where [Bouncy Castle](#bouncy-castle) is not suitable. **Note:**
+use of this dependency is not recommended, but it can be added as an **explicit** dependency in
+order to provide Ed25519 support as follows:
 
 
 ```xml
@@ -108,5 +108,3 @@ order to be included in the classpath:
     </dependency>
 
 ```
-
-The code contains support for reading _ed25519_ [OpenSSH formatted private keys](https://issues.apache.org/jira/browse/SSHD-703).

@@ -18,8 +18,8 @@ and `HostConfigEntry#readHostConfigEntries`.
 ### PEM/OpenSSH
 
 The common code contains built-in support for parsing PEM and/or _OpenSSH_ formatted key files and using them for authentication purposes.
-As mentioned previously, it can leverage _Bouncycastle_ if available, but can do most of the work without it as well. For _ed25519_ support,
-one must provide the _eddsa_ artifact dependency.
+As mentioned previously, it can leverage _Bouncy Castle_ if available, but can do most of the work without it as well. For _ed25519_ support,
+one must provide either `net.i2p.crypto.eddsa` or _Bouncy Castle_ as a dependency; if both are present `net.i2p.crypto.eddsa` is used. 
 
 ### [PUTTY](https://www.putty.org/)
 
