@@ -110,7 +110,8 @@ mlkem1024nistp384-sha384.
 ### Signatures/Keys
 
 * ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
-, ssh-ed25519 (requires `eddsa` optional module), sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
+, ssh-ed25519 (requires Bouncy Castle or `net.i2p.crypto.eddsa` as an optional dependency - if both are present, `net.i2p.crypto.eddsa` is used)
+, sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
 , ssh-rsa-cert-v01@<!-- -->openssh.com, ssh-dss-cert-v01<!-- -->@openssh.com, ssh-ed25519-cert-v01@<!-- -->openssh.com
 , ecdsa-sha2-nistp256-cert-v01@<!-- -->openssh.com, ecdsa-sha2-nistp384-cert-v01<!-- -->@openssh.com
 , ecdsa-sha2-nistp521-cert-v01<!-- -->@openssh.com

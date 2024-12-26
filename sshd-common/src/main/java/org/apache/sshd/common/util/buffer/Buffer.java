@@ -1042,7 +1042,7 @@ public abstract class Buffer implements Readable {
             byte[] ecPoint = ECCurves.encodeECPoint(ecKey.getW(), ecParams);
             putString(curve.getName());
             putBytes(ecPoint);
-        } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm())) {
+        } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm()) || SecurityUtils.ED25519.equals(key.getAlgorithm())) {
             SecurityUtils.putRawEDDSAPublicKey(this, key);
         } else if (key instanceof SecurityKeyPublicKey) {
             putRawPublicKeyBytes(((SecurityKeyPublicKey<?>) key).getDelegatePublicKey());
