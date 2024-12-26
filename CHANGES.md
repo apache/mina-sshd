@@ -49,6 +49,8 @@
 
 * [GH-606](https://github.com/apache/mina-sshd/issues/606) Support ML-KEM PQC hybrid key exchanges
 
+* [SSHD-988](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-988) Support ed25519 keys via the Bouncy Castle library
+
 ## Potential compatibility issues
 
 ## Major Code Re-factoring
