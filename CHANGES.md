@@ -50,6 +50,7 @@
 ## New Features
 
 * [GH-606](https://github.com/apache/mina-sshd/issues/606) Support ML-KEM PQC hybrid key exchanges
+* [GH-652](https://github.com/apache/mina-sshd/issues/652) New method `KnownHostsServerKeyVerifier.handleRevokedKey()`
 
 * [SSHD-988](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-988) Support ed25519 keys via the Bouncy Castle library
 

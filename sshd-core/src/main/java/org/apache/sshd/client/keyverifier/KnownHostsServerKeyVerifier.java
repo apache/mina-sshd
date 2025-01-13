@@ -285,8 +285,7 @@ public class KnownHostsServerKeyVerifier
 
         if (keyMatches.stream()
                 .anyMatch(k -> "revoked".equals(k.getHostEntry().getMarker()))) {
-            log.debug("acceptKnownHostEntry({})[{}] key={}-{} marked as revoked",
-                    clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
+            handleRevokedKey(clientSession, remoteAddress, serverKey);
             return false;
         }
 
@@ -534,6 +533,18 @@ public class KnownHostsServerKeyVerifier
         }
 
         return matches;
+    }
+
+    /**
+     * Invoked if any matching host entry has a 'revoked' marker
+     *
+     * @param clientSession The {@link ClientSession}
+     * @param remoteAddress The remote host address
+     * @param serverKey     The presented server {@link PublicKey}
+     */
+    protected void handleRevokedKey(ClientSession clientSession, SocketAddress remoteAddress, PublicKey serverKey) {
+        log.debug("acceptKnownHostEntry({})[{}] key={}-{} marked as revoked",
+                clientSession, remoteAddress, KeyUtils.getKeyType(serverKey), KeyUtils.getFingerPrint(serverKey));
     }
 
     /**
