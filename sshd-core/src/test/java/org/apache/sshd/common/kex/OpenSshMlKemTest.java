@@ -59,7 +59,7 @@ class OpenSshMlKemTest extends BaseTestSupport {
 
     @Container
     GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
-            .withDockerfileFromBuilder(builder -> builder.from("alpine:20240807") //
+            .withDockerfileFromBuilder(builder -> builder.from("alpine:3.21") //
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.9
                     // Enable deprecated ciphers
                     .run("ssh-keygen -A") // Generate multiple host keys
