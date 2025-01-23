@@ -44,6 +44,8 @@
 * [GH-626](https://github.com/apache/mina-sshd/issues/626) Enable `Streaming.Async` for `ChannelDirectTcpip`
 * [GH-628](https://github.com/apache/mina-sshd/issues/628) SFTP: fix reading directories with trailing blanks in the name
 * [GH-636](https://github.com/apache/mina-sshd/issues/636) Fix handling of unsupported key types in `known_hosts` file
+* [GH-642](https://github.com/apache/mina-sshd/issues/642) Do not use `SecureRandom.getInstanceString()` due to possible entropy starvation (regression in 2.14.0)
+* [GH-654](https://github.com/apache/mina-sshd/issues/654) Fix test dependency for assertj in `sshd-contrib`
 
 ## New Features
 

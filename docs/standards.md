@@ -82,7 +82,7 @@ supports the extension and then use it, but our server does not publish it as be
 ### Ciphers
 
 * aes128-cbc, aes128-ctr, aes192-cbc, aes192-ctr, aes256-cbc, aes256-ctr, arcfour128, arcfour256, blowfish-cbc,
-aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3des-cbc
+aes128-gcm@<!-- -->openssh.com, aes256-gcm@<!-- -->openssh.com, chacha20-poly1305@<!-- -->openssh.com, 3des-cbc
 
 ### Digests
 
@@ -90,8 +90,8 @@ aes128-gcm@openssh.com, aes256-gcm@openssh.com, chacha20-poly1305@openssh.com, 3
 
 ### Macs
 
-* hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@openssh.com
-, hmac-sha2-512-etm@openssh.com, hmac-sha1-etm@openssh.com
+* hmacmd5, hmacmd596, hmacsha1, hmacsha196, hmacsha256, hmacsha512, hmac-sha2-256-etm@<!-- -->openssh.com
+, hmac-sha2-512-etm@<!-- -->openssh.com, hmac-sha1-etm@<!-- -->openssh.com
 
 ### Key exchange
 
@@ -105,13 +105,13 @@ mlkem1024nistp384-sha384.
 
 ### Compressions
 
-* none, zlib, zlib@openssh.com
+* none, zlib, zlib@<!-- -->openssh.com
 
 ### Signatures/Keys
 
 * ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
 , ssh-ed25519 (requires Bouncy Castle or `net.i2p.crypto.eddsa` as an optional dependency - if both are present, `net.i2p.crypto.eddsa` is used)
-, sk-ecdsa-sha2-nistp256@openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
+, sk-ecdsa-sha2-nistp256@<!-- -->openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
 , ssh-rsa-cert-v01@<!-- -->openssh.com, ssh-dss-cert-v01<!-- -->@openssh.com, ssh-ed25519-cert-v01@<!-- -->openssh.com
 , ecdsa-sha2-nistp256-cert-v01@<!-- -->openssh.com, ecdsa-sha2-nistp384-cert-v01<!-- -->@openssh.com
 , ecdsa-sha2-nistp521-cert-v01<!-- -->@openssh.com
