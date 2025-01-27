@@ -124,12 +124,16 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             log.debug("doAuth({}@{}) verify key type={}, factories={}, fingerprint={}",
                     username, session, alg, NamedResource.getNames(factories), KeyUtils.getFingerPrint(key));
         }
-
+        /*
+         * When users employ cert authentication, need to use the public key in the cert for signing
+         * and cannot use the cert itself directly for signing
+         */
+        PublicKey verifyKey = key instanceof OpenSshCertificate ? ((OpenSshCertificate) key).getCertPubKey() : key;
         Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.create(factories, alg),
                 "No verifier located for algorithm=%s",
                 alg);
-        verifier.initVerifier(session, key);
+        verifier.initVerifier(session, verifyKey);
         buffer.wpos(oldLim);
 
         byte[] sig = hasSig ? buffer.getBytes() : null;
