@@ -28,6 +28,8 @@
 
 ## Bug Fixes
 
+* [GH-650](https://github.com/apache/mina-sshd/issues/650) Use the correct key from a user certificate in server-side pubkey auth
+
 ## New Features
 
 ## Potential Compatibility Issues
