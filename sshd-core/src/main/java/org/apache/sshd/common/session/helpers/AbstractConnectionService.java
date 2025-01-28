@@ -71,6 +71,8 @@ import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.x11.DefaultX11ForwardSupport;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
+import static org.apache.sshd.common.SshConstants.SSH_MSG_PONG;
+
 /**
  * Base implementation of ConnectionService.
  *
@@ -491,6 +493,12 @@ public abstract class AbstractConnectionService
                 break;
             case SshConstants.SSH_MSG_REQUEST_FAILURE:
                 requestFailure(buffer);
+                break;
+            case SshConstants.SSH_MSG_PING:
+                ping(buffer);
+                break;
+            case SshConstants.SSH_MSG_PONG:
+                pong(buffer);
                 break;
             default: {
                 /*
@@ -920,6 +928,24 @@ public abstract class AbstractConnectionService
     protected void requestFailure(Buffer buffer) throws Exception {
         AbstractSession s = getSession();
         s.requestFailure(buffer);
+    }
+
+    public void ping(Buffer buffer) throws Exception {
+        String req = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("ping({}) Received SSH_MSG_PING len {}", this, req.length());
+        }
+        AbstractSession session = getSession();
+        Buffer rsp = session.createBuffer(SSH_MSG_PONG, req.length() + Integer.BYTES);
+        rsp.putString(req);
+        session.writePacket(rsp);
+    }
+
+    public void pong(Buffer buffer) throws Exception {
+        String req = buffer.getString();
+        if (log.isDebugEnabled()) {
+            log.debug("ping({}) Received SSH_MSG_PONG len {}", this, req.length());
+        }
     }
 
     @Override
