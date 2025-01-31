@@ -35,7 +35,6 @@ import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Stream;
-import java.util.stream.StreamSupport;
 
 import org.apache.sshd.certificate.OpenSshCertificateBuilder;
 import org.apache.sshd.client.SshClient;
@@ -468,7 +467,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         KeyPair userkey = CommonTestSupportUtils.generateKeyPair(keyAlgorithm, keySize);
         // 2. Generating CA key pair
         KeyPair caKeypair = CommonTestSupportUtils.generateKeyPair(keyAlgorithm, keySize);
-        
+
         // 3. Building openSshCertificate
         OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate()
                 .serial(System.currentTimeMillis())
@@ -486,7 +485,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         CoreTestSupportUtils.setupFullSignaturesSupport(sshd);
-        
+
         sshd.setUserAuthFactories(Collections.singletonList(
                 new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
 
@@ -526,12 +525,11 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
 
     private static Stream<Arguments> certificateAlgorithms() {
         return Stream.of(
-            // key size, signature algorithm, algorithm name
-            Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-512"),
-            Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-256"),
-            Arguments.of(KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256"),
-            Arguments.of(KeyUtils.EC_ALGORITHM, 384, "ecdsa-sha2-nistp384"),
-            Arguments.of(KeyUtils.EC_ALGORITHM, 521, "ecdsa-sha2-nistp521")
-        );
+                // key size, signature algorithm, algorithm name
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-512"),
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-256"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 384, "ecdsa-sha2-nistp384"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 521, "ecdsa-sha2-nistp521"));
     }
 }
