@@ -32,8 +32,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.stream.Stream;
 
+import org.apache.sshd.certificate.OpenSshCertificateBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
 import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
@@ -45,6 +48,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
@@ -64,13 +68,9 @@ import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -458,5 +458,78 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                 client.stop();
             }
         }
+    }
+
+    @ParameterizedTest(name = "test certificates issued using the {0} algorithm")
+    @MethodSource("certificateAlgorithms")
+    void testCertificateWithDifferentAlgorithms(String keyAlgorithm, int keySize, String signatureAlgorithm) throws Exception {
+        // 1. Generating a user key pair
+        KeyPair userkey = CommonTestSupportUtils.generateKeyPair(keyAlgorithm, keySize);
+        // 2. Generating CA key pair
+        KeyPair caKeypair = CommonTestSupportUtils.generateKeyPair(keyAlgorithm, keySize);
+
+        // 3. Building openSshCertificate
+        OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate()
+                .serial(System.currentTimeMillis())
+                .publicKey(userkey.getPublic())
+                .id("test-cert-" + keyAlgorithm)
+                .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1))
+                .principals(Collections.singletonList("user01"))
+                .criticalOptions(Collections.emptyList())
+                .extensions(Arrays.asList(
+                        new OpenSshCertificate.CertificateOption("permit-X11-forwarding"),
+                        new OpenSshCertificate.CertificateOption("permit-agent-forwarding")))
+                .sign(caKeypair, signatureAlgorithm);
+
+        // 4. Configuring the ssh server
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        CoreTestSupportUtils.setupFullSignaturesSupport(sshd);
+
+        sshd.setUserAuthFactories(Collections.singletonList(
+                new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
+
+        AtomicInteger authAttempts = new AtomicInteger(0);
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            authAttempts.incrementAndGet();
+            if (key instanceof OpenSshCertificate) {
+                OpenSshCertificate cert = (OpenSshCertificate) key;
+                return KeyUtils.compareKeys(cert.getCaPubKey(), caKeypair.getPublic());
+            }
+            return false;
+        });
+
+        // 5. Testing Client Authentication
+        try (SshClient client = setupTestClient()) {
+            CoreTestSupportUtils.setupFullSignaturesSupport(client);
+            client.setUserAuthFactories(Collections.singletonList(
+                    new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+
+            client.start();
+
+            try (ClientSession session = client.connect("user01", TEST_LOCALHOST, port)
+                    .verify(CONNECT_TIMEOUT)
+                    .getSession()) {
+
+                KeyPair certKeyPair = new KeyPair(signedCert, userkey.getPrivate());
+                session.addPublicKeyIdentity(certKeyPair);
+
+                AuthFuture auth = session.auth();
+                assertTrue(auth.verify(AUTH_TIMEOUT).isSuccess());
+                assertEquals(2, authAttempts.get(), "There should be two attempts to authenticate using the certificate");
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    private static Stream<Arguments> certificateAlgorithms() {
+        return Stream.of(
+                // key size, signature algorithm, algorithm name
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-512"),
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-256"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 384, "ecdsa-sha2-nistp384"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 521, "ecdsa-sha2-nistp521"));
     }
 }
