@@ -91,6 +91,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.wpos(buffer.rpos() + len);
 
         PublicKey key = buffer.getRawPublicKey();
+        PublicKey verifyKey = key;
 
         if (key instanceof OpenSshCertificate) {
             OpenSshCertificate cert = (OpenSshCertificate) key;
@@ -101,18 +102,19 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                 if (!OpenSshCertificate.isValidNow(cert)) {
                     throw new CertificateException("expired");
                 }
+                verifyCertificateSignature(session, cert);
+                // TODO: move this into the authenticator
                 Collection<String> principals = cert.getPrincipals();
                 if (!GenericUtils.isEmpty(principals) && !principals.contains(username)) {
                     throw new CertificateException("not valid for the given username");
                 }
-                // TODO: cert.getCaKey() must be either in authorized_keys, marked as a CA key
-                // and not revoked, or in TrustedUserCAKeys and then also match
-                // AuthorizedPricipalsFile, if present.
-            } catch (CertificateException e) {
+            } catch (Exception e) {
                 warn("doAuth({}@{}): public key certificate (id={}) is not valid: {}", username, session, cert.getId(),
                         e.getMessage(), e);
-                throw e;
+                return Boolean.FALSE;
             }
+            // Need to use the certified public key for signature verification, not the certificate itself
+            verifyKey = cert.getCertPubKey();
         }
 
         Collection<NamedFactory<Signature>> factories = ValidateUtils.checkNotNullAndNotEmpty(
@@ -124,11 +126,6 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             log.debug("doAuth({}@{}) verify key type={}, factories={}, fingerprint={}",
                     username, session, alg, NamedResource.getNames(factories), KeyUtils.getFingerPrint(key));
         }
-        /*
-         * When users employ cert authentication, need to use the public key in the cert for signing
-         * and cannot use the cert itself directly for signing
-         */
-        PublicKey verifyKey = key instanceof OpenSshCertificate ? ((OpenSshCertificate) key).getCertPubKey() : key;
         Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.create(factories, alg),
                 "No verifier located for algorithm=%s",
@@ -149,6 +146,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         boolean authed;
         try {
             authed = authenticator.authenticate(username, key, session);
+            // Also checks username against the certificate's principals, if key is a certificate.
         } catch (Error e) {
             warn("doAuth({}@{}) failed ({}) to consult delegate for {} key={}: {}",
                     username, session, e.getClass().getSimpleName(), alg, KeyUtils.getFingerPrint(key), e.getMessage(), e);
@@ -181,6 +179,27 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
 
         return Boolean.TRUE;
+    }
+
+    protected void verifyCertificateSignature(ServerSession session, OpenSshCertificate cert) throws Exception {
+        PublicKey signatureKey = cert.getCaPubKey();
+        String keyAlg = KeyUtils.getKeyType(signatureKey);
+        String keyId = cert.getId();
+
+        String sigAlg = cert.getSignatureAlgorithm();
+        if (!keyAlg.equals(KeyUtils.getCanonicalKeyType(sigAlg))) {
+            throw new CertificateException(
+                    "Found invalid signature alg " + sigAlg + " for key ID=" + keyId + " using a " + keyAlg + " CA key");
+        }
+
+        Signature verif = ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), sigAlg),
+                "No CA verifier located for algorithm=%s of key ID=%s", sigAlg, keyId);
+        verif.initVerifier(session, signatureKey);
+        verif.update(session, cert.getMessage());
+
+        if (!verif.verify(session, cert.getSignature())) {
+            throw new CertificateException("CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
+        }
     }
 
     protected boolean verifySignature(

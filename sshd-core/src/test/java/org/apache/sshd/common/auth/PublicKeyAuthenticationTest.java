@@ -49,6 +49,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
@@ -460,25 +461,23 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         }
     }
 
-    @ParameterizedTest(name = "test certificates issued using the {0} algorithm")
+    @ParameterizedTest(name = "test certificate {0} signed with {2}")
     @MethodSource("certificateAlgorithms")
-    void testCertificateWithDifferentAlgorithms(String keyAlgorithm, int keySize, String signatureAlgorithm) throws Exception {
+    void testCertificateWithDifferentAlgorithms(
+            String keyAlgorithm, int keySize, String sigKeyAlgorithm, int sigKeySize,
+            String signatureAlgorithm) throws Exception {
         // 1. Generating a user key pair
         KeyPair userkey = CommonTestSupportUtils.generateKeyPair(keyAlgorithm, keySize);
         // 2. Generating CA key pair
-        KeyPair caKeypair = CommonTestSupportUtils.generateKeyPair(keyAlgorithm, keySize);
+        KeyPair caKeypair = CommonTestSupportUtils.generateKeyPair(sigKeyAlgorithm, sigKeySize);
 
         // 3. Building openSshCertificate
-        OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate()
-                .serial(System.currentTimeMillis())
-                .publicKey(userkey.getPublic())
-                .id("test-cert-" + keyAlgorithm)
-                .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1))
-                .principals(Collections.singletonList("user01"))
-                .criticalOptions(Collections.emptyList())
-                .extensions(Arrays.asList(
-                        new OpenSshCertificate.CertificateOption("permit-X11-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-agent-forwarding")))
+        OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate() //
+                .serial(System.currentTimeMillis()) //
+                .publicKey(userkey.getPublic()) //
+                .id("test-cert-" + keyAlgorithm) //
+                .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)) //
+                .principals(Collections.singletonList("user01")) //
                 .sign(caKeypair, signatureAlgorithm);
 
         // 4. Configuring the ssh server
@@ -486,8 +485,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
         CoreTestSupportUtils.setupFullSignaturesSupport(sshd);
 
-        sshd.setUserAuthFactories(Collections.singletonList(
-                new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
+        sshd.setUserAuthFactories(Collections.singletonList(new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
 
         AtomicInteger authAttempts = new AtomicInteger(0);
         sshd.setPublickeyAuthenticator((username, key, session) -> {
@@ -502,14 +500,12 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
         // 5. Testing Client Authentication
         try (SshClient client = setupTestClient()) {
             CoreTestSupportUtils.setupFullSignaturesSupport(client);
-            client.setUserAuthFactories(Collections.singletonList(
-                    new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
 
             client.start();
 
-            try (ClientSession session = client.connect("user01", TEST_LOCALHOST, port)
-                    .verify(CONNECT_TIMEOUT)
-                    .getSession()) {
+            try (ClientSession session = client.connect("user01", TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
 
                 KeyPair certKeyPair = new KeyPair(signedCert, userkey.getPrivate());
                 session.addPublicKeyIdentity(certKeyPair);
@@ -524,12 +520,72 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
     }
 
     private static Stream<Arguments> certificateAlgorithms() {
-        return Stream.of(
-                // key size, signature algorithm, algorithm name
-                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-512"),
-                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-256"),
-                Arguments.of(KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256"),
-                Arguments.of(KeyUtils.EC_ALGORITHM, 384, "ecdsa-sha2-nistp384"),
-                Arguments.of(KeyUtils.EC_ALGORITHM, 521, "ecdsa-sha2-nistp521"));
+        return Stream.of( //
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-512"),
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-256"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 384, KeyUtils.EC_ALGORITHM, 384, "ecdsa-sha2-nistp384"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 521, KeyUtils.EC_ALGORITHM, 521, "ecdsa-sha2-nistp521"),
+                Arguments.of(KeyUtils.RSA_ALGORITHM, 2048, KeyUtils.EC_ALGORITHM, 384, "ecdsa-sha2-nistp384"),
+                Arguments.of(KeyUtils.EC_ALGORITHM, 384, KeyUtils.RSA_ALGORITHM, 2048, "rsa-sha2-512"));
     }
+
+    @Test
+    void testCertificateWithBrokenSignature() throws Exception {
+        KeyPair userkey = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        KeyPair caKeypair = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+
+        OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate() //
+                .serial(System.currentTimeMillis()) //
+                .publicKey(userkey.getPublic()) //
+                .id("test-cert-ecdsa-sha2-nistp256") //
+                .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)) //
+                .principals(Collections.singletonList("user01")) //
+                .sign(caKeypair, "ecdsa-sha2-nistp256");
+
+        // Break the certificate
+        assertTrue(signedCert instanceof OpenSshCertificateImpl);
+        OpenSshCertificateImpl certImpl = (OpenSshCertificateImpl) signedCert;
+        byte[] certSig = certImpl.getSignature();
+        certSig[certSig.length - 1] ^= 0xAA;
+        certImpl.setSignature(certSig);
+
+        // Configure the ssh server
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        CoreTestSupportUtils.setupFullSignaturesSupport(sshd);
+
+        sshd.setUserAuthFactories(Collections.singletonList(new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
+
+        AtomicInteger authAttempts = new AtomicInteger(0);
+        sshd.setPublickeyAuthenticator((username, key, session) -> {
+            authAttempts.incrementAndGet();
+            if (key instanceof OpenSshCertificate) {
+                OpenSshCertificate cert = (OpenSshCertificate) key;
+                return KeyUtils.compareKeys(cert.getCaPubKey(), caKeypair.getPublic());
+            }
+            return false;
+        });
+
+        // Client authentication should fail
+        try (SshClient client = setupTestClient()) {
+            CoreTestSupportUtils.setupFullSignaturesSupport(client);
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+
+            client.start();
+
+            try (ClientSession session = client.connect("user01", TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+
+                KeyPair certKeyPair = new KeyPair(signedCert, userkey.getPrivate());
+                session.addPublicKeyIdentity(certKeyPair);
+
+                AuthFuture auth = session.auth();
+                assertThrows(SshException.class, () -> auth.verify(AUTH_TIMEOUT));
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
 }
