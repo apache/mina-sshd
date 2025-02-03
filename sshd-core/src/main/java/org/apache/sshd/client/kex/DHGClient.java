@@ -39,7 +39,6 @@ import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
-import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
@@ -235,41 +234,32 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         String keyAlg = KeyUtils.getKeyType(signatureKey);
         String keyId = openSshKey.getId();
 
-        // allow sha2 signatures for legacy reasons
-        String variant = openSshKey.getSignatureAlgorithm();
-        if ((!GenericUtils.isEmpty(variant))
-                && KeyPairProvider.SSH_RSA.equals(KeyUtils.getCanonicalKeyType(variant))) {
-            if (log.isDebugEnabled()) {
-                log.debug("verifyCertificate({})[id={}] Allowing to use variant {} instead of {}",
-                        session, keyId, variant, keyAlg);
-            }
-            keyAlg = variant;
-        } else {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Found invalid signature alg " + variant + " for key ID=" + keyId);
-        }
-
-        Signature verif = ValidateUtils.checkNotNull(
-                NamedFactory.create(session.getSignatureFactories(), keyAlg),
-                "No KeyExchange CA verifier located for algorithm=%s of key ID=%s", keyAlg, keyId);
-        verif.initVerifier(session, signatureKey);
-        verif.update(session, openSshKey.getMessage());
-
-        if (!verif.verify(session, openSshKey.getSignature())) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
-        }
-
         if (!OpenSshCertificate.Type.HOST.equals(openSshKey.getType())) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, not a host key (2) "
-                                                                                     + openSshKey.getType() + " for key ID="
+                    "KeyExchange signature verification failed, not a host key (2) " + openSshKey.getType() + " for key ID="
                                                                                      + keyId);
         }
 
         if (!OpenSshCertificate.isValidNow(openSshKey)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "KeyExchange signature verification failed, CA expired for key ID=" + keyId);
+        }
+
+        String sigAlg = openSshKey.getSignatureAlgorithm();
+        if (!keyAlg.equals(KeyUtils.getCanonicalKeyType(sigAlg))) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Found invalid signature alg " + sigAlg + " for key ID=" + keyId + " using a " + keyAlg + " CA key");
+        }
+
+        Signature verif = ValidateUtils.checkNotNull(
+                NamedFactory.create(session.getSignatureFactories(), sigAlg),
+                "No KeyExchange CA verifier located for algorithm=%s of key ID=%s", sigAlg, keyId);
+        verif.initVerifier(session, signatureKey);
+        verif.update(session, openSshKey.getMessage());
+
+        if (!verif.verify(session, openSshKey.getSignature())) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
         }
 
         /*

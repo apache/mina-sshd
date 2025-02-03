@@ -49,7 +49,7 @@ public class SignatureDSA extends AbstractSignature {
     }
 
     protected SignatureDSA(String algorithm) {
-        super(algorithm);
+        super(algorithm, KeyPairProvider.SSH_DSS);
     }
 
     @Override

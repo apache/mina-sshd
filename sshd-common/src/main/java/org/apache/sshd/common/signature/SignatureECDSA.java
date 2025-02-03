@@ -41,7 +41,7 @@ public class SignatureECDSA extends AbstractSignature {
         public static final String DEFAULT_ALGORITHM = "SHA256withECDSA";
 
         public SignatureECDSA256() {
-            super(DEFAULT_ALGORITHM);
+            super(DEFAULT_ALGORITHM, ECCurves.nistp256.getKeyType());
         }
     }
 
@@ -49,7 +49,7 @@ public class SignatureECDSA extends AbstractSignature {
         public static final String DEFAULT_ALGORITHM = "SHA384withECDSA";
 
         public SignatureECDSA384() {
-            super(DEFAULT_ALGORITHM);
+            super(DEFAULT_ALGORITHM, ECCurves.nistp384.getKeyType());
         }
     }
 
@@ -57,12 +57,12 @@ public class SignatureECDSA extends AbstractSignature {
         public static final String DEFAULT_ALGORITHM = "SHA512withECDSA";
 
         public SignatureECDSA521() {
-            super(DEFAULT_ALGORITHM);
+            super(DEFAULT_ALGORITHM, ECCurves.nistp521.getKeyType());
         }
     }
 
-    protected SignatureECDSA(String algo) {
-        super(algo);
+    protected SignatureECDSA(String algo, String sshAlgorithmName) {
+        super(algo, sshAlgorithmName);
     }
 
     @Override

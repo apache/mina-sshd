@@ -29,8 +29,9 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GenericSignatureEd25519 extends AbstractSignature {
+
     public GenericSignatureEd25519(String algorithm) {
-        super(algorithm);
+        super(algorithm, KeyPairProvider.SSH_ED25519);
     }
 
     @Override

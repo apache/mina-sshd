@@ -22,17 +22,19 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.signature.BuiltinSignatures;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerBuilder;
@@ -106,9 +108,56 @@ public final class CoreTestSupportUtils {
         return sshd;
     }
 
-    public static <M extends AbstractFactoryManager> M setupFullSignaturesSupport(M manager) {
-        manager.setSignatureFactories(new ArrayList<>(BuiltinSignatures.VALUES));
-        return manager;
+    @SuppressWarnings("deprecation")
+    public static SshServer setupFullSignaturesSupport(SshServer server) {
+        List<NamedFactory<Signature>> signatures = Stream.of( //
+                BuiltinSignatures.nistp256_cert, //
+                BuiltinSignatures.nistp384_cert, //
+                BuiltinSignatures.nistp521_cert, //
+                BuiltinSignatures.ed25519_cert, //
+                BuiltinSignatures.rsaSHA512_cert, //
+                BuiltinSignatures.rsaSHA256_cert, //
+                BuiltinSignatures.rsa_cert, //
+                BuiltinSignatures.nistp256, //
+                BuiltinSignatures.nistp384, //
+                BuiltinSignatures.nistp521, //
+                BuiltinSignatures.ed25519, //
+                BuiltinSignatures.rsaSHA512, //
+                BuiltinSignatures.rsaSHA256, //
+                BuiltinSignatures.rsa, //
+                BuiltinSignatures.dsa_cert, //
+                BuiltinSignatures.dsa) //
+                .filter(BuiltinSignatures::isSupported) //
+                .collect(Collectors.toList());
+        server.setSignatureFactories(signatures);
+        return server;
+    }
+
+    @SuppressWarnings("deprecation")
+    public static SshClient setupFullSignaturesSupport(SshClient client) {
+        List<NamedFactory<Signature>> signatures = Stream.of( //
+                BuiltinSignatures.nistp256_cert, //
+                BuiltinSignatures.nistp384_cert, //
+                BuiltinSignatures.nistp521_cert, //
+                BuiltinSignatures.ed25519_cert, //
+                BuiltinSignatures.rsaSHA512_cert, //
+                BuiltinSignatures.rsaSHA256_cert, //
+                BuiltinSignatures.rsa_cert, //
+                BuiltinSignatures.nistp256, //
+                BuiltinSignatures.nistp384, //
+                BuiltinSignatures.nistp521, //
+                BuiltinSignatures.ed25519, //
+                BuiltinSignatures.sk_ecdsa_sha2_nistp256, //
+                BuiltinSignatures.sk_ssh_ed25519, //
+                BuiltinSignatures.rsaSHA512, //
+                BuiltinSignatures.rsaSHA256, //
+                BuiltinSignatures.rsa, //
+                BuiltinSignatures.dsa_cert, //
+                BuiltinSignatures.dsa) //
+                .filter(BuiltinSignatures::isSupported) //
+                .collect(Collectors.toList());
+        client.setSignatureFactories(signatures);
+        return client;
     }
 
     public static Duration getTimeout(String property, Duration defaultValue) {

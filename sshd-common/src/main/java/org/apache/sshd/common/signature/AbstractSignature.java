@@ -43,16 +43,26 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractSignature implements Signature {
+
     private java.security.Signature signatureInstance;
     private final String algorithm;
 
-    protected AbstractSignature(String algorithm) {
+    private final String sshAlgorithmName;
+
+    protected AbstractSignature(String algorithm, String sshAlgorithmName) {
         this.algorithm = ValidateUtils.checkNotNullAndNotEmpty(algorithm, "No signature algorithm specified");
+        this.sshAlgorithmName = ValidateUtils.checkNotNullAndNotEmpty(sshAlgorithmName,
+                "Missing protocol name of the signature algorithm.");
     }
 
     @Override
     public final String getAlgorithm() {
         return algorithm;
+    }
+
+    @Override
+    public String getSshAlgorithmName(String algo) {
+        return sshAlgorithmName;
     }
 
     /**

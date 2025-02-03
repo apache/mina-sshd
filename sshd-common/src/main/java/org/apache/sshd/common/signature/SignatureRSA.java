@@ -43,26 +43,14 @@ public abstract class SignatureRSA extends AbstractSignature {
     public static final NavigableSet<String> SUPPORTED_KEY_TYPES = Collections.unmodifiableNavigableSet(
             Stream.of(
                     KeyPairProvider.SSH_RSA,
-                    KeyPairProvider.SSH_RSA_CERT,
                     KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
-                    KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS,
-                    KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
-                    KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS)
+                    KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS)
                     .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))));
 
     private int verifierSignatureSize = -1;
 
-    private final String sshAlgorithmName;
-
     protected SignatureRSA(String algorithm, String sshAlgorithmName) {
-        super(algorithm);
-        this.sshAlgorithmName = ValidateUtils.checkNotNullAndNotEmpty(sshAlgorithmName,
-                "Missing protocol name of the signature algorithm.");
-    }
-
-    @Override
-    public String getSshAlgorithmName(String algo) {
-        return sshAlgorithmName;
+        super(algorithm, sshAlgorithmName);
     }
 
     /**
