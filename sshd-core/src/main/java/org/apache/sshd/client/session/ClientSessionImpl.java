@@ -85,6 +85,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     @Override
     public void start() throws Exception {
+        super.start();
         /*
          * Must be called regardless of whether the client identification is sent or not immediately in order to allow
          * opening any underlying proxy protocol - e.g., SOCKS or HTTP CONNECT - otherwise the server's identification

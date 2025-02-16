@@ -32,6 +32,7 @@ import org.apache.sshd.common.Service;
 import org.apache.sshd.common.auth.MutableUserHolder;
 import org.apache.sshd.common.channel.ChannelListenerManager;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
+import org.apache.sshd.common.filter.FilterChain;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingInformationProvider;
 import org.apache.sshd.common.future.GlobalRequestFuture;
@@ -64,6 +65,13 @@ public interface Session
         UnknownChannelReferenceHandlerManager,
         FactoryManagerHolder,
         PortForwardingInformationProvider {
+
+    /**
+     * Retrieves the {@link FilterChain} of the session.
+     *
+     * @return the {@link FilterChain}; never {@code null}
+     */
+    FilterChain getFilterChain();
 
     /**
      * Create a new buffer for the specified SSH packet and reserve the needed space (5 bytes) for the packet header.

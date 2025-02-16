@@ -40,6 +40,7 @@ public class ServerSessionImpl extends AbstractServerSession {
 
     @Override
     public void start() throws Exception {
+        super.start();
         String headerConfig = CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.getOrNull(this);
         String[] headers = GenericUtils.split(headerConfig, CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
         // We intentionally create a modifiable array so as to allow users to

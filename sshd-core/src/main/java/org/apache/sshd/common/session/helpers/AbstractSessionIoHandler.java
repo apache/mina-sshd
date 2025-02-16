@@ -73,7 +73,7 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
     public void messageReceived(IoSession ioSession, Readable message) throws Exception {
         AbstractSession session = AbstractSession.getSession(ioSession);
         try {
-            session.messageReceived(message);
+            session.getFilterChain().getFirst().in().received(message);
         } catch (Error e) {
             if (log.isDebugEnabled()) {
                 log.debug("messageReceived({}) failed {} to handle message: {}", ioSession, e.getClass().getSimpleName(),

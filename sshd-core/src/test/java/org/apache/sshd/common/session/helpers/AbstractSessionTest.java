@@ -75,6 +75,7 @@ public class AbstractSessionTest extends BaseTestSupport {
     @BeforeEach
     void setUp() throws Exception {
         session = new MySession();
+        session.start();
     }
 
     @AfterEach
@@ -455,7 +456,7 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         @Override
         public void start() throws Exception {
-            // Nothing to do for this test
+            super.start();
         }
 
         @Override

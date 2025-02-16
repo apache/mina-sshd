@@ -67,6 +67,11 @@ import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.filter.DefaultFilterChain;
+import org.apache.sshd.common.filter.FilterChain;
+import org.apache.sshd.common.filter.InputHandler;
+import org.apache.sshd.common.filter.IoFilter;
+import org.apache.sshd.common.filter.OutputHandler;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
@@ -302,6 +307,8 @@ public abstract class AbstractSession extends SessionHelper {
 
     private final Map<Buffer, LongConsumer> globalSequenceNumbers = new ConcurrentHashMap<>();
 
+    private final FilterChain filters = new DefaultFilterChain();
+
     private byte[] clientKexData; // the payload of the client's SSH_MSG_KEXINIT
     private byte[] serverKexData; // the payload of the server's SSH_MSG_KEXINIT
 
@@ -337,6 +344,9 @@ public abstract class AbstractSession extends SessionHelper {
         tunnelListenerProxy = EventListenerUtils.proxyWrapper(
                 PortForwardingEventListener.class, tunnelListeners);
 
+        filters.adding(this);
+        filters.added(this);
+
         try {
             signalSessionEstablished(ioSession);
         } catch (RuntimeException e) {
@@ -352,7 +362,40 @@ public abstract class AbstractSession extends SessionHelper {
      *
      * @throws Exception on errors
      */
-    protected abstract void start() throws Exception;
+    protected void start() throws Exception {
+        IoFilter ioSessionConnector = new IoFilter() {
+
+            @Override
+            public InputHandler in() {
+                return message -> owner().passOn(this, message);
+            }
+
+            @Override
+            public OutputHandler out() {
+                return message -> getIoSession().writeBuffer(message);
+            }
+        };
+        // Temporary. This is work in progress, and actually the whole stuff is still handled by the SSH session.
+        // The idea is to migrate parts step by step into filters on this filter chain.
+        IoFilter sessionConnector = new IoFilter() {
+            @Override
+            public InputHandler in() {
+                return AbstractSession.this::messageReceived;
+            }
+
+            @Override
+            public OutputHandler out() {
+                return message -> owner().send(this, message);
+            }
+        };
+        filters.addLast(sessionConnector);
+        filters.addFirst(ioSessionConnector);
+    }
+
+    @Override
+    public FilterChain getFilterChain() {
+        return filters;
+    }
 
     /**
      * Creates a new {@link KeyExchangeMessageHandler} instance managing packet sending for this session.
@@ -1171,9 +1214,7 @@ public abstract class AbstractSession extends SessionHelper {
         // packets are sent in the correct order
         synchronized (encodeLock) {
             Buffer packet = resolveOutputPacket(buffer);
-            IoSession networkSession = getIoSession();
-            IoWriteFuture future = networkSession.writeBuffer(packet);
-            return future;
+            return filters.getLast().out().send(packet);
         }
     }
 
