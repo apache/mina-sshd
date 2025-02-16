@@ -190,7 +190,7 @@ public final class CoreModuleProperties {
      * Defines if we should abort in case we encounter an invalid (e.g. expired) openssh certificate.
      */
     public static final Property<Boolean> ABORT_ON_INVALID_CERTIFICATE
-            = Property.bool("abort-on-invalid-certificate", false);
+            = Property.bool("abort-on-invalid-certificate", true);
 
     /**
      * As per RFC-4256:

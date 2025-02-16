@@ -37,5 +37,8 @@
 
 ## Potential Compatibility Issues
 
+Client-side KEX: we've changed the default of the setting `CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE` from `false` to `true`.
+A client will newly abort an SSH connection if the server presents an invalid OpenSSH host certificate as host key.
+
 ## Major Code Re-factoring
 
