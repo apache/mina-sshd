@@ -37,7 +37,19 @@ public abstract class AbstractSessionIoHandler extends AbstractLoggingBean imple
 
     @Override
     public void sessionCreated(IoSession ioSession) throws Exception {
-        ValidateUtils.checkNotNull(createSession(ioSession), "No session created for %s", ioSession);
+        AbstractSession sshSession = ValidateUtils.checkNotNull(createSession(ioSession), "No session created for %s",
+                ioSession);
+        // Now that the session was created, emit the "created" event and start it.
+        sshSession.signalSessionCreated(ioSession);
+        // TODO (3.0) Starting the session here is still a bit early.
+        // The IoSession is registered with the IoConnector later, which may still fail and close the session
+        // right away. We'd need am IoHandler.sessionOpened() event that would get emitted after "created"
+        // and after the IoSession is really fully operational. Or call *this* sessionCreated() method here
+        // only then. (Would break the current IoConnectionTest.)
+        //
+        // Note that there's also a "session established" event sent to the session listener before the session
+        // is fully initialized. (From AbstractSession().)
+        sshSession.start();
     }
 
     @Override

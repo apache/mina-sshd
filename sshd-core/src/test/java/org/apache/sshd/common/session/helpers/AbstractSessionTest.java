@@ -58,12 +58,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * Test basic stuff on AbstractSession.
  *
@@ -457,6 +451,11 @@ public class AbstractSessionTest extends BaseTestSupport {
             super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class),
                   new MyIoSession());
             initialKexDone = true;
+        }
+
+        @Override
+        public void start() throws Exception {
+            // Nothing to do for this test
         }
 
         @Override

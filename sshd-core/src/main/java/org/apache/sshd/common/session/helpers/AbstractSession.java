@@ -347,6 +347,14 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
+     * Starts the SSH protocol. Invoked by the framework after the session object was fully created, and after
+     * {@link SessionListener#sessionCreated(org.apache.sshd.common.session.Session)} has been invoked.
+     *
+     * @throws Exception on errors
+     */
+    protected abstract void start() throws Exception;
+
+    /**
      * Creates a new {@link KeyExchangeMessageHandler} instance managing packet sending for this session.
      * <p>
      * This initialization method is invoked once from the {@link AbstractSession} constructor. Do not rely on subclass

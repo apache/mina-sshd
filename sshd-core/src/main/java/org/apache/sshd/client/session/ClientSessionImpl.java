@@ -81,9 +81,10 @@ public class ClientSessionImpl extends AbstractClientSession {
         // manipulate it before the connection has even been established. For instance, to
         // set the authPassword.
         getCurrentServices().initialize(client.getServiceFactories());
+    }
 
-        signalSessionCreated(ioSession);
-
+    @Override
+    public void start() throws Exception {
         /*
          * Must be called regardless of whether the client identification is sent or not immediately in order to allow
          * opening any underlying proxy protocol - e.g., SOCKS or HTTP CONNECT - otherwise the server's identification

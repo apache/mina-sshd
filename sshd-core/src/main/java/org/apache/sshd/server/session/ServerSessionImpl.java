@@ -33,10 +33,13 @@ import org.apache.sshd.server.ServerFactoryManager;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class ServerSessionImpl extends AbstractServerSession {
+
     public ServerSessionImpl(ServerFactoryManager server, IoSession ioSession) throws Exception {
         super(server, ioSession);
-        signalSessionCreated(ioSession);
+    }
 
+    @Override
+    public void start() throws Exception {
         String headerConfig = CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES.getOrNull(this);
         String[] headers = GenericUtils.split(headerConfig, CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
         // We intentionally create a modifiable array so as to allow users to
