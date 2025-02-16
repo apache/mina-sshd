@@ -1287,4 +1287,10 @@ public final class KeyUtils {
             return chosenAlgorithm;
         }
     }
+
+    public static boolean isCertificateAlgorithm(String algorithm) {
+        synchronized (SIGNATURE_ALGORITHM_MAP) {
+            return SIGNATURE_ALGORITHM_MAP.containsKey(algorithm);
+        }
+    }
 }

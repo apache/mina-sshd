@@ -176,12 +176,21 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             }
         }
 
+        String keyAlg = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
+
+        boolean wantCert = KeyUtils.isCertificateAlgorithm(keyAlg);
+
         buffer = new ByteArrayBuffer(k_s);
         PublicKey serverKey = buffer.getRawPublicKey();
         PublicKey serverPublicHostKey = serverKey;
 
         if (serverKey instanceof OpenSshCertificate) {
             OpenSshCertificate openSshKey = (OpenSshCertificate) serverKey;
+            if (!wantCert) {
+                log.error("Got a server key certificate, but negotiated algorithm is {}", keyAlg);
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                        "OpenSshCertificate found with KEX algorithm " + keyAlg);
+            }
             serverPublicHostKey = openSshKey.getCertPubKey();
 
             try {
@@ -195,12 +204,10 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     log.info("Ignoring invalid certificate {}", openSshKey.getId(), e);
                 }
             }
-        }
-
-        String keyAlg = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
-        if (GenericUtils.isEmpty(keyAlg)) {
-            throw new SshException("Unsupported server key type: " + serverPublicHostKey.getAlgorithm()
-                                   + "[" + serverPublicHostKey.getFormat() + "]");
+        } else if (wantCert) {
+            log.error("Got a plain public key (not a certificate) for negotiated algorithm {}", keyAlg);
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "Server did not send a certificate with KEX algorithm " + keyAlg);
         }
 
         buffer = new ByteArrayBuffer();
