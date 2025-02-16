@@ -103,11 +103,6 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     throw new CertificateException("expired");
                 }
                 verifyCertificateSignature(session, cert);
-                // TODO: move this into the authenticator
-                Collection<String> principals = cert.getPrincipals();
-                if (!GenericUtils.isEmpty(principals) && !principals.contains(username)) {
-                    throw new CertificateException("not valid for the given username");
-                }
             } catch (Exception e) {
                 warn("doAuth({}@{}): public key certificate (id={}) is not valid: {}", username, session, cert.getId(),
                         e.getMessage(), e);

@@ -38,12 +38,17 @@ import org.apache.sshd.server.session.ServerSession;
 public interface PublickeyAuthenticator {
 
     /**
-     * Check the validity of a public key.
+     * Checks whether the given {@link PublicKey} is allowed to be used for authenticating user "username" in a session.
+     * <p>
+     * Note that the {@code key} may be a {@link org.apache.sshd.common.config.keys.OpenSshCertificate}. A typical
+     * implementation for a certificate would check that the certificate's CA key is known to be trusted as a
+     * certificate authority, and that the given user name is listed in the certificate's principals.
+     * </p>
      *
      * @param  username           the username
      * @param  key                the key
      * @param  session            the server session
-     * @return                    a boolean indicating if authentication succeeded or not
+     * @return                    {@code true} if the key may be used; {@code false} otherwise
      * @throws AsyncAuthException If the authentication is performed asynchronously
      */
     boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException;

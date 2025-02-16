@@ -26,10 +26,12 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
@@ -85,22 +87,74 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
             return false;
         }
 
+        PublicKey keyToCheck = key;
+        boolean isCert = false;
+        if (key instanceof OpenSshCertificate) {
+            keyToCheck = ((OpenSshCertificate) key).getCaPubKey();
+            isCert = true;
+        }
         for (Map.Entry<AuthorizedKeyEntry, PublicKey> e : resolvedKeys.entrySet()) {
-            if (KeyUtils.compareKeys(key, e.getValue())) {
+            AuthorizedKeyEntry entry = e.getKey();
+            if (isCert == entry.getLoginOptions().containsKey("cert-authority")
+                    && KeyUtils.compareKeys(keyToCheck, e.getValue())) {
                 if (log.isDebugEnabled()) {
                     log.debug("authenticate({})[{}] match found", username, session);
                 }
+                // TODO: the entry might have an "expiry-time" option.
+                // See https://man.openbsd.org/sshd.8#expiry-time=_timespec_
+                // (Certificate expiration as stored in the certificate itself has been checked already.)
+                // TODO: the entry might have a "from" option limiting possible source addresses by IP, hostnames,
+                // patterns, or CIDRs.
+                // See https://man.openbsd.org/sshd.8#from=_pattern-list_
+                if (isCert && !matchesPrincipals(entry, username, (OpenSshCertificate) key, session)) {
+                    continue;
+                }
                 if (session != null) {
-                    session.setAttribute(AUTHORIZED_KEY, e.getKey());
+                    session.setAttribute(AUTHORIZED_KEY, entry);
                 }
                 return true;
             }
         }
 
         if (log.isDebugEnabled()) {
-            log.debug("authenticate({})[{}] match not found", username, session);
+            log.debug("authenticate({})[{}] no match found", username, session);
         }
         return false;
+    }
+
+    protected boolean matchesPrincipals(
+            AuthorizedKeyEntry entry, String username, OpenSshCertificate cert,
+            ServerSession session) {
+        Collection<String> certPrincipals = cert.getPrincipals();
+        if (!GenericUtils.isEmpty(certPrincipals)) {
+            // "As a special case, a zero-length "valid principals" field means the certificate is valid for
+            // any principal of the specified type."
+            // See https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys
+            //
+            // This is true for user certificates unless they are checked via a TrustedUserCAKeys file, but
+            // that is not what we implement here.
+            // See https://man.openbsd.org/sshd_config#TrustedUserCAKeys
+            String allowedPrincipals = entry.getLoginOptions().get("principals");
+            if (!GenericUtils.isEmpty(allowedPrincipals)) {
+                if (Stream.of(allowedPrincipals.split(",")) //
+                        .map(String::trim) //
+                        .filter(s -> !GenericUtils.isEmpty(s)) //
+                        .noneMatch(certPrincipals::contains)) {
+                    log.debug("authenticate({})[{}] certificate match ignored, none of the allowed principals matched: {}",
+                            username, session, allowedPrincipals);
+                    return false;
+                }
+            } else {
+                // We have a match for the certificate, but no principals from the entry: check that given
+                // user name is in the certificate's principals.
+                if (!GenericUtils.isEmpty(certPrincipals) && !certPrincipals.contains(username)) {
+                    log.debug("authenticate({})[{}] certificate match rejected, user not in certificate principals: {}",
+                            username, session, username);
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     @Override

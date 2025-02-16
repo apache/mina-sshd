@@ -26,6 +26,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.ServerSession;
 
@@ -66,7 +67,9 @@ public class CachingPublicKeyAuthenticator extends AbstractLoggingBean implement
                 log.debug("authenticate({}@{}) cache result={} for {} key={}",
                         username, session, result, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
             }
-            map.put(key, result);
+            if (!(key instanceof OpenSshCertificate)) {
+                map.put(key, result);
+            }
         } else {
             if (log.isDebugEnabled()) {
                 log.debug("authenticate({}@{}) use cached result={} for {} key={}",
