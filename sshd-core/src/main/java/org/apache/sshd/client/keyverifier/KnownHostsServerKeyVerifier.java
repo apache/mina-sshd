@@ -51,6 +51,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.config.keys.UnsupportedSshPublicKey;
@@ -276,11 +277,15 @@ public class KnownHostsServerKeyVerifier
             return acceptUnknownHostKey(clientSession, remoteAddress, serverKey);
         }
 
-        String serverKeyType = KeyUtils.getKeyType(serverKey);
+        PublicKey keyToCheck = serverKey instanceof OpenSshCertificate
+                ? ((OpenSshCertificate) serverKey).getCaPubKey()
+                : serverKey;
+        boolean isCert = serverKey instanceof OpenSshCertificate;
+        String keyType = KeyUtils.getKeyType(keyToCheck);
 
         List<HostEntryPair> keyMatches = hostMatches.stream()
-                .filter(entry -> serverKeyType.equals(entry.getHostEntry().getKeyEntry().getKeyType()))
-                .filter(k -> KeyUtils.compareKeys(k.getServerKey(), serverKey))
+                .filter(entry -> keyType.equals(entry.getHostEntry().getKeyEntry().getKeyType()))
+                .filter(k -> KeyUtils.compareKeys(k.getServerKey(), keyToCheck))
                 .collect(Collectors.toList());
 
         if (keyMatches.stream()
@@ -289,8 +294,15 @@ public class KnownHostsServerKeyVerifier
             return false;
         }
 
+        keyMatches = keyMatches.stream()
+                .filter(e -> isCert == "cert-authority".equals(e.getHostEntry().getMarker()))
+                .collect(Collectors.toList());
         if (!keyMatches.isEmpty()) {
             return true;
+        }
+
+        if (isCert) {
+            return false;
         }
 
         Optional<HostEntryPair> anyNonRevokedMatch = hostMatches.stream()
@@ -583,7 +595,7 @@ public class KnownHostsServerKeyVerifier
                     clientSession, remoteAddress, KeyUtils.getFingerPrint(serverKey));
         }
 
-        if (delegate.verifyServerKey(clientSession, remoteAddress, serverKey)) {
+        if (delegate.verifyServerKey(clientSession, remoteAddress, serverKey) && !(serverKey instanceof OpenSshCertificate)) {
             Path file = getPath();
             Collection<HostEntryPair> keys = keysSupplier.get().get();
             try {

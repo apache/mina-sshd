@@ -34,6 +34,7 @@
 
 * [SSHD-1161](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-1161) Support pubkey auth with user certificates (server-side)
     * Client-side support was introduced in version 2.8.0 already 
+* [SSHD-1167](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-1167) Check host certificates against known_hosts file (implements @<!-- -->cert-authority)
 
 ## Potential Compatibility Issues
 

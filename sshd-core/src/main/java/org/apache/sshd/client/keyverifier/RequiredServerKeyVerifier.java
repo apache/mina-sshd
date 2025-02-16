@@ -22,6 +22,8 @@ import java.net.SocketAddress;
 import java.security.PublicKey;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 
@@ -43,7 +45,17 @@ public class RequiredServerKeyVerifier extends AbstractLoggingBean implements Se
 
     @Override
     public boolean verifyServerKey(ClientSession sshClientSession, SocketAddress remoteAddress, PublicKey serverKey) {
-        if (requiredKey.equals(serverKey)) {
+        boolean sameKey = KeyUtils.compareKeys(requiredKey, serverKey);
+        if (!sameKey) {
+            PublicKey req = (requiredKey instanceof OpenSshCertificate)
+                    ? ((OpenSshCertificate) requiredKey).getCaPubKey()
+                    : requiredKey;
+            PublicKey srv = (serverKey instanceof OpenSshCertificate)
+                    ? ((OpenSshCertificate) serverKey).getCaPubKey()
+                    : serverKey;
+            sameKey = KeyUtils.compareKeys(req, srv);
+        }
+        if (sameKey) {
             if (log.isDebugEnabled()) {
                 log.debug("Server at {} presented expected key: {}", remoteAddress, BufferUtils.toHex(serverKey.getEncoded()));
             }
