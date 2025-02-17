@@ -269,27 +269,33 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
         }
 
-        /*
-         * We compare only the connect address against the principals and do not do any reverse DNS lookups. If one
-         * wants to connect with the IP it has to be included in the principals list of the certificate.
-         */
-        SocketAddress connectSocketAddress = getClientSession().getConnectAddress();
-        if (connectSocketAddress instanceof SshdSocketAddress) {
-            connectSocketAddress = ((SshdSocketAddress) connectSocketAddress).toInetSocketAddress();
-        }
-
-        if (connectSocketAddress instanceof InetSocketAddress) {
-            String hostName = ((InetSocketAddress) connectSocketAddress).getHostString();
-            Collection<String> principals = openSshKey.getPrincipals();
-            if (GenericUtils.isEmpty(principals) || (!principals.contains(hostName))) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        "KeyExchange signature verification failed, invalid principal "
-                                                                                         + hostName + " for key ID=" + keyId
-                                                                                         + " - allowed=" + principals);
+        // "As a special case, a zero-length "valid principals" field means the certificate is valid for
+        // any principal of the specified type."
+        // See https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys
+        //
+        // Empty principals in a host certificate mean the certificate is valid for any host.
+        Collection<String> principals = openSshKey.getPrincipals();
+        if (!GenericUtils.isEmpty(principals)) {
+            /*
+             * We compare only the connect address against the principals and do not do any reverse DNS lookups. If one
+             * wants to connect with the IP it has to be included in the principals list of the certificate.
+             */
+            SocketAddress connectSocketAddress = getClientSession().getConnectAddress();
+            if (connectSocketAddress instanceof SshdSocketAddress) {
+                connectSocketAddress = ((SshdSocketAddress) connectSocketAddress).toInetSocketAddress();
             }
-        } else {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "KeyExchange signature verification failed, could not determine connect host for key ID=" + keyId);
+
+            if (connectSocketAddress instanceof InetSocketAddress) {
+                String hostName = ((InetSocketAddress) connectSocketAddress).getHostString();
+                if (GenericUtils.isEmpty(principals) || (!principals.contains(hostName))) {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                            "KeyExchange signature verification failed, invalid principal " + hostName + " for key ID=" + keyId
+                                                                                             + " - allowed=" + principals);
+                }
+            } else {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                        "KeyExchange signature verification failed, could not determine connect host for key ID=" + keyId);
+            }
         }
 
         if (!GenericUtils.isEmpty(openSshKey.getCriticalOptions())) {

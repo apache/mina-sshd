@@ -21,9 +21,8 @@ package org.apache.sshd.common.signature;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.KeyPair;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -99,18 +98,21 @@ class KnownHostsCertificateTest extends BaseTestSupport {
 
     private void initKeys(String keyType, int keySize, String caType, int caSize, String signatureAlgorithm, String marker)
             throws Exception {
+        initKeys(keyType, keySize, caType, caSize, signatureAlgorithm, marker, "localhost", "127.0.0.1");
+    }
+
+    private void initKeys(
+            String keyType, int keySize, String caType, int caSize, String signatureAlgorithm, String marker,
+            String... principals) throws Exception {
         caKey = CommonTestSupportUtils.generateKeyPair(caType, caSize);
         KeyPair hostKeyPair = CommonTestSupportUtils.generateKeyPair(keyType, keySize);
         // Generate a host certificate.
-        List<String> principals = new ArrayList<>();
-        principals.add("localhost");
-        principals.add("127.0.0.1");
         OpenSshCertificate signedCert = OpenSshCertificateBuilder.hostCertificate() //
                 .serial(System.currentTimeMillis()) //
                 .publicKey(hostKeyPair.getPublic()) //
                 .id("test-cert-" + signatureAlgorithm) //
                 .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)) //
-                .principals(principals) //
+                .principals(Arrays.asList(principals)) //
                 .sign(caKey, signatureAlgorithm);
         hostKey = hostKeyPair;
         // new KeyPair(signedCert, hostKeyPair.getPrivate());
@@ -146,6 +148,17 @@ class KnownHostsCertificateTest extends BaseTestSupport {
     @Test
     void testHostCertificateSucceeds() throws Exception {
         initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority");
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            s.addPasswordIdentity(getCurrentTestName());
+            s.auth().verify(AUTH_TIMEOUT);
+        }
+    }
+
+    @Test
+    void testHostCertificateWithoutPrincipalsSucceeds() throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
+                new String[0]);
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
                 .getSession()) {
             s.addPasswordIdentity(getCurrentTestName());
