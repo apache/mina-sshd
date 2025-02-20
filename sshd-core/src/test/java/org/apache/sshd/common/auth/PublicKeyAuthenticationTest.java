@@ -49,6 +49,7 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.OpenSshCertificate.CertificateOption;
 import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -557,15 +558,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
 
         sshd.setUserAuthFactories(Collections.singletonList(new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
 
-        AtomicInteger authAttempts = new AtomicInteger(0);
-        sshd.setPublickeyAuthenticator((username, key, session) -> {
-            authAttempts.incrementAndGet();
-            if (key instanceof OpenSshCertificate) {
-                OpenSshCertificate cert = (OpenSshCertificate) key;
-                return KeyUtils.compareKeys(cert.getCaPubKey(), caKeypair.getPublic());
-            }
-            return false;
-        });
+        sshd.setPublickeyAuthenticator((username, key, session) -> true);
 
         // Client authentication should fail
         try (SshClient client = setupTestClient()) {
@@ -586,6 +579,65 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                 client.stop();
             }
         }
+    }
+
+    @ParameterizedTest(name = "''{0}''")
+    @MethodSource("certificateSources")
+    void certificateSources(String sources, boolean expectSuccess) throws Exception {
+        KeyPair userkey = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        KeyPair caKeypair = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+
+        OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate() //
+                .serial(System.currentTimeMillis()) //
+                .publicKey(userkey.getPublic()) //
+                .id("test-cert-ecdsa-sha2-nistp256") //
+                .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)) //
+                .principals(Collections.singletonList("user01")) //
+                .criticalOptions(Collections.singletonList(new CertificateOption("source-address", sources)))
+                .sign(caKeypair, "ecdsa-sha2-nistp256");
+
+        // Configure the ssh server
+        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+        CoreTestSupportUtils.setupFullSignaturesSupport(sshd);
+
+        sshd.setUserAuthFactories(Collections.singletonList(new org.apache.sshd.server.auth.pubkey.UserAuthPublicKeyFactory()));
+
+        sshd.setPublickeyAuthenticator((username, key, session) -> true);
+
+        try (SshClient client = setupTestClient()) {
+            CoreTestSupportUtils.setupFullSignaturesSupport(client);
+            client.setUserAuthFactories(
+                    Collections.singletonList(new org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory()));
+
+            client.start();
+
+            try (ClientSession session = client.connect("user01", TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+
+                KeyPair certKeyPair = new KeyPair(signedCert, userkey.getPrivate());
+                session.addPublicKeyIdentity(certKeyPair);
+
+                AuthFuture auth = session.auth();
+                if (expectSuccess) {
+                    auth.verify(AUTH_TIMEOUT);
+                    assertTrue(session.isAuthenticated());
+                } else {
+                    assertThrows(SshException.class, () -> auth.verify(AUTH_TIMEOUT));
+                }
+            } finally {
+                client.stop();
+            }
+        }
+    }
+
+    private static Stream<Arguments> certificateSources() {
+        return Stream.of( //
+                Arguments.of("127.0/24", true), //
+                Arguments.of("8.8.8.8/24", false), //
+                Arguments.of("127.0.0.1/32", true), //
+                Arguments.of("8.8.8.8/8,127.0.0.1/32", true), //
+                Arguments.of("bogus", false), //
+                Arguments.of("", false));
     }
 
 }

@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.server.auth.pubkey;
 
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
@@ -30,6 +33,8 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.OpenSshCertificate.CertificateOption;
+import org.apache.sshd.common.net.InetAddressRange;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
 import org.apache.sshd.common.util.GenericUtils;
@@ -103,6 +108,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     throw new CertificateException("expired");
                 }
                 verifyCertificateSignature(session, cert);
+                verifyCertificateSources(session, cert);
             } catch (Exception e) {
                 warn("doAuth({}@{}): public key certificate (id={}) is not valid: {}", username, session, cert.getId(),
                         e.getMessage(), e);
@@ -194,6 +200,32 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
         if (!verif.verify(session, cert.getSignature())) {
             throw new CertificateException("CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
+        }
+    }
+
+    protected void verifyCertificateSources(ServerSession session, OpenSshCertificate cert) throws CertificateException {
+        String allowedSources = cert.getCriticalOptions().stream().filter(c -> "source-address".equals(c.getName()))
+                .map(CertificateOption::getData).findAny().orElse(null);
+        if (allowedSources == null) {
+            return;
+        }
+        SocketAddress remote = session.getRemoteAddress();
+        if (remote instanceof InetSocketAddress) {
+            InetAddress remoteAddress = ((InetSocketAddress) remote).getAddress();
+            for (String allowed : allowedSources.split(",")) {
+                String cidr = allowed.trim();
+                if (GenericUtils.isEmpty(cidr)) {
+                    continue;
+                }
+                try {
+                    if (InetAddressRange.fromCIDR(cidr).contains(remoteAddress)) {
+                        return;
+                    }
+                } catch (IllegalArgumentException e) {
+                    throw new CertificateException("Invalid CIDR range '" + cidr + "' in source-address critical option");
+                }
+            }
+            throw new CertificateException("Rejected by source-address critical option; not allowed from " + remoteAddress);
         }
     }
 

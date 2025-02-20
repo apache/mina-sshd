@@ -32,6 +32,9 @@
 
 ## New Features
 
+* [SSHD-1161](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-1161) Support pubkey auth with user certificates (server-side)
+    * Client-side support was introduced in version 2.8.0 already 
+
 ## Potential Compatibility Issues
 
 ## Major Code Re-factoring
