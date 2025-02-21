@@ -26,6 +26,7 @@ import java.util.List;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -37,8 +38,6 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -53,6 +52,8 @@ public class EncryptThenMacTest extends BaseTestSupport {
 
     public void initEncryptThenMacTest(MacFactory factory) throws Exception {
         this.factory = factory;
+        sshd.setCipherFactories(Collections.singletonList(BuiltinCiphers.aes128ctr));
+        client.setCipherFactories(Collections.singletonList(BuiltinCiphers.aes128ctr));
         sshd.setMacFactories(Collections.singletonList(this.factory));
         client.setMacFactories(Collections.singletonList(this.factory));
     }
@@ -109,7 +110,7 @@ public class EncryptThenMacTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void clientConnection(MacFactory factory) throws Exception {
+    void clientConnection(MacFactory factory) throws Exception {
         initEncryptThenMacTest(factory);
         try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
                 .verify(CONNECT_TIMEOUT).getSession()) {

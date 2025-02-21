@@ -22,6 +22,7 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -31,6 +32,8 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.cipher.BuiltinCiphers;
+import org.apache.sshd.common.cipher.Cipher;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -86,6 +89,9 @@ public final class CoreTestSupportUtils {
     }
 
     public static <S extends SshServer> S setupTestServer(S sshd, Class<?> anchor) {
+        List<NamedFactory<Cipher>> cipherFactories = new ArrayList<>(sshd.getCipherFactories());
+        cipherFactories.add(BuiltinCiphers.aes128cbc);
+        sshd.setCipherFactories(cipherFactories);
         sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(anchor));
         sshd.setPasswordAuthenticator(BogusPasswordAuthenticator.INSTANCE);
         sshd.setPublickeyAuthenticator(AcceptAllPublickeyAuthenticator.INSTANCE);

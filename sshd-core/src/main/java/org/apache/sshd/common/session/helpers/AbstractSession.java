@@ -62,6 +62,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionInformation;
@@ -2213,6 +2214,13 @@ public abstract class AbstractSession extends SessionHelper {
                 String serverParamValue = s2cOptions.get(paramType);
                 String[] c = GenericUtils.split(clientParamValue, ',');
                 String[] s = GenericUtils.split(serverParamValue, ',');
+                if (paramType == KexProposalOption.C2SMAC && isAead(guess.get(KexProposalOption.C2SENC)) ||
+                        paramType == KexProposalOption.S2CMAC && isAead(guess.get(KexProposalOption.S2CENC))) {
+                    // No MAC needed, so no need to negotiate. Set a value all the same, otherwise
+                    // SessionContext.isDataIntegrityTransport() would be complicated quite a bit.
+                    guess.put(paramType, "aead");
+                    continue;
+                }
                 /*
                  * According to https://tools.ietf.org/html/rfc8308#section-2.2:
                  *
@@ -2303,6 +2311,18 @@ public abstract class AbstractSession extends SessionHelper {
 
         signalNegotiationEnd(c2sOptions, s2cOptions, negotiatedGuess, null);
         return setNegotiationResult(guess);
+    }
+
+    private boolean isAead(String encryption) {
+        NamedFactory<Cipher> factory = NamedResource.findByName(encryption, String::compareTo, getCipherFactories());
+        if (factory != null) {
+            if (factory instanceof CipherFactory) {
+                return ((CipherFactory) factory).getAuthenticationTagSize() > 0;
+            }
+            Cipher cipher = factory.create();
+            return cipher != null && cipher.getAuthenticationTagSize() > 0;
+        }
+        return false;
     }
 
     protected Map<KexProposalOption, String> setNegotiationResult(Map<KexProposalOption, String> guess) {
