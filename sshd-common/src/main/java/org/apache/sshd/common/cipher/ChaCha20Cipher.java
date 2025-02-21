@@ -133,6 +133,11 @@ public class ChaCha20Cipher implements Cipher {
         return 512;
     }
 
+    @Override
+    public String toString() {
+        return "chacha20-poly1305";
+    }
+
     protected static class ChaChaEngine {
         private static final int BLOCK_BYTES = 64;
         private static final int BLOCK_INTS = BLOCK_BYTES / Integer.BYTES;
