@@ -49,7 +49,6 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
-import org.apache.sshd.common.config.keys.OpenSshCertificate.CertificateOption;
 import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -593,7 +592,7 @@ public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
                 .id("test-cert-ecdsa-sha2-nistp256") //
                 .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)) //
                 .principals(Collections.singletonList("user01")) //
-                .criticalOptions(Collections.singletonList(new CertificateOption("source-address", sources)))
+                .criticalOption("source-address", sources)
                 .sign(caKeypair, "ecdsa-sha2-nistp256");
 
         // Configure the ssh server

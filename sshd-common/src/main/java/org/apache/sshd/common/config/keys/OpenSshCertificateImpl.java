@@ -20,14 +20,19 @@ package org.apache.sshd.common.config.keys;
 
 import java.security.PublicKey;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
+import java.util.Map;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 
 /**
@@ -49,8 +54,8 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     private long validAfter = OpenSshCertificate.MIN_EPOCH;
     // match ssh-keygen behavior where the default would be forever
     private long validBefore = OpenSshCertificate.INFINITY;
-    private List<CertificateOption> criticalOptions;
-    private List<CertificateOption> extensions;
+    private SortedMap<String, String> criticalOptions;
+    private SortedMap<String, String> extensions;
     private String reserved;
     private PublicKey caPubKey;
     private byte[] message;
@@ -112,12 +117,32 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
 
     @Override
     public List<CertificateOption> getCriticalOptions() {
-        return criticalOptions == null ? Collections.emptyList() : criticalOptions;
+        if (criticalOptions == null || criticalOptions.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<CertificateOption> list = new ArrayList<>(criticalOptions.size());
+        criticalOptions.forEach((k, v) -> list.add(new CertificateOption(k, v)));
+        return Collections.unmodifiableList(list);
+    }
+
+    @Override
+    public SortedMap<String, String> getCriticalOptionsMap() {
+        return criticalOptions == null ? Collections.emptySortedMap() : Collections.unmodifiableSortedMap(criticalOptions);
     }
 
     @Override
     public List<CertificateOption> getExtensions() {
-        return extensions == null ? Collections.emptyList() : extensions;
+        if (extensions == null || extensions.isEmpty()) {
+            return Collections.emptyList();
+        }
+        List<CertificateOption> list = new ArrayList<>(extensions.size());
+        extensions.forEach((k, v) -> list.add(new CertificateOption(k, v)));
+        return Collections.unmodifiableList(list);
+    }
+
+    @Override
+    public SortedMap<String, String> getExtensionsMap() {
+        return extensions == null ? Collections.emptySortedMap() : Collections.unmodifiableSortedMap(extensions);
     }
 
     @Override
@@ -236,12 +261,117 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
         }
     }
 
+    /**
+     * Sets the critical options of the certificate, overriding any options set earlier.
+     *
+     * @param criticalOptions to set; may be {@code null} or empty to remove all previously set options
+     */
     public void setCriticalOptions(List<CertificateOption> criticalOptions) {
-        this.criticalOptions = criticalOptions;
+        if (criticalOptions == null || criticalOptions.isEmpty()) {
+            this.criticalOptions = null;
+        } else {
+            this.criticalOptions = new TreeMap<>();
+            for (CertificateOption option : criticalOptions) {
+                String data = option.getData();
+                this.criticalOptions.put(option.getName(), data == null ? "" : data);
+            }
+        }
     }
 
+    /**
+     * Sets the critical options of the certificate, overriding any options set earlier.
+     *
+     * @param criticalOptions to set; may be {@code null} or empty to remove all previously set options
+     */
+    public void setCriticalOptions(Map<String, String> criticalOptions) {
+        if (criticalOptions == null || criticalOptions.isEmpty()) {
+            this.criticalOptions = null;
+        } else {
+            this.criticalOptions = new TreeMap<>();
+            criticalOptions.forEach((k, v) -> {
+                String data = v == null ? "" : v;
+                this.criticalOptions.put(k, data);
+            });
+        }
+    }
+
+    /**
+     * Adds a critical option to the certificate, or removes it if {@code value == null}. To add an option with an empty
+     * value, use an empty string as value. If the certificate already has an option with the given name it is replaced.
+     *
+     * @param  name  of the option to set
+     * @param  value of the option
+     * @return       {@code true} if the map did not contain the name; {@code false} if it did
+     */
+    public boolean addCriticalOption(String name, String value) {
+        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "Critical option name must be set");
+        if (value == null) {
+            if (criticalOptions == null) {
+                return true;
+            }
+            return criticalOptions.remove(key) == null;
+        }
+        if (criticalOptions == null) {
+            criticalOptions = new TreeMap<>();
+        }
+        return criticalOptions.put(key, value) == null;
+    }
+
+    /**
+     * Sets the extensions of the certificate, overriding any extensions set earlier.
+     *
+     * @param extensions to set; may be {@code null} or empty to remove all previously set extensions
+     */
     public void setExtensions(List<CertificateOption> extensions) {
-        this.extensions = extensions;
+        if (extensions == null || extensions.isEmpty()) {
+            this.extensions = null;
+        } else {
+            this.extensions = new TreeMap<>();
+            for (CertificateOption option : extensions) {
+                String data = option.getData();
+                this.extensions.put(option.getName(), data == null ? "" : data);
+            }
+        }
+    }
+
+    /**
+     * Sets the extensions of the certificate, overriding any extensions set earlier.
+     *
+     * @param extensions to set; may be {@code null} or empty to remove all previously set extensions
+     */
+    public void setExtensions(Map<String, String> extensions) {
+        if (extensions == null || extensions.isEmpty()) {
+            this.extensions = null;
+        } else {
+            this.extensions = new TreeMap<>();
+            extensions.forEach((k, v) -> {
+                String data = v == null ? "" : v;
+                this.extensions.put(k, data);
+            });
+        }
+    }
+
+    /**
+     * Adds an extension to the certificate, or removes it if {@code value == null}. To add an extension with an empty
+     * value, use an empty string as value. If the certificate already has an extension with the given name it is
+     * replaced.
+     *
+     * @param  name  of the extension to set
+     * @param  value of the extension
+     * @return       {@code true} if the map did not contain the name; {@code false} if it did
+     */
+    public boolean addExtension(String name, String value) {
+        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "Extension name must be set");
+        if (value == null) {
+            if (extensions == null) {
+                return true;
+            }
+            return extensions.remove(key) == null;
+        }
+        if (extensions == null) {
+            extensions = new TreeMap<>();
+        }
+        return extensions.put(key, value) == null;
     }
 
     public void setReserved(String reserved) {

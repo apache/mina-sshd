@@ -20,11 +20,13 @@ package org.apache.sshd.common.config.keys;
 
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.ValidateUtils;
@@ -45,8 +47,7 @@ public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
         /** User key certificate. */
         USER,
         /** Host key certificate. */
-        HOST,
-        ;
+        HOST;
 
         public static final List<Type> VALUES = Collections.unmodifiableList(Arrays.asList(values()));
 
@@ -147,16 +148,32 @@ public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
     /**
      * Retrieves the critical options set in the certificate.
      *
-     * @return the critical options as a list, never {@code null} but possibly empty
+     * @return the critical options as an unmodifiable list, never {@code null} but possibly empty
+     * @see    #getCriticalOptionsMap()
      */
     List<CertificateOption> getCriticalOptions();
 
     /**
+     * Retrieves the critical options set in the certificate.
+     *
+     * @return the critical options as an unmodifiable map, never {@code null} but possibly empty
+     */
+    SortedMap<String, String> getCriticalOptionsMap();
+
+    /**
      * Retrieves the extensions set in the certificate.
      *
-     * @return the extensions as a list, never {@code null} but possibly empty
+     * @return the extensions as an unmodifiable list, never {@code null} but possibly empty
+     * @see    #getExtensionsMap()
      */
     List<CertificateOption> getExtensions();
+
+    /**
+     * Retrieves the extensions set in the certificate.
+     *
+     * @return the extensions as an unmodifiable map, never {@code null} but possibly empty
+     */
+    SortedMap<String, String> getExtensionsMap();
 
     /**
      * Retrieves the "reserved" field of the certificate. OpenSSH currently doesn't use it and ignores it.
@@ -210,8 +227,21 @@ public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
      */
     static boolean isValidNow(OpenSshCertificate cert) {
         long now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-        return Long.compareUnsigned(cert.getValidAfter(), now) <= 0
-                && Long.compareUnsigned(now, cert.getValidBefore()) < 0;
+        return Long.compareUnsigned(cert.getValidAfter(), now) <= 0 && Long.compareUnsigned(now, cert.getValidBefore()) < 0;
+    }
+
+    /**
+     * Determines whether the given {@link OpenSshCertificate} is valid at the given {@link Instant}.
+     *
+     * @param  cert to check
+     * @return      {@code true} if the certificate is valid according to its timestamps, {@code false} otherwise
+     */
+    static boolean isValidAt(OpenSshCertificate cert, Instant time) {
+        long at = time.getEpochSecond();
+        if (at < 0) {
+            return false;
+        }
+        return Long.compareUnsigned(cert.getValidAfter(), at) <= 0 && Long.compareUnsigned(at, cert.getValidBefore()) < 0;
     }
 
     /**

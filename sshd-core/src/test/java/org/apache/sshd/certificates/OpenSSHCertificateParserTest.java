@@ -98,11 +98,11 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
             assertTrue(typedCert.getCriticalOptions().isEmpty());
             assertEquals(
                     Arrays.asList(
-                            new OpenSshCertificate.CertificateOption("permit-X11-forwarding"),
-                            new OpenSshCertificate.CertificateOption("permit-agent-forwarding"),
-                            new OpenSshCertificate.CertificateOption("permit-port-forwarding"),
-                            new OpenSshCertificate.CertificateOption("permit-pty"),
-                            new OpenSshCertificate.CertificateOption("permit-user-rc")),
+                            new OpenSshCertificate.CertificateOption("permit-X11-forwarding", ""),
+                            new OpenSshCertificate.CertificateOption("permit-agent-forwarding", ""),
+                            new OpenSshCertificate.CertificateOption("permit-port-forwarding", ""),
+                            new OpenSshCertificate.CertificateOption("permit-pty", ""),
+                            new OpenSshCertificate.CertificateOption("permit-user-rc", "")),
                     typedCert.getExtensions());
             assertEquals(params.sigAlgorithm, typedCert.getSignatureAlgorithm());
             verifySignature(typedCert);

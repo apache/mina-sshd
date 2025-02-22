@@ -33,7 +33,6 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
-import org.apache.sshd.common.config.keys.OpenSshCertificate.CertificateOption;
 import org.apache.sshd.common.net.InetAddressRange;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -204,8 +203,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected void verifyCertificateSources(ServerSession session, OpenSshCertificate cert) throws CertificateException {
-        String allowedSources = cert.getCriticalOptions().stream().filter(c -> "source-address".equals(c.getName()))
-                .map(CertificateOption::getData).findAny().orElse(null);
+        String allowedSources = cert.getCriticalOptionsMap().get("source-address");
         if (allowedSources == null) {
             return;
         }
