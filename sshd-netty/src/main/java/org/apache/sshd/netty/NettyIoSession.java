@@ -241,8 +241,6 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
     protected void channelActive(ChannelHandlerContext ctx) throws Exception {
         context = ctx;
         Channel channel = ctx.channel();
-        service.channelGroup.add(channel);
-        service.sessions.put(id, NettyIoSession.this);
         prev = context.newPromise().setSuccess();
         remoteAddr = channel.remoteAddress();
         // If handler.sessionCreated() propagates an exception, we'll have a NettyIoSession without SSH session. We'll
@@ -254,7 +252,9 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
         Attribute<IoConnectFuture> connectFuture = channel.attr(NettyIoService.CONNECT_FUTURE_KEY);
         IoConnectFuture future = connectFuture.get();
         try {
+            service.registerChannel(channel);
             handler.sessionCreated(NettyIoSession.this);
+            service.mapSession(this);
             if (future != null) {
                 future.setSession(NettyIoSession.this);
                 if (future.getSession() != NettyIoSession.this) {
@@ -262,7 +262,7 @@ public class NettyIoSession extends AbstractCloseable implements IoSession {
                 }
             }
         } catch (Throwable e) {
-            log.warn("channelActive(session={}): could not create SSH session ({}); closing", this, e.getClass().getName(), e);
+            warn("channelActive(session={}): could not create SSH session ({}); closing", this, e.getClass().getName(), e);
             try {
                 if (future != null) {
                     future.setException(e);

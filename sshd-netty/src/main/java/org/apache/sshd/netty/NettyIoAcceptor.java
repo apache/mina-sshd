@@ -37,12 +37,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
@@ -64,10 +62,9 @@ public class NettyIoAcceptor extends NettyIoService implements IoAcceptor {
     protected final Map<SocketAddress, Channel> boundAddresses = new ConcurrentHashMap<>();
 
     public NettyIoAcceptor(NettyIoServiceFactory factory, IoHandler handler) {
-        super(factory, handler);
+        super(factory, handler, "sshd-acceptor-channels");
 
         Boolean reuseaddr = CoreModuleProperties.SOCKET_REUSEADDR.getRequired(factory.manager);
-        channelGroup = new DefaultChannelGroup("sshd-acceptor-channels", GlobalEventExecutor.INSTANCE);
         bootstrap.group(factory.eventLoopGroup)
                 .channel(NioServerSocketChannel.class)
                 .option(ChannelOption.SO_BACKLOG, CoreModuleProperties.SOCKET_BACKLOG.getRequired(factory.manager))

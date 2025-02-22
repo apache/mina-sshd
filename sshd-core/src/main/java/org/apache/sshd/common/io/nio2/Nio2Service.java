@@ -72,6 +72,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     private final AsynchronousChannelGroup group;
     private final ExecutorService executor;
     private IoServiceEventListener eventListener;
+    private boolean noMoreSessions;
 
     protected Nio2Service(PropertyResolver propertyResolver, IoHandler handler, AsynchronousChannelGroup group,
                           ExecutorService resumeTasks) {
@@ -127,7 +128,7 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
     @Override
     protected Closeable getInnerCloseable() {
         return builder()
-                .parallel(toString(), sessions.values())
+                .parallel(toString(), snapshot())
                 .build();
     }
 
@@ -138,6 +139,23 @@ public abstract class Nio2Service extends AbstractInnerCloseable implements IoSe
 
     public void sessionClosed(Nio2Session session) {
         unmapSession(session.getId());
+    }
+
+    private Collection<IoSession> snapshot() {
+        synchronized (this) {
+            noMoreSessions = true;
+        }
+        return sessions.values();
+    }
+
+    protected IoSession mapSession(IoSession session) {
+        synchronized (this) {
+            if (noMoreSessions) {
+                return null;
+            }
+            sessions.put(session.getId(), session);
+            return session;
+        }
     }
 
     protected void unmapSession(Long sessionId) {

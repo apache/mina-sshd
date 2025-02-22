@@ -26,12 +26,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
-import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.future.CancelFuture;
 import org.apache.sshd.common.io.DefaultIoConnectFuture;
@@ -51,8 +49,7 @@ public class NettyIoConnector extends NettyIoService implements IoConnector {
     private static final LoggingHandler LOGGING_TRACE = new LoggingHandler(NettyIoConnector.class, LogLevel.TRACE);
 
     public NettyIoConnector(NettyIoServiceFactory factory, IoHandler handler) {
-        super(factory, handler);
-        channelGroup = new DefaultChannelGroup("sshd-connector-channels", GlobalEventExecutor.INSTANCE);
+        super(factory, handler, "sshd-connector-channels");
     }
 
     @Override

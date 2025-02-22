@@ -187,7 +187,7 @@ public class MinaConnector extends MinaService implements org.apache.sshd.common
             Throwable t = cf.getException();
             if (t != null) {
                 future.setException(t);
-            } else if (cf.isCanceled()) {
+            } else if (cf.isCanceled() || !isOpen()) {
                 IoSession ioSession = createdSession.getAndSet(null);
                 CancelFuture cancellation = future.cancel();
                 if (ioSession != null) {

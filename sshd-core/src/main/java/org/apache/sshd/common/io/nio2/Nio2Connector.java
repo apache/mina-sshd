@@ -215,8 +215,10 @@ public class Nio2Connector extends Nio2Service implements IoConnector {
 
                 handler.sessionCreated(session);
                 sessionId = session.getId();
-                sessions.put(sessionId, session);
-                future.setSession(session);
+                IoSession registered = mapSession(session);
+                if (registered == session) {
+                    future.setSession(session);
+                }
                 if (session != future.getSession()) {
                     session.close(true);
                     throw new CancellationException();

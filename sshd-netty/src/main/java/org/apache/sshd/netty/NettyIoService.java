@@ -19,13 +19,18 @@
 
 package org.apache.sshd.netty;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
+import io.netty.channel.Channel;
 import io.netty.channel.group.ChannelGroup;
+import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.AttributeKey;
+import io.netty.util.concurrent.GlobalEventExecutor;
 import org.apache.sshd.common.io.IoConnectFuture;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoService;
@@ -44,16 +49,46 @@ public abstract class NettyIoService extends AbstractCloseable implements IoServ
 
     protected final AtomicLong sessionSeq = new AtomicLong();
     protected final Map<Long, IoSession> sessions = new ConcurrentHashMap<>();
-    protected ChannelGroup channelGroup;
+    protected final ChannelGroup channelGroup;
     protected final NettyIoServiceFactory factory;
     protected final IoHandler handler;
+    private boolean noMoreSessions;
 
     private IoServiceEventListener eventListener;
 
-    protected NettyIoService(NettyIoServiceFactory factory, IoHandler handler) {
+    protected NettyIoService(NettyIoServiceFactory factory, IoHandler handler, String channelGroupName) {
         this.factory = Objects.requireNonNull(factory, "No factory instance provided");
         this.handler = Objects.requireNonNull(handler, "No I/O handler provied");
         this.eventListener = factory.getIoServiceEventListener();
+        this.channelGroup = new DefaultChannelGroup(Objects.requireNonNull(channelGroupName, "No channel group name"),
+                GlobalEventExecutor.INSTANCE);
+    }
+
+    @Override
+    protected void doCloseImmediately() {
+        synchronized (this) {
+            noMoreSessions = true;
+        }
+        channelGroup.close();
+        super.doCloseImmediately();
+    }
+
+    protected void registerChannel(Channel channel) throws CancellationException {
+        synchronized (this) {
+            if (noMoreSessions) {
+                throw new CancellationException("NettyIoService closed");
+            }
+            channelGroup.add(channel);
+        }
+    }
+
+    protected void mapSession(IoSession session) throws CancellationException {
+        synchronized (this) {
+            if (noMoreSessions) {
+                throw new CancellationException("NettyIoService closed; cannot register new session");
+            }
+            sessions.put(session.getId(), session);
+        }
     }
 
     @Override
@@ -68,6 +103,6 @@ public abstract class NettyIoService extends AbstractCloseable implements IoServ
 
     @Override
     public Map<Long, IoSession> getManagedSessions() {
-        return sessions;
+        return Collections.unmodifiableMap(sessions);
     }
 }

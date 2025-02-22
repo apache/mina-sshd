@@ -29,6 +29,7 @@
 ## Bug Fixes
 
 * [GH-650](https://github.com/apache/mina-sshd/issues/650) Use the correct key from a user certificate in server-side pubkey auth
+* [GH-663](https://github.com/apache/mina-sshd/issues/663) Fix racy `IoSession` creation
 * [GH-664](https://github.com/apache/mina-sshd/issues/664) Skip MAC negotiation if an AEAD cipher was negotiated
 
 ## New Features
