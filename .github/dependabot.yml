@@ -45,3 +45,7 @@ updates:
         versions: [ ">= 2.0.0" ]
       - dependency-name: "org.slf4j:slf4j-simple"
         versions: [ ">= 2.0.0" ]
+      - dependency-name: "ch.qos.logback:logback-core"
+        versions: [ ">= 1.3.0" ]
+      - dependency-name: "ch.qos.logback:logback-classic"
+        versions: [ ">= 1.3.0" ]
