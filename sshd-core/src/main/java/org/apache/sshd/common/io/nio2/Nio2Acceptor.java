@@ -40,6 +40,7 @@ import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.io.IoAcceptor;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoServiceEventListener;
+import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -297,8 +298,10 @@ public class Nio2Acceptor extends Nio2Service implements IoAcceptor {
                         "No NIO2 session created");
                 sessionId = session.getId();
                 handler.sessionCreated(session);
-                sessions.put(sessionId, session);
-                if (session.isClosing()) {
+                IoSession registered = mapSession(session);
+                if (registered != session) {
+                    session.close();
+                } else if (session.isClosing()) {
                     try {
                         handler.sessionClosed(session);
                     } finally {
