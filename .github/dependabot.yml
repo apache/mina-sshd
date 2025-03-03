@@ -27,25 +27,11 @@ updates:
         versions: [">= 6.0.0"]
       - dependency-name: "org.springframework:spring-framework-bom"
         versions: [">= 6.0.0"]
-      - dependency-name: "org.eclipse.jgit:org.eclipse.jgit"
+      - dependency-name: "org.eclipse.jgit:*"
         versions: [ ">= 6.0.0" ]
-      - dependency-name: "org.eclipse.jgit:org.eclipse.jgit.ssh.apache"
-        versions: [ ">= 6.0.0" ]
-      - dependency-name: "org.eclipse.jgit:org.eclipse.jgit.pgm"
-        versions: [ ">= 6.0.0" ]
-      - dependency-name: "org.mockito:mockito-core"
+      - dependency-name: "org.mockito:*"
         versions: [ ">= 5.0.0" ]
-      - dependency-name: "org.slf4j:slf4j-api"
+      - dependency-name: "org.slf4j:*"
         versions: [ ">= 2.0.0" ]
-      - dependency-name: "org.slf4j:slf4j-over-slf4j"
-        versions: [ ">= 2.0.0" ]
-      - dependency-name: "org.slf4j:jul-to-slf4j"
-        versions: [ ">= 2.0.0" ]
-      - dependency-name: "org.slf4j:slf4j-jdk14"
-        versions: [ ">= 2.0.0" ]
-      - dependency-name: "org.slf4j:slf4j-simple"
-        versions: [ ">= 2.0.0" ]
-      - dependency-name: "ch.qos.logback:logback-core"
-        versions: [ ">= 1.3.0" ]
-      - dependency-name: "ch.qos.logback:logback-classic"
+      - dependency-name: "ch.qos.logback:*"
         versions: [ ">= 1.3.0" ]
