@@ -20,29 +20,33 @@
 package org.apache.sshd.mina;
 
 import java.lang.reflect.Field;
+import java.util.stream.Stream;
 
+import org.apache.mina.core.service.IoHandler;
 import org.apache.mina.core.service.IoProcessor;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.common.helpers.AbstractFactoryManager;
 import org.apache.sshd.common.io.IoServiceFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
-import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestMethodOrder;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests specific to the MINA connection back-end.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@TestMethodOrder(MethodName.class)
-public class MinaSessionTest extends BaseTestSupport {
+class MinaSessionTest extends BaseTestSupport {
 
-    public MinaSessionTest() {
+    MinaSessionTest() {
         super();
+    }
+
+    @BeforeAll
+    static void minaVersion() {
+        boolean is22x = Stream.of(IoHandler.class.getMethods()).anyMatch(m -> "event".equals(m.getName()));
+        System.err.println("Testing with MINA " + (is22x ? "2.2.X" : "2.0.X"));
     }
 
     private IoProcessor<?> getProcessor(AbstractFactoryManager manager) throws Exception {
@@ -70,4 +74,5 @@ public class MinaSessionTest extends BaseTestSupport {
         }
         assertTrue(ioProcessor.isDisposed() || ioProcessor.isDisposing(), "MINA server IoProcessor should be closed");
     }
+
 }

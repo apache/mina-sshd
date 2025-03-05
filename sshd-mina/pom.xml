@@ -150,4 +150,71 @@
             </plugin>
         </plugins>
     </build>
+    
+    <profiles>
+        <profile>
+            <id>test-mina-2.2.X</id>
+            <activation>
+                <property>
+                    <name>test.mina22</name>
+                    <value>!disable</value>
+                </property>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>test-mina-2.2.X</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                 <configuration>
+                                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-mina-22</reportsDirectory>
+                                    <forkCount>1</forkCount>
+                                    <reuseForks>false</reuseForks>
+                                    <excludes>
+                                        <!-- These tests use NIO2 explicitly -->
+                                        <exclude>**/Nio2ServiceTest.java</exclude>
+                                        <!-- testcontainers filesystem building from classpath doesn't work from reusable test jar classpath -->
+                                        <exclude>**/ArcFourOpenSshTest.java</exclude>
+                                        <exclude>**/ClientOpenSSHCertificatesTest.java</exclude>
+                                        <exclude>**/SessionReKeyHostKeyExchangeTest.java</exclude>
+                                        <exclude>**/HostBoundPubKeyAuthTest.java</exclude>
+                                        <exclude>**/OpenSshCipherTest.java</exclude>
+                                        <exclude>**/OpenSshMlKemTest.java</exclude>
+                                        <exclude>**/PortForwardingWithOpenSshTest.java</exclude>
+                                        <exclude>**/StrictKexInteroperabilityTest.java</exclude>
+                                        <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
+                                        <exclude>**/OpenSSHCertificateTest.java</exclude>
+                                        <!-- A MinaServiceFactory cannot be instantiated with a mock CloseableExecutorService. -->
+                                        <exclude>**/DefaultIoServiceFactoryFactoryTest.java</exclude>
+                                    </excludes>
+                                    <!-- No need to re-run core tests that do not involve session creation -->
+                                    <excludedGroups>NoIoTestCase</excludedGroups>
+                                    <!-- Tests are located in the sshd-core reusable test jar -->
+                                    <dependenciesToScan>
+                                        <dependency>org.apache.sshd:sshd-core</dependency>
+                                    </dependenciesToScan>
+                                    <classpathDependencyExcludes>
+                                        <classpathDependencyExclude>org.apache.mina:mina-core</classpathDependencyExclude>
+                                    </classpathDependencyExcludes>
+                                    <additionalClasspathDependencies>
+                                        <additionalClasspathDependency>
+                                            <groupId>org.apache.mina</groupId>
+                                            <artifactId>mina-core</artifactId>
+                                            <version>2.2.4</version>
+                                        </additionalClasspathDependency>
+                                    </additionalClasspathDependencies>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
