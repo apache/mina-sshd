@@ -112,7 +112,7 @@
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
         <bytebuddy.version>1.17.2</bytebuddy.version>
-        <testcontainers.version>1.20.5</testcontainers.version>
+        <testcontainers.version>1.20.6</testcontainers.version>
         <grpc.version>1.70.0</grpc.version> <!-- Used only in tests -->
 
         <maven.archiver.version>3.6.3</maven.archiver.version>
