@@ -690,9 +690,13 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
     }
 
     protected static class PathEntry implements Comparable<PathEntry> {
-        public static final DateTimeFormatter FULL_TIME_VALUE_FORMATTER = DateTimeFormatter.ofPattern("MMM ppd HH:mm:ss yyyy");
-        public static final DateTimeFormatter TIME_ONLY_VALUE_FORMATTER = DateTimeFormatter.ofPattern("MMM ppd HH:mm");
-        public static final DateTimeFormatter YEAR_VALUE_FORMATTER = DateTimeFormatter.ofPattern("MMM ppd  yyyy");
+        // WinSCP needs the month names always in English.
+        public static final DateTimeFormatter FULL_TIME_VALUE_FORMATTER = DateTimeFormatter.ofPattern("MMM ppd HH:mm:ss yyyy",
+                Locale.ENGLISH);
+        public static final DateTimeFormatter TIME_ONLY_VALUE_FORMATTER = DateTimeFormatter.ofPattern("MMM ppd HH:mm",
+                Locale.ENGLISH);
+        public static final DateTimeFormatter YEAR_VALUE_FORMATTER = DateTimeFormatter.ofPattern("MMM ppd  yyyy",
+                Locale.ENGLISH);
 
         protected final Path abs;
         protected final Path path;
