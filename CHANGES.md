@@ -32,6 +32,7 @@
 * [GH-663](https://github.com/apache/mina-sshd/issues/663) Fix racy `IoSession` creation
 * [GH-664](https://github.com/apache/mina-sshd/issues/664) Skip MAC negotiation if an AEAD cipher was negotiated
 * [GH-678](https://github.com/apache/mina-sshd/issues/678) `ScpShell`: write month names in English for WinSCP
+* [GH-690](https://github.com/apache/mina-sshd/issues/690) Handle append mode for buggy SFTP v3 servers
 
 ## New Features
 

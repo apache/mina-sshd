@@ -1248,7 +1248,31 @@ public abstract class AbstractSftpClient
             throw new IOException("write(" + path + ")[" + mode + "] size=" + bufferSize + ": client is closed");
         }
 
+        if (getVersion() <= SftpConstants.SFTP_V3 && mode.contains(OpenMode.Append)) {
+            // Some buggy SFTP v3 servers cannot properly handle append mode and always write at the offset
+            // passed in SSH_FXF_WRITE commands. (In append mode, a correct server should ignore that offset.)
+            //
+            // As a work-around, get the file size and use it as a base offset for the stream.
+            Attributes attrs = safeStat(path);
+            long fileSize = attrs == null ? 0 : attrs.getSize();
+            SftpOutputStreamAsync stream = new SftpOutputStreamAsync(this, bufferSize, path, mode);
+            if (fileSize > 0) {
+                stream.setOffset(fileSize);
+            }
+            return stream;
+        }
         return new SftpOutputStreamAsync(this, bufferSize, path, mode);
+    }
+
+    private Attributes safeStat(String path) throws IOException {
+        try {
+            return stat(path);
+        } catch (SftpException e) {
+            if (e.getStatus() == SftpConstants.SSH_FX_NO_SUCH_FILE) {
+                return null;
+            }
+            throw e;
+        }
     }
 
     @Override
