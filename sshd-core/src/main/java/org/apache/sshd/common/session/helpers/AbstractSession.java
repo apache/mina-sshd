@@ -48,7 +48,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.Closeable;
@@ -67,6 +66,7 @@ import org.apache.sshd.common.cipher.CipherInformation;
 import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionInformation;
 import org.apache.sshd.common.digest.Digest;
+import org.apache.sshd.common.filter.BufferInputHandler;
 import org.apache.sshd.common.filter.DefaultFilterChain;
 import org.apache.sshd.common.filter.FilterChain;
 import org.apache.sshd.common.filter.InputHandler;
@@ -94,12 +94,16 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.session.SessionWorkBuffer;
+import org.apache.sshd.common.session.filters.CompressionFilter;
+import org.apache.sshd.common.session.filters.CryptFilter;
+import org.apache.sshd.common.session.filters.CryptFilter.Settings;
+import org.apache.sshd.common.session.filters.DelayKexInitFilter;
+import org.apache.sshd.common.session.filters.IdentFilter;
+import org.apache.sshd.common.session.filters.SshIdentHandler;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
@@ -178,31 +182,6 @@ public abstract class AbstractSession extends SessionHelper {
     // synchronized on kexState.
     protected DefaultKeyExchangeFuture kexInitializedFuture;
 
-    /*
-     * SSH packets encoding / decoding support
-     */
-    protected Cipher outCipher;
-    protected Cipher inCipher;
-    protected int outCipherSize = 8;
-    protected int inCipherSize = 8;
-    protected Mac outMac;
-    protected Mac inMac;
-    protected int outMacSize;
-    protected int inMacSize;
-    protected byte[] inMacResult;
-    protected Compression outCompression;
-    protected Compression inCompression;
-    /** Input packet sequence number. */
-    protected long seqi;
-    /** Output packet sequence number. */
-    protected long seqo;
-    protected SessionWorkBuffer uncompressBuffer;
-    protected final SessionWorkBuffer decoderBuffer;
-    protected int decoderState;
-    protected int decoderLength;
-    protected SshException discarding;
-    protected final Object encodeLock = new Object();
-    protected final Object decodeLock = new Object();
     protected final Object requestLock = new Object();
 
     /**
@@ -230,12 +209,6 @@ public abstract class AbstractSession extends SessionHelper {
     /*
      * Rekeying
      */
-    protected final AtomicLong inPacketsCount = new AtomicLong(0L);
-    protected final AtomicLong outPacketsCount = new AtomicLong(0L);
-    protected final AtomicLong inBytesCount = new AtomicLong(0L);
-    protected final AtomicLong outBytesCount = new AtomicLong(0L);
-    protected final AtomicLong inBlocksCount = new AtomicLong(0L);
-    protected final AtomicLong outBlocksCount = new AtomicLong(0L);
     protected final AtomicReference<Instant> lastKeyTimeValue = new AtomicReference<>(Instant.now());
     // we initialize them here in case super constructor calls some methods that use these values
     protected long maxRekyPackets;
@@ -312,6 +285,9 @@ public abstract class AbstractSession extends SessionHelper {
     private byte[] clientKexData; // the payload of the client's SSH_MSG_KEXINIT
     private byte[] serverKexData; // the payload of the server's SSH_MSG_KEXINIT
 
+    private CryptFilter cryptFilter;
+    private CompressionFilter compressionFilter;
+
     /**
      * Create a new session.
      *
@@ -321,8 +297,6 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected AbstractSession(boolean serverSession, FactoryManager factoryManager, IoSession ioSession) {
         super(serverSession, factoryManager, ioSession);
-
-        this.decoderBuffer = new SessionWorkBuffer(this);
 
         kexHandler = Objects.requireNonNull(initializeKeyExchangeMessageHandler(),
                 "No KeyExchangeMessageHandler set on the session");
@@ -344,9 +318,6 @@ public abstract class AbstractSession extends SessionHelper {
         tunnelListenerProxy = EventListenerUtils.proxyWrapper(
                 PortForwardingEventListener.class, tunnelListeners);
 
-        filters.adding(this);
-        filters.added(this);
-
         try {
             signalSessionEstablished(ioSession);
         } catch (RuntimeException e) {
@@ -363,6 +334,7 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception on errors
      */
     protected void start() throws Exception {
+        boolean isConfigured = !filters.isEmpty();
         IoFilter ioSessionConnector = new IoFilter() {
 
             @Override
@@ -375,12 +347,24 @@ public abstract class AbstractSession extends SessionHelper {
                 return message -> getIoSession().writeBuffer(message);
             }
         };
-        // Temporary. This is work in progress, and actually the whole stuff is still handled by the SSH session.
+        filters.addFirst(ioSessionConnector);
+
+        if (!isConfigured) {
+            setupFilterChain();
+        }
+
+        // Temporary. This is work in progress, and actually a lot is still handled by the SSH session.
         // The idea is to migrate parts step by step into filters on this filter chain.
         IoFilter sessionConnector = new IoFilter() {
             @Override
             public InputHandler in() {
-                return AbstractSession.this::messageReceived;
+                return new BufferInputHandler() {
+
+                    @Override
+                    public void handleMessage(Buffer message) throws Exception {
+                        AbstractSession.this.handleMessage(message);
+                    }
+                };
             }
 
             @Override
@@ -389,12 +373,99 @@ public abstract class AbstractSession extends SessionHelper {
             }
         };
         filters.addLast(sessionConnector);
-        filters.addFirst(ioSessionConnector);
+    }
+
+    protected void setupFilterChain() {
+        IdentFilter ident = new IdentFilter();
+        ident.setPropertyResolver(this);
+        ident.setIdentHandler(new SshIdentHandler() {
+
+            @Override
+            public boolean isServer() {
+                return isServerSession();
+            }
+
+            @Override
+            public List<String> readIdentification(Buffer buffer) {
+                try {
+                    boolean haveIdent = AbstractSession.this.readIdentification(buffer);
+                    if (!haveIdent) {
+                        return null;
+                    }
+                } catch (Exception e) {
+                    throw new IllegalStateException(e.getMessage(), e);
+                }
+                return Collections.singletonList(isServer() ? clientVersion : serverVersion);
+            }
+
+            @Override
+            public List<String> provideIdentification() {
+                List<String> lines;
+                if (!isServer()) {
+                    clientVersion = resolveIdentificationString(CoreModuleProperties.CLIENT_IDENTIFICATION.getName());
+                    try {
+                        signalSendIdentification(clientVersion, Collections.emptyList());
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e.getMessage(), e);
+                    }
+                    lines = Collections.singletonList(clientVersion);
+                } else {
+                    String headerConfig = CoreModuleProperties.SERVER_EXTRA_IDENTIFICATION_LINES
+                            .getOrNull(AbstractSession.this);
+                    String[] headers = GenericUtils.split(headerConfig,
+                            CoreModuleProperties.SERVER_EXTRA_IDENT_LINES_SEPARATOR);
+                    lines = GenericUtils.isEmpty(headers) ? new ArrayList<>() : new ArrayList<>(Arrays.asList(headers));
+
+                    serverVersion = resolveIdentificationString(CoreModuleProperties.SERVER_IDENTIFICATION.getName());
+                    try {
+                        signalSendIdentification(serverVersion, lines);
+                    } catch (Exception e) {
+                        throw new IllegalStateException(e.getMessage(), e);
+                    }
+                    lines.add(serverVersion);
+                }
+                return lines;
+            }
+        });
+        filters.addLast(ident);
+
+        cryptFilter = new CryptFilter();
+        cryptFilter.setSession(this);
+        cryptFilter.setRandom(random);
+        cryptFilter.addEncryptionListener((buffer, sequenceNumber) -> {
+            // SSHD-968 - remember global request outgoing sequence number
+            LongConsumer setter = globalSequenceNumbers.remove(buffer);
+            if (setter != null) {
+                setter.accept(sequenceNumber);
+            }
+        });
+        filters.addLast(cryptFilter);
+
+        compressionFilter = new CompressionFilter();
+        compressionFilter.setSession(this);
+        filters.addLast(compressionFilter);
+
+        DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
+        delayKexFilter.setSession(this);
+        filters.addLast(delayKexFilter);
     }
 
     @Override
     public FilterChain getFilterChain() {
         return filters;
+    }
+
+    protected boolean isConnectionSecure() {
+        return cryptFilter.isSecure();
+    }
+
+    protected CompressionFilter getCompressionFilter() {
+        return compressionFilter;
+    }
+
+    protected void initializeKeyExchangePhase() throws Exception {
+        kexState.set(KexState.INIT);
+        sendKexInit();
     }
 
     /**
@@ -421,46 +492,6 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected CurrentService initializeCurrentService() {
         return new CurrentService(this);
-    }
-
-    /**
-     * @param  len       The packet payload size
-     * @param  blockSize The cipher block size
-     * @param  etmMode   Whether using &quot;encrypt-then-MAC&quot; mode
-     * @return           The required padding length
-     */
-    public static int calculatePadLength(int len, int blockSize, boolean etmMode) {
-        /*
-         * Note: according to RFC-4253 section 6:
-         *
-         * The minimum size of a packet is 16 (or the cipher block size, whichever is larger) bytes (plus 'mac').
-         *
-         * Since all out ciphers, MAC(s), etc. have a block size > 8 then the minimum size of the packet will be at
-         * least 16 due to the padding at the very least - so even packets that contain an opcode with no arguments will
-         * be above this value. This avoids an un-necessary call to Math.max(len, 16) for each and every packet
-         */
-
-        len++; // the pad length
-        if (!etmMode) {
-            len += Integer.BYTES;
-        }
-
-        /*
-         * Note: according to RFC-4253 section 6:
-         *
-         * Note that the length of the concatenation of 'packet_length', 'padding_length', 'payload', and 'random
-         * padding' MUST be a multiple of the cipher block size or 8, whichever is larger.
-         *
-         * However, we currently do not have ciphers with a block size of less than 8 so we do not take this into
-         * account in order to accelerate the calculation and avoiding an un-necessary call to Math.max(blockSize, 8)
-         * for each and every packet.
-         */
-        int pad = (-len) & (blockSize - 1);
-        if (pad < blockSize) {
-            pad += blockSize;
-        }
-
-        return pad;
     }
 
     @Override
@@ -517,46 +548,17 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public CipherInformation getCipherInformation(boolean incoming) {
-        return incoming ? inCipher : outCipher;
+        return incoming ? cryptFilter.getInputSettings().getCipher() : cryptFilter.getOutputSettings().getCipher();
     }
 
     @Override
     public CompressionInformation getCompressionInformation(boolean incoming) {
-        return incoming ? inCompression : outCompression;
+        return incoming ? compressionFilter.getInputCompression() : compressionFilter.getOutputCompression();
     }
 
     @Override
     public MacInformation getMacInformation(boolean incoming) {
-        return incoming ? inMac : outMac;
-    }
-
-    /**
-     * <P>
-     * Main input point for the MINA framework.
-     * </P>
-     *
-     * <P>
-     * This method will be called each time new data is received on the socket and will append it to the input buffer
-     * before calling the {@link #decode()} method.
-     * </P>
-     *
-     * @param  buffer    the new buffer received
-     * @throws Exception if an error occurs while decoding or handling the data
-     */
-    public void messageReceived(Readable buffer) throws Exception {
-        synchronized (decodeLock) {
-            decoderBuffer.putBuffer(buffer);
-            // One of those properties will be set by the constructor and the other
-            // one should be set by the readIdentification method
-            if ((clientVersion == null) || (serverVersion == null)) {
-                if (readIdentification(decoderBuffer)) {
-                    decoderBuffer.compact();
-                } else {
-                    return;
-                }
-            }
-            decode();
-        }
+        return incoming ? cryptFilter.getInputSettings().getMac() : cryptFilter.getOutputSettings().getMac();
     }
 
     /**
@@ -616,7 +618,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected void doHandleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (log.isDebugEnabled()) {
-            log.debug("doHandleMessage({}) process #{} {}", this, seqi - 1,
+            log.debug("doHandleMessage({}) process #{} {}", this, cryptFilter.getInputSequenceNumber() - 1,
                     SshConstants.getCommandMessageName(cmd));
         }
 
@@ -761,14 +763,12 @@ public abstract class AbstractSession extends SessionHelper {
         prepareNewKeys();
         Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
         IoWriteFuture future;
-        synchronized (encodeLock) {
-            // writePacket() would also work since it would never try to queue the packet, and would never try to
-            // initiate a new KEX, and thus would never try to get the kexLock monitor. If it did, we might get a
-            // deadlock due to lock inversion. It seems safer to push this out directly, though.
-            future = doWritePacket(buffer);
-            // Use the new settings from now on for any outgoing packet
-            setOutputEncoding();
-        }
+        // writePacket() would also work since it would never try to queue the packet, and would never try to
+        // initiate a new KEX, and thus would never try to get the kexLock monitor. If it did, we might get a
+        // deadlock due to lock inversion. It seems safer to push this out directly, though.
+        future = doWritePacket(buffer);
+        // Use the new settings from now on for any outgoing packet
+        setOutputEncoding();
         kexHandler.updateState(() -> kexState.set(KexState.KEYS));
 
         resetIdleTimeout();
@@ -1115,17 +1115,6 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     @Override
-    protected Buffer preProcessEncodeBuffer(int cmd, Buffer buffer) throws IOException {
-        buffer = super.preProcessEncodeBuffer(cmd, buffer);
-        // SSHD-968 - remember global request outgoing sequence number
-        LongConsumer setter = globalSequenceNumbers.remove(buffer);
-        if (setter != null) {
-            setter.accept(seqo);
-        }
-        return buffer;
-    }
-
-    @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
         return kexHandler.writePacket(buffer, 0, null);
     }
@@ -1174,48 +1163,8 @@ public abstract class AbstractSession extends SessionHelper {
         return writeFuture;
     }
 
-    // NOTE: must acquire encodeLock when calling this method
-    protected Buffer resolveOutputPacket(Buffer buffer) throws IOException {
-        Buffer ignoreBuf = null;
-        int ignoreDataLen = resolveIgnoreBufferDataLength();
-        if (ignoreDataLen > 0) {
-            ignoreBuf = createBuffer(SshConstants.SSH_MSG_IGNORE, ignoreDataLen + Byte.SIZE);
-            ignoreBuf.putUInt(ignoreDataLen);
-
-            int wpos = ignoreBuf.wpos();
-            synchronized (random) {
-                random.fill(ignoreBuf.array(), wpos, ignoreDataLen);
-            }
-            ignoreBuf.wpos(wpos + ignoreDataLen);
-
-            if (log.isDebugEnabled()) {
-                log.debug("resolveOutputPacket({}) append SSH_MSG_IGNORE message", this);
-            }
-        }
-
-        int curPos = buffer.rpos();
-        byte[] data = buffer.array();
-        int cmd = data[curPos] & 0xFF; // usually the 1st byte is the command
-        buffer = validateTargetBuffer(cmd, buffer);
-
-        if (ignoreBuf != null) {
-            ignoreBuf = encode(ignoreBuf);
-
-            IoSession networkSession = getIoSession();
-            networkSession.writeBuffer(ignoreBuf);
-        }
-
-        return encode(buffer);
-    }
-
     protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
-        // Synchronize all write requests as needed by the encoding algorithm
-        // and also queue the write request in this synchronized block to ensure
-        // packets are sent in the correct order
-        synchronized (encodeLock) {
-            Buffer packet = resolveOutputPacket(buffer);
-            return filters.getLast().out().send(packet);
-        }
+        return filters.getLast().out().send(buffer);
     }
 
     protected int resolveIgnoreBufferDataLength() {
@@ -1428,16 +1377,14 @@ public abstract class AbstractSession extends SessionHelper {
         // Since the caller claims to know how many bytes they will need
         // increase their request to account for our headers/footers if
         // they actually send exactly this amount.
-        boolean etmMode = outMac != null && outMac.isEncryptThenMac();
-        int authLen = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
-        boolean authMode = authLen > 0;
-        int pad = calculatePadLength(len, outCipherSize, etmMode || authMode);
-        len += SshConstants.SSH_PACKET_HEADER_LEN + pad + authLen;
-        if (outMac != null) {
-            len += outMacSize;
+        int finalLength;
+        if (cryptFilter != null) {
+            finalLength = cryptFilter.precomputeBufferLength(len);
+        } else {
+            // Can occur in some tests
+            finalLength = len + SshConstants.SSH_PACKET_HEADER_LEN + 255 + 32;
         }
-
-        return prepareBuffer(cmd, new PacketBuffer(new byte[len + Byte.SIZE], false));
+        return prepareBuffer(cmd, new PacketBuffer(new byte[finalLength], false));
     }
 
     @Override
@@ -1450,8 +1397,7 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
-     * Makes sure that the buffer used for output is not {@code null} or one of the session's internal ones used for
-     * decoding and uncompressing
+     * Makes sure that the buffer used for output is not {@code null}.
      *
      * @param  <B>                      The {@link Buffer} type being validated
      * @param  cmd                      The most likely command this buffer refers to (not guaranteed to be correct)
@@ -1461,352 +1407,7 @@ public abstract class AbstractSession extends SessionHelper {
      */
     protected <B extends Buffer> B validateTargetBuffer(int cmd, B buffer) {
         ValidateUtils.checkNotNull(buffer, "No target buffer to examine for command=%d", cmd);
-        ValidateUtils.checkTrue(
-                buffer != decoderBuffer, "Not allowed to use the internal decoder buffer for command=%d", cmd);
-        ValidateUtils.checkTrue(
-                buffer != uncompressBuffer, "Not allowed to use the internal uncompress buffer for command=%d", cmd);
         return buffer;
-    }
-
-    /**
-     * Encode a buffer into the SSH protocol. <B>Note:</B> This method must be called inside a {@code synchronized}
-     * block using {@code encodeLock}.
-     *
-     * @param  buffer      the buffer to encode
-     * @return             The encoded buffer - may be different than original if input buffer does not have enough room
-     *                     for {@link SshConstants#SSH_PACKET_HEADER_LEN}, in which case a substitute buffer will be
-     *                     created and used.
-     * @throws IOException if an exception occurs during the encoding process
-     */
-    protected Buffer encode(Buffer buffer) throws IOException {
-        try {
-            // Check that the packet has some free space for the header
-            int curPos = buffer.rpos();
-            int cmd = buffer.rawByte(curPos) & 0xFF; // usually the 1st byte is an SSH opcode
-            Buffer nb = preProcessEncodeBuffer(cmd, buffer);
-            if (nb != buffer) {
-                buffer = nb;
-                curPos = buffer.rpos();
-
-                int newCmd = buffer.rawByte(curPos) & 0xFF;
-                if (cmd != newCmd) {
-                    log.warn("encode({}) - command changed from {}[{}] to {}[{}] by pre-processor",
-                            this, cmd, SshConstants.getCommandMessageName(cmd),
-                            newCmd, SshConstants.getCommandMessageName(newCmd));
-                    cmd = newCmd;
-                }
-            }
-
-            // Grab the length of the packet (excluding the 5 header bytes)
-            int len = buffer.available();
-            if (log.isDebugEnabled()) {
-                log.debug("encode({}) packet #{} sending command={}[{}] len={}",
-                        this, seqo, cmd, SshConstants.getCommandMessageName(cmd), len);
-            }
-
-            int off = curPos - SshConstants.SSH_PACKET_HEADER_LEN;
-            // Debug log the packet
-            boolean traceEnabled = log.isTraceEnabled();
-            if (traceEnabled) {
-                buffer.dumpHex(getSimplifiedLogger(), Level.FINEST,
-                        "encode(" + this + ") packet #" + seqo, this);
-            }
-
-            // Compress the packet if needed
-            if ((outCompression != null)
-                    && outCompression.isCompressionExecuted()
-                    && (isAuthenticated() || (!outCompression.isDelayed()))) {
-                int oldLen = len;
-                outCompression.compress(buffer);
-                len = buffer.available();
-                if (traceEnabled) {
-                    log.trace("encode({}) packet #{} command={}[{}] compressed {} -> {}",
-                            this, seqo, cmd, SshConstants.getCommandMessageName(cmd), oldLen, len);
-                }
-            }
-
-            // Compute padding length
-            boolean etmMode = outMac != null && outMac.isEncryptThenMac();
-            int authSize = outCipher != null ? outCipher.getAuthenticationTagSize() : 0;
-            boolean authMode = authSize > 0;
-            int oldLen = len;
-
-            int pad = calculatePadLength(len, outCipherSize, etmMode || authMode);
-
-            len += Byte.BYTES + pad;
-
-            if (traceEnabled) {
-                log.trace("encode({}) packet #{} command={}[{}] len={}, pad={}, mac={}",
-                        this, seqo, cmd, SshConstants.getCommandMessageName(cmd), len, pad, outMac);
-            }
-
-            // Write 5 header bytes
-            buffer.wpos(off);
-            buffer.putUInt(len);
-            buffer.putByte((byte) pad);
-            // Make sure enough room for padding and then fill it
-            buffer.wpos(off + oldLen + SshConstants.SSH_PACKET_HEADER_LEN + pad);
-            synchronized (random) {
-                random.fill(buffer.array(), buffer.wpos() - pad, pad);
-            }
-
-            if (authMode) {
-                int wpos = buffer.wpos();
-                buffer.wpos(wpos + authSize);
-                aeadOutgoingBuffer(buffer, off, len);
-            } else if (etmMode) {
-                // Do not encrypt the length field
-                encryptOutgoingBuffer(buffer, off + Integer.BYTES, len);
-                appendOutgoingMac(buffer, off, len);
-            } else {
-                appendOutgoingMac(buffer, off, len);
-                encryptOutgoingBuffer(buffer, off, len + Integer.BYTES);
-            }
-
-            // Increment packet id
-            seqo = (seqo + 1L) & 0x0ffffffffL;
-
-            // Update counters used to track re-keying
-            outPacketsCount.incrementAndGet();
-            outBytesCount.addAndGet(len);
-
-            // Make buffer ready to be read
-            buffer.rpos(off);
-            return buffer;
-        } catch (IOException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new SshException(e);
-        }
-    }
-
-    protected void aeadOutgoingBuffer(Buffer buf, int offset, int len) throws Exception {
-        if (outCipher == null || outCipher.getAuthenticationTagSize() == 0) {
-            throw new IllegalArgumentException("AEAD mode requires an AEAD cipher");
-        }
-        byte[] data = buf.array();
-        outCipher.updateWithAAD(data, offset, Integer.BYTES, len);
-        int blocksCount = len / outCipherSize;
-        outBlocksCount.addAndGet(Math.max(1, blocksCount));
-    }
-
-    protected void appendOutgoingMac(Buffer buf, int offset, int len) throws Exception {
-        if (outMac == null) {
-            return;
-        }
-
-        int l = buf.wpos();
-        // ensure enough room for MAC in outgoing buffer
-        buf.wpos(l + outMacSize);
-        // Include sequence number
-        outMac.updateUInt(seqo);
-        // Include the length field in the MAC calculation
-        outMac.update(buf.array(), offset, len + Integer.BYTES);
-        // Append MAC to end of packet
-        outMac.doFinal(buf.array(), l);
-    }
-
-    protected void encryptOutgoingBuffer(Buffer buf, int offset, int len) throws Exception {
-        if (outCipher == null) {
-            return;
-        }
-        outCipher.update(buf.array(), offset, len);
-
-        int blocksCount = len / outCipherSize;
-        outBlocksCount.addAndGet(Math.max(1, blocksCount));
-    }
-
-    /**
-     * Decode the incoming buffer and handle packets as needed.
-     *
-     * @throws Exception If failed to decode
-     */
-    protected void decode() throws Exception {
-        // Decoding loop
-        for (;;) {
-
-            int authSize = inCipher != null ? inCipher.getAuthenticationTagSize() : 0;
-            boolean authMode = authSize > 0;
-            int macSize = inMac != null ? inMacSize : 0;
-            boolean etmMode = inMac != null && inMac.isEncryptThenMac();
-            // Wait for beginning of packet
-            if (decoderState == 0) {
-                // The read position should always be 0 at this point because we have compacted this buffer
-                assert decoderBuffer.rpos() == 0;
-                /*
-                 * Note: according to RFC-4253 section 6:
-                 *
-                 * Implementations SHOULD decrypt the length after receiving the first 8 (or cipher block size whichever
-                 * is larger) bytes
-                 *
-                 * However, we currently do not have ciphers with a block size of less than 8 we avoid un-necessary
-                 * Math.max(minBufLen, 8) for each and every packet
-                 */
-                int minBufLen = etmMode || authMode ? Integer.BYTES : inCipherSize;
-                // If we have received enough bytes, start processing those
-                if (decoderBuffer.available() > minBufLen) {
-                    if (authMode) {
-                        // RFC 5647: packet length encoded in additional data
-                        inCipher.updateAAD(decoderBuffer.array(), 0, Integer.BYTES);
-                    } else if ((inCipher != null) && (!etmMode)) {
-                        // Decrypt the first bytes so we can extract the packet length
-                        inCipher.update(decoderBuffer.array(), 0, inCipherSize);
-                        inBlocksCount.incrementAndGet();
-                    }
-                    // Read packet length
-                    decoderLength = decoderBuffer.getInt();
-                    /*
-                     * Check packet length validity - we allow 8 times the minimum required packet length support in
-                     * order to be aligned with some OpenSSH versions that allow up to 256k
-                     */
-                    boolean lengthOK = true;
-                    if ((decoderLength < SshConstants.SSH_PACKET_HEADER_LEN)
-                            || (decoderLength > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT))) {
-                        log.warn("decode({}) Error decoding packet(invalid length): {}", this, decoderLength);
-                        lengthOK = false;
-                    } else if (inCipher != null
-                            && ((decoderLength + ((authMode || etmMode) ? 0 : Integer.BYTES)) % inCipherSize != 0)) {
-                        log.warn("decode({}) Error decoding packet(padding; not multiple of {}): {}", this, inCipherSize,
-                                decoderLength);
-                        lengthOK = false;
-                    }
-                    if (!lengthOK) {
-                        decoderBuffer.dumpHex(getSimplifiedLogger(), Level.FINEST,
-                                "decode(" + this + ") invalid length packet", this);
-                        // Mitigation against CVE-2008-5161 AKA CPNI-957037: make any disconnections due to decoding
-                        // errors indistinguishable from failed MAC checks.
-                        //
-                        // If we disconnect here, a client may still deduce (since it sent only one block) that the
-                        // length check failed. So we keep on requesting more data and fail later. OpenSSH actually
-                        // discards the next 256kB of data, but in fact any number of bytes will do.
-                        //
-                        // Remember the exception, continue requiring an arbitrary number of bytes, and throw the
-                        // exception later.
-                        discarding = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
-                                "Invalid packet length: " + decoderLength);
-                        decoderLength = decoderBuffer.available() + (2 + random.random(20)) * inCipherSize;
-                        // Next larger multiple of the block size
-                        decoderLength = ((decoderLength + (inCipherSize - 1)) / inCipherSize) * inCipherSize;
-                        if (!authMode && !etmMode) {
-                            decoderLength -= Integer.BYTES;
-                        }
-                        log.warn("decode({}) Invalid packet length; requesting {} bytes before disconnecting", this,
-                                decoderLength - decoderBuffer.available());
-                    }
-                    // Ok, that's good, we can go to the next step
-                    decoderState = 1;
-                } else {
-                    // need more data
-                    break;
-                }
-                // We have received the beginning of the packet
-            } else if (decoderState == 1) {
-                // The read position should always be after reading the packet length at this point
-                assert decoderBuffer.rpos() == Integer.BYTES;
-                // Check if the packet has been fully received
-                if (decoderBuffer.available() >= (decoderLength + macSize + authSize)) {
-                    byte[] data = decoderBuffer.array();
-                    if (authMode) {
-                        inCipher.update(data, Integer.BYTES /* packet length is handled by AAD */, decoderLength);
-
-                        int blocksCount = decoderLength / inCipherSize;
-                        inBlocksCount.addAndGet(Math.max(1, blocksCount));
-                    } else if (etmMode) {
-                        validateIncomingMac(data, 0, decoderLength + Integer.BYTES);
-
-                        if (inCipher != null) {
-                            inCipher.update(data, Integer.BYTES /* packet length is unencrypted */, decoderLength);
-
-                            int blocksCount = decoderLength / inCipherSize;
-                            inBlocksCount.addAndGet(Math.max(1, blocksCount));
-                        }
-                    } else {
-                        /*
-                         * Decrypt the remaining of the packet - skip the block we already decoded in order to extract
-                         * the packet length
-                         */
-                        if (inCipher != null) {
-                            int updateLen = decoderLength + Integer.BYTES - inCipherSize;
-                            inCipher.update(data, inCipherSize, updateLen);
-
-                            int blocksCount = updateLen / inCipherSize;
-                            inBlocksCount.addAndGet(Math.max(1, blocksCount));
-                        }
-
-                        validateIncomingMac(data, 0, decoderLength + Integer.BYTES);
-                    }
-
-                    // Mitigation against CVE-2008-5161 AKA CPNI-957037. But is is highly unlikely that we pass the AAD or MAC checks above.
-                    if (discarding != null) {
-                        throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, discarding);
-                    }
-
-                    // Increment incoming packet sequence number
-                    seqi = (seqi + 1L) & 0x0ffffffffL;
-
-                    // Get padding
-                    int pad = decoderBuffer.getUByte();
-                    Buffer packet;
-                    int wpos = decoderBuffer.wpos();
-                    // Decompress if needed
-                    if ((inCompression != null)
-                            && inCompression.isCompressionExecuted()
-                            && (isAuthenticated() || (!inCompression.isDelayed()))) {
-                        if (uncompressBuffer == null) {
-                            uncompressBuffer = new SessionWorkBuffer(this);
-                        } else {
-                            uncompressBuffer.forceClear(true);
-                        }
-
-                        decoderBuffer.wpos(decoderBuffer.rpos() + decoderLength - 1 - pad);
-                        inCompression.uncompress(decoderBuffer, uncompressBuffer);
-                        packet = uncompressBuffer;
-                    } else {
-                        decoderBuffer.wpos(decoderLength + Integer.BYTES - pad);
-                        packet = decoderBuffer;
-                    }
-
-                    if (log.isTraceEnabled()) {
-                        packet.dumpHex(getSimplifiedLogger(), Level.FINEST,
-                                "decode(" + this + ") packet #" + seqi, this);
-                    }
-
-                    // Update counters used to track re-keying
-                    inPacketsCount.incrementAndGet();
-                    inBytesCount.addAndGet(packet.available());
-
-                    // Process decoded packet
-                    handleMessage(packet);
-
-                    // Set ready to handle next packet
-                    decoderBuffer.rpos(decoderLength + Integer.BYTES + macSize + authSize);
-                    decoderBuffer.wpos(wpos);
-                    decoderBuffer.compact();
-                    decoderState = 0;
-                } else {
-                    // need more data
-                    break;
-                }
-            }
-        }
-    }
-
-    protected void validateIncomingMac(byte[] data, int offset, int len) throws Exception {
-        if (inMac == null) {
-            return;
-        }
-
-        // Update mac with packet id
-        inMac.updateUInt(seqi);
-        // Update mac with packet data
-        inMac.update(data, offset, len);
-        // Compute mac result
-        inMac.doFinal(inMacResult, 0);
-
-        // Check the computed result with the received mac (just after the packet data)
-        if (!Mac.equals(inMacResult, 0, data, offset + len, inMacSize)) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "MAC Error");
-        }
     }
 
     /**
@@ -2061,34 +1662,26 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception on errors
      */
     protected void setOutputEncoding() throws Exception {
-        if (strictKex) {
-            if (log.isDebugEnabled()) {
-                log.debug("setOutputEncoding({}): strict KEX resets output message sequence number from {} to 0", this, seqo);
-            }
-            seqo = 0;
-        }
-
-        outCipher = outSettings.getCipher(seqo);
-        outMac = outSettings.getMac();
-        outCompression = outSettings.getCompression();
-        outSettings = null;
-        outCipherSize = outCipher.getCipherBlockSize();
-        outMacSize = outMac != null ? outMac.getBlockSize() : 0;
+        Compression compression = outSettings.getCompression();
         // TODO add support for configurable compression level
-        outCompression.init(Compression.Type.Deflater, -1);
+        compression.init(Compression.Type.Deflater, -1);
+        compressionFilter.setOutputCompression(compression);
+        Cipher cipher = outSettings.getCipher(strictKex ? 0 : cryptFilter.getOutputSequenceNumber());
+        Mac mac = outSettings.getMac();
+        cryptFilter.setOutput(new Settings(cipher, mac), strictKex);
+        cryptFilter.resetOutputCounters();
+        outSettings = null;
 
-        maxRekeyBlocks.set(determineRekeyBlockLimit(inCipherSize, outCipherSize));
-
-        outBytesCount.set(0L);
-        outPacketsCount.set(0L);
-        outBlocksCount.set(0L);
+        Cipher inCipher = cryptFilter.getInputSettings().getCipher();
+        int inBlockSize = inCipher == null ? 8 : inCipher.getCipherBlockSize();
+        maxRekeyBlocks.set(determineRekeyBlockLimit(inBlockSize, cipher.getCipherBlockSize()));
 
         lastKeyTimeValue.set(Instant.now());
         firstKexPacketFollows = null;
 
         if (log.isDebugEnabled()) {
-            log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, outCipher, outMac,
-                    outCompression, maxRekeyBlocks);
+            log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, cipher, mac,
+                    compression, maxRekeyBlocks);
         }
     }
 
@@ -2099,35 +1692,26 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception on errors
      */
     protected void setInputEncoding() throws Exception {
-        if (strictKex) {
-            if (log.isDebugEnabled()) {
-                log.debug("setInputEncoding({}): strict KEX resets input message sequence number from {} to 0", this, seqi);
-            }
-            seqi = 0;
-        }
-
-        inCipher = inSettings.getCipher(seqi);
-        inMac = inSettings.getMac();
-        inCompression = inSettings.getCompression();
-        inSettings = null;
-        inCipherSize = inCipher.getCipherBlockSize();
-        inMacSize = inMac != null ? inMac.getBlockSize() : 0;
-        inMacResult = new byte[inMacSize];
+        Compression compression = inSettings.getCompression();
         // TODO add support for configurable compression level
-        inCompression.init(Compression.Type.Inflater, -1);
+        compression.init(Compression.Type.Inflater, -1);
+        compressionFilter.setInputCompression(compression);
+        Cipher cipher = inSettings.getCipher(strictKex ? 0 : cryptFilter.getInputSequenceNumber());
+        Mac mac = inSettings.getMac();
+        cryptFilter.setInput(new Settings(cipher, mac), strictKex);
+        cryptFilter.resetInputCounters();
+        inSettings = null;
 
-        maxRekeyBlocks.set(determineRekeyBlockLimit(inCipherSize, outCipherSize));
-
-        inBytesCount.set(0L);
-        inPacketsCount.set(0L);
-        inBlocksCount.set(0L);
+        Cipher outCipher = cryptFilter.getOutputSettings().getCipher();
+        int outBlockSize = outCipher == null ? 8 : outCipher.getCipherBlockSize();
+        maxRekeyBlocks.set(determineRekeyBlockLimit(cipher.getCipherBlockSize(), outBlockSize));
 
         lastKeyTimeValue.set(Instant.now());
         firstKexPacketFollows = null;
 
         if (log.isDebugEnabled()) {
-            log.debug("setInputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, inCipher, inMac,
-                    inCompression, maxRekeyBlocks);
+            log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, cipher, mac,
+                    compression, maxRekeyBlocks);
         }
     }
 
@@ -2145,7 +1729,7 @@ public abstract class AbstractSession extends SessionHelper {
         long rekeyBlocksLimit = CoreModuleProperties.REKEY_BLOCKS_LIMIT.getRequired(this);
         if (rekeyBlocksLimit <= 0) {
             // Default per RFC 4344
-            int minCipherBlockBytes = Math.min(inCipherSize, outCipherSize);
+            int minCipherBlockBytes = Math.min(inCipherBlockSize, outCipherBlockSize);
             if (minCipherBlockBytes >= 16) {
                 rekeyBlocksLimit = 1L << Math.min(minCipherBlockBytes * 2, 63);
             } else {
@@ -2185,7 +1769,7 @@ public abstract class AbstractSession extends SessionHelper {
             return null;
         }
 
-        return sendNotImplemented(seqi - 1L);
+        return sendNotImplemented(cryptFilter.getInputSequenceNumber() - 1);
     }
 
     /**
@@ -2672,13 +2256,12 @@ public abstract class AbstractSession extends SessionHelper {
             return false; // disabled
         }
 
-        boolean rekey = (inPacketsCount.get() > maxRekyPackets)
-                || (outPacketsCount.get() > maxRekyPackets);
-        if (rekey) {
-            if (log.isDebugEnabled()) {
-                log.debug("isRekeyPacketCountsExceeded({}) re-keying: in={}, out={}, max={}",
-                        this, inPacketsCount, outPacketsCount, maxRekyPackets);
-            }
+        long inPacketsCount = cryptFilter.getInputCounters().getPackets();
+        long outPacketsCount = cryptFilter.getOutputCounters().getPackets();
+        boolean rekey = (inPacketsCount > maxRekyPackets) || (outPacketsCount > maxRekyPackets);
+        if (rekey && log.isDebugEnabled()) {
+            log.debug("isRekeyPacketCountsExceeded({}) re-keying: in={}, out={}, max={}", this, inPacketsCount, outPacketsCount,
+                    maxRekyPackets);
         }
 
         return rekey;
@@ -2689,12 +2272,12 @@ public abstract class AbstractSession extends SessionHelper {
             return false;
         }
 
-        boolean rekey = (inBytesCount.get() > maxRekeyBytes) || (outBytesCount.get() > maxRekeyBytes);
-        if (rekey) {
-            if (log.isDebugEnabled()) {
-                log.debug("isRekeyDataSizeExceeded({}) re-keying: in={}, out={}, max={}",
-                        this, inBytesCount, outBytesCount, maxRekeyBytes);
-            }
+        long inBytesCount = cryptFilter.getInputCounters().getBytes();
+        long outBytesCount = cryptFilter.getOutputCounters().getBytes();
+        boolean rekey = (inBytesCount > maxRekeyBytes) || (outBytesCount > maxRekeyBytes);
+        if (rekey && log.isDebugEnabled()) {
+            log.debug("isRekeyDataSizeExceeded({}) re-keying: in={}, out={}, max={}", this, inBytesCount, outBytesCount,
+                    maxRekeyBytes);
         }
 
         return rekey;
@@ -2706,12 +2289,12 @@ public abstract class AbstractSession extends SessionHelper {
             return false;
         }
 
-        boolean rekey = (inBlocksCount.get() > maxBlocks) || (outBlocksCount.get() > maxBlocks);
-        if (rekey) {
-            if (log.isDebugEnabled()) {
-                log.debug("isRekeyBlocksCountExceeded({}) re-keying: in={}, out={}, max={}",
-                        this, inBlocksCount, outBlocksCount, maxBlocks);
-            }
+        long inBlocksCount = cryptFilter.getInputCounters().getBlocks();
+        long outBlocksCount = cryptFilter.getOutputCounters().getBlocks();
+        boolean rekey = (inBlocksCount > maxBlocks) || (outBlocksCount > maxBlocks);
+        if (rekey && log.isDebugEnabled()) {
+            log.debug("isRekeyBlocksCountExceeded({}) re-keying: in={}, out={}, max={}", this, inBlocksCount, outBlocksCount,
+                    maxBlocks);
         }
 
         return rekey;
@@ -2829,7 +2412,7 @@ public abstract class AbstractSession extends SessionHelper {
         Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
 
         if (!initialKexDone) {
-            initialKexInitSequenceNumber = seqi;
+            initialKexInitSequenceNumber = cryptFilter.getInputSequenceNumber();
         }
         byte[] seed;
         synchronized (kexState) {

@@ -44,7 +44,6 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.forward.DefaultForwarderFactory;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.random.JceRandomFactory;
 import org.apache.sshd.common.random.Random;
@@ -54,21 +53,18 @@ import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
+@Tag("NoIoTestCase")
 @TestMethodOrder(MethodName.class)
-public class ClientAuthenticationManagerTest extends BaseTestSupport {
-    public ClientAuthenticationManagerTest() {
+class ClientAuthenticationManagerTest extends BaseTestSupport {
+    ClientAuthenticationManagerTest() {
         super();
     }
 
@@ -311,9 +307,10 @@ public class ClientAuthenticationManagerTest extends BaseTestSupport {
 
     private ClientSession createMockClientSession(ClientFactoryManager client) throws Exception {
         return new ClientSessionImpl(client, Mockito.mock(IoSession.class)) {
+
             @Override
-            protected IoWriteFuture sendClientIdentification() {
-                return null;
+            protected void initializeKeyExchangePhase() throws Exception {
+                //
             }
 
             @Override

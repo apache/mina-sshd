@@ -16,26 +16,11 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.server.session;
+package org.apache.sshd.common.io;
 
-import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.server.ServerFactoryManager;
+public class DefaultIoWriteFuture extends AbstractIoWriteFuture {
 
-/**
- * The default implementation for a {@link ServerSession}
- *
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- */
-public class ServerSessionImpl extends AbstractServerSession {
-
-    public ServerSessionImpl(ServerFactoryManager server, IoSession ioSession) throws Exception {
-        super(server, ioSession);
-    }
-
-    @Override
-    public void start() throws Exception {
-        super.start();
-
-        initializeKeyExchangePhase();
+    public DefaultIoWriteFuture(Object id, Object lock) {
+        super(id, lock);
     }
 }

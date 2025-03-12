@@ -93,13 +93,14 @@ public class ClientSessionImpl extends AbstractClientSession {
          */
         initializeProxyConnector();
 
-        if (sendImmediateClientIdentification) {
-            sendClientIdentification();
+        initializeKeyExchangePhase();
+    }
 
-            if (sendImmediateKexInit) {
-                initializeKeyExchangePhase();
-            }
-        }
+    @Override
+    public void setAuthenticated() throws IOException {
+        getCompressionFilter().enableInput();
+        getCompressionFilter().enableOutput();
+        super.setAuthenticated();
     }
 
     @Override

@@ -57,6 +57,9 @@ public class JSchLogger implements Logger {
                 log.debug(message);
                 break;
             case WARN:
+                if (message.contains("compress")) {
+                    log.error(message);
+                }
                 log.warn(message);
                 break;
             case ERROR:

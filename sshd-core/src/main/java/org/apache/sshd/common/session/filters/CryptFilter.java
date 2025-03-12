@@ -1,0 +1,545 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements. See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership. The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License. You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied. See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+package org.apache.sshd.common.session.filters;
+
+import java.io.IOException;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicReference;
+
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.cipher.Cipher;
+import org.apache.sshd.common.cipher.CipherNone;
+import org.apache.sshd.common.filter.InputHandler;
+import org.apache.sshd.common.filter.IoFilter;
+import org.apache.sshd.common.filter.OutputHandler;
+import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.mac.Mac;
+import org.apache.sshd.common.random.Random;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.util.Readable;
+import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+/**
+ * A filter that decrypts incoming packets and encrypts outgoing ones.
+ */
+public class CryptFilter extends IoFilter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CryptFilter.class);
+
+    // The minimum value for the packet length field of a valid SSH packet:
+    // - 1 byte padding count
+    // - 1 byte payload
+    // - 4 bytes padding
+    // Since all ciphers, including the none cipher, have a block size of 8, we need to have
+    // at least 8 bytes if the length itself is not encrypted, or 12 if it is. (Even if a
+    // zero-length payload was allowed, it would be 8 or 12.) So in practice the minimum length
+    // is 8 bytes.
+    private static final int MIN_PACKET_LENGTH = 8;
+
+    // RFC 4253: at least 4 bytes padding, at most 255 bytes.
+    //
+    // Keep the padding size <= 127, though: JSch has a bug where it reads the pad byte as a signed int!
+    private static final int MAX_PADDING = 127;
+
+    private static final int UNKNOWN_PACKET_LENGTH = -1;
+
+    private final AtomicReference<Settings> decryption = new AtomicReference<>();
+
+    private final AtomicReference<Settings> encryption = new AtomicReference<>();
+
+    private final AtomicReference<Counters> inCounts = new AtomicReference<>();
+
+    private final AtomicReference<Counters> outCounts = new AtomicReference<>();
+
+    private final DecryptionHandler input = new DecryptionHandler();
+
+    private final EncryptionHandler output = new EncryptionHandler();
+
+    private final CopyOnWriteArrayList<EncryptionListener> listeners = new CopyOnWriteArrayList<>();
+
+    private Random random;
+
+    private Session session;
+
+    public CryptFilter() {
+        decryption.set(new Settings(null, null));
+        encryption.set(new Settings(null, null));
+        inCounts.set(new Counters());
+        outCounts.set(new Counters());
+    }
+
+    public void setRandom(Random random) {
+        this.random = random;
+    }
+
+    public void setSession(Session session) {
+        this.session = session;
+    }
+
+    @Override
+    public InputHandler in() {
+        return input;
+    }
+
+    @Override
+    public OutputHandler out() {
+        return output;
+    }
+
+    public void resetInputCounters() {
+        inCounts.set(new Counters());
+    }
+
+    public void resetOutputCounters() {
+        outCounts.set(new Counters());
+    }
+
+    public Counters getInputCounters() {
+        return inCounts.get();
+    }
+
+    public Counters getOutputCounters() {
+        return outCounts.get();
+    }
+
+    public void setInput(Settings settings, boolean resetSequence) {
+        decryption.set(Objects.requireNonNull(settings));
+        if (resetSequence) {
+            input.sequenceNumber = 0;
+        }
+    }
+
+    public void setOutput(Settings settings, boolean resetSequence) {
+        encryption.set(Objects.requireNonNull(settings));
+        if (resetSequence) {
+            output.sequenceNumber = 0;
+        }
+    }
+
+    public Settings getInputSettings() {
+        return decryption.get();
+    }
+
+    public Settings getOutputSettings() {
+        return encryption.get();
+    }
+
+    public long getInputSequenceNumber() {
+        return input.sequenceNumber;
+    }
+
+    public long getOutputSequenceNumber() {
+        return output.sequenceNumber;
+    }
+
+    public boolean isSecure() {
+        return decryption.get().isSecure() && encryption.get().isSecure();
+    }
+
+    /**
+     * Performs a best-effort precalculation of the needed packet buffer size assuming an a priori known packet length.
+     * This may help avoid needing to grow the buffer later on.
+     *
+     * @param  knownPayloadLength expected payload length
+     * @return                    a buffer size that will be sufficient to hold the full SSH packet including header,
+     *                            padding, and MAC, if any.
+     */
+    public int precomputeBufferLength(int knownPayloadLength) {
+        Settings out = getOutputSettings();
+        return knownPayloadLength + SshConstants.SSH_PACKET_HEADER_LEN + MAX_PADDING + out.getTagSize();
+    }
+
+    public void addEncryptionListener(EncryptionListener listener) {
+        listeners.addIfAbsent(Objects.requireNonNull(listener));
+    }
+
+    public void removeEncryptionListener(EncryptionListener listener) {
+        if (listener != null) {
+            listeners.remove(listener);
+        }
+    }
+
+    public interface EncryptionListener {
+
+        void aboutToEncrypt(Readable buffer, long sequenceNumber);
+
+    }
+
+    private abstract class WithSequenceNumber {
+
+        long sequenceNumber;
+
+        WithSequenceNumber() {
+            super();
+        }
+    }
+
+    private class DecryptionHandler extends WithSequenceNumber implements InputHandler {
+
+        // Work buffer accumulating incoming data until we have a full SSH packet. Once we have, the decoded part of
+        // this buffer is passed on. Then the buffer is compacted and we start handling the next packet.
+        private Buffer buffer = new ByteArrayBuffer();
+
+        private int packetLength = UNKNOWN_PACKET_LENGTH;
+
+        // Set if we get an invalid packet length. If we do, we keep on requesting more data, and then fail later by
+        // throwing this exception, if set. The connection is supposed to be closed then.
+        private SshException discarding;
+
+        DecryptionHandler() {
+            super();
+        }
+
+        @Override
+        public synchronized void received(Readable message) throws Exception {
+            buffer.putBuffer(message);
+            // If we have less than Integer.BYTES bytes, we cannot possible get a packet length.
+            // Higher levels are responsible to close the connection if we never get data.
+            while (buffer.available() >= Integer.BYTES) {
+                Settings settings = decryption.get();
+                Cipher cipher = settings.getCipher();
+                boolean isAead = cipher != null && settings.isAead();
+                boolean isEtm = settings.isEtm();
+                int cipherSize = cipher == null ? 8 : cipher.getCipherBlockSize();
+                if (packetLength < 0) {
+                    // We don't know the packet length yet.
+                    assert buffer.rpos() == 0;
+                    // Need: Integer.BYTES if packet length is unencrypted or AEAD cipher is used; cipher's block size
+                    // otherwise
+                    int need = Integer.BYTES;
+                    if (cipher != null && !isEtm && !isAead) {
+                        need = cipherSize;
+                    }
+                    if (buffer.available() < need) {
+                        // Wait for more data
+                        break;
+                    }
+                    if (cipher != null) {
+                        // Decrypt the length.
+                        byte[] data = buffer.array();
+                        if (isAead) {
+                            cipher.updateAAD(data, 0, Integer.BYTES);
+                        } else if (!isEtm) {
+                            cipher.update(data, 0, need);
+                        }
+                    }
+                    packetLength = buffer.getInt();
+
+                    // Validate the packet length
+                    boolean lengthOK = true;
+                    if (packetLength < MIN_PACKET_LENGTH
+                            || packetLength > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+                        LOG.warn("received({}) Error decoding packet (invalid length): {}", session, packetLength);
+                        lengthOK = false;
+                    } else if (((packetLength + ((isAead || isEtm) ? 0 : Integer.BYTES)) & (cipherSize - 1)) != 0) {
+                        // Note: we assume cipherSize is a power of two.
+                        LOG.warn("received({}) Error decoding packet(padding; not multiple of {}): {}", session, cipherSize,
+                                packetLength);
+                        lengthOK = false;
+                    }
+                    if (!lengthOK) {
+                        // Mitigation against CVE-2008-5161 AKA CPNI-957037: make any disconnections due to decoding
+                        // errors indistinguishable from failed MAC checks.
+                        //
+                        // If we disconnect here, a client may still deduce (since it sent only one block) that the
+                        // length check failed. So we keep on requesting more data and fail later. OpenSSH actually
+                        // discards the next 256kB of data, but in fact any number of bytes will do.
+                        //
+                        // Remember the exception, continue requiring an arbitrary number of bytes, and throw the
+                        // exception later.
+                        discarding = new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                                "Invalid packet length: " + packetLength);
+                        packetLength = buffer.available() + (2 + random.random(20)) * cipherSize;
+                        // Round up to the next larger multiple of the block size
+                        packetLength = (packetLength + (cipherSize - 1)) & ~(cipherSize - 1);
+                        if (!isAead && !isEtm) {
+                            packetLength -= Integer.BYTES;
+                        }
+                        LOG.warn("received({}) Invalid packet length; requesting {} bytes before disconnecting",
+                                session, packetLength - buffer.available());
+                    }
+                }
+                assert buffer.rpos() == Integer.BYTES;
+                // We have a length here.
+                if (buffer.available() < packetLength + settings.getTagSize()) {
+                    // Need more data
+                    break;
+                }
+                // Decrypt the packet. We allow cipher == null && mac != null.
+                byte[] data = buffer.array();
+                int bytes;
+                if (isAead) {
+                    // Packet length is handled by AAD
+                    bytes = packetLength;
+                    cipher.update(data, Integer.BYTES, bytes);
+                } else if (isEtm) {
+                    // Packet length is unencrypted
+                    bytes = packetLength;
+                    checkMac(data, 0, bytes + Integer.BYTES, settings.getMac());
+                    if (cipher != null) {
+                        cipher.update(data, Integer.BYTES, bytes);
+                    }
+                } else {
+                    bytes = packetLength + Integer.BYTES;
+                    if (cipher != null) {
+                        // First block was decrypted when we got the packet length.
+                        cipher.update(data, cipherSize, bytes - cipherSize);
+                    }
+                    checkMac(data, 0, bytes, settings.getMac());
+                }
+
+                // Mitigation against CVE-2008-5161 AKA CPNI-957037. But is is highly unlikely that we pass the AAD or
+                // MAC checks above.
+                if (discarding != null) {
+                    throw discarding;
+                }
+
+                inCounts.get().update(bytes / cipherSize, bytes);
+                sequenceNumber = (sequenceNumber + 1) & 0xFFFF_FFFFL;
+
+                int endOfDataReceived = buffer.wpos();
+                int afterPacket = packetLength + Integer.BYTES + settings.getTagSize();
+
+                int padding = buffer.getUByte();
+                if (padding < 4) {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "Invalid packet padding, must have at least 4 padding bytes according to RFC 4253, got " + padding);
+                }
+                int endOfPayload = packetLength + Integer.BYTES - padding;
+                if (endOfPayload <= buffer.rpos()) {
+                    // A valid SSH packet never has an empty payload; there's at the very least a single byte containing
+                    // the command code.
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "Invalid packet payload length " + (buffer.rpos() - endOfPayload));
+                }
+                // Pass it on (directly the slice of this buffer)
+                buffer.wpos(endOfPayload);
+                owner().passOn(CryptFilter.this, buffer);
+
+                // Reset buffer positions
+                buffer.rpos(afterPacket);
+                buffer.wpos(endOfDataReceived);
+                buffer.compact();
+                packetLength = UNKNOWN_PACKET_LENGTH;
+            }
+        }
+
+        private void checkMac(byte[] data, int offset, int length, Mac mac) throws Exception {
+            if (mac != null) {
+                mac.updateUInt(sequenceNumber);
+                mac.update(data, offset, length);
+                byte[] x = mac.doFinal();
+                if (!Mac.equals(x, 0, data, offset + length, x.length)) {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "MAC error");
+                }
+            }
+        }
+    }
+
+    private class EncryptionHandler extends WithSequenceNumber implements OutputHandler {
+
+        EncryptionHandler() {
+            super();
+        }
+
+        @Override
+        public synchronized IoWriteFuture send(Buffer message) throws IOException {
+            Buffer encrypted = message;
+            if (encrypted != null) {
+                try {
+                    listeners.forEach(listener -> listener.aboutToEncrypt(message, sequenceNumber));
+                    encrypted = encode(message);
+                } catch (IOException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new IOException(e.getMessage(), e);
+                }
+            }
+            return owner().send(CryptFilter.this, encrypted);
+        }
+
+        private Buffer encode(Buffer packet) throws Exception {
+            Settings settings = encryption.get();
+            Cipher cipher = settings.getCipher();
+            boolean isAead = cipher != null && settings.isAead();
+            boolean isEtm = settings.isEtm();
+            int cipherSize = cipher == null ? 8 : cipher.getCipherBlockSize();
+            // We assume cipherSize is a power of two.
+            int rpos = packet.rpos();
+            int length = packet.available();
+            int start = rpos - SshConstants.SSH_PACKET_HEADER_LEN;
+            if (start < 0) {
+                throw new IllegalArgumentException("Message is not an SSH packet buffer; need 5 spare bytes at the front");
+            }
+            int pad = paddingLength(length, cipherSize, !isAead && !isEtm);
+            // RFC 4253: at least 4 bytes padding, at most 255 bytes
+            if (pad < 4 || pad > MAX_PADDING) {
+                throw new IllegalStateException("Invalid packet length computed: " + pad + " not in range [4..255]");
+            }
+            packet.wpos(start);
+            packet.putUInt(1L + length + pad);
+            packet.putByte((byte) pad);
+            // Ensure there's enough space, then fill in the padding
+            int tagSize = settings.getTagSize();
+            packet.wpos(packet.wpos() + length + pad + tagSize);
+            byte[] data = packet.array();
+            random.fill(data, packet.wpos() - tagSize - pad, pad);
+            int bytes;
+            if (isAead) {
+                cipher.updateAAD(data, start, Integer.BYTES);
+                bytes = length + pad + 1;
+                cipher.update(data, start + Integer.BYTES, bytes);
+            } else if (isEtm) {
+                bytes = length + pad + 1;
+                if (cipher != null) {
+                    cipher.update(data, start + Integer.BYTES, bytes);
+                }
+                appendMac(data, start, packet.wpos() - tagSize, settings.getMac());
+            } else {
+                appendMac(data, start, packet.wpos() - tagSize, settings.getMac());
+                bytes = length + pad + SshConstants.SSH_PACKET_HEADER_LEN;
+                if (cipher != null) {
+                    cipher.update(data, start, bytes);
+                }
+            }
+            outCounts.get().update(bytes / cipherSize, bytes);
+            sequenceNumber = (sequenceNumber + 1) & 0xFFFF_FFFFL;
+
+            packet.rpos(start);
+            return packet;
+        }
+
+        private int paddingLength(int payloadLength, int blockSize, boolean includePacketLength) {
+            int toEncrypt = payloadLength + 1; // For the padding count itself.
+            if (includePacketLength) {
+                toEncrypt += Integer.BYTES;
+            }
+            // RFC 4253: at least 4, at most 255 bytes.
+            // RFC 4253: variable amounts of random padding may help thwart traffic analysis.
+            int pad = 4 + random.random(MAX_PADDING + 1 - 4);
+            // Now pad is in the range [4..MAX_PADDING]
+            int totalLength = toEncrypt + pad;
+            // Adjust pad such that totalLength is a multiple of the blockSize, and is still larger than 4.
+            pad = (totalLength & ~(blockSize - 1)) - toEncrypt;
+            if (pad < 4) {
+                pad += blockSize;
+            }
+            return pad;
+        }
+
+        private void appendMac(byte[] data, int start, int end, Mac mac) throws Exception {
+            if (mac != null) {
+                mac.updateUInt(sequenceNumber);
+                mac.update(data, start, end - start);
+                mac.doFinal(data, end);
+            }
+        }
+    }
+
+    public static class Settings {
+
+        private final Cipher cipher;
+
+        private final Mac mac;
+
+        private final int tagSize;
+
+        private final boolean etm;
+
+        private final boolean aead;
+
+        public Settings(Cipher cipher, Mac mac) {
+            this.cipher = cipher;
+            this.mac = mac;
+            int tagSz = 0;
+            if (cipher != null) {
+                tagSz += cipher.getAuthenticationTagSize();
+            }
+            aead = tagSz > 0;
+            if (aead && mac != null) {
+                throw new IllegalStateException("AEAD cipher " + cipher + " must not have a MAC: " + mac);
+            }
+            if (mac != null) {
+                tagSz += mac.getBlockSize();
+            }
+            tagSize = tagSz;
+            etm = mac != null && mac.isEncryptThenMac();
+        }
+
+        public Cipher getCipher() {
+            return cipher;
+        }
+
+        public Mac getMac() {
+            return mac;
+        }
+
+        public int getTagSize() {
+            return tagSize;
+        }
+
+        public boolean isEtm() {
+            return etm;
+        }
+
+        public boolean isAead() {
+            return aead;
+        }
+
+        public boolean isSecure() {
+            return cipher != null && !(cipher instanceof CipherNone) && tagSize > 0;
+        }
+    }
+
+    public static class Counters {
+
+        long bytes;
+
+        long blocks;
+
+        long packets;
+
+        Counters() {
+            super();
+        }
+
+        public void update(int blocks, int bytes) {
+            this.blocks += blocks;
+            this.bytes += bytes;
+            packets++;
+        }
+
+        public long getBytes() {
+            return bytes;
+        }
+
+        public long getBlocks() {
+            return blocks;
+        }
+
+        public long getPackets() {
+            return packets;
+        }
+    }
+}

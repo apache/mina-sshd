@@ -38,35 +38,27 @@ public abstract class IoFilter implements Filter {
 
     @Override
     public void adding(FilterChain chain) {
-        // Nothing
-    }
-
-    @Override
-    public void added(FilterChain chain) {
         this.chain = Objects.requireNonNull(chain);
     }
 
     @Override
+    public void added(FilterChain chain) {
+        // Nothing
+    }
+
+    @Override
     public void removing() {
-        chain = null;
+        // Nothing
     }
 
     @Override
     public void removed(FilterChain chain) {
-        // Nothing
+        this.chain = null;
     }
 
     @Override
     public FilterChain owner() {
         return chain;
-    }
-
-    protected FilterChain active() {
-        FilterChain myChain = chain;
-        if (myChain == null || myChain.owner() == null) {
-            throw new IllegalStateException();
-        }
-        return myChain;
     }
 
 }

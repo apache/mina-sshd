@@ -61,7 +61,6 @@ import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.ServerAuthenticationManager;
 import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.auth.UserAuthFactory;
@@ -214,22 +213,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         this.keyPairProvider = keyPairProvider;
     }
 
-    /**
-     * Sends the server identification + any extra header lines
-     *
-     * @param  headerLines Extra header lines to be prepended to the actual identification string - ignored if
-     *                     {@code null}/empty
-     * @return             An {@link IoWriteFuture} that can be used to be notified of identification data being written
-     *                     successfully or failing
-     * @throws Exception   If failed to send identification
-     * @see                <A HREF="https://tools.ietf.org/html/rfc4253#section-4.2">RFC 4253 - section 4.2</A>
-     */
-    protected IoWriteFuture sendServerIdentification(List<String> headerLines) throws Exception {
-        serverVersion = resolveIdentificationString(CoreModuleProperties.SERVER_IDENTIFICATION.getName());
-        signalSendIdentification(serverVersion, headerLines);
-        return sendIdentification(serverVersion, headerLines);
-    }
-
     @Override
     protected void checkKeys() {
         // nothing
@@ -315,19 +298,12 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         Buffer response = createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
-        IoWriteFuture future;
         IoSession networkSession = getIoSession();
-        synchronized (encodeLock) {
-            Buffer packet = resolveOutputPacket(response);
-
-            setUsername(username);
-            // must be AFTER the USERAUTH-SUCCESS packet created in case delayed compression is used
-            setAuthenticated();
-            startService(authService, buffer);
-
-            // Now we can inform the peer that authentication is successful
-            future = networkSession.writeBuffer(packet);
-        }
+        setUsername(username);
+        setAuthenticated();
+        getCompressionFilter().enableInput();
+        startService(authService, buffer);
+        IoWriteFuture future = writePacket(response).addListener(f -> getCompressionFilter().enableOutput());
 
         resetIdleTimeout();
         log.info("Session {}@{} authenticated", username, networkSession.getRemoteAddress());
@@ -506,8 +482,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
         signalPeerIdentificationReceived(clientVersion, ident);
 
-        kexState.set(KexState.INIT);
-        sendKexInit();
         return true;
     }
 

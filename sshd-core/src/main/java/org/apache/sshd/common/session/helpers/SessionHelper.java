@@ -820,43 +820,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     /**
-     * Send our identification.
-     *
-     * @param  version    our identification to send
-     * @param  extraLines Extra lines to send - used only by server sessions
-     * @return            {@link IoWriteFuture} that can be used to wait for notification that identification has been
-     *                    send
-     * @throws Exception  If failed to send the packet
-     */
-    protected IoWriteFuture sendIdentification(String version, List<String> extraLines) throws Exception {
-        ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
-        IoWriteFuture future = (handler == null) ? null : handler.sendIdentification(this, version, extraLines);
-        boolean debugEnabled = log.isDebugEnabled();
-        if (future != null) {
-            if (debugEnabled) {
-                log.debug("sendIdentification({})[{}] sent {} lines via reserved handler",
-                        this, version, GenericUtils.size(extraLines));
-            }
-
-            return future;
-        }
-
-        String ident = version;
-        if (GenericUtils.size(extraLines) > 0) {
-            ident = GenericUtils.join(extraLines, "\r\n") + "\r\n" + version;
-        }
-
-        if (debugEnabled) {
-            log.debug("sendIdentification({}): {}",
-                    this, ident.replace('\r', '|').replace('\n', '|'));
-        }
-
-        IoSession networkSession = getIoSession();
-        byte[] data = (ident + "\r\n").getBytes(StandardCharsets.UTF_8);
-        return networkSession.writeBuffer(new ByteArrayBuffer(data));
-    }
-
-    /**
      * Read the remote identification from this buffer. If more data is needed, the buffer will be reset to its original
      * state and a {@code null} value will be returned. Else the identification string will be returned and the data
      * read will be consumed from the buffer.
@@ -1147,35 +1110,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
 
         listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, reason);
-    }
-
-    /**
-     * Invoked by the session before encoding the buffer in order to make sure that it is at least of size
-     * {@link SshConstants#SSH_PACKET_HEADER_LEN SSH_PACKET_HEADER_LEN}. This is required in order to efficiently handle
-     * the encoding. If necessary, it re-allocates a new buffer and returns it instead.
-     *
-     * @param  cmd         The command stored in the buffer
-     * @param  buffer      The original {@link Buffer} - assumed to be properly formatted and be of at least the
-     *                     required minimum length.
-     * @return             The adjusted {@link Buffer}. <B>Note:</B> users may use this method to totally alter the
-     *                     contents of the buffer being sent but it is highly discouraged as it may have unexpected
-     *                     results.
-     * @throws IOException If failed to process the buffer
-     */
-    protected Buffer preProcessEncodeBuffer(int cmd, Buffer buffer) throws IOException {
-        int curPos = buffer.rpos();
-        if (curPos >= SshConstants.SSH_PACKET_HEADER_LEN) {
-            return buffer;
-        }
-
-        log.warn("preProcessEncodeBuffer({}) command={}[{}] performance cost:"
-                 + " available buffer packet header length ({}) below min. required ({})",
-                this, cmd, SshConstants.getCommandMessageName(cmd),
-                curPos, SshConstants.SSH_PACKET_HEADER_LEN);
-        Buffer nb = new ByteArrayBuffer(buffer.available() + Long.SIZE, false);
-        nb.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
-        nb.putBuffer(buffer);
-        return nb;
     }
 
     @Override

@@ -24,7 +24,6 @@ import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
@@ -33,55 +32,11 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class DefaultFilterChain implements FilterChain {
 
-    private volatile Session session;
-
     private final CopyOnWriteArrayList<Filter> chain = new CopyOnWriteArrayList<>();
 
     public DefaultFilterChain() {
         super();
     }
-
-    // Lifecycle methods
-
-    @Override
-    public void init() {
-        // Nothing
-    }
-
-    @Override
-    public void adding(Session owner) {
-        // Nothing
-    }
-
-    @Override
-    public void added(Session owner) {
-        this.session = session;
-    }
-
-    @Override
-    public void removing() {
-        session = null;
-        Filter[] filters = chain.toArray(new Filter[0]);
-        for (Filter f : filters) {
-            f.removing();
-        }
-        chain.clear();
-        for (Filter f : filters) {
-            f.removed(this);
-        }
-    }
-
-    @Override
-    public void removed(Session owner) {
-        // Nothing
-    }
-
-    @Override
-    public Session owner() {
-        return session;
-    }
-
-    // Filter chain operations
 
     private Filter notDuplicate(Filter filter) {
         if (chain.indexOf(Objects.requireNonNull(filter)) >= 0) {
@@ -97,6 +52,11 @@ public class DefaultFilterChain implements FilterChain {
         notDuplicate(filter).adding(this);
         chain.add(i, filter);
         filter.added(this);
+    }
+
+    @Override
+    public boolean isEmpty() {
+        return chain.isEmpty();
     }
 
     @Override

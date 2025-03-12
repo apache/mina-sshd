@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.Collections;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -56,17 +55,13 @@ import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
-import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
-import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.kex.extension.KexExtensionHandler;
-import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
@@ -311,18 +306,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
     }
 
-    protected void initializeKeyExchangePhase() throws Exception {
-        KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler == null) || (!extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.PREKEX))) {
-            kexState.set(KexState.INIT);
-            sendKexInit();
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("initializeKexPhase({}) delay KEX-INIT until server-side one received", this);
-            }
-        }
-    }
-
     protected void initializeProxyConnector() throws Exception {
         ClientProxyConnector proxyConnector = getClientProxyConnector();
         boolean debugEnabled = log.isDebugEnabled();
@@ -353,13 +336,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
                 throw new RuntimeSshException(t);
             }
         }
-    }
-
-    protected IoWriteFuture sendClientIdentification() throws Exception {
-        clientVersion = resolveIdentificationString(CoreModuleProperties.CLIENT_IDENTIFICATION.getName());
-        // Note: we intentionally use an unmodifiable list in order to enforce the fact that client cannot send header lines
-        signalSendIdentification(clientVersion, Collections.emptyList());
-        return sendIdentification(clientVersion, Collections.emptyList());
     }
 
     @Override
@@ -506,7 +482,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     public ChannelShell createShellChannel(PtyChannelConfigurationHolder ptyConfig, Map<String, ?> env)
             throws IOException {
-        if ((inCipher instanceof CipherNone) || (outCipher instanceof CipherNone)) {
+        if (!isConnectionSecure()) {
             throw new IllegalStateException("Interactive channels are not supported with none cipher");
         }
 
@@ -539,16 +515,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
         signalExtraServerVersionInfo(serverVersion, ident);
 
-        // Now that we have the server's identity reported see if have delayed any of our duties...
-        if (!sendImmediateClientIdentification) {
-            sendClientIdentification();
-            // if client identification not sent then KEX-INIT was not sent either
-            initializeKeyExchangePhase();
-        } else if (!sendImmediateKexInit) {
-            // if client identification sent, perhaps we delayed KEX-INIT
-            initializeKeyExchangePhase();
-        }
-
         return true;
     }
 
@@ -580,24 +546,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     @Override
     protected void setKexSeed(byte... seed) {
         setClientKexData(seed);
-    }
-
-    @Override
-    protected byte[] receiveKexInit(Buffer buffer) throws Exception {
-        byte[] seed = super.receiveKexInit(buffer);
-        /*
-         * Check if the session has delayed its KEX-INIT until the server's one was received in order to support KEX
-         * extension negotiation (RFC 8308).
-         */
-        if (kexState.compareAndSet(KexState.UNKNOWN, KexState.RUN)) {
-            if (log.isDebugEnabled()) {
-                log.debug("receiveKexInit({}) sending client proposal", this);
-            }
-            kexState.set(KexState.INIT);
-            sendKexInit();
-        }
-
-        return seed;
     }
 
     @Override

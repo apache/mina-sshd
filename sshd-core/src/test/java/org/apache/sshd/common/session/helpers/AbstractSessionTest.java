@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.IoWriteFutureImpl;
 import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
@@ -65,10 +64,10 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class AbstractSessionTest extends BaseTestSupport {
+class AbstractSessionTest extends BaseTestSupport {
     private MySession session;
 
-    public AbstractSessionTest() {
+    AbstractSessionTest() {
         super();
     }
 
@@ -165,45 +164,6 @@ public class AbstractSessionTest extends BaseTestSupport {
             String ident = readIdentification(session, buf);
             fail("Unexpected success: " + ident);
         });
-    }
-
-    // see SSHD-619
-    @Test
-    void msgIgnorePadding() throws Exception {
-        final long frequency = Byte.SIZE;
-        CoreModuleProperties.IGNORE_MESSAGE_SIZE.set(session, Short.SIZE);
-        CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.set(session, frequency);
-        CoreModuleProperties.IGNORE_MESSAGE_VARIANCE.set(session, 0);
-        session.refreshConfiguration();
-
-        Buffer msg = session.createBuffer(SshConstants.SSH_MSG_DEBUG, Long.SIZE);
-        msg.putBoolean(true); // display ?
-        msg.putString(getCurrentTestName()); // message
-        msg.putString(""); // language
-
-        MyIoSession ioSession = (MyIoSession) session.getIoSession();
-        Queue<Buffer> queue = ioSession.getOutgoingMessages();
-        int numIgnores = 0;
-        for (int cycle = 0; cycle < Byte.SIZE; cycle++) {
-            for (long index = 0; index <= frequency; index++) {
-                session.writePacket(msg);
-
-                Buffer data = queue.remove();
-                if (data != msg) {
-                    int cmd = data.getUByte();
-                    assertEquals(SshConstants.SSH_MSG_IGNORE,
-                            cmd,
-                            "Mismatched buffer command at cycle " + cycle + "[" + index + "]");
-
-                    int len = data.getInt();
-                    assertTrue(len >= Short.SIZE,
-                            "Mismatched random padding data length at cycle " + cycle + "[" + index + "]: " + len);
-                    numIgnores++;
-                }
-            }
-        }
-
-        assertEquals(Byte.SIZE, numIgnores, "Mismatched number of ignore messages");
     }
 
     // see SSHD-652
@@ -319,12 +279,12 @@ public class AbstractSessionTest extends BaseTestSupport {
         return GenericUtils.isEmpty(lines) ? null : lines.get(lines.size() - 1);
     }
 
-    public static class MyIoSession implements IoSession {
+    private static class MyIoSession implements IoSession {
         private final Queue<Buffer> outgoing = new LinkedBlockingQueue<>();
         private final AtomicBoolean open = new AtomicBoolean(true);
         private final CloseFuture closeFuture;
 
-        public MyIoSession() {
+        MyIoSession() {
             closeFuture = new DefaultCloseFuture(Test.class.getSimpleName(), open);
         }
 
@@ -336,10 +296,6 @@ public class AbstractSessionTest extends BaseTestSupport {
         @Override
         public void removeCloseFutureListener(SshFutureListener<CloseFuture> listener) {
             closeFuture.addListener(listener);
-        }
-
-        public Queue<Buffer> getOutgoingMessages() {
-            return outgoing;
         }
 
         @Override
@@ -447,16 +403,16 @@ public class AbstractSessionTest extends BaseTestSupport {
         }
     }
 
-    public static class MySession extends AbstractSession {
-        public MySession() {
+    static class MySession extends AbstractSession {
+        MySession() {
             super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class),
                   new MyIoSession());
             initialKexDone = true;
         }
 
         @Override
-        public void start() throws Exception {
-            super.start();
+        protected void setupFilterChain() {
+            // Nothing
         }
 
         @Override
@@ -471,11 +427,6 @@ public class AbstractSessionTest extends BaseTestSupport {
 
         public List<String> doReadIdentification(Buffer buffer) throws Exception {
             return super.doReadIdentification(buffer, false);
-        }
-
-        @Override
-        protected Buffer encode(Buffer buffer) throws IOException {
-            return buffer;
         }
 
         @Override

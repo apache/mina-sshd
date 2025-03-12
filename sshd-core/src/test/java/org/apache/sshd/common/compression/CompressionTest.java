@@ -29,7 +29,6 @@ import java.util.List;
 import com.jcraft.jsch.JSch;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.mac.MacCompatibilityTest;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.server.SshServer;
@@ -47,15 +46,13 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * Test compression algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class CompressionTest extends BaseTestSupport {
+class CompressionTest extends BaseTestSupport {
     private static final Collection<KexProposalOption> COMPRESSION_OPTIONS
             = Collections.unmodifiableSet(EnumSet.of(KexProposalOption.C2SCOMP, KexProposalOption.S2CCOMP));
 
@@ -72,8 +69,8 @@ public class CompressionTest extends BaseTestSupport {
     static void setupClientAndServer() throws Exception {
         JSchLogger.init();
 
-        sshd = CoreTestSupportUtils.setupTestFullSupportServer(MacCompatibilityTest.class);
-        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(MacCompatibilityTest.class));
+        sshd = CoreTestSupportUtils.setupTestFullSupportServer(CompressionTest.class);
+        sshd.setKeyPairProvider(CommonTestSupportUtils.createTestHostKeyProvider(CompressionTest.class));
         sshd.start();
         port = sshd.getPort();
     }
@@ -100,7 +97,7 @@ public class CompressionTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "factory={0}")
-    public void compression(CompressionFactory factory) throws Exception {
+    void compression(CompressionFactory factory) throws Exception {
         listener = new SessionListener() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -131,20 +128,21 @@ public class CompressionTest extends BaseTestSupport {
         s.connect();
         try {
             com.jcraft.jsch.Channel c = s.openChannel(Channel.CHANNEL_SHELL);
-            c.connect();
-            try (OutputStream os = c.getOutputStream();
-                 InputStream is = c.getInputStream()) {
+            try (InputStream is = c.getInputStream()) {
+                c.connect();
+                try (OutputStream os = c.getOutputStream()) {
 
-                String testCommand = "this is my command\n";
-                byte[] bytes = testCommand.getBytes(StandardCharsets.UTF_8);
-                byte[] data = new byte[bytes.length + Long.SIZE];
-                for (int i = 1; i <= 10; i++) {
-                    os.write(bytes);
-                    os.flush();
+                    String testCommand = "this is my command\n";
+                    byte[] bytes = testCommand.getBytes(StandardCharsets.UTF_8);
+                    byte[] data = new byte[bytes.length + Long.SIZE];
+                    for (int i = 1; i <= 10; i++) {
+                        os.write(bytes);
+                        os.flush();
 
-                    int len = is.read(data);
-                    String str = new String(data, 0, len, StandardCharsets.UTF_8);
-                    assertEquals(testCommand, str, "Mismatched read data at iteration #" + i);
+                        int len = is.read(data);
+                        String str = new String(data, 0, len, StandardCharsets.UTF_8);
+                        assertEquals(testCommand, str, "Mismatched read data at iteration #" + i);
+                    }
                 }
             } finally {
                 c.disconnect();

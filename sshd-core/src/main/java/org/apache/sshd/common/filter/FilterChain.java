@@ -21,14 +21,16 @@ package org.apache.sshd.common.filter;
 import java.io.IOException;
 
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
- * A general chain of {@link Filter}s owned by a {@link Session}.
+ * A general chain of {@link Filter}s owned by an {@link AbstractSession}.
  */
-public interface FilterChain extends Owned<Session> {
+public interface FilterChain {
+
+    boolean isEmpty();
 
     /**
      * Adds the given filter at the front of the filter chain.
