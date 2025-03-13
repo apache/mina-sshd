@@ -1010,7 +1010,7 @@
                 <plugin>
                     <groupId>net.revelc.code</groupId>
                     <artifactId>impsort-maven-plugin</artifactId>
-                    <version>1.6.2</version>
+                    <version>1.12.0</version>
                     <dependencies>
                         <!-- Must override dependency to build on Maven 3.9.x, even though not declared (see MNG-6965) -->
                         <dependency>
