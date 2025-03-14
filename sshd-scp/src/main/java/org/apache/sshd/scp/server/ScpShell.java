@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.scp.server;
 
+import java.io.File;
 import java.io.IOError;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,6 +53,9 @@ import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 import org.apache.sshd.common.file.FileSystemFactory;
+import org.apache.sshd.common.file.nativefs.NativeFileSystemFactory;
+import org.apache.sshd.common.file.root.RootedFileSystem;
+import org.apache.sshd.common.file.util.BaseFileSystem;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -69,7 +73,7 @@ import org.apache.sshd.server.channel.ServerChannelSessionHolder;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 
 /**
- * This commands SCP support for a ChannelSession.
+ * This command provides SCP support for a ChannelSession.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -77,16 +81,27 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
 
     public static final String STATUS = "status";
 
-    /** The &quot;PWD&quot; environment variable */
+    /** The "PWD" environment variable */
     public static final String ENV_PWD = "PWD";
 
-    /** The &quot;HOME&quot; environment variable */
+    /** The "HOME" environment variable */
     public static final String ENV_HOME = "HOME";
 
     /**
-     * Key for the language - format &quot;en_US.UTF-8&quot;
+     * Key for the language - format "en_US.UTF-8"
      */
     public static final String ENV_LANG = "LANG";
+
+    private static final int LS_ALL = 1 << 0;
+    private static final int LS_DIR_PLAIN = 1 << 1;
+    private static final int LS_LONG = 1 << 2;
+    private static final int LS_FULL_TIME = 1 << 3;
+
+    private static final int SCP_D = 1 << 0;
+    private static final int SCP_F = 1 << 1;
+    private static final int SCP_P = 1 << 2;
+    private static final int SCP_R = 1 << 3;
+    private static final int SCP_T = 1 << 4;
 
     protected final Map<String, Object> variables = new HashMap<>();
     protected final Charset nameEncodingCharset;
@@ -137,6 +152,36 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
     public void setFileSystemFactory(FileSystemFactory factory, SessionContext session) throws IOException {
         homeDir = factory.getUserHomeDir(session);
         super.setFileSystemFactory(factory, session);
+        FileSystem fs = getFileSystem();
+        if (fs instanceof RootedFileSystem) {
+            Path fsLocalRoot = ((RootedFileSystem) fs).getRoot();
+            Path newHome = fs.getPath("/");
+            if (homeDir != null && homeDir.startsWith(fsLocalRoot)) {
+                homeDir = fsLocalRoot.relativize(homeDir);
+                int n = homeDir.getNameCount();
+                for (int i = 0; i < n; i++) {
+                    Path p = homeDir.getName(i);
+                    if (!p.toString().isEmpty()) {
+                        newHome = newHome.resolve(p);
+                    }
+                }
+            }
+            homeDir = newHome;
+            log.debug("Home dir in RootedFileSystem = {}", homeDir);
+            currentDir = homeDir;
+        } else if (fs instanceof BaseFileSystem<?>) {
+            homeDir = ((BaseFileSystem<?>) fs).getDefaultDir();
+            currentDir = homeDir;
+        } else if (factory instanceof NativeFileSystemFactory) {
+            // A native file system will allow the user to navigate anywhere. Not recommended.
+            if (homeDir == null) {
+                homeDir = new File(".").getCanonicalFile().toPath();
+            }
+            log.debug("Home dir in native FileSystem = {}", homeDir);
+            currentDir = homeDir;
+        } else {
+            throw new IOException("ScpShell filesystem must be native or a RootedFileSystem or BaseFileSystem");
+        }
     }
 
     protected void println(String cmd, Object x, OutputStream out, Charset cs) {
@@ -172,15 +217,9 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         boolean debugEnabled = log.isDebugEnabled();
         ChannelSession channel = getServerChannelSession();
         try {
-            // TODO find some better alternative
-            if (homeDir == null) {
-                currentDir = opener.resolveLocalPath(channel.getSession(), fileSystem, ".");
-                log.warn("run - no home dir - starting at {}", currentDir);
-            } else {
-                currentDir = homeDir;
-                if (debugEnabled) {
-                    log.debug("run - starting at home dir={}", homeDir);
-                }
+            currentDir = homeDir;
+            if (debugEnabled) {
+                log.debug("run - starting at home dir={}", homeDir);
             }
 
             prepareEnvironment(getEnvironment());
@@ -284,9 +323,18 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                     unset(argv);
                     break;
                 case "unalias":
+                    // Has no effect; we might also return status=0 (success)
                     variables.put(STATUS, 1);
                     break;
                 default:
+                    // TODO: rm -r -f path to support deletions
+                    // TODO: mv -f oldname newname to support renaming
+                    // TODO: mkdir name to create a new directory
+                    // TODO: ln -s target link if the file system supports links
+                    // TODO: chmod
+                    // TODO: cp -p -r -f for remote-only copy
+                    // see https://github.com/winscp/winscp/blob/88b50c1/source/core/ScpFileSystem.cpp#L108
+                    // There'd be more, like sha512sum for supporting the checksum tab of file properties
                     handleUnsupportedCommand(command, argv);
             }
             stdout.flush();
@@ -301,10 +349,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         Locale locale = Locale.getDefault();
         String languageTag = locale.toLanguageTag();
         env.put(ENV_LANG, languageTag.replace('-', '_') + "." + nameEncodingCharset.displayName());
-
-        if (homeDir != null) {
-            env.put(ENV_HOME, homeDir.toString());
-        }
+        env.put(ENV_HOME, homeDir.toString());
 
         updatePwdEnvVariable(currentDir);
     }
@@ -415,11 +460,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
     }
 
     protected void scp(String command, String[] argv) throws Exception {
-        boolean optR = false;
-        boolean optT = false;
-        boolean optF = false;
-        boolean optD = false;
-        boolean optP = false;
+        int options = 0;
         boolean isOption = true;
         String path = null;
         for (int i = 1; i < argv.length; i++) {
@@ -439,26 +480,27 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                 char optVal = argVal.charAt(1);
                 switch (optVal) {
                     case 'r':
-                        optR = true;
+                        options |= SCP_R;
                         break;
                     case 't':
-                        optT = true;
+                        options |= SCP_T;
                         break;
                     case 'f':
-                        optF = true;
+                        options |= SCP_F;
                         break;
                     case 'd':
-                        optD = true;
+                        options |= SCP_D;
                         break;
                     case 'p':
-                        optP = true;
+                        options |= SCP_P;
                         break;
                     default:
                         signalError(argv[0], "scp: unsupported option: " + argVal);
                         return;
                 }
             } else if (path == null) {
-                path = argVal;
+                // WinSCP sends local paths, but let's be sure here.
+                path = toScpPath(argVal);
                 isOption = false;
             } else {
                 signalError(argv[0], "scp: one and only one path argument expected");
@@ -466,27 +508,34 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
             }
         }
 
-        if ((optT && optF) || (!optT && !optF)) {
+        int tf = options & (SCP_T | SCP_F);
+        if (tf != SCP_T && tf != SCP_F) {
             signalError(argv[0], "scp: one and only one of -t and -f option expected");
             return;
         }
 
-        doScp(command, path, optR, optT, optF, optD, optP);
+        doScp(command, path, options);
     }
 
-    protected void doScp(
-            String command, String path, boolean optR, boolean optT, boolean optF, boolean optD, boolean optP)
-            throws Exception {
+    protected void doScp(String command, String path, int options) throws Exception {
         try {
             ChannelSession channel = getServerChannelSession();
             ScpHelper helper = new ScpHelper(
                     channel.getSession(), getInputStream(), getOutputStream(),
                     fileSystem, opener, listener);
             Path localPath = currentDir.resolve(path);
-            if (optT) {
-                helper.receive(command, localPath, optR, optD, optP, receiveBufferSize);
+            if ((options & SCP_T) != 0) {
+                if (log.isDebugEnabled()) {
+                    log.debug("doScp({}) receiving file in {} at {}", getServerChannelSession(), path, localPath);
+                }
+                helper.receive(command, localPath, (options & SCP_R) != 0, (options & SCP_D) != 0, (options & SCP_P) != 0,
+                        receiveBufferSize);
             } else {
-                helper.send(Collections.singletonList(localPath.toString()), optR, optP, sendBufferSize);
+                if (log.isDebugEnabled()) {
+                    log.debug("doScp({}) sending file {} from {}", getServerChannelSession(), path, localPath);
+                }
+                helper.send(Collections.singletonList(localPath.toString()), (options & SCP_R) != 0, (options & SCP_P) != 0,
+                        sendBufferSize);
             }
             variables.put(STATUS, 0);
         } catch (IOException e) {
@@ -556,6 +605,23 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
         }
     }
 
+    private String toScpPath(String winScpPath) {
+        // WinSCP may send windows paths like C:\foo\bar. Map this to a virtual path if needed.
+        String separator = fileSystem.getSeparator();
+        String scpPath = winScpPath.replace("\\", separator);
+        if (scpPath.equals(winScpPath)) {
+            // Assume it's OK
+            return scpPath;
+        }
+        int i = scpPath.indexOf(separator);
+        // TODO: UNC paths? Funny \? prefixes? Looks like WinSCP doesn't send those.
+        if (i == 2 && scpPath.charAt(1) == ':') {
+            // Strip drive letter
+            scpPath = scpPath.substring(2);
+        }
+        return scpPath;
+    }
+
     protected void cd(String[] argv) throws Exception {
         if (argv.length == 1) {
             if (homeDir != null) {
@@ -582,7 +648,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
 
         // TODO make sure not escaping the user's sandbox filesystem
         Path cwd = currentDir;
-        cwd = cwd.resolve(path).toAbsolutePath().normalize();
+        cwd = cwd.resolve(toScpPath(path)).toAbsolutePath().normalize();
         if (!Files.exists(cwd)) {
             signalError(argv[0], "no such file or directory: " + path, nameEncodingCharset);
         } else if (!Files.isDirectory(cwd)) {
@@ -604,11 +670,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
     }
 
     protected void ls(String[] argv) throws Exception {
-        // find options
-        boolean optListAll = false;
-        boolean optDirAsPlain = false;
-        boolean optLong = false;
-        boolean optFullTime = false;
+        int options = 0;
         String path = null;
         for (int k = 1; k < argv.length; k++) {
             String argValue = argv[k];
@@ -618,7 +680,7 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
             }
 
             if (argValue.equals("--full-time")) {
-                optFullTime = true;
+                options |= LS_FULL_TIME;
             } else if (argValue.charAt(0) == '-') {
                 int argLen = argValue.length();
                 if (argLen == 1) {
@@ -631,13 +693,13 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                     // TODO should we raise an error if option re-specified ?
                     switch (optValue) {
                         case 'a':
-                            optListAll = true;
+                            options |= LS_ALL;
                             break;
                         case 'd':
-                            optDirAsPlain = true;
+                            options |= LS_DIR_PLAIN;
                             break;
                         case 'l':
-                            optLong = true;
+                            options |= LS_LONG;
                             break;
                         default:
                             signalError(argv[0], "unsupported option: -" + optValue);
@@ -645,48 +707,59 @@ public class ScpShell extends AbstractFileSystemCommand implements ServerChannel
                     }
                 }
             } else if (path == null) {
-                path = argValue;
+                path = toScpPath(argValue);
             } else {
                 signalError(argv[0], "unsupported option: " + argValue);
                 return;
             }
         }
 
-        // TODO see what optDirAsPlain means
-        doLs(argv[0], path, optListAll, optLong, optFullTime);
+        doLs(argv[0], path, options);
     }
 
-    protected void doLs(
-            String cmd, String path, boolean optListAll, boolean optLong, boolean optFullTime)
-            throws Exception {
-        // list current directory content
-        Predicate<Path> filter = p -> {
-            String fileName = p.getFileName().toString();
-            return optListAll || fileName.equals(".")
-                    || fileName.equals("..") || !fileName.startsWith(".");
-        };
-
-        // TODO make sure not listing above user's home directory
-        Stream<Path> files = path != null
-                ? Stream.of(currentDir.resolve(path))
-                : Stream.concat(Stream.of(".", "..").map(currentDir::resolve), Files.list(currentDir));
-        OutputStream stdout = getOutputStream();
-        OutputStream stderr = getErrorStream();
-        variables.put(STATUS, 0);
-        files
-                .filter(filter)
-                .map(p -> new PathEntry(p, currentDir))
-                .sorted()
-                .forEach(p -> {
-                    try {
-                        String str = p.display(optLong, optFullTime);
-                        println(cmd, str, stdout, nameEncodingCharset);
-                    } catch (NoSuchFileException e) {
-                        println(cmd, cmd + ": " + p.path.toString() + ": no such file or directory", stderr,
-                                nameEncodingCharset);
-                        variables.put(STATUS, 1);
-                    }
-                });
+    protected void doLs(String cmd, String path, int options) throws Exception {
+        boolean listDirectory = path == null;
+        Path toList = currentDir;
+        if (path != null) {
+            toList = currentDir.resolve(path);
+            listDirectory = ((options & LS_DIR_PLAIN) == 0) && Files.isDirectory(toList);
+        }
+        Path inDir = listDirectory ? toList : currentDir;
+        // Hide the .. entry if we're listing the root
+        Stream<String> dotDirs = Stream.empty();
+        if (listDirectory) {
+            dotDirs = toList.getNameCount() == 0 ? Stream.of(".") : Stream.of(".", "..");
+        }
+        Predicate<Path> filter;
+        if (!listDirectory || (options & LS_ALL) != 0) {
+            filter = p -> true;
+        } else {
+            filter = p -> {
+                String fileName = p.getFileName().toString();
+                return fileName.equals(".") || fileName.equals("..") || !fileName.startsWith(".");
+            };
+        }
+        try (Stream<Path> files = !listDirectory
+                ? Stream.of(toList)
+                : Stream.concat(dotDirs.map(toList::resolve), Files.list(toList))) {
+            OutputStream stdout = getOutputStream();
+            OutputStream stderr = getErrorStream();
+            variables.put(STATUS, 0);
+            files
+                    .filter(filter)
+                    .map(p -> new PathEntry(p, inDir))
+                    .sorted()
+                    .forEach(p -> {
+                        try {
+                            String str = p.display((options & LS_LONG) != 0, (options & LS_FULL_TIME) != 0);
+                            println(cmd, str, stdout, nameEncodingCharset);
+                        } catch (NoSuchFileException e) {
+                            println(cmd, cmd + ": " + p.path.toString() + ": no such file or directory", stderr,
+                                    nameEncodingCharset);
+                            variables.put(STATUS, 1);
+                        }
+                    });
+        }
     }
 
     protected static class PathEntry implements Comparable<PathEntry> {
