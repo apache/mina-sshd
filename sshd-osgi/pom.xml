@@ -154,7 +154,7 @@ Manifest-Version: 1.0
 Created-By: Maven Antrun Plugin
                                 </echo>
 
-                                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar" manifest="${project.build.directory}/osgi-sources/META-INF/MANIFEST.MF">
+                                <jar destfile="${project.build.directory}/${project.artifactId}-${project.version}-sources.jar" manifest="${project.build.directory}/osgi-sources/META-INF/MANIFEST.MF" modificationtime="${project.build.outputTimestamp}">
                                     <fileset dir="${project.basedir}/../sshd-common/src/main/java" includes="**/*" />
                                     <fileset dir="${project.basedir}/../sshd-common/src/main/resources" includes="**/*" erroronmissingdir="false" />
                                     <fileset dir="${project.basedir}/../sshd-core/src/main/java" includes="**/*" />
