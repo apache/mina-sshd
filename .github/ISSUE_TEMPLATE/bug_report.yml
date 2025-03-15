@@ -3,7 +3,7 @@ description: File a bug report.
 body:
   - type: markdown
     attributes:
-      value: |
+      value: >-
         Thank you for taking the time to fill out this bug report!
   - type: input
     id: version
@@ -17,7 +17,9 @@ body:
     id: description
     attributes:
       label: Bug description
-      description: Explain the buggy behavior, and how to reproduce it.
+      description: >-
+        Explain the buggy behavior, and how to reproduce it. Do not post screenshots or photos!
+        If you want to post code, copy-and-paste text and enclose it by three backticks ```.
     validations:
       required: true
   - type: textarea
@@ -25,7 +27,7 @@ body:
     attributes:
       label: Actual behavior
       description: What happened?
-      placeholder: Enclose exception stack traces by backticks, or paste them in the "Relevant log output" field below.
+      placeholder: 'Enclose exception stack traces by three backticks ```, or paste them in the "Relevant log output" field below.'
     validations:
       required: true
   - type: textarea
