@@ -139,17 +139,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -1099,39 +1088,44 @@ public class ClientTest extends BaseTestSupport {
     void publicKeyAuthWithEncryptedKey() throws Exception {
         // Create an encrypted private key file
         KeyPair pair = SecurityUtils.getKeyPairGenerator("RSA").generateKeyPair();
-        Path keyFile = getTestResourcesFolder().resolve("userKey");
-        Files.deleteIfExists(keyFile);
-        OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
-        options.setPassword("test-passphrase");
-        options.setCipherName("AES");
-        options.setCipherMode("CTR");
-        options.setCipherType("256");
-        try (OutputStream out = Files.newOutputStream(keyFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
-            OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(pair, "test key", options, out);
-        }
-        // The server accepts only this key
-        sshd.setPublickeyAuthenticator((username, key, session) -> KeyUtils.compareKeys(key, pair.getPublic()));
-        sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
-        sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
-        // Configure the client to use the encrypted key file
-        client.setKeyIdentityProvider(new FileKeyPairProvider(keyFile));
-        AtomicBoolean passwordProvided = new AtomicBoolean();
-        client.setFilePasswordProvider((session, file, index) -> {
-            passwordProvided.set(true);
-            return "test-passphrase";
-        });
-        client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
-        client.start();
+        Path tmpDir = Files.createTempDirectory("junit");
+        Path keyFile = tmpDir.resolve("userKey");
+        try {
+            OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
+            options.setPassword("test-passphrase");
+            options.setCipherName("AES");
+            options.setCipherMode("CTR");
+            options.setCipherType("256");
+            try (OutputStream out = Files.newOutputStream(keyFile, StandardOpenOption.CREATE, StandardOpenOption.WRITE)) {
+                OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(pair, "test key", options, out);
+            }
+            // The server accepts only this key
+            sshd.setPublickeyAuthenticator((username, key, session) -> KeyUtils.compareKeys(key, pair.getPublic()));
+            sshd.setPasswordAuthenticator(RejectAllPasswordAuthenticator.INSTANCE);
+            sshd.setKeyboardInteractiveAuthenticator(KeyboardInteractiveAuthenticator.NONE);
+            // Configure the client to use the encrypted key file
+            client.setKeyIdentityProvider(new FileKeyPairProvider(keyFile));
+            AtomicBoolean passwordProvided = new AtomicBoolean();
+            client.setFilePasswordProvider((session, file, index) -> {
+                passwordProvided.set(true);
+                return "test-passphrase";
+            });
+            client.setUserAuthFactories(Collections.singletonList(UserAuthPublicKeyFactory.INSTANCE));
+            client.start();
 
-        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
-                .getSession()) {
-            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
-            session.auth().verify(AUTH_TIMEOUT);
-            assertTrue(passwordProvided.get(), "Password provider should have been called");
+            try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                    .getSession()) {
+                assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
+                session.auth().verify(AUTH_TIMEOUT);
+                assertTrue(passwordProvided.get(), "Password provider should have been called");
+            } finally {
+                client.stop();
+            }
+            assertNull(clientSessionHolder.get(), "Session closure not signalled");
         } finally {
-            client.stop();
+            Files.deleteIfExists(keyFile);
+            Files.delete(tmpDir);
         }
-        assertNull(clientSessionHolder.get(), "Session closure not signalled");
     }
 
     @Test
