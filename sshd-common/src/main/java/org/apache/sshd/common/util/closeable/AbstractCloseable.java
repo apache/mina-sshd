@@ -167,8 +167,8 @@ public abstract class AbstractCloseable extends IoBaseCloseable {
      * </P>
      */
     protected void doCloseImmediately() {
-        closeFuture.setClosed();
         state.set(State.Closed);
+        closeFuture.setClosed();
     }
 
     protected Builder builder() {

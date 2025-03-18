@@ -34,6 +34,7 @@
 * [GH-677](https://github.com/apache/mina-sshd/issues/677) Fix current directory handling in `ScpShell` for WinSCP
 * [GH-678](https://github.com/apache/mina-sshd/issues/678) `ScpShell`: write month names in English for WinSCP
 * [GH-690](https://github.com/apache/mina-sshd/issues/690) Handle append mode for buggy SFTP v3 servers
+* [GH-700](https://github.com/apache/mina-sshd/issues/700) Fix race in `AbstractCloseable.doCloseImmediately()`
 
 ## New Features
 

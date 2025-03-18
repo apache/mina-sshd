@@ -324,7 +324,7 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     // NOTE: assumed to be called under lock
     protected <C extends Collection<ClientSessionEvent>> C updateCurrentSessionState(C state) {
-        if (closeFuture.isClosed()) {
+        if (isClosed()) {
             state.add(ClientSessionEvent.CLOSED);
         }
         if (isAuthenticated()) { // authFuture.isSuccess()
