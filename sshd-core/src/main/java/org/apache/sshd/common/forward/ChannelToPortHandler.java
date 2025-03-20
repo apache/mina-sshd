@@ -25,6 +25,7 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -65,10 +66,31 @@ public class ChannelToPortHandler extends AbstractLoggingBean {
         port.shutdownOutputStream();
     }
 
+    /**
+     * Write data to the port directly without adjusting the channel window.
+     *
+     * @param  buffer      data to write to the port
+     * @return             an {@link IoWriteFuture} fulfilled once the data has been written
+     * @throws IOException if an error occurs
+     */
+    public IoWriteFuture sendToPort(Buffer buffer) throws IOException {
+        return port.writeBuffer(buffer);
+    }
+
+    /**
+     * Forwards data received on the SSH channel to the port and adjust the channel window once the data has been
+     * written.
+     *
+     * @param  cmd         the SSH command, typically @link SshConstants#SSH_MSG_CHANNEL_DATA}, used for logging only
+     * @param  data        to forward
+     * @param  off         offset in {@code data} of the start of the data to forward
+     * @param  len         number of bytes to forward
+     * @throws IOException if an error occurs
+     */
     public void sendToPort(byte cmd, byte[] data, int off, long len) throws IOException {
         ValidateUtils.checkTrue(len <= Integer.MAX_VALUE, "Data length exceeds int boundaries: %d", len);
         Buffer buf = ByteArrayBuffer.getCompactClone(data, off, (int) len);
-        port.writeBuffer(buf).addListener(future -> {
+        sendToPort(buf).addListener(future -> {
             if (future.isWritten()) {
                 handleWriteDataSuccess(cmd, buf.array(), 0, (int) len);
             } else {

@@ -95,7 +95,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
 
     private final TcpForwardingFilter.Type type;
     private IoConnector connector;
-    private ChannelToPortHandler port;
+    private volatile ChannelToPortHandler port;
     private ChannelAsyncOutputStream out;
     private SshdSocketAddress tunnelEntrance;
     private SshdSocketAddress tunnelExit;
@@ -227,6 +227,15 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
         return f;
     }
 
+    /**
+     * Retrieves the {@link ChannelToPortHandler}. This is {@code null} when the forwarding connection is not open.
+     *
+     * @return the port handler, if set, or {@code null} otherwise
+     */
+    public ChannelToPortHandler getPort() {
+        return port;
+    }
+
     @Override
     protected boolean mayWrite() {
         // We need to allow writing while closing in order to be able to flush the ChannelAsyncOutputStream.
@@ -322,6 +331,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                     @SuppressWarnings("synthetic-access")
                     protected void doCloseImmediately() {
                         executor.submit(() -> connector.close(true).addListener(f -> executor.close(true)));
+                        port = null;
                         super.doCloseImmediately();
                     }
                 })
