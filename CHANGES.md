@@ -35,6 +35,7 @@
 * [GH-678](https://github.com/apache/mina-sshd/issues/678) `ScpShell`: write month names in English for WinSCP
 * [GH-690](https://github.com/apache/mina-sshd/issues/690) Handle append mode for buggy SFTP v3 servers
 * [GH-700](https://github.com/apache/mina-sshd/issues/700) Fix race in `AbstractCloseable.doCloseImmediately()`
+* [GH-709](https://github.com/apache/mina-sshd/issues/709) `AbstractChannel`: Handle keep-alive channel messages sent by an old OpenSSH server
 
 ## New Features
 

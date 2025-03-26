@@ -362,6 +362,9 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             if (log.isDebugEnabled()) {
                 log.debug("handleInternalRequest({})[want-reply={}] received keep-alive: {}", this, wantReply, req);
             }
+            if (req.equals("keepalive@openssh.com")) {
+                return RequestHandler.Result.ReplyFailure;
+            }
             return RequestHandler.Result.ReplySuccess;
         }
         if (log.isDebugEnabled()) {
