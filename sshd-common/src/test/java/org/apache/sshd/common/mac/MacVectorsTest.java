@@ -64,7 +64,7 @@ public class MacVectorsTest extends JUnitTestSupport {
         List<Object[]> ret = new ArrayList<>();
         for (VectorTestData vector : Collections.unmodifiableList(
                 Arrays.asList(
-                        ///////////////// Test Cases for HMAC-MD5 ///////////////////////
+                ///////////////// Test Cases for HMAC-MD5 ///////////////////////
                         // see https://tools.ietf.org/html/rfc2202
                         new VectorTestData(
                                 "0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b0b", false, "Hi There",
