@@ -21,6 +21,8 @@ package org.apache.sshd.common.session.filters;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -56,6 +58,8 @@ public class IdentFilter extends IoFilter {
 
     private final AtomicReference<OutputHandler> writeHandler = new AtomicReference<>();
 
+    private final CopyOnWriteArrayList<IdentListener> listeners = new CopyOnWriteArrayList<>();
+
     public IdentFilter() {
         super();
     }
@@ -85,6 +89,21 @@ public class IdentFilter extends IoFilter {
         return writeHandler.get();
     }
 
+    public void addIdentListener(IdentListener listener) {
+        listeners.addIfAbsent(Objects.requireNonNull(listener));
+    }
+
+    public void removeIdentListener(IdentListener listener) {
+        if (listener != null) {
+            listeners.remove(listener);
+        }
+    }
+
+    public interface IdentListener {
+
+        void ident(boolean peer, String ident);
+    }
+
     private class ReadHandler implements InputHandler {
 
         private final ByteArrayBuffer buffer = new ByteArrayBuffer();
@@ -106,6 +125,7 @@ public class IdentFilter extends IoFilter {
                 List<String> lines = identHandler.readIdentification(buffer);
                 haveIdent = !GenericUtils.isEmpty(lines);
                 if (haveIdent) {
+                    listeners.forEach(listener -> listener.ident(true, lines.get(lines.size() - 1)));
                     buffer.compact();
                     received.setValue(Boolean.TRUE);
                     if (buffer.available() > 0) {
@@ -209,6 +229,7 @@ public class IdentFilter extends IoFilter {
             if (GenericUtils.isEmpty(ident) || (!identHandler.isServer() && GenericUtils.size(ident) > 1)) {
                 throw new IllegalStateException("Invalid SSH protocol version " + ident);
             }
+            listeners.forEach(listener -> listener.ident(false, ident.get(ident.size() - 1)));
             String myIdentification = ident.stream().collect(Collectors.joining(CRLF)) + CRLF;
             return new ByteArrayBuffer((myIdentification).getBytes(StandardCharsets.UTF_8));
         }

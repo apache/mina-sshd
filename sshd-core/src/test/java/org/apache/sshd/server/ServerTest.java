@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
@@ -46,7 +45,6 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.future.AuthFuture;
-import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
 import org.apache.sshd.common.auth.UserAuthMethodFactory;
@@ -72,7 +70,6 @@ import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
-import org.apache.sshd.deprecated.ClientUserAuthServiceOld;
 import org.apache.sshd.server.auth.keyboard.InteractiveChallenge;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.keyboard.PromptEntry;
@@ -93,14 +90,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -141,72 +130,6 @@ public class ServerTest extends BaseTestSupport {
         }
 
         assertFalse(sshd.isStarted(), "Server not marked as stopped");
-    }
-
-    /*
-     * Send bad password. The server should disconnect after a few attempts
-     */
-    @Test
-    void failAuthenticationWithWaitFor() throws Exception {
-        final int maxAllowedAuths = 10;
-        CoreModuleProperties.MAX_AUTH_REQUESTS.set(sshd, maxAllowedAuths);
-
-        sshd.start();
-        client.setServiceFactories(Arrays.asList(
-                new ClientUserAuthServiceOld.Factory(),
-                ClientConnectionServiceFactory.INSTANCE));
-        client.start();
-
-        try (ClientSession s
-                = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
-            int nbTrials = 0;
-            Collection<ClientSession.ClientSessionEvent> res = Collections.emptySet();
-            Collection<ClientSession.ClientSessionEvent> mask
-                    = EnumSet.of(ClientSession.ClientSessionEvent.CLOSED, ClientSession.ClientSessionEvent.WAIT_AUTH);
-            while (!res.contains(ClientSession.ClientSessionEvent.CLOSED)) {
-                nbTrials++;
-                s.getService(ClientUserAuthServiceOld.class)
-                        .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
-                res = s.waitFor(mask, TimeUnit.SECONDS.toMillis(5L));
-                assertFalse(res.contains(ClientSession.ClientSessionEvent.TIMEOUT), "Timeout signalled");
-            }
-            assertTrue(nbTrials > maxAllowedAuths, "Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths);
-        } finally {
-            client.stop();
-        }
-    }
-
-    @Test
-    void failAuthenticationWithFuture() throws Exception {
-        final int maxAllowedAuths = 10;
-        CoreModuleProperties.MAX_AUTH_REQUESTS.set(sshd, maxAllowedAuths);
-
-        sshd.start();
-
-        client.setServiceFactories(Arrays.asList(
-                new ClientUserAuthServiceOld.Factory(),
-                ClientConnectionServiceFactory.INSTANCE));
-        client.start();
-        try (ClientSession s
-                = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
-            int nbTrials = 0;
-            AuthFuture authFuture;
-            do {
-                nbTrials++;
-                assertTrue(nbTrials < 100, "Number of trials below max.");
-                authFuture = s.getService(ClientUserAuthServiceOld.class)
-                        .auth(new org.apache.sshd.deprecated.UserAuthPassword(s, "ssh-connection", "buggy"));
-                assertTrue(authFuture.await(AUTH_TIMEOUT), "Authentication wait failed");
-                assertTrue(authFuture.isDone(), "Authentication not done");
-                assertFalse(authFuture.isSuccess(), "Authentication unexpectedly successful");
-            } while (authFuture.getException() == null);
-
-            Throwable t = authFuture.getException();
-            assertNotNull(t, "Missing auth future exception");
-            assertTrue(nbTrials > maxAllowedAuths, "Number trials (" + nbTrials + ") below min.=" + maxAllowedAuths);
-        } finally {
-            client.stop();
-        }
     }
 
     @Test

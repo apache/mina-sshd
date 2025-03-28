@@ -47,8 +47,6 @@ import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Tests to ensure that an Apache MINA sshd client can talk to OpenSSH servers with or without "strict KEX". This
  * implicitly tests the message sequence number handling; if sequence numbers get out of sync or are reset wrongly,
@@ -187,7 +185,7 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
         }
 
         boolean usesStrictKex() {
-            return strictKex;
+            return isStrictKex();
         }
     }
 }

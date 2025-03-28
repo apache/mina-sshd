@@ -65,8 +65,13 @@ public class LocalWindow extends Window {
         released = 0;
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * @throws IOException if {@code len} if > the available space in the window
+     */
     @Override
-    public void consume(long len) throws IOException {
+    public long consume(long len) throws IOException {
         BufferUtils.validateUint32Value(len, "Invalid consumption length: %d");
         checkInitialized("consume");
 
@@ -84,6 +89,7 @@ public class LocalWindow extends Window {
         if (log.isDebugEnabled()) {
             log.debug("Consume {} by {} down to {}", this, len, remainLen);
         }
+        return len;
     }
 
     /**
@@ -107,9 +113,9 @@ public class LocalWindow extends Window {
             // frequently with very small "len". In such a case, the reader is likely to be (much) slower than the
             // sender, and we may end up sending a window adjustment for every single byte. Avoid that by requiring
             // at least some halfway reasonable amount having been released before sending a window adjustment.
-            if (released > packetSize / 2 || released > maxFree / 10 || released > 16 * 1024) {
+            long size = getSize();
+            if (size == 0 || released > packetSize / 2 || released > maxFree / 10 || released > 16 * 1024) {
                 // TODO make the adjust factor configurable via FactoryManager property
-                long size = getSize();
                 // Same logic as in OpenSSH
                 if (size < maxFree / 2 || maxFree - size > 3 * packetSize) {
                     // Math.min() is just belt and suspenders; size + released <= maxFree should always be true

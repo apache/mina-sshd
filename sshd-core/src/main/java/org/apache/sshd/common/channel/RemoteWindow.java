@@ -62,25 +62,44 @@ public class RemoteWindow extends Window {
         super.init(size, packetSize, resolver);
     }
 
+    /**
+     * {@inheritDoc}
+     *
+     * <p>
+     * Consumes at most the available space in the window. If {@code len} > the available space, less than {@code len}
+     * bytes are consumed.
+     * </p>
+     * <p>
+     * Also, caps the amount of window space consumed to {@code Math.min(getMaxSize(), getPacketSize())}.
+     * <p>
+     * Consuming space from the window is a <em>promise</em> to send that much data over an SSH channel. If not all data
+     * can be written, this promise has to be retracted by calling {@link #expand(long)} with the number of bytes not
+     * written.
+     * </p>
+     */
     @Override
-    public void consume(long len) {
+    public long consume(long len) {
         BufferUtils.validateUint32Value(len, "Invalid consumption length: %d");
         checkInitialized("consume");
 
         long remainLen;
+        long toConsume = len;
         synchronized (lock) {
-            remainLen = getSize() - len;
-            if (remainLen >= 0L) {
-                updateSize(remainLen);
+            long current = getSize();
+            if (current < toConsume) {
+                toConsume = current;
             }
-        }
-        if (remainLen < 0L) {
-            throw new IllegalStateException(
-                    "consume(" + this + ") required length (" + len + ") above available: " + (remainLen + len));
+            remainLen = current - toConsume;
+            updateSize(remainLen);
         }
         if (log.isDebugEnabled()) {
-            log.debug("Consume {} by {} down to {}", this, len, remainLen);
+            if (toConsume != len) {
+                log.debug("Consume {} by {} (requested {}) down to {}", this, toConsume, len, remainLen);
+            } else {
+                log.debug("Consume {} by {} down to {}", this, toConsume, remainLen);
+            }
         }
+        return toConsume;
     }
 
     public void expand(long increment) {
@@ -126,7 +145,7 @@ public class RemoteWindow extends Window {
     }
 
     /**
-     * Waits for enough data to become available to consume the specified size
+     * Waits for enough data to become available to consume the specified size, then consumes it.
      *
      * @param  len                    Size of data to consume
      * @param  maxWaitTime            Max. time to wait for enough data to become available
@@ -151,6 +170,7 @@ public class RemoteWindow extends Window {
                 log.debug("waitAndConsume({}) - requested={}, available={}", this, len, getSize());
             }
 
+            // Special case: we're inside the lock here, so we can be sure that we have enough space in the window
             consume(len);
         }
     }

@@ -332,7 +332,7 @@ public class ClientSessionImpl extends AbstractClientSession {
         if (isAuthenticated()) { // authFuture.isSuccess()
             state.add(ClientSessionEvent.AUTHED);
         }
-        if (KexState.DONE.equals(kexState.get())) {
+        if (KexState.DONE.equals(getKexState())) {
             AuthFuture future = authFuture;
             if (future == null || future.isFailure()) {
                 state.add(ClientSessionEvent.WAIT_AUTH);

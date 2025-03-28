@@ -16,11 +16,9 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.session.helpers;
+package org.apache.sshd.common.session.filters.kex;
 
 import java.io.IOException;
-import java.net.ProtocolException;
-import java.security.GeneralSecurityException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.List;
@@ -28,7 +26,6 @@ import java.util.Objects;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -36,12 +33,14 @@ import java.util.function.Supplier;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.filter.OutputHandler;
 import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.io.DefaultIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.util.ExceptionUtils;
-import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.session.helpers.AbstractSession;
+import org.apache.sshd.common.session.helpers.PendingWriteFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.slf4j.Logger;
@@ -58,7 +57,7 @@ import org.slf4j.Logger;
  *
  * @see <a href="https://tools.ietf.org/html/rfc4253#section-7">RFC 4253</a>
  */
-public class KeyExchangeMessageHandler {
+public class KexOutputHandler implements OutputHandler {
 
     // With asynchronous flushing we get a classic producer-consumer problem. The flushing thread is the single
     // consumer, and there is a risk that it might get overrun by the producers. The classical solution of using a
@@ -88,9 +87,9 @@ public class KeyExchangeMessageHandler {
     protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
 
     /**
-     * The {@link AbstractSession} this {@link KeyExchangeMessageHandler} belongs to.
+     * The {@link KexFilter} this {@link KexOutputHandler} belongs to.
      */
-    protected final AbstractSession session;
+    protected final KexFilter filter;
 
     /**
      * The {@link Logger} to use.
@@ -122,16 +121,16 @@ public class KeyExchangeMessageHandler {
     protected final AtomicReference<DefaultKeyExchangeFuture> kexFlushedFuture = new AtomicReference<>();
 
     /**
-     * Creates a new {@link KeyExchangeMessageHandler} for the given {@code session}, using the given {@code Logger}.
+     * Creates a new {@link KexOutputHandler} for the given {@code session}, using the given {@code Logger}.
      *
-     * @param session {@link AbstractSession} the new instance belongs to
-     * @param log     {@link Logger} to use for writing log messages
+     * @param filter {@link KexFilter} the new instance belongs to
+     * @param log    {@link Logger} to use for writing log messages
      */
-    public KeyExchangeMessageHandler(AbstractSession session, Logger log) {
-        this.session = Objects.requireNonNull(session);
+    public KexOutputHandler(KexFilter filter, Logger log) {
+        this.filter = Objects.requireNonNull(filter);
         this.log = Objects.requireNonNull(log);
         // Start with a fulfilled kexFlushed future.
-        DefaultKeyExchangeFuture initialFuture = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
+        DefaultKeyExchangeFuture initialFuture = new DefaultKeyExchangeFuture(this.toString(), null);
         initialFuture.setValue(Boolean.TRUE);
         kexFlushedFuture.set(initialFuture);
     }
@@ -144,22 +143,11 @@ public class KeyExchangeMessageHandler {
     }
 
     public <V> V updateState(Supplier<V> update) {
-        boolean locked = false;
-        // If we already have 'lock' as a reader, don't try to get the write lock -- the flushing thread is blocked
-        // currently anyway, and lock promotion from a readlock to a writelock is not possible. Contention between
-        // multiple readers is the business of the caller!
-        //
-        // See also writeOrEnqueue() below.
-        if (lock.getReadHoldCount() == 0) {
-            lock.writeLock().lock();
-            locked = true;
-        }
+        lock.writeLock().lock();
         try {
             return update.get();
         } finally {
-            if (locked) {
-                lock.writeLock().unlock();
-            }
+            lock.writeLock().unlock();
         }
     }
 
@@ -175,7 +163,8 @@ public class KeyExchangeMessageHandler {
     public DefaultKeyExchangeFuture initNewKeyExchange() {
         return updateState(() -> {
             kexFlushed.set(false);
-            return kexFlushedFuture.getAndSet(new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock()));
+            return kexFlushedFuture.getAndSet(
+                    new DefaultKeyExchangeFuture(filter.getSession().toString(), filter.getSession().getFutureLock()));
         });
     }
 
@@ -213,55 +202,34 @@ public class KeyExchangeMessageHandler {
     /**
      * Writes a packet. If a key exchange is ongoing, only low-level messages are written directly; all other messages
      * are queued and will be written once {@link #flushQueue(DefaultKeyExchangeFuture)} is called when the key exchange
-     * is done. Packets written while there are still pending packets to be flushed will either be queued, too, or the
-     * calling thread will be blocked with the given timeout until all packets have been flushed. Whether a write will
-     * be blocked is determined by {@link #isBlockAllowed(int)}.
+     * is done. Packets written while there are still pending packets to be flushed will either be queued, too.
      * <p>
      * If a packet was written, a key exchange may be triggered via {@link AbstractSession#checkRekey()}.
      * </p>
-     * <p>
-     * If {@code timeout <= 0} or {@code unit == null}, a time-out of "forever" is assumed. Note that a timeout applies
-     * only if the calling thread is blocked.
-     * </p>
      *
      * @param  buffer      packet to write
-     * @param  timeout     number of {@link TimeUnit}s to wait at most if the calling thread is blocked
-     * @param  unit        {@link TimeUnit} of {@code timeout}
-     * @return             an {@link IoWriteFuture} that will be fulfilled once the packet has indeed been written.
      * @throws IOException if an error occurs
      */
-    public IoWriteFuture writePacket(Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+    @Override
+    public IoWriteFuture send(Buffer buffer) throws IOException {
         // While exchanging key, queue high level packets.
         byte[] bufData = buffer.array();
         int cmd = bufData[buffer.rpos()] & 0xFF;
-        boolean enqueued = false;
         boolean isLowLevelMessage = cmd <= SshConstants.SSH_MSG_KEX_LAST && cmd != SshConstants.SSH_MSG_SERVICE_REQUEST
                 && cmd != SshConstants.SSH_MSG_SERVICE_ACCEPT;
         IoWriteFuture future = null;
         try {
             if (isLowLevelMessage) {
                 // Low-level messages can always be sent.
-                future = session.doWritePacket(buffer);
+                future = filter.write(buffer, true);
             } else {
-                future = writeOrEnqueue(cmd, buffer, timeout, unit);
-                enqueued = future instanceof PendingWriteFuture;
+                future = writeOrEnqueue(cmd, buffer);
+                if (!(future instanceof PendingWriteFuture)) {
+                    filter.startKexIfNeeded();
+                }
             }
         } finally {
-            session.resetIdleTimeout();
-        }
-        if (!enqueued) {
-            try {
-                session.checkRekey();
-            } catch (GeneralSecurityException e) {
-                if (log.isDebugEnabled()) {
-                    log.debug("writePacket({}) failed ({}) to check re-key: {}", session, e.getClass().getSimpleName(),
-                            e.getMessage(), e);
-                }
-                throw ValidateUtils.initializeExceptionCause(new ProtocolException(
-                        "Failed (" + e.getClass().getSimpleName() + ")" + " to check re-key necessity: " + e.getMessage()), e);
-            } catch (Exception e) {
-                ExceptionUtils.rethrowAsIoException(e);
-            }
+            filter.getSession().resetIdleTimeout();
         }
         return future;
     }
@@ -279,15 +247,11 @@ public class KeyExchangeMessageHandler {
      *
      * @param  cmd         SSH command from the buffer
      * @param  buffer      {@link Buffer} containing the packet to write
-     * @param  timeout     number of {@link TimeUnit}s to wait at most if the calling thread is blocked
-     * @param  unit        {@link TimeUnit} of {@code timeout}
      * @return             an {@link IoWriteFuture} that will be fulfilled once the packet has indeed been written.
      * @throws IOException if an error occurs
      */
-    protected IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer, long timeout, TimeUnit unit) throws IOException {
-        boolean holdsFutureLock = Thread.holdsLock(session.getFutureLock());
+    protected IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer) throws IOException {
         for (;;) {
-            DefaultKeyExchangeFuture block = null;
             // We must decide _and_ write the packet while holding the lock. If we'd write the packet outside this
             // lock, there is no guarantee that a concurrently running KEX_INIT received from the peer doesn't change
             // the state to RUN and grabs the encodeLock before the thread executing this write operation. If this
@@ -299,44 +263,19 @@ public class KeyExchangeMessageHandler {
                 if (shutDown.get()) {
                     throw new SshException("Write attempt on closing session: " + SshConstants.getCommandMessageName(cmd));
                 }
-                KexState state = session.kexState.get();
+                KexState state = filter.getKexState().get();
                 boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
                 if (kexDone && kexFlushed.get()) {
                     // Not in KEX, no pending packets: out it goes.
-                    return session.doWritePacket(buffer);
-                } else if (!holdsFutureLock && isBlockAllowed(cmd)) {
-                    // Still in KEX or still flushing: block until flushing is done, if we may block.
-                    //
-                    // The future lock is a _very_ global lock used for synchronization in many futures, and in
-                    // particular in the key exchange related futures; and it is accessible by client code. If we
-                    // block a thread holding that monitor, none of the futures that use that lock can ever be
-                    // fulfilled, including the future this thread would wait upon.
-                    //
-                    // It would seem that calling writePacket() while holding *any* (session global) Apache MINA
-                    // sshd lock in client code would be extremely bad practice. But note that the deprecated
-                    // ClientUserAuthServiceOld does exactly that. While that deprecated service doesn't send
-                    // channel data, there might be client code that does similar things. But this is also the
-                    // reason why we must be careful to never synchronize on the futureLock while holding the
-                    // kexLock: if that happened while code concurrently running called writePacket() while holding
-                    // the futureLock, we might get a deadlock due to lock inversion.
-                    //
-                    // Blocking here will prevent data-pumping application threads from overrunning the flushing
-                    // thread and ensures that the flushing thread does indeed terminate.
-                    //
-                    // Note that we block only for channel data.
-                    block = kexFlushedFuture.get();
+                    return filter.write(buffer, false);
                 } else {
-                    // Still in KEX or still flushing and we cannot block the thread. Enqueue the packet; it will
-                    // get written by the flushing thread at the end of KEX. Note that theoretically threads may
-                    // queue arbitrarily many packets during KEX. However, such a scenario is mostly limited to
-                    // "data pumping" threads that typically will block during KEX waiting until window space is
-                    // available on the channel again, which can happen only at the end of KEX.
-                    // (SSH_CHANNEL_WINDOW_ADJUST is not a low-level message and will not be sent during KEX.)
+                    // Still in KEX or still flushing. Enqueue the packet; it will get written by the flushing thread at
+                    // the end of KEX. See the javadoc of KexFilter.
                     //
                     // If so many packets are queued that flushing them triggers another KEX flushing stops
                     // and will be resumed at the end of the new KEX.
                     if (kexDone && log.isDebugEnabled()) {
-                        log.debug("writeOrEnqueue({})[{}]: Queuing packet while flushing", session,
+                        log.debug("writeOrEnqueue({})[{}]: Queuing packet while flushing", filter.getSession(),
                                 SshConstants.getCommandMessageName(cmd));
                     }
                     return enqueuePendingPacket(cmd, buffer);
@@ -344,45 +283,7 @@ public class KeyExchangeMessageHandler {
             } finally {
                 lock.readLock().unlock();
             }
-            if (block != null) {
-                if (timeout <= 0 || unit == null) {
-                    if (log.isDebugEnabled()) {
-                        log.debug("writeOrEnqueue({})[{}]: Blocking thread {} until KEX is over", session,
-                                SshConstants.getCommandMessageName(cmd), Thread.currentThread());
-                    }
-                    block.await();
-                } else {
-                    if (log.isDebugEnabled()) {
-                        log.debug("writeOrEnqueue({})[{}]: Blocking thread {} until KEX is over or timeout {} {}", session,
-                                SshConstants.getCommandMessageName(cmd), Thread.currentThread(), timeout, unit);
-                    }
-                    block.await(timeout, unit);
-                }
-                if (log.isDebugEnabled()) {
-                    log.debug("writeOrEnqueue({})[{}]: Thread {} awakens after KEX done", session,
-                            SshConstants.getCommandMessageName(cmd), Thread.currentThread());
-                }
-            }
         }
-    }
-
-    /**
-     * Tells whether the calling thread may be blocked in {@link #writePacket(Buffer, long, TimeUnit)}. This
-     * implementation blocks writes of channel data packets unless written by an {@link ThreadUtils#isInternalThread()
-     * internal thread}.
-     * <p>
-     * Typically an internal thread is one of the reading threads of Apache MINA sshd handling an SSH protocol message:
-     * it's holding the {@link AbstractSession#decodeLock}; blocking it would mean we couldn't handle any other incoming
-     * message, not even disconnections or another key exchange triggered by having lots of data queued.
-     * </p>
-     *
-     * @param  cmd SSH command of the buffer to be written
-     * @return     {@code true} if the thread may be blocked; {@code false} if the packet written <em>must</em> be
-     *             queued without blocking the thread
-     */
-    protected boolean isBlockAllowed(int cmd) {
-        boolean isChannelData = cmd == SshConstants.SSH_MSG_CHANNEL_DATA || cmd == SshConstants.SSH_MSG_CHANNEL_EXTENDED_DATA;
-        return isChannelData && !ThreadUtils.isInternalThread();
     }
 
     /**
@@ -402,10 +303,12 @@ public class KeyExchangeMessageHandler {
 
         if (log.isDebugEnabled()) {
             if (numPending == 1) {
-                log.debug("enqueuePendingPacket({})[{}] Start flagging packets as pending until key exchange is done", session,
+                log.debug("enqueuePendingPacket({})[{}] Start flagging packets as pending until key exchange is done",
+                        filter.getSession(),
                         cmdName);
             } else {
-                log.debug("enqueuePendingPacket({})[{}] enqueued until key exchange is done (pending={})", session, cmdName,
+                log.debug("enqueuePendingPacket({})[{}] enqueued until key exchange is done (pending={})", filter.getSession(),
+                        cmdName,
                         numPending);
             }
         }
@@ -443,18 +346,17 @@ public class KeyExchangeMessageHandler {
                     try {
                         if (pendingPackets.isEmpty()) {
                             if (log.isDebugEnabled()) {
-                                log.debug("flushQueue({}): All packets at end of KEX flushed", session);
+                                log.debug("flushQueue({}): All packets at end of KEX flushed", filter.getSession());
                             }
                             kexFlushed.set(true);
                             allFlushed = true;
                             break;
                         }
 
-                        if (!session.isOpen()) {
-                            log.info("flushQueue({}): Session closed while flushing pending packets at end of KEX", session);
-                            AbstractIoWriteFuture aborted = new AbstractIoWriteFuture(session, null) {
-                                // Nothing extra
-                            };
+                        if (!filter.getSession().isOpen()) {
+                            log.info("flushQueue({}): Session closed while flushing pending packets at end of KEX",
+                                    filter.getSession());
+                            DefaultIoWriteFuture aborted = new DefaultIoWriteFuture(filter.getSession(), null);
                             aborted.setValue(new SshException("Session closed while flushing pending packets at end of KEX"));
                             drainQueueTo(pendingFutures, aborted);
                             kexFlushed.set(true);
@@ -465,7 +367,7 @@ public class KeyExchangeMessageHandler {
                         DefaultKeyExchangeFuture currentFuture = kexFlushedFuture.get();
                         if (currentFuture != flushDone) {
                             if (log.isDebugEnabled()) {
-                                log.debug("flushQueue({}): Stopping flushing pending packets", session);
+                                log.debug("flushQueue({}): Stopping flushing pending packets", filter.getSession());
                             }
                             // Another KEX was started. Exit and hook up the flushDone future with the new future.
                             newFuture = currentFuture;
@@ -473,20 +375,20 @@ public class KeyExchangeMessageHandler {
                         }
                         int newSize = pendingPackets.size();
                         if (lastSize < 0) {
-                            log.info("flushQueue({}): {} pending packets to flush", session, newSize);
+                            log.info("flushQueue({}): {} pending packets to flush", filter.getSession(), newSize);
                         } else if (newSize >= lastSize) {
-                            log.info("flushQueue({}): queue size before={} now={}", session, lastSize, newSize);
+                            log.info("flushQueue({}): queue size before={} now={}", filter.getSession(), lastSize, newSize);
                             // More new enqueues while we had written. Try writing more in one go to make progress.
                             if (take < 64) {
                                 take *= 2;
                             } else if (!warnedAboutChunkLimit) {
                                 warnedAboutChunkLimit = true;
-                                log.warn("flushQueue({}): maximum queue flush chunk of 64 reached", session);
+                                log.warn("flushQueue({}): maximum queue flush chunk of 64 reached", filter.getSession());
                             }
                         }
                         lastSize = newSize;
                         if (log.isDebugEnabled()) {
-                            log.debug("flushQueue({}): flushing {} packets", session, Math.min(lastSize, take));
+                            log.debug("flushQueue({}): flushing {} packets", filter.getSession(), Math.min(lastSize, take));
                         }
                         for (int i = 0; i < take; i++) {
                             PendingWriteFuture pending = pendingPackets.poll();
@@ -496,12 +398,13 @@ public class KeyExchangeMessageHandler {
                             IoWriteFuture written;
                             try {
                                 if (log.isTraceEnabled()) {
-                                    log.trace("flushQueue({}): Flushing a packet at end of KEX for {}", session,
+                                    log.trace("flushQueue({}): Flushing a packet at end of KEX for {}", filter.getSession(),
                                             pending.getId());
                                 }
-                                written = session.doWritePacket(pending.getBuffer());
+                                written = filter.write(pending.getBuffer(), true);
                             } catch (Throwable e) {
-                                log.error("flushQueue({}): Exception while flushing packet at end of KEX for {}", session,
+                                log.error("flushQueue({}): Exception while flushing packet at end of KEX for {}",
+                                        filter.getSession(),
                                         pending.getId(), e);
                                 AbstractIoWriteFuture aborted = new AbstractIoWriteFuture(pending.getId(), null) {
                                     // Nothing extra
@@ -516,13 +419,14 @@ public class KeyExchangeMessageHandler {
                             }
                             pendingFutures.add(new SimpleImmutableEntry<>(pending, written));
                             if (log.isTraceEnabled()) {
-                                log.trace("flushQueue({}): Flushed a packet at end of KEX for {}", session, pending.getId());
+                                log.trace("flushQueue({}): Flushed a packet at end of KEX for {}", filter.getSession(),
+                                        pending.getId());
                             }
-                            session.resetIdleTimeout();
+                            filter.getSession().resetIdleTimeout();
                         }
                         if (pendingPackets.isEmpty()) {
                             if (log.isDebugEnabled()) {
-                                log.debug("flushQueue({}): All packets at end of KEX flushed", session);
+                                log.debug("flushQueue({}): All packets at end of KEX flushed", filter.getSession());
                             }
                             kexFlushed.set(true);
                             allFlushed = true;
@@ -539,7 +443,7 @@ public class KeyExchangeMessageHandler {
                     // We'll close the session (or it is closing already). Pretend we had written everything.
                     flushDone.setValue(error);
                     if (error instanceof Throwable) {
-                        session.exceptionCaught((Throwable) error);
+                        filter.getSession().exceptionCaught((Throwable) error);
                     }
                 } else if (newFuture != null) {
                     newFuture.addListener(f -> {

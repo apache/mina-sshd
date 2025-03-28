@@ -41,7 +41,6 @@ import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexFactoryManager;
-import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.session.helpers.TimeoutIndicator;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -343,11 +342,6 @@ public interface Session
     Instant resetAuthTimeout();
 
     void setAuthenticated() throws IOException;
-
-    /**
-     * @return The current {@link KeyExchange} in progress - {@code null} if KEX not started or successfully completed
-     */
-    KeyExchange getKex();
 
     /**
      * Send a disconnect packet with the given reason and message. Once the packet has been sent, the session will be

@@ -25,7 +25,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -57,18 +56,15 @@ import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.Forwarder;
-import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.kex.KexState;
 import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
-import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -99,6 +95,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
+
+    private volatile boolean useNoneCipher;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
@@ -538,37 +536,20 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
-        mergeProposals(clientProposal, proposal);
-        return super.sendKexInit(proposal);
-    }
-
-    @Override
-    protected void setKexSeed(byte... seed) {
-        setClientKexData(seed);
-    }
-
-    @Override
-    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
-        mergeProposals(serverProposal, proposal);
-        setServerKexData(seed);
-    }
-
-    @Override
     protected void checkKeys() throws IOException {
-        ServerKeyVerifier serverKeyVerifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
+        ServerKeyVerifier verifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
         IoSession networkSession = getIoSession();
         SocketAddress remoteAddress = networkSession.getRemoteAddress();
-        PublicKey serverKey = Objects.requireNonNull(getServerKey(), "No server key to verify");
+        PublicKey hostKey = Objects.requireNonNull(getServerKey(), "No server key to verify");
         SshdSocketAddress targetServerAddress = getAttribute(ClientSessionCreator.TARGET_SERVER);
         if (targetServerAddress != null) {
             remoteAddress = targetServerAddress.toInetSocketAddress();
         }
 
-        boolean verified = serverKeyVerifier.verifyServerKey(this, remoteAddress, serverKey);
+        boolean verified = verifier.verifyServerKey(this, remoteAddress, hostKey);
         if (log.isDebugEnabled()) {
-            log.debug("checkKeys({}) key={}-{}, verified={}", this, KeyUtils.getKeyType(serverKey),
-                    KeyUtils.getFingerPrint(serverKey), verified);
+            log.debug("checkKeys({}) key={}-{}, verified={}", this, KeyUtils.getKeyType(hostKey),
+                    KeyUtils.getFingerPrint(hostKey), verified);
         }
 
         if (!verified) {
@@ -584,67 +565,30 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
 
-        if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(toString(), null);
-            DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
-            if (prev != null) {
-                prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
-            }
-
-            String c2sEncServer;
-            String s2cEncServer;
-            synchronized (serverProposal) {
-                c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
-                s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
-            }
-            boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
-            boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
-
-            String c2sEncClient;
-            String s2cEncClient;
-            synchronized (clientProposal) {
-                c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
-                s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
-            }
-
-            boolean c2sEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncClient);
-            boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
-
-            if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
-                kexFuture.setValue(new SshException("Server does not support none cipher"));
-            } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
-                kexFuture.setValue(new SshException("Client does not support none cipher"));
-            } else {
-                log.info("switchToNoneCipher({}) switching", this);
-
-                Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
-                synchronized (clientProposal) {
-                    proposal.putAll(clientProposal);
-                }
-
-                proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
-                proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
-
-                synchronized (kexState) {
-                    DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
-                    if (initFuture == null) {
-                        initFuture = new DefaultKeyExchangeFuture(toString(), null);
-                        kexInitializedFuture = initFuture;
-                    }
-                    try {
-                        byte[] seed = sendKexInit(proposal);
-                        setKexSeed(seed);
-                        initFuture.setValue(Boolean.TRUE);
-                    } catch (Exception e) {
-                        initFuture.setValue(e);
-                        ExceptionUtils.rethrowAsIoException(e);
-                    }
-                }
-            }
-
-            return Objects.requireNonNull(kexFutureHolder.get(), "No current KEX future");
-        } else {
-            throw new SshException("In flight key exchange");
+        Map<KexProposalOption, String> serverProposal = getServerKexProposals();
+        Map<KexProposalOption, String> clientProposal = getServerKexProposals();
+        // Figure out whether both do support the none cipher in both directions
+        boolean c2sEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(serverProposal.get(KexProposalOption.C2SENC));
+        boolean s2cEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(serverProposal.get(KexProposalOption.S2CENC));
+        if (!c2sEncNone || !s2cEncNone) {
+            throw new SshException("Server does not support none cipher");
         }
+        c2sEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(clientProposal.get(KexProposalOption.C2SENC));
+        s2cEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(clientProposal.get(KexProposalOption.S2CENC));
+        if (!c2sEncNone || !s2cEncNone) {
+            throw new SshException("Client does not support none cipher");
+        }
+        useNoneCipher = true;
+        return reExchangeKeys();
+    }
+
+    @Override
+    protected Map<KexProposalOption, String> getKexProposal() throws Exception {
+        Map<KexProposalOption, String> result = super.getKexProposal();
+        if (useNoneCipher) {
+            result.put(KexProposalOption.C2SENC, BuiltinCiphers.none.getName());
+            result.put(KexProposalOption.S2CENC, BuiltinCiphers.none.getName());
+        }
+        return result;
     }
 }

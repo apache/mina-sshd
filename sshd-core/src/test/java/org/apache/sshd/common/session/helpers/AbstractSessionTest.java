@@ -26,7 +26,6 @@ import java.net.SocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
-import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -40,7 +39,6 @@ import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoService;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
@@ -407,7 +405,6 @@ class AbstractSessionTest extends BaseTestSupport {
         MySession() {
             super(true, org.apache.sshd.util.test.CoreTestSupportUtils.setupTestServer(AbstractSessionTest.class),
                   new MyIoSession());
-            initialKexDone = true;
         }
 
         @Override
@@ -427,21 +424,6 @@ class AbstractSessionTest extends BaseTestSupport {
 
         public List<String> doReadIdentification(Buffer buffer) throws Exception {
             return super.doReadIdentification(buffer, false);
-        }
-
-        @Override
-        protected byte[] sendKexInit() throws IOException {
-            return GenericUtils.EMPTY_BYTE_ARRAY;
-        }
-
-        @Override
-        protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed) throws IOException {
-            // ignored
-        }
-
-        @Override
-        protected void setKexSeed(byte... seed) {
-            // ignored
         }
 
         @Override

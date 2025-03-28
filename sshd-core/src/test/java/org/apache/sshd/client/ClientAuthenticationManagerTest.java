@@ -314,11 +314,6 @@ class ClientAuthenticationManagerTest extends BaseTestSupport {
             }
 
             @Override
-            protected byte[] sendKexInit() throws IOException {
-                return GenericUtils.EMPTY_BYTE_ARRAY;
-            }
-
-            @Override
             public void close() throws IOException {
                 // ignored
             }

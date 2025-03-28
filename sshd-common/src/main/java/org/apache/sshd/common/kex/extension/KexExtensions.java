@@ -37,6 +37,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import org.apache.sshd.common.NamedResource;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.kex.extension.parser.DelayCompression;
 import org.apache.sshd.common.kex.extension.parser.Elevation;
 import org.apache.sshd.common.kex.extension.parser.NoFlowControl;
@@ -53,8 +54,8 @@ import org.apache.sshd.common.util.buffer.Buffer;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class KexExtensions {
-    public static final byte SSH_MSG_EXT_INFO = 7;
-    public static final byte SSH_MSG_NEWCOMPRESS = 8;
+    public static final byte SSH_MSG_EXT_INFO = SshConstants.SSH_MSG_EXT_INFO;
+    public static final byte SSH_MSG_NEWCOMPRESS = SshConstants.SSH_MSG_NEWCOMPRESS;
 
     public static final String CLIENT_KEX_EXTENSION = "ext-info-c";
     public static final String SERVER_KEX_EXTENSION = "ext-info-s";

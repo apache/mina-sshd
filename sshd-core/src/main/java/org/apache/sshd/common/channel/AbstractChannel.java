@@ -51,12 +51,14 @@ import org.apache.sshd.common.io.AbstractIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.closeable.SimpleCloseable;
@@ -128,8 +130,10 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     private CloseableExecutorService executor;
     private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
 
-    private final LocalWindow localWindow;
-    private final RemoteWindow remoteWindow;
+    private final boolean isClient;
+    private final CloseableLocalWindow localWindow;
+    private final CloseableRemoteWindow remoteWindow;
+
     private ChannelStreamWriterResolver channelStreamPacketWriterResolver;
 
     private AtomicReference<IoWriteFuture> eofFuture = new AtomicReference<>();
@@ -160,8 +164,9 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                               CloseableExecutorService executorService) {
         super(discriminator);
         gracefulFuture = new DefaultCloseFuture(discriminator, futureLock);
-        localWindow = new LocalWindow(this, client);
-        remoteWindow = new RemoteWindow(this, client);
+        localWindow = new CloseableLocalWindow(this, client);
+        remoteWindow = new CloseableRemoteWindow(this, client);
+        isClient = client;
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
         executor = executorService;
         addRequestHandlers(handlers);
@@ -403,6 +408,32 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
         signalChannelInitialized();
         configureWindow();
+        ((AbstractSession) session).addKexListener(kexStarted -> {
+            try {
+                localWindow.preventAdjustments(kexStarted);
+            } catch (IOException e) {
+                getSession().exceptionCaught(e);
+            }
+            remoteWindow.closeDuringKex(kexStarted);
+            if (kexStarted) {
+                if (log.isDebugEnabled()) {
+                    log.debug("{} {} KEX starts: closing window", getSession(), AbstractChannel.this);
+                }
+            } else if (!isClosed()) {
+                if (log.isDebugEnabled()) {
+                    log.debug("{} {} KEX ends: reopening window", getSession(), AbstractChannel.this);
+                }
+                try {
+                    Buffer b = new ByteArrayBuffer(4);
+                    b.putUInt(0);
+                    handleWindowAdjust(b);
+                } catch (IOException | ClassCastException e) {
+                    getSession().exceptionCaught(e);
+                }
+            } else if (log.isDebugEnabled()) {
+                log.debug("{} {} KEX ends: channel closed", getSession(), AbstractChannel.this);
+            }
+        });
         initialized.set(true);
     }
 
@@ -1125,5 +1156,87 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
          */
         boolean isValid(long packetSize, long maximumPacketSize, boolean extendedData);
 
+    }
+
+    private class CloseableRemoteWindow extends RemoteWindow {
+
+        private long inc;
+
+        private boolean zeroed;
+
+        private long initialSize;
+
+        CloseableRemoteWindow(Channel channel, boolean isClient) {
+            super(channel, isClient);
+        }
+
+        void closeDuringKex(boolean kexStarted) {
+            synchronized (lock) {
+                zeroed = kexStarted;
+                if (kexStarted) {
+                    initialSize = getSize();
+                    inc = 0;
+                    updateSize(0);
+                } else {
+                    long value = Math.min(initialSize + inc, BufferUtils.MAX_UINT32_VALUE);
+                    inc = 0;
+                    long sizeNow = getSize();
+                    if (sizeNow > value) {
+                        value = sizeNow;
+                    }
+                    updateSize(value);
+                }
+            }
+        }
+
+        @Override
+        public void expand(long increment) {
+            BufferUtils.validateUint32Value(increment, "Invalid window expansion size: %d");
+            synchronized (lock) {
+                if (zeroed) {
+                    inc += increment;
+                } else {
+                    super.expand(increment);
+                }
+            }
+        }
+
+    }
+
+    private class CloseableLocalWindow extends LocalWindow {
+
+        private boolean noAdjust;
+
+        private long inc;
+
+        CloseableLocalWindow(AbstractChannel channel, boolean isClient) {
+            super(channel, isClient);
+        }
+
+        void preventAdjustments(boolean prevent) throws IOException {
+            long doRelease = 0;
+            synchronized (lock) {
+                noAdjust = prevent;
+                if (!prevent) {
+                    doRelease = inc;
+                }
+                inc = 0;
+            }
+            if (doRelease > 0) {
+                release(doRelease);
+            }
+        }
+
+        @Override
+        public void release(long len) throws IOException {
+            BufferUtils.validateUint32Value(len, "Invalid window expansion size: %d");
+            synchronized (lock) {
+                if (noAdjust) {
+                    inc += len;
+                } else {
+                    super.release(len);
+                }
+            }
+        }
     }
 }

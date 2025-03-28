@@ -22,22 +22,15 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.net.ProtocolException;
 import java.net.SocketTimeoutException;
-import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.EnumMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -45,27 +38,18 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.LongConsumer;
-import java.util.stream.Collectors;
 
 import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.FactoryManager;
-import org.apache.sshd.common.NamedFactory;
-import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelListener;
-import org.apache.sshd.common.cipher.Cipher;
-import org.apache.sshd.common.cipher.CipherFactory;
 import org.apache.sshd.common.cipher.CipherInformation;
-import org.apache.sshd.common.compression.Compression;
 import org.apache.sshd.common.compression.CompressionInformation;
-import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.filter.BufferInputHandler;
 import org.apache.sshd.common.filter.DefaultFilterChain;
 import org.apache.sshd.common.filter.FilterChain;
@@ -73,7 +57,6 @@ import org.apache.sshd.common.filter.InputHandler;
 import org.apache.sshd.common.filter.IoFilter;
 import org.apache.sshd.common.filter.OutputHandler;
 import org.apache.sshd.common.forward.PortForwardingEventListener;
-import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.DefaultSshFuture;
 import org.apache.sshd.common.future.GlobalRequestFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
@@ -82,33 +65,27 @@ import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KexState;
-import org.apache.sshd.common.kex.KeyExchange;
-import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler.AvailabilityPhase;
-import org.apache.sshd.common.kex.extension.KexExtensionHandler.KexPhase;
 import org.apache.sshd.common.kex.extension.KexExtensions;
-import org.apache.sshd.common.mac.Mac;
 import org.apache.sshd.common.mac.MacInformation;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
-import org.apache.sshd.common.session.SessionDisconnectHandler;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.filters.CompressionFilter;
 import org.apache.sshd.common.session.filters.CryptFilter;
-import org.apache.sshd.common.session.filters.CryptFilter.Settings;
 import org.apache.sshd.common.session.filters.DelayKexInitFilter;
 import org.apache.sshd.common.session.filters.IdentFilter;
 import org.apache.sshd.common.session.filters.SshIdentHandler;
+import org.apache.sshd.common.session.filters.kex.KexFilter;
+import org.apache.sshd.common.session.filters.kex.KexListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
@@ -155,93 +132,12 @@ public abstract class AbstractSession extends SessionHelper {
     protected final Collection<PortForwardingEventListener> tunnelListeners = new CopyOnWriteArraySet<>();
     protected final PortForwardingEventListener tunnelListenerProxy;
 
-    /*
-     * Key exchange support
-     */
-    protected byte[] sessionId;
-    protected String serverVersion;
-    protected String clientVersion;
-    // if empty then means not-initialized
-    protected final Map<KexProposalOption, String> serverProposal = new EnumMap<>(KexProposalOption.class);
-    protected final Map<KexProposalOption, String> unmodServerProposal = Collections.unmodifiableMap(serverProposal);
-    protected final Map<KexProposalOption, String> clientProposal = new EnumMap<>(KexProposalOption.class);
-    protected final Map<KexProposalOption, String> unmodClientProposal = Collections.unmodifiableMap(clientProposal);
-    protected final Map<KexProposalOption, String> negotiationResult = new EnumMap<>(KexProposalOption.class);
-    protected final Map<KexProposalOption, String> unmodNegotiationResult = Collections.unmodifiableMap(negotiationResult);
-
-    protected KeyExchange kex;
-    protected Boolean firstKexPacketFollows;
-    protected boolean initialKexDone;
-    /**
-     * Holds the current key exchange state.
-     */
-    protected final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.UNKNOWN);
-    protected final AtomicReference<DefaultKeyExchangeFuture> kexFutureHolder = new AtomicReference<>(null);
-
-    // The kexInitializedFuture is fulfilled when this side (client or server) has prepared its own proposal. Access is
-    // synchronized on kexState.
-    protected DefaultKeyExchangeFuture kexInitializedFuture;
-
     protected final Object requestLock = new Object();
-
-    /**
-     * "Strict KEX" is a mitigation for the "Terrapin attack". The KEX protocol is modified as follows:
-     * <ol>
-     * <li>During the initial (unencrypted) KEX, no extra messages not strictly necessary for KEX are allowed. The
-     * KEX_INIT message must be the first one after the version identification, and no IGNORE or DEBUG messages are
-     * allowed until the KEX is completed. If a party receives such a message, it terminates the connection.</li>
-     * <li>Message sequence numbers are reset to zero after a key exchange (initial or later). When the NEW_KEYS message
-     * has been sent, the outgoing message number is reset; after a NEW_KEYS message has been received, the incoming
-     * message number is reset.</li>
-     * </ol>
-     * Strict KEX is negotiated in the original KEX proposal; it is active if and only if both parties indicate that
-     * they support strict KEX.
-     */
-    protected boolean strictKex;
-    protected long initialKexInitSequenceNumber = -1;
-
-    /**
-     * The {@link KeyExchangeMessageHandler} instance also serves as lock protecting {@link #kexState} changes from DONE
-     * to INIT or RUN, and from KEYS to DONE.
-     */
-    protected final KeyExchangeMessageHandler kexHandler;
-
-    /*
-     * Rekeying
-     */
-    protected final AtomicReference<Instant> lastKeyTimeValue = new AtomicReference<>(Instant.now());
-    // we initialize them here in case super constructor calls some methods that use these values
-    protected long maxRekyPackets;
-    protected long maxRekeyBytes;
-    protected Duration maxRekeyInterval;
-
-    /**
-     * Resulting message coding settings at the end of a key exchange for incoming messages.
-     *
-     * @see #prepareNewKeys()
-     * @see #setInputEncoding()
-     */
-    protected MessageCodingSettings inSettings;
-
-    /**
-     * Resulting message coding settings at the end of a key exchange for outgoing messages.
-     *
-     * @see #prepareNewKeys()
-     * @see #setOutputEncoding()
-     */
-    protected MessageCodingSettings outSettings;
 
     protected final CurrentService currentService;
 
-    // SSH_MSG_IGNORE stream padding
-    protected int ignorePacketDataLength;
-    protected long ignorePacketsFrequency;
-    protected int ignorePacketsVariance;
-
-    protected final AtomicLong maxRekeyBlocks
-            = new AtomicLong(CoreModuleProperties.REKEY_BYTES_LIMIT.getRequiredDefault() / 16);
-    protected final AtomicLong ignorePacketsCount
-            = new AtomicLong(CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.getRequiredDefault());
+    protected String serverVersion;
+    protected String clientVersion;
 
     /**
      * Used to wait for results of global requests sent with {@code want-reply = true}. Note that per RFC 4254, global
@@ -282,11 +178,9 @@ public abstract class AbstractSession extends SessionHelper {
 
     private final FilterChain filters = new DefaultFilterChain();
 
-    private byte[] clientKexData; // the payload of the client's SSH_MSG_KEXINIT
-    private byte[] serverKexData; // the payload of the server's SSH_MSG_KEXINIT
-
     private CryptFilter cryptFilter;
     private CompressionFilter compressionFilter;
+    private KexFilter kexFilter;
 
     /**
      * Create a new session.
@@ -298,8 +192,6 @@ public abstract class AbstractSession extends SessionHelper {
     protected AbstractSession(boolean serverSession, FactoryManager factoryManager, IoSession ioSession) {
         super(serverSession, factoryManager, ioSession);
 
-        kexHandler = Objects.requireNonNull(initializeKeyExchangeMessageHandler(),
-                "No KeyExchangeMessageHandler set on the session");
         currentService = Objects.requireNonNull(initializeCurrentService(), "No CurrentService set on the session");
 
         attachSession(ioSession, this);
@@ -308,8 +200,6 @@ public abstract class AbstractSession extends SessionHelper {
                 factoryManager.getRandomFactory(), "No random factory for %s", ioSession);
         random = ValidateUtils.checkNotNull(
                 factory.create(), "No randomizer instance for %s", ioSession);
-
-        refreshConfiguration();
 
         sessionListenerProxy = EventListenerUtils.proxyWrapper(
                 SessionListener.class, sessionListeners);
@@ -448,6 +338,44 @@ public abstract class AbstractSession extends SessionHelper {
         DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
         delayKexFilter.setSession(this);
         filters.addLast(delayKexFilter);
+
+        kexFilter = new KexFilter(this, random, cryptFilter, compressionFilter, new SessionListener() {
+
+            @Override
+            public void sessionNegotiationStart(
+                    Session session, Map<KexProposalOption, String> clientProposal,
+                    Map<KexProposalOption, String> serverProposal) {
+                AbstractSession.this.signalNegotiationStart(clientProposal, serverProposal);
+            }
+
+            @Override
+            public void sessionNegotiationEnd(
+                    Session session, Map<KexProposalOption, String> clientProposal,
+                    Map<KexProposalOption, String> serverProposal, Map<KexProposalOption, String> negotiatedOptions,
+                    Throwable reason) {
+                AbstractSession.this.signalNegotiationEnd(clientProposal, serverProposal, negotiatedOptions, reason);
+            }
+
+            @Override
+            public void sessionEvent(Session session, Event event) {
+                try {
+                    AbstractSession.this.signalSessionEvent(event);
+                } catch (RuntimeException e) {
+                    throw e;
+                } catch (Exception e) {
+                    throw new RuntimeSshException(e.getMessage(), e);
+                }
+            }
+        }, this::getKexProposal, this::checkKeys);
+        filters.addLast(kexFilter);
+
+        ident.addIdentListener((peer, id) -> {
+            if (peer == isServerSession()) {
+                kexFilter.setClientIdent(id);
+            } else {
+                kexFilter.setServerIdent(id);
+            }
+        });
     }
 
     @Override
@@ -463,22 +391,28 @@ public abstract class AbstractSession extends SessionHelper {
         return compressionFilter;
     }
 
-    protected void initializeKeyExchangePhase() throws Exception {
-        kexState.set(KexState.INIT);
-        sendKexInit();
+    public void addKexListener(KexListener listener) {
+        kexFilter.addKexListener(listener);
     }
 
-    /**
-     * Creates a new {@link KeyExchangeMessageHandler} instance managing packet sending for this session.
-     * <p>
-     * This initialization method is invoked once from the {@link AbstractSession} constructor. Do not rely on subclass
-     * fields being initialized.
-     * </p>
-     *
-     * @return a new {@link KeyExchangeMessageHandler} instance for the session
-     */
-    protected KeyExchangeMessageHandler initializeKeyExchangeMessageHandler() {
-        return new KeyExchangeMessageHandler(this, log);
+    public void removeKexListener(KexListener listener) {
+        kexFilter.addKexListener(listener);
+    }
+
+    protected void initializeKeyExchangePhase() throws Exception {
+        KeyExchangeFuture future = kexFilter.startKex();
+        Throwable t = future.getException();
+        if (t != null) {
+            if (t instanceof Exception) {
+                throw (Exception) t;
+            } else {
+                throw new SshException("Could not start initial KEX", t);
+            }
+        }
+    }
+
+    protected boolean isStrictKex() {
+        return kexFilter.isStrictKex();
     }
 
     /**
@@ -501,7 +435,7 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public Map<KexProposalOption, String> getServerKexProposals() {
-        return unmodServerProposal;
+        return kexFilter.getServerProposal();
     }
 
     @Override
@@ -511,39 +445,27 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public Map<KexProposalOption, String> getClientKexProposals() {
-        return unmodClientProposal;
-    }
-
-    @Override
-    public KeyExchange getKex() {
-        return kex;
+        return kexFilter.getClientProposal();
     }
 
     @Override
     public KexState getKexState() {
-        return kexState.get();
+        return kexFilter.getKexState().get();
     }
 
     @Override
     public byte[] getSessionId() {
-        // return a clone to avoid anyone changing the internal value
-        return NumberUtils.isEmpty(sessionId) ? sessionId : sessionId.clone();
+        return kexFilter.getSessionId();
     }
 
     @Override
     public Map<KexProposalOption, String> getKexNegotiationResult() {
-        return unmodNegotiationResult;
+        return kexFilter.getNegotiated();
     }
 
     @Override
     public String getNegotiatedKexParameter(KexProposalOption paramType) {
-        if (paramType == null) {
-            return null;
-        }
-
-        synchronized (negotiationResult) {
-            return negotiationResult.get(paramType);
-        }
+        return kexFilter.getNegotiated().get(paramType);
     }
 
     @Override
@@ -562,30 +484,6 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     /**
-     * Refresh whatever internal configuration is not {@code final}
-     */
-    protected void refreshConfiguration() {
-        synchronized (random) {
-            // re-keying configuration
-            maxRekeyBytes = CoreModuleProperties.REKEY_BYTES_LIMIT.getRequired(this);
-            maxRekeyInterval = CoreModuleProperties.REKEY_TIME_LIMIT.getRequired(this);
-            maxRekyPackets = CoreModuleProperties.REKEY_PACKETS_LIMIT.getRequired(this);
-
-            // intermittent SSH_MSG_IGNORE stream padding
-            ignorePacketDataLength = CoreModuleProperties.IGNORE_MESSAGE_SIZE.getRequired(this);
-            ignorePacketsFrequency = CoreModuleProperties.IGNORE_MESSAGE_FREQUENCY.getRequired(this);
-            ignorePacketsVariance = CoreModuleProperties.IGNORE_MESSAGE_VARIANCE.getRequired(this);
-            if (ignorePacketsVariance >= ignorePacketsFrequency) {
-                ignorePacketsVariance = 0;
-            }
-
-            long countValue = calculateNextIgnorePacketCount(
-                    random, ignorePacketsFrequency, ignorePacketsVariance);
-            ignorePacketsCount.set(countValue);
-        }
-    }
-
-    /**
      * Abstract method for processing incoming decoded packets. The given buffer will hold the decoded packet, starting
      * from the command byte at the read position.
      *
@@ -595,27 +493,6 @@ public abstract class AbstractSession extends SessionHelper {
      * @see              #doHandleMessage(Buffer)
      */
     protected void handleMessage(Buffer buffer) throws Exception {
-        try {
-            ThreadUtils.runAsInternal(() -> {
-                doHandleMessage(buffer);
-                return null;
-            });
-        } catch (Throwable e) {
-            DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
-            // if have any ongoing KEX notify it about the failure
-            if (kexFuture != null) {
-                kexFuture.setValue(e);
-            }
-
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
-    }
-
-    protected void doHandleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (log.isDebugEnabled()) {
             log.debug("doHandleMessage({}) process #{} {}", this, cryptFilter.getInputSequenceNumber() - 1,
@@ -627,202 +504,43 @@ public abstract class AbstractSession extends SessionHelper {
                 handleDisconnect(buffer);
                 break;
             case SshConstants.SSH_MSG_IGNORE:
-                failStrictKex(cmd);
                 handleIgnore(buffer);
                 break;
             case SshConstants.SSH_MSG_UNIMPLEMENTED:
-                failStrictKex(cmd);
                 handleUnimplemented(buffer);
                 break;
             case SshConstants.SSH_MSG_DEBUG:
                 // Fail after handling -- by default a message will be logged, which might be helpful.
                 handleDebug(buffer);
-                failStrictKex(cmd);
                 break;
             case SshConstants.SSH_MSG_SERVICE_REQUEST:
-                failStrictKex(cmd);
                 handleServiceRequest(buffer);
                 break;
             case SshConstants.SSH_MSG_SERVICE_ACCEPT:
-                failStrictKex(cmd);
                 handleServiceAccept(buffer);
                 break;
-            case SshConstants.SSH_MSG_KEXINIT:
-                handleKexInit(buffer);
-                break;
-            case SshConstants.SSH_MSG_NEWKEYS:
-                handleNewKeys(cmd, buffer);
-                break;
             case KexExtensions.SSH_MSG_EXT_INFO:
-                failStrictKex(cmd);
                 handleKexExtension(cmd, buffer);
                 break;
             case KexExtensions.SSH_MSG_NEWCOMPRESS:
-                failStrictKex(cmd);
                 handleNewCompression(cmd, buffer);
                 break;
             default:
-                if ((cmd >= SshConstants.SSH_MSG_KEX_FIRST) && (cmd <= SshConstants.SSH_MSG_KEX_LAST)) {
-                    if (firstKexPacketFollows != null) {
-                        try {
-                            if (!handleFirstKexPacketFollows(cmd, buffer, firstKexPacketFollows)) {
-                                break;
-                            }
-                        } finally {
-                            firstKexPacketFollows = null; // avoid re-checking
-                        }
-                    }
-
-                    handleKexMessage(cmd, buffer);
+                if (currentService.process(cmd, buffer)) {
+                    resetIdleTimeout();
                 } else {
-                    failStrictKex(cmd);
-                    if (currentService.process(cmd, buffer)) {
-                        resetIdleTimeout();
-                    } else {
-                        /*
-                         * According to https://tools.ietf.org/html/rfc4253#section-11.4
-                         *
-                         * An implementation MUST respond to all unrecognized messages with an SSH_MSG_UNIMPLEMENTED
-                         * message in the order in which the messages were received.
-                         */
-                        if (log.isDebugEnabled()) {
-                            log.debug("process({}) Unsupported command: {}", this, SshConstants.getCommandMessageName(cmd));
-                        }
-                        notImplemented(cmd, buffer);
+                    /*
+                     * According to https://tools.ietf.org/html/rfc4253#section-11.4
+                     *
+                     * An implementation MUST respond to all unrecognized messages with an SSH_MSG_UNIMPLEMENTED message
+                     * in the order in which the messages were received.
+                     */
+                    if (log.isDebugEnabled()) {
+                        log.debug("process({}) Unsupported command: {}", this, SshConstants.getCommandMessageName(cmd));
                     }
+                    notImplemented(cmd, buffer);
                 }
                 break;
-        }
-        checkRekey();
-    }
-
-    protected void failStrictKex(int cmd) throws SshException {
-        if (!initialKexDone && strictKex) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    SshConstants.getCommandMessageName(cmd) + " not allowed during initial key exchange in strict KEX");
-        }
-    }
-
-    protected boolean handleFirstKexPacketFollows(int cmd, Buffer buffer, boolean followFlag) {
-        if (!followFlag) {
-            return true; // if 1st KEX packet does not follow then process the command
-        }
-
-        /*
-         * According to RFC4253 section 7.1:
-         *
-         * If the other party's guess was wrong, and this field was TRUE, the next packet MUST be silently ignored
-         */
-        boolean debugEnabled = log.isDebugEnabled();
-        for (KexProposalOption option : KexProposalOption.FIRST_KEX_PACKET_GUESS_MATCHES) {
-            Map.Entry<String, String> result = comparePreferredKexProposalOption(option);
-            if (result != null) {
-                if (debugEnabled) {
-                    log.debug(
-                            "handleFirstKexPacketFollows({})[{}] 1st follow KEX packet {} option mismatch: client={}, server={}",
-                            this, SshConstants.getCommandMessageName(cmd), option, result.getKey(), result.getValue());
-                }
-                return false;
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Compares the specified {@link KexProposalOption} option value for client vs. server
-     *
-     * @param  option The option to check
-     * @return        {@code null} if option is equal, otherwise a key/value pair where key=client option value and
-     *                value=the server-side one
-     */
-    protected Map.Entry<String, String> comparePreferredKexProposalOption(KexProposalOption option) {
-        String[] clientPreferences = GenericUtils.split(clientProposal.get(option), ',');
-        String clientValue = GenericUtils.isEmpty(clientPreferences) ? null : clientPreferences[0];
-        String[] serverPreferences = GenericUtils.split(serverProposal.get(option), ',');
-        String serverValue = GenericUtils.isEmpty(serverPreferences) ? null : serverPreferences[0];
-        if (GenericUtils.isEmpty(clientValue) || GenericUtils.isEmpty(serverValue)
-                || (!Objects.equals(clientValue, serverValue))) {
-            return new SimpleImmutableEntry<>(clientValue, serverValue);
-        }
-
-        return null;
-    }
-
-    /**
-     * Send a message to put new keys into use.
-     *
-     * @return           An {@link IoWriteFuture} that can be used to wait and check the result of sending the packet
-     * @throws Exception if an error occurs sending the message
-     */
-    protected IoWriteFuture sendNewKeys() throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("sendNewKeys({}) Send SSH_MSG_NEWKEYS", this);
-        }
-
-        prepareNewKeys();
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_NEWKEYS, Byte.SIZE);
-        IoWriteFuture future;
-        // writePacket() would also work since it would never try to queue the packet, and would never try to
-        // initiate a new KEX, and thus would never try to get the kexLock monitor. If it did, we might get a
-        // deadlock due to lock inversion. It seems safer to push this out directly, though.
-        future = doWritePacket(buffer);
-        // Use the new settings from now on for any outgoing packet
-        setOutputEncoding();
-        kexHandler.updateState(() -> kexState.set(KexState.KEYS));
-
-        resetIdleTimeout();
-        /*
-         * According to https://tools.ietf.org/html/rfc8308#section-2.4:
-         *
-         *
-         * If a client sends SSH_MSG_EXT_INFO, it MUST send it as the next packet following the client's first
-         * SSH_MSG_NEWKEYS message to the server.
-         *
-         * If a server sends SSH_MSG_EXT_INFO, it MAY send it at zero, one, or both of the following opportunities:
-         *
-         * + As the next packet following the server's first SSH_MSG_NEWKEYS.
-         */
-        KexExtensionHandler extHandler = getKexExtensionHandler();
-        if ((extHandler != null) && extHandler.isKexExtensionsAvailable(this, AvailabilityPhase.NEWKEYS)) {
-            extHandler.sendKexExtensions(this, KexPhase.NEWKEYS);
-        }
-
-        SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> flushDone = kexHandler.terminateKeyExchange();
-
-        // Flush the queue asynchronously.
-        int numPending = flushDone.getKey().intValue();
-        if (numPending == 0) {
-            if (log.isDebugEnabled()) {
-                log.debug("handleNewKeys({}) No pending packets to flush at end of KEX", this);
-            }
-            flushDone.getValue().setValue(Boolean.TRUE);
-        } else {
-            if (log.isDebugEnabled()) {
-                log.debug("handleNewKeys({}) {} pending packets to flush at end of KEX", this, numPending);
-            }
-            kexHandler.flushQueue(flushDone.getValue());
-        }
-
-        return future;
-    }
-
-    protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
-        validateKexState(cmd, KexState.RUN);
-
-        boolean debugEnabled = log.isDebugEnabled();
-        if (kex.next(cmd, buffer)) {
-            if (debugEnabled) {
-                log.debug("handleKexMessage({})[{}] KEX processing complete after cmd={}",
-                        this, kex.getName(), cmd);
-            }
-            checkKeys();
-            sendNewKeys();
-        } else {
-            if (debugEnabled) {
-                log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}",
-                        this, kex.getName(), cmd);
-            }
         }
     }
 
@@ -858,12 +576,6 @@ public abstract class AbstractSession extends SessionHelper {
         if (debugEnabled) {
             log.debug("handleServiceRequest({}) SSH_MSG_SERVICE_REQUEST '{}'", this, serviceName);
         }
-        KexState state = kexState.get();
-        if (!validateServiceKexState(state)) {
-            throw new IllegalStateException(
-                    "Received " + SshConstants.getCommandMessageName(SshConstants.SSH_MSG_SERVICE_REQUEST)
-                                            + " while in KEX state=" + state);
-        }
 
         try {
             startService(serviceName, buffer);
@@ -885,17 +597,6 @@ public abstract class AbstractSession extends SessionHelper {
         return true;
     }
 
-    protected boolean validateServiceKexState(KexState state) {
-        if (KexState.DONE.equals(state)) {
-            return true;
-        } else if (KexState.INIT.equals(state)) {
-            // Allow service requests that were "in flight" when we sent our own KEX_INIT. We will send back the accept
-            // only after KEX is done. However, we will refuse a service request before the initial KEX.
-            return initialKexDone;
-        }
-        return false;
-    }
-
     protected void handleServiceAccept(Buffer buffer) throws Exception {
         handleServiceAccept(buffer.getString(), buffer);
     }
@@ -903,140 +604,6 @@ public abstract class AbstractSession extends SessionHelper {
     protected void handleServiceAccept(String serviceName, Buffer buffer) throws Exception {
         if (log.isDebugEnabled()) {
             log.debug("handleServiceAccept({}) SSH_MSG_SERVICE_ACCEPT service={}", this, serviceName);
-        }
-        KexState state = kexState.get();
-        if (!validateServiceKexState(state)) {
-            throw new IllegalStateException(
-                    "Received " + SshConstants.getCommandMessageName(SshConstants.SSH_MSG_SERVICE_REQUEST)
-                                            + " while in KEX state=" + state);
-        }
-    }
-
-    protected void handleKexInit(Buffer buffer) throws Exception {
-        if (log.isDebugEnabled()) {
-            log.debug("handleKexInit({}) SSH_MSG_KEXINIT", this);
-        }
-        receiveKexInit(buffer);
-        doKexNegotiation();
-    }
-
-    private enum KexStart {
-        PEER,
-        BOTH,
-        ONGOING
-    }
-
-    protected void doKexNegotiation() throws Exception {
-        KexStart starting = kexHandler.updateState(() -> {
-            if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
-                kexHandler.initNewKeyExchange();
-                return KexStart.PEER;
-            } else if (kexState.compareAndSet(KexState.INIT, KexState.RUN)) {
-                return KexStart.BOTH;
-            }
-            return KexStart.ONGOING;
-        });
-
-        switch (starting) {
-            case PEER:
-                sendKexInit();
-                break;
-            case BOTH:
-                // We are in the process of sending our own KEX_INIT. Do the negotiation once that's done.
-                //
-                // See https://issues.apache.org/jira/browse/SSHD-1197
-                break;
-            default:
-                throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
-        }
-        // Note: we should not wait here; it might block (in particular with the MINA transport back-end).
-        DefaultKeyExchangeFuture initFuture;
-        synchronized (kexState) {
-            initFuture = kexInitializedFuture;
-            if (initFuture == null) {
-                initFuture = new DefaultKeyExchangeFuture(toString(), null);
-                kexInitializedFuture = initFuture;
-            }
-        }
-        initFuture.addListener(f -> {
-            if (f.isDone()) {
-                try {
-                    performKexNegotiation();
-                } catch (Exception e) {
-                    exceptionCaught(e);
-                }
-            } else {
-                exceptionCaught(f.getException());
-            }
-        });
-    }
-
-    protected void performKexNegotiation() throws Exception {
-        Map<KexProposalOption, String> result = negotiate();
-        String kexAlgorithm = result.get(KexProposalOption.ALGORITHMS);
-        Collection<? extends KeyExchangeFactory> kexFactories = getKeyExchangeFactories();
-        KeyExchangeFactory kexFactory = NamedResource.findByName(
-                kexAlgorithm, String.CASE_INSENSITIVE_ORDER, kexFactories);
-        ValidateUtils.checkNotNull(kexFactory, "Unknown negotiated KEX algorithm: %s", kexAlgorithm);
-
-        byte[] v_s = serverVersion.getBytes(StandardCharsets.UTF_8);
-        byte[] v_c = clientVersion.getBytes(StandardCharsets.UTF_8);
-        byte[] i_s;
-        byte[] i_c;
-        synchronized (kexState) {
-            i_s = getServerKexData();
-            i_c = getClientKexData();
-        }
-
-        kex = kexFactory.createKeyExchange(this);
-        kex.init(v_s, v_c, i_s, i_c);
-
-        synchronized (kexState) {
-            kexInitializedFuture = null;
-        }
-        signalSessionEvent(SessionListener.Event.KexCompleted);
-    }
-
-    protected void handleNewKeys(int cmd, Buffer buffer) throws Exception {
-        boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("handleNewKeys({}) SSH_MSG_NEWKEYS command={}",
-                    this, SshConstants.getCommandMessageName(cmd));
-        }
-        validateKexState(cmd, KexState.KEYS);
-        // It is guaranteed that we handle the peer's SSH_MSG_NEWKEYS after having sent our own.
-        // prepareNewKeys() was already called in sendNewKeys().
-        //
-        // From now on, use the new settings for any incoming message.
-        setInputEncoding();
-
-        synchronized (kexState) {
-            kexInitializedFuture = null;
-        }
-
-        initialKexDone = true;
-        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
-        if (kexFuture != null) {
-            kexFuture.setValue(Boolean.TRUE);
-        }
-
-        signalSessionEvent(SessionListener.Event.KeyEstablished);
-
-        kexHandler.updateState(() -> {
-            kex = null; // discard and GC since KEX is completed
-            kexState.set(KexState.DONE);
-        });
-
-        synchronized (futureLock) {
-            futureLock.notifyAll();
-        }
-    }
-
-    protected void validateKexState(int cmd, KexState expected) {
-        KexState actual = kexState.get();
-        if (!expected.equals(actual)) {
-            throw new IllegalStateException("Received KEX command=" + SshConstants.getCommandMessageName(cmd)
-                                            + " while in state=" + actual + " instead of " + expected);
         }
     }
 
@@ -1052,19 +619,9 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     protected void preClose() {
-        DefaultKeyExchangeFuture initFuture;
-        synchronized (kexState) {
-            initFuture = kexInitializedFuture;
+        if (kexFilter != null) {
+            kexFilter.shutdown();
         }
-        if (initFuture != null) {
-            initFuture.setValue(new SshException("Session closing while KEX in progress"));
-        }
-        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
-        if (kexFuture != null) {
-            // if have any pending KEX then notify it about the closing session
-            kexFuture.setValue(new SshException("Session closing while KEX in progress"));
-        }
-        kexHandler.shutdown();
 
         // if anyone waiting for global response notify them about the closing session
         boolean debugEnabled = log.isDebugEnabled();
@@ -1116,7 +673,7 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        return kexHandler.writePacket(buffer, 0, null);
+        return filters.getLast().out().send(buffer);
     }
 
     @Override
@@ -1125,7 +682,7 @@ public abstract class AbstractSession extends SessionHelper {
         IoWriteFuture writeFuture;
         try {
             long start = System.currentTimeMillis();
-            writeFuture = kexHandler.writePacket(buffer, timeout, unit);
+            writeFuture = writePacket(buffer);
             long elapsed = System.currentTimeMillis() - start;
             if (elapsed >= timeoutMillis) {
                 // We just barely made it. Give it a tiny grace period.
@@ -1161,30 +718,6 @@ public abstract class AbstractSession extends SessionHelper {
         }, timeoutMillis, TimeUnit.MILLISECONDS);
         future.addListener(f -> sched.cancel(false));
         return writeFuture;
-    }
-
-    protected IoWriteFuture doWritePacket(Buffer buffer) throws IOException {
-        return filters.getLast().out().send(buffer);
-    }
-
-    protected int resolveIgnoreBufferDataLength() {
-        if (!initialKexDone || (ignorePacketDataLength <= 0)
-                || (ignorePacketsFrequency <= 0L)
-                || (ignorePacketsVariance < 0)) {
-            return 0;
-        }
-
-        long count = ignorePacketsCount.decrementAndGet();
-        if (count > 0L) {
-            return 0;
-        }
-
-        synchronized (random) {
-            count = calculateNextIgnorePacketCount(
-                    random, ignorePacketsFrequency, ignorePacketsVariance);
-            ignorePacketsCount.set(count);
-            return ignorePacketDataLength + random.random(ignorePacketDataLength);
-        }
     }
 
     private boolean wantReply(Buffer buffer) {
@@ -1422,337 +955,6 @@ public abstract class AbstractSession extends SessionHelper {
     protected abstract boolean readIdentification(Buffer buffer) throws Exception;
 
     /**
-     * Send the key exchange initialization packet. This packet contains random data along with our proposal.
-     *
-     * @param  proposal  our proposal for key exchange negotiation
-     * @return           the sent packet data which must be kept for later use when deriving the session keys
-     * @throws Exception if an error occurred sending the packet
-     */
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
-        boolean debugEnabled = log.isDebugEnabled();
-        if (debugEnabled) {
-            log.debug("sendKexInit({}) Send SSH_MSG_KEXINIT", this);
-        }
-
-        Buffer buffer = createBuffer(SshConstants.SSH_MSG_KEXINIT);
-        int p = buffer.wpos();
-        buffer.wpos(p + SshConstants.MSG_KEX_COOKIE_SIZE);
-        synchronized (random) {
-            random.fill(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE);
-        }
-
-        boolean traceEnabled = log.isTraceEnabled();
-        if (traceEnabled) {
-            log.trace("sendKexInit({}) cookie={}",
-                    this, BufferUtils.toHex(buffer.array(), p, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
-        }
-
-        for (KexProposalOption paramType : KexProposalOption.VALUES) {
-            String s = proposal.get(paramType);
-            if (traceEnabled) {
-                log.trace("sendKexInit({})[{}] {}", this, paramType.getDescription(), s);
-            }
-            buffer.putString(GenericUtils.trimToEmpty(s));
-        }
-
-        buffer.putBoolean(false); // first kex packet follows
-        buffer.putUInt(0L); // reserved (FFU)
-
-        ReservedSessionMessagesHandler handler = getReservedSessionMessagesHandler();
-        IoWriteFuture future = (handler == null) ? null : handler.sendKexInitRequest(this, proposal, buffer);
-        byte[] data = buffer.getCompactData();
-        if (future == null) {
-            writePacket(buffer);
-        } else {
-            if (debugEnabled) {
-                log.debug("sendKexInit({}) KEX handled by reserved messages handler", this);
-            }
-        }
-
-        return data;
-    }
-
-    /**
-     * Receive the remote key exchange init message. The packet data is returned for later use.
-     *
-     * @param  buffer    the {@link Buffer} containing the key exchange init packet
-     * @param  proposal  the remote proposal to fill
-     * @return           the packet data
-     * @throws Exception If failed to handle the message
-     */
-    protected byte[] receiveKexInit(Buffer buffer, Map<KexProposalOption, String> proposal) throws Exception {
-        // Recreate the packet payload which will be needed at a later time
-        byte[] d = buffer.array();
-        byte[] data = new byte[buffer.available() + 1 /* the opcode */];
-        data[0] = SshConstants.SSH_MSG_KEXINIT;
-
-        int size = 6;
-        int cookieStartPos = buffer.rpos();
-        System.arraycopy(d, cookieStartPos, data, 1, data.length - 1);
-        // Skip random cookie data
-        buffer.rpos(cookieStartPos + SshConstants.MSG_KEX_COOKIE_SIZE);
-        size += SshConstants.MSG_KEX_COOKIE_SIZE;
-
-        boolean traceEnabled = log.isTraceEnabled();
-        if (traceEnabled) {
-            log.trace("receiveKexInit({}) cookie={}",
-                    this, BufferUtils.toHex(d, cookieStartPos, SshConstants.MSG_KEX_COOKIE_SIZE, ':'));
-        }
-
-        // Read proposal
-        for (KexProposalOption paramType : KexProposalOption.VALUES) {
-            int lastPos = buffer.rpos();
-            String value = buffer.getString();
-            if (traceEnabled) {
-                log.trace("receiveKexInit({})[{}] {}", this, paramType.getDescription(), value);
-            }
-            int curPos = buffer.rpos();
-            int readLen = curPos - lastPos;
-            proposal.put(paramType, value);
-            size += readLen;
-        }
-
-        KexExtensionHandler extHandler = getKexExtensionHandler();
-        if (extHandler != null) {
-            if (traceEnabled) {
-                log.trace("receiveKexInit({}) options before handler: {}", this, proposal);
-            }
-
-            extHandler.handleKexInitProposal(this, false, proposal);
-
-            if (traceEnabled) {
-                log.trace("receiveKexInit({}) options after handler: {}", this, proposal);
-            }
-        }
-
-        firstKexPacketFollows = buffer.getBoolean();
-        if (traceEnabled) {
-            log.trace("receiveKexInit({}) first kex packet follows: {}", this, firstKexPacketFollows);
-        }
-
-        long reserved = buffer.getUInt();
-        if (reserved != 0L) {
-            if (traceEnabled) {
-                log.trace("receiveKexInit({}) non-zero reserved value: {}", this, reserved);
-            }
-        }
-
-        // Return data
-        byte[] dataShrinked = new byte[size];
-        System.arraycopy(data, 0, dataShrinked, 0, size);
-        return dataShrinked;
-    }
-
-    /**
-     * Prepares the new ciphers, macs and compression algorithms according to the negotiated server and client proposals
-     * and stores them in {@link #inSettings} and {@link #outSettings}. The new settings do not take effect yet; use
-     * {@link #setInputEncoding()} or {@link #setOutputEncoding()} for that.
-     *
-     * @throws Exception if an error occurs
-     */
-    @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
-    protected void prepareNewKeys() throws Exception {
-        byte[] k = kex.getK();
-        byte[] h = kex.getH();
-        Digest hash = kex.getHash();
-
-        boolean debugEnabled = log.isDebugEnabled();
-        if (sessionId == null) {
-            sessionId = h.clone();
-            if (debugEnabled) {
-                log.debug("prepareNewKeys({}) session ID={}", this, BufferUtils.toHex(':', sessionId));
-            }
-        }
-
-        Buffer buffer = new ByteArrayBuffer();
-        buffer.putBytes(k);
-        buffer.putRawBytes(h);
-        buffer.putByte((byte) 0x41);
-        buffer.putRawBytes(sessionId);
-
-        int pos = buffer.available();
-        byte[] buf = buffer.array();
-        hash.update(buf, 0, pos);
-
-        byte[] iv_c2s = hash.digest();
-        int j = pos - sessionId.length - 1;
-
-        buf[j]++;
-        hash.update(buf, 0, pos);
-        byte[] iv_s2c = hash.digest();
-
-        buf[j]++;
-        hash.update(buf, 0, pos);
-        byte[] e_c2s = hash.digest();
-
-        buf[j]++;
-        hash.update(buf, 0, pos);
-        byte[] e_s2c = hash.digest();
-
-        buf[j]++;
-        hash.update(buf, 0, pos);
-        byte[] mac_c2s = hash.digest();
-
-        buf[j]++;
-        hash.update(buf, 0, pos);
-        byte[] mac_s2c = hash.digest();
-
-        boolean serverSession = isServerSession();
-        String value = getNegotiatedKexParameter(KexProposalOption.S2CENC);
-        Cipher s2ccipher = ValidateUtils.checkNotNull(
-                NamedFactory.create(getCipherFactories(), value), "Unknown s2c cipher: %s", value);
-        e_s2c = resizeKey(e_s2c, s2ccipher.getKdfSize(), hash, k, h);
-
-        Mac s2cmac;
-        if (s2ccipher.getAuthenticationTagSize() == 0) {
-            value = getNegotiatedKexParameter(KexProposalOption.S2CMAC);
-            s2cmac = NamedFactory.create(getMacFactories(), value);
-            if (s2cmac == null) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown s2c MAC: " + value);
-            }
-            mac_s2c = resizeKey(mac_s2c, s2cmac.getBlockSize(), hash, k, h);
-            s2cmac.init(mac_s2c);
-        } else {
-            s2cmac = null;
-        }
-
-        value = getNegotiatedKexParameter(KexProposalOption.S2CCOMP);
-        Compression s2ccomp = NamedFactory.create(getCompressionFactories(), value);
-        if (s2ccomp == null) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "Unknown s2c compression: " + value);
-        }
-
-        value = getNegotiatedKexParameter(KexProposalOption.C2SENC);
-        Cipher c2scipher = ValidateUtils.checkNotNull(
-                NamedFactory.create(getCipherFactories(), value), "Unknown c2s cipher: %s", value);
-        e_c2s = resizeKey(e_c2s, c2scipher.getKdfSize(), hash, k, h);
-
-        Mac c2smac;
-        if (c2scipher.getAuthenticationTagSize() == 0) {
-            value = getNegotiatedKexParameter(KexProposalOption.C2SMAC);
-            c2smac = NamedFactory.create(getMacFactories(), value);
-            if (c2smac == null) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_MAC_ERROR, "Unknown c2s MAC: " + value);
-            }
-            mac_c2s = resizeKey(mac_c2s, c2smac.getBlockSize(), hash, k, h);
-            c2smac.init(mac_c2s);
-        } else {
-            c2smac = null;
-        }
-
-        value = getNegotiatedKexParameter(KexProposalOption.C2SCOMP);
-        Compression c2scomp = NamedFactory.create(getCompressionFactories(), value);
-        if (c2scomp == null) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_COMPRESSION_ERROR, "Unknown c2s compression: " + value);
-        }
-
-        if (serverSession) {
-            outSettings = new MessageCodingSettings(s2ccipher, s2cmac, s2ccomp, Cipher.Mode.Encrypt, e_s2c, iv_s2c);
-            inSettings = new MessageCodingSettings(c2scipher, c2smac, c2scomp, Cipher.Mode.Decrypt, e_c2s, iv_c2s);
-        } else {
-            outSettings = new MessageCodingSettings(c2scipher, c2smac, c2scomp, Cipher.Mode.Encrypt, e_c2s, iv_c2s);
-            inSettings = new MessageCodingSettings(s2ccipher, s2cmac, s2ccomp, Cipher.Mode.Decrypt, e_s2c, iv_s2c);
-        }
-    }
-
-    /**
-     * Installs the current prepared {@link #outSettings} so that they are effective and will be applied to any future
-     * outgoing packet. Clears {@link #outSettings}.
-     *
-     * @throws Exception on errors
-     */
-    protected void setOutputEncoding() throws Exception {
-        Compression compression = outSettings.getCompression();
-        // TODO add support for configurable compression level
-        compression.init(Compression.Type.Deflater, -1);
-        compressionFilter.setOutputCompression(compression);
-        Cipher cipher = outSettings.getCipher(strictKex ? 0 : cryptFilter.getOutputSequenceNumber());
-        Mac mac = outSettings.getMac();
-        cryptFilter.setOutput(new Settings(cipher, mac), strictKex);
-        cryptFilter.resetOutputCounters();
-        outSettings = null;
-
-        Cipher inCipher = cryptFilter.getInputSettings().getCipher();
-        int inBlockSize = inCipher == null ? 8 : inCipher.getCipherBlockSize();
-        maxRekeyBlocks.set(determineRekeyBlockLimit(inBlockSize, cipher.getCipherBlockSize()));
-
-        lastKeyTimeValue.set(Instant.now());
-        firstKexPacketFollows = null;
-
-        if (log.isDebugEnabled()) {
-            log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, cipher, mac,
-                    compression, maxRekeyBlocks);
-        }
-    }
-
-    /**
-     * Installs the current prepared {@link #inSettings} so that they are effective and will be applied to any future
-     * incoming packet. Clears {@link #inSettings}.
-     *
-     * @throws Exception on errors
-     */
-    protected void setInputEncoding() throws Exception {
-        Compression compression = inSettings.getCompression();
-        // TODO add support for configurable compression level
-        compression.init(Compression.Type.Inflater, -1);
-        compressionFilter.setInputCompression(compression);
-        Cipher cipher = inSettings.getCipher(strictKex ? 0 : cryptFilter.getInputSequenceNumber());
-        Mac mac = inSettings.getMac();
-        cryptFilter.setInput(new Settings(cipher, mac), strictKex);
-        cryptFilter.resetInputCounters();
-        inSettings = null;
-
-        Cipher outCipher = cryptFilter.getOutputSettings().getCipher();
-        int outBlockSize = outCipher == null ? 8 : outCipher.getCipherBlockSize();
-        maxRekeyBlocks.set(determineRekeyBlockLimit(cipher.getCipherBlockSize(), outBlockSize));
-
-        lastKeyTimeValue.set(Instant.now());
-        firstKexPacketFollows = null;
-
-        if (log.isDebugEnabled()) {
-            log.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", this, cipher, mac,
-                    compression, maxRekeyBlocks);
-        }
-    }
-
-    /**
-     * Compute the number of blocks after which we should re-key again. See RFC 4344.
-     *
-     * @param  inCipherBlockSize  block size of the input cipher
-     * @param  outCipherBlockSize block size of the output cipher
-     * @return                    the number of block after which re-keying occur at the latest
-     * @see                       <a href= "https://tools.ietf.org/html/rfc4344#section-3.2">RFC 4344, section 3.2</a>
-     */
-    protected long determineRekeyBlockLimit(int inCipherBlockSize, int outCipherBlockSize) {
-        // see https://tools.ietf.org/html/rfc4344#section-3.2
-        // select the lowest cipher size
-        long rekeyBlocksLimit = CoreModuleProperties.REKEY_BLOCKS_LIMIT.getRequired(this);
-        if (rekeyBlocksLimit <= 0) {
-            // Default per RFC 4344
-            int minCipherBlockBytes = Math.min(inCipherBlockSize, outCipherBlockSize);
-            if (minCipherBlockBytes >= 16) {
-                rekeyBlocksLimit = 1L << Math.min(minCipherBlockBytes * 2, 63);
-            } else {
-                // With a block size of 8 we'd end up with 2^16. That would re-key very often.
-                // RFC 4344: "If L is less than 128 [...], then, although it may be too
-                // expensive to rekey every 2**(L/4) blocks, it is still advisable for SSH
-                // implementations to follow the original recommendation in [RFC4253]: rekey at
-                // least once for every gigabyte of transmitted data."
-                //
-                // Note that chacha20-poly1305 has a block size of 8. The OpenSSH recommendation
-                // is: "ChaCha20 must never reuse a {key, nonce} for encryption nor may it be
-                // used to encrypt more than 2^70 bytes under the same {key, nonce}. The
-                // SSH Transport protocol (RFC4253) recommends a far more conservative
-                // rekeying every 1GB of data sent or received. If this recommendation
-                // is followed, then chacha20-poly1305@openssh.com requires no special
-                // handling in this area."
-                rekeyBlocksLimit = (1L << 30) / minCipherBlockBytes; // 1GB
-            }
-        }
-        return rekeyBlocksLimit;
-    }
-
-    /**
      * Send a {@code SSH_MSG_UNIMPLEMENTED} packet. This packet should contain the sequence id of the unsupported
      * packet: this number is assumed to be the last packet received.
      *
@@ -1769,209 +971,8 @@ public abstract class AbstractSession extends SessionHelper {
             return null;
         }
 
-        return sendNotImplemented(cryptFilter.getInputSequenceNumber() - 1);
-    }
-
-    /**
-     * Given a KEX proposal and a {@link KexProposalOption}, removes all occurrences of a value from a comma-separated
-     * value list.
-     *
-     * @param  options  {@link Map} holding the Kex proposal
-     * @param  option   {@link KexProposalOption} to modify
-     * @param  toRemove value to remove
-     * @return          {@code true} if the option contained the value (and it was removed); {@code false} otherwise
-     */
-    protected boolean removeValue(Map<KexProposalOption, String> options, KexProposalOption option, String toRemove) {
-        String val = options.get(option);
-        Set<String> algorithms = new LinkedHashSet<>(Arrays.asList(val.split(",")));
-        boolean result = algorithms.remove(toRemove);
-        if (result) {
-            options.put(option, algorithms.stream().collect(Collectors.joining(",")));
-        }
-        return result;
-    }
-
-    /**
-     * Compute the negotiated proposals by merging the client and server proposal. The negotiated proposal will also be
-     * stored in the {@link #negotiationResult} property.
-     *
-     * @return           The negotiated options {@link Map}
-     * @throws Exception If negotiation failed
-     */
-    protected Map<KexProposalOption, String> negotiate() throws Exception {
-        Map<KexProposalOption, String> c2sOptions = getClientKexProposals();
-        Map<KexProposalOption, String> s2cOptions = getServerKexProposals();
-        signalNegotiationStart(c2sOptions, s2cOptions);
-
-        // Make modifiable. Strict KEX flags are to be heeded only in initial KEX, and to be ignored afterwards.
-        c2sOptions = new EnumMap<>(c2sOptions);
-        s2cOptions = new EnumMap<>(s2cOptions);
-        boolean strictKexClient = removeValue(c2sOptions, KexProposalOption.ALGORITHMS,
-                KexExtensions.STRICT_KEX_CLIENT_EXTENSION);
-        boolean strictKexServer = removeValue(s2cOptions, KexProposalOption.ALGORITHMS,
-                KexExtensions.STRICT_KEX_SERVER_EXTENSION);
-        if (removeValue(c2sOptions, KexProposalOption.ALGORITHMS, KexExtensions.STRICT_KEX_SERVER_EXTENSION)
-                && !initialKexDone) {
-            log.warn("negotiate({}) client proposal contains server flag {}; will be ignored", this,
-                    KexExtensions.STRICT_KEX_SERVER_EXTENSION);
-        }
-        if (removeValue(s2cOptions, KexProposalOption.ALGORITHMS, KexExtensions.STRICT_KEX_CLIENT_EXTENSION)
-                && !initialKexDone) {
-            log.warn("negotiate({}) server proposal contains client flag {}; will be ignored", this,
-                    KexExtensions.STRICT_KEX_CLIENT_EXTENSION);
-        }
-        // Make unmodifiable again
-        c2sOptions = Collections.unmodifiableMap(c2sOptions);
-        s2cOptions = Collections.unmodifiableMap(s2cOptions);
-        Map<KexProposalOption, String> guess = new EnumMap<>(KexProposalOption.class);
-        Map<KexProposalOption, String> negotiatedGuess = Collections.unmodifiableMap(guess);
-        try {
-            boolean debugEnabled = log.isDebugEnabled();
-            boolean traceEnabled = log.isTraceEnabled();
-            if (!initialKexDone) {
-                strictKex = strictKexClient && strictKexServer;
-                if (debugEnabled) {
-                    log.debug("negotiate({}) strict KEX={} client={} server={}", this, strictKex, strictKexClient,
-                            strictKexServer);
-                }
-                if (strictKex && initialKexInitSequenceNumber != 1) {
-                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                            "Strict KEX negotiated but sequence number of first KEX_INIT received is not 1: "
-                                                                                             + initialKexInitSequenceNumber);
-                }
-            }
-            SessionDisconnectHandler discHandler = getSessionDisconnectHandler();
-            KexExtensionHandler extHandler = getKexExtensionHandler();
-            for (KexProposalOption paramType : KexProposalOption.VALUES) {
-                String clientParamValue = c2sOptions.get(paramType);
-                String serverParamValue = s2cOptions.get(paramType);
-                String[] c = GenericUtils.split(clientParamValue, ',');
-                String[] s = GenericUtils.split(serverParamValue, ',');
-                if (paramType == KexProposalOption.C2SMAC && isAead(guess.get(KexProposalOption.C2SENC)) ||
-                        paramType == KexProposalOption.S2CMAC && isAead(guess.get(KexProposalOption.S2CENC))) {
-                    // No MAC needed, so no need to negotiate. Set a value all the same, otherwise
-                    // SessionContext.isDataIntegrityTransport() would be complicated quite a bit.
-                    guess.put(paramType, "aead");
-                    continue;
-                }
-                /*
-                 * According to https://tools.ietf.org/html/rfc8308#section-2.2:
-                 *
-                 * Implementations MAY disconnect if the counterpart sends an incorrect (KEX extension) indicator
-                 *
-                 * TODO - for now we do not enforce this
-                 */
-                for (String ci : c) {
-                    for (String si : s) {
-                        if (ci.equals(si)) {
-                            guess.put(paramType, ci);
-                            break;
-                        }
-                    }
-
-                    String value = guess.get(paramType);
-                    if (value != null) {
-                        break;
-                    }
-                }
-
-                // check if reached an agreement
-                String value = guess.get(paramType);
-                if (extHandler != null) {
-                    extHandler.handleKexExtensionNegotiation(
-                            this, paramType, value, c2sOptions, clientParamValue, s2cOptions, serverParamValue);
-                }
-
-                if (value != null) {
-                    if (traceEnabled) {
-                        log.trace("negotiate({})[{}] guess={} (client={} / server={})",
-                                this, paramType.getDescription(), value, clientParamValue, serverParamValue);
-                    }
-                    continue;
-                }
-
-                try {
-                    if ((discHandler != null)
-                            && discHandler.handleKexDisconnectReason(
-                                    this, c2sOptions, s2cOptions, negotiatedGuess, paramType)) {
-                        if (debugEnabled) {
-                            log.debug("negotiate({}) ignore missing value for KEX option={}", this, paramType);
-                        }
-                        continue;
-                    }
-                } catch (IOException | RuntimeException e) {
-                    // If disconnect handler throws an exception continue with the disconnect
-                    debug("negotiate({}) failed ({}) to invoke disconnect handler due to mismatched KEX option={}: {}",
-                            this, e.getClass().getSimpleName(), paramType, e.getMessage(), e);
-                }
-
-                String message = "Unable to negotiate key exchange for " + paramType.getDescription()
-                                 + " (client: " + clientParamValue + " / server: " + serverParamValue + ")";
-                // OK if could not negotiate languages
-                if (KexProposalOption.S2CLANG.equals(paramType) || KexProposalOption.C2SLANG.equals(paramType)) {
-                    if (traceEnabled) {
-                        log.trace("negotiate({}) {}", this, message);
-                    }
-                } else {
-                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, message);
-                }
-            }
-
-            /*
-             * According to https://tools.ietf.org/html/rfc8308#section-2.2:
-             *
-             * If "ext-info-c" or "ext-info-s" ends up being negotiated as a key exchange method, the parties MUST
-             * disconnect.
-             */
-            String kexOption = guess.get(KexProposalOption.ALGORITHMS);
-            if (KexExtensions.IS_KEX_EXTENSION_SIGNAL.test(kexOption)) {
-                if ((discHandler != null)
-                        && discHandler.handleKexDisconnectReason(
-                                this, c2sOptions, s2cOptions, negotiatedGuess, KexProposalOption.ALGORITHMS)) {
-                    if (debugEnabled) {
-                        log.debug("negotiate({}) ignore violating {} KEX option={}", this, KexProposalOption.ALGORITHMS,
-                                kexOption);
-                    }
-                } else {
-                    throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                            "Illegal KEX option negotiated: " + kexOption);
-                }
-            }
-        } catch (IOException | RuntimeException | Error e) {
-            signalNegotiationEnd(c2sOptions, s2cOptions, negotiatedGuess, e);
-            throw e;
-        }
-
-        signalNegotiationEnd(c2sOptions, s2cOptions, negotiatedGuess, null);
-        return setNegotiationResult(guess);
-    }
-
-    private boolean isAead(String encryption) {
-        NamedFactory<Cipher> factory = NamedResource.findByName(encryption, String::compareTo, getCipherFactories());
-        if (factory != null) {
-            if (factory instanceof CipherFactory) {
-                return ((CipherFactory) factory).getAuthenticationTagSize() > 0;
-            }
-            Cipher cipher = factory.create();
-            return cipher != null && cipher.getAuthenticationTagSize() > 0;
-        }
-        return false;
-    }
-
-    protected Map<KexProposalOption, String> setNegotiationResult(Map<KexProposalOption, String> guess) {
-        synchronized (negotiationResult) {
-            if (!negotiationResult.isEmpty()) {
-                negotiationResult.clear(); // debug breakpoint
-            }
-            negotiationResult.putAll(guess);
-        }
-
-        if (log.isDebugEnabled()) {
-            guess.forEach((option, value) -> log.debug("setNegotiationResult({}) Kex: {} = {}", this,
-                    option.getDescription(), value));
-        }
-
-        return guess;
+        int seq = cryptFilter.getInputSequenceNumber() - 1;
+        return sendNotImplemented(seq & 0xFFFF_FFFFL);
     }
 
     /**
@@ -2149,7 +1150,7 @@ public abstract class AbstractSession extends SessionHelper {
     @Override
     public KeyExchangeFuture reExchangeKeys() throws IOException {
         try {
-            requestNewKeysExchange();
+            return kexFilter.startKex();
         } catch (GeneralSecurityException e) {
             debug("reExchangeKeys({}) failed ({}) to request new keys: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);
@@ -2161,143 +1162,6 @@ public abstract class AbstractSession extends SessionHelper {
             ExceptionUtils.rethrowAsIoException(e);
             return null;    // actually dead code
         }
-
-        return ValidateUtils.checkNotNull(
-                kexFutureHolder.get(), "No current KEX future on state=%s", kexState);
-    }
-
-    /**
-     * Checks if a re-keying is required and if so initiates it
-     *
-     * @return           A {@link KeyExchangeFuture} to wait for the initiated exchange or {@code null} if no need to
-     *                   re-key or an exchange is already in progress
-     * @throws Exception If failed load/generate the keys or send the request
-     * @see              #isRekeyRequired()
-     * @see              #requestNewKeysExchange()
-     */
-    protected KeyExchangeFuture checkRekey() throws Exception {
-        return isRekeyRequired() ? requestNewKeysExchange() : null;
-    }
-
-    /**
-     * Initiates a new keys exchange if one not already in progress
-     *
-     * @return           A {@link KeyExchangeFuture} to wait for the initiated exchange or {@code null} if an exchange
-     *                   is already in progress
-     * @throws Exception If failed to load/generate the keys or send the request
-     */
-    protected KeyExchangeFuture requestNewKeysExchange() throws Exception {
-        boolean kexRunning = kexHandler.updateState(() -> {
-            boolean isRunning = !kexState.compareAndSet(KexState.DONE, KexState.INIT);
-            if (!isRunning) {
-                kexHandler.initNewKeyExchange();
-            }
-            return Boolean.valueOf(isRunning);
-        }).booleanValue();
-
-        if (kexRunning) {
-            if (log.isDebugEnabled()) {
-                log.debug("requestNewKeysExchange({}) KEX state not DONE: {}", this, kexState);
-            }
-
-            return null;
-        }
-
-        log.info("requestNewKeysExchange({}) Initiating key re-exchange", this);
-
-        DefaultKeyExchangeFuture newFuture = new DefaultKeyExchangeFuture(toString(), null);
-        DefaultKeyExchangeFuture kexFuture = kexFutureHolder.getAndSet(newFuture);
-        if (kexFuture != null) {
-            // Should actually never do anything. We don't reset the kexFuture at the end of KEX, and we do check for a
-            // running KEX above. The old future should in all cases be fulfilled already.
-            kexFuture.setValue(new SshException("New KEX started while previous one still ongoing"));
-        }
-
-        sendKexInit();
-        return newFuture;
-    }
-
-    protected boolean isRekeyRequired() {
-        if ((!isOpen()) || isClosing() || isClosed()) {
-            return false;
-        }
-
-        KexState curState = kexState.get();
-        if (!KexState.DONE.equals(curState)) {
-            return false;
-        }
-
-        return isRekeyTimeIntervalExceeded()
-                || isRekeyPacketCountsExceeded()
-                || isRekeyBlocksCountExceeded()
-                || isRekeyDataSizeExceeded();
-    }
-
-    protected boolean isRekeyTimeIntervalExceeded() {
-        if (GenericUtils.isNegativeOrNull(maxRekeyInterval)) {
-            return false; // disabled
-        }
-
-        Instant now = Instant.now();
-        Duration rekeyDiff = Duration.between(lastKeyTimeValue.get(), now);
-        boolean rekey = rekeyDiff.compareTo(maxRekeyInterval) > 0;
-        if (rekey) {
-            if (log.isDebugEnabled()) {
-                log.debug("isRekeyTimeIntervalExceeded({}) re-keying: last={}, now={}, diff={}, max={}",
-                        this, lastKeyTimeValue.get(), now, rekeyDiff, maxRekeyInterval);
-            }
-        }
-
-        return rekey;
-    }
-
-    protected boolean isRekeyPacketCountsExceeded() {
-        if (maxRekyPackets <= 0L) {
-            return false; // disabled
-        }
-
-        long inPacketsCount = cryptFilter.getInputCounters().getPackets();
-        long outPacketsCount = cryptFilter.getOutputCounters().getPackets();
-        boolean rekey = (inPacketsCount > maxRekyPackets) || (outPacketsCount > maxRekyPackets);
-        if (rekey && log.isDebugEnabled()) {
-            log.debug("isRekeyPacketCountsExceeded({}) re-keying: in={}, out={}, max={}", this, inPacketsCount, outPacketsCount,
-                    maxRekyPackets);
-        }
-
-        return rekey;
-    }
-
-    protected boolean isRekeyDataSizeExceeded() {
-        if (maxRekeyBytes <= 0L) {
-            return false;
-        }
-
-        long inBytesCount = cryptFilter.getInputCounters().getBytes();
-        long outBytesCount = cryptFilter.getOutputCounters().getBytes();
-        boolean rekey = (inBytesCount > maxRekeyBytes) || (outBytesCount > maxRekeyBytes);
-        if (rekey && log.isDebugEnabled()) {
-            log.debug("isRekeyDataSizeExceeded({}) re-keying: in={}, out={}, max={}", this, inBytesCount, outBytesCount,
-                    maxRekeyBytes);
-        }
-
-        return rekey;
-    }
-
-    protected boolean isRekeyBlocksCountExceeded() {
-        long maxBlocks = maxRekeyBlocks.get();
-        if (maxBlocks <= 0L) {
-            return false;
-        }
-
-        long inBlocksCount = cryptFilter.getInputCounters().getBlocks();
-        long outBlocksCount = cryptFilter.getOutputCounters().getBlocks();
-        boolean rekey = (inBlocksCount > maxBlocks) || (outBlocksCount > maxBlocks);
-        if (rekey && log.isDebugEnabled()) {
-            log.debug("isRekeyBlocksCountExceeded({}) re-keying: in={}, out={}, max={}", this, inBlocksCount, outBlocksCount,
-                    maxBlocks);
-        }
-
-        return rekey;
     }
 
     @Override
@@ -2317,89 +1181,6 @@ public abstract class AbstractSession extends SessionHelper {
         }
     }
 
-    protected Map<KexProposalOption, String> doStrictKexProposal(Map<KexProposalOption, String> proposal) {
-        String value = proposal.get(KexProposalOption.ALGORITHMS);
-        String askForStrictKex = isServerSession()
-                ? KexExtensions.STRICT_KEX_SERVER_EXTENSION
-                : KexExtensions.STRICT_KEX_CLIENT_EXTENSION;
-        if (!initialKexDone) {
-            // On the initial KEX, include the strict KEX flag
-            if (GenericUtils.isEmpty(value)) {
-                value = askForStrictKex;
-            } else {
-                value += "," + askForStrictKex;
-            }
-        } else if (!GenericUtils.isEmpty(value)) {
-            // On subsequent KEXes, do not include ext-info-c/ext-info-s or the strict KEX flag in the proposal.
-            List<String> algorithms = new ArrayList<>(Arrays.asList(value.split(",")));
-            String extType = isServerSession() ? KexExtensions.SERVER_KEX_EXTENSION : KexExtensions.CLIENT_KEX_EXTENSION;
-            boolean changed = algorithms.remove(extType);
-            changed |= algorithms.remove(askForStrictKex);
-            if (changed) {
-                value = algorithms.stream().collect(Collectors.joining(","));
-            }
-        }
-        proposal.put(KexProposalOption.ALGORITHMS, value);
-        return proposal;
-    }
-
-    protected byte[] sendKexInit() throws Exception {
-        Map<KexProposalOption, String> proposal = doStrictKexProposal(getKexProposal());
-
-        byte[] seed;
-        synchronized (kexState) {
-            DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
-            if (initFuture == null) {
-                initFuture = new DefaultKeyExchangeFuture(toString(), null);
-                kexInitializedFuture = initFuture;
-            }
-            try {
-                seed = sendKexInit(proposal);
-                setKexSeed(seed);
-                initFuture.setValue(Boolean.TRUE);
-            } catch (Exception e) {
-                initFuture.setValue(e);
-                throw e;
-            }
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("sendKexInit({}) proposal={} seed: {}", this, proposal, BufferUtils.toHex(':', seed));
-        }
-        return seed;
-    }
-
-    protected byte[] getClientKexData() {
-        synchronized (kexState) {
-            return (clientKexData == null) ? null : clientKexData.clone();
-        }
-    }
-
-    protected void setClientKexData(byte[] data) {
-        ValidateUtils.checkNotNullAndNotEmpty(data, "No client KEX seed");
-        synchronized (kexState) {
-            clientKexData = data.clone();
-        }
-    }
-
-    protected byte[] getServerKexData() {
-        synchronized (kexState) {
-            return (serverKexData == null) ? null : serverKexData.clone();
-        }
-    }
-
-    protected void setServerKexData(byte[] data) {
-        ValidateUtils.checkNotNullAndNotEmpty(data, "No server KEX seed");
-        synchronized (kexState) {
-            serverKexData = data.clone();
-        }
-    }
-
-    /**
-     * @param seed The result of the KEXINIT handshake - required for correct session key establishment
-     */
-    protected abstract void setKexSeed(byte... seed);
-
     /**
      * Indicates the the key exchange is completed and the exchanged keys can now be verified - e.g., client can verify
      * the server's key
@@ -2407,30 +1188,6 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws IOException If validation failed
      */
     protected abstract void checkKeys() throws IOException;
-
-    protected byte[] receiveKexInit(Buffer buffer) throws Exception {
-        Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
-
-        if (!initialKexDone) {
-            initialKexInitSequenceNumber = cryptFilter.getInputSequenceNumber();
-        }
-        byte[] seed;
-        synchronized (kexState) {
-            seed = receiveKexInit(buffer, proposal);
-            receiveKexInit(proposal, seed);
-        }
-
-        if (log.isTraceEnabled()) {
-            log.trace("receiveKexInit({}) proposal={} seed: {}",
-                    this, proposal, BufferUtils.toHex(':', seed));
-        }
-
-        return seed;
-    }
-
-    protected abstract void receiveKexInit(
-            Map<KexProposalOption, String> proposal, byte[] seed)
-            throws IOException;
 
     /**
      * Retrieve the SSH session from the I/O session. If the session has not been attached, an exception will be thrown
@@ -2481,63 +1238,5 @@ public abstract class AbstractSession extends SessionHelper {
         }
 
         return session;
-    }
-
-    /**
-     * Message encoding or decoding settings as determined at the end of a key exchange.
-     */
-    protected static class MessageCodingSettings {
-
-        private final Cipher cipher;
-
-        private final Mac mac;
-
-        private final Compression compression;
-
-        private final Cipher.Mode mode;
-
-        private byte[] key;
-
-        private byte[] iv;
-
-        public MessageCodingSettings(Cipher cipher, Mac mac, Compression compression, Cipher.Mode mode, byte[] key, byte[] iv) {
-            this.cipher = cipher;
-            this.mac = mac;
-            this.compression = compression;
-            this.mode = mode;
-            this.key = key.clone();
-            this.iv = iv.clone();
-        }
-
-        private void initCipher(long packetSequenceNumber) throws Exception {
-            if (key != null) {
-                if (cipher.getAlgorithm().startsWith("ChaCha")) {
-                    BufferUtils.putLong(packetSequenceNumber, iv, 0, iv.length);
-                }
-                cipher.init(mode, key, iv);
-                key = null;
-            }
-        }
-
-        /**
-         * Get the {@link Cipher}.
-         *
-         * @param  packetSequenceNumber SSH packet sequence number for initializing the cipher. Pass {@link #seqo} if
-         *                              the cipher is to be used for output, {@link #seqi} otherwise.
-         * @return                      the fully initialized cipher
-         * @throws Exception            if the cipher cannot be initialized
-         */
-        public Cipher getCipher(long packetSequenceNumber) throws Exception {
-            initCipher(packetSequenceNumber);
-            return cipher;
-        }
-
-        public Mac getMac() {
-            return mac;
-        }
-
-        public Compression getCompression() {
-            return compression;
-        }
     }
 }

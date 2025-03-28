@@ -16,24 +16,17 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.deprecated;
-
-import java.io.IOException;
-
-import org.apache.sshd.common.util.buffer.Buffer;
+package org.apache.sshd.common.session.filters.kex;
 
 /**
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * A simple listener interface to know when a KEX starts or ends.
  */
-@FunctionalInterface
-public interface UserAuth {
+public interface KexListener {
 
-    enum Result {
-        Success,
-        Failure,
-        Continued
-    }
-
-    Result next(Buffer buffer) throws IOException;
-
+    /**
+     * Invoked when a KEX starts ({@code kexStarted == true} or ends ({@code kexStarted == false}).
+     *
+     * @param kexStarted {@code true} if the event is the start of a KEX, {@code false} if it is the end of a KEX
+     */
+    void event(boolean kexStarted);
 }

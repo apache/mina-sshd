@@ -296,9 +296,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         // a bug?
         //
         // PuTTY also does not include these 4 bytes.
-        long remoteWindowSize = remoteWindow.getSize();
-        long packetSize = remoteWindow.getPacketSize();
-        int chunkLength = (int) Math.min(stillToSend, Math.min(packetSize, remoteWindowSize));
+        int chunkLength = (int) remoteWindow.consume(Math.min(stillToSend, remoteWindow.getPacketSize()));
 
         IoWriteFutureImpl f = future;
         if (chunkLength < stillToSend && !(f instanceof BufferedFuture)) {
@@ -312,7 +310,7 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
         if (chunkLength <= 0) {
             // Cannot send anything now -- we have to wait for a window adjustment.
             if (log.isTraceEnabled()) {
-                log.trace("writePacket({})[resume={}] waiting for window space {}", this, resume, remoteWindowSize);
+                log.trace("writePacket({})[resume={}] waiting for window space {}", this, resume, remoteWindow.getSize());
             }
             ((BufferedFuture) f).waitOnWindow = true;
             return f;
@@ -341,8 +339,6 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             throw error;
         }
 
-        remoteWindow.consume(chunkLength);
-
         IoWriteFuture writeFuture;
         try {
             writeFuture = packetWriter.writeData(createSendBuffer(buffer, channel, chunkLength));
@@ -354,6 +350,11 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             return null;
         }
         IoWriteFutureImpl thisFuture = f;
+        writeFuture.addListener(w -> {
+            if (!w.isWritten()) {
+                remoteWindow.expand(chunkLength);
+            }
+        });
         writeFuture.addListener(w -> onWritten(thisFuture, stillToSend, chunkLength, w));
         // If something remains it will be written via the listener we just added.
         return null;

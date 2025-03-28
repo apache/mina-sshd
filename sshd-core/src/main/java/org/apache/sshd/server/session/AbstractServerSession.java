@@ -277,7 +277,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     public IoWriteFuture signalAuthenticationSuccess(
             String username, String authService, Buffer buffer)
             throws Exception {
-        KexState curState = kexState.get();
+        KexState curState = getKexState();
         if (!KexState.DONE.equals(curState)) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                     "Authentication success signalled though KEX state=" + curState);
@@ -332,17 +332,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         // TODO: can services be initiated by the server-side ?
         disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                 "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
-    }
-
-    @Override
-    protected byte[] sendKexInit(Map<KexProposalOption, String> proposal) throws Exception {
-        mergeProposals(serverProposal, proposal);
-        return super.sendKexInit(proposal);
-    }
-
-    @Override
-    protected void setKexSeed(byte... seed) {
-        setServerKexData(seed);
     }
 
     @Override
@@ -483,13 +472,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         signalPeerIdentificationReceived(clientVersion, ident);
 
         return true;
-    }
-
-    @Override
-    protected void receiveKexInit(Map<KexProposalOption, String> proposal, byte[] seed)
-            throws IOException {
-        mergeProposals(clientProposal, proposal);
-        setClientKexData(seed);
     }
 
     @Override

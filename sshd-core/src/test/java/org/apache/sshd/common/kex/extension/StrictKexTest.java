@@ -41,11 +41,6 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * Tests for message handling during "strict KEX" is active: initial KEX must fail and disconnect if the KEX_INIT
  * message is not first, or if there are spurious extra messages like IGNORE or DEBUG during KEX. Later KEXes must
@@ -60,11 +55,11 @@ import static org.junit.jupiter.api.Assertions.fail;
  * @see    <A HREF="https://github.com/apache/mina-sshd/issues/445">Terrapin Mitigation: &quot;strict-kex&quot;</A>
  */
 @TestMethodOrder(MethodName.class)
-public class StrictKexTest extends BaseTestSupport {
+class StrictKexTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
 
-    public StrictKexTest() {
+    StrictKexTest() {
         super();
     }
 
@@ -124,7 +119,7 @@ public class StrictKexTest extends BaseTestSupport {
             // closed in the peer before it has sent the DISCONNECT message. Happens in particular on Windows.
             if (e.getDisconnectCode() == SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED) {
                 assertTrue(e.getMessage()
-                        .startsWith("Strict KEX negotiated but sequence number of first KEX_INIT received is not 1"),
+                        .startsWith("KEX: strict KEX negotiated but there were 1 messages before the first SSH_MSG_KEXINIT"),
                         "Unexpected disconnect reason: " + e.getMessage());
             }
         }
@@ -132,15 +127,15 @@ public class StrictKexTest extends BaseTestSupport {
 
     @Test
     void connectionClosedIfSpuriousPacketFromClientInKex() throws Exception {
-        testConnectionClosedIfSupriousPacketInKex(true);
+        testConnectionClosedIfSpuriousPacketInKex(true);
     }
 
     @Test
     void connectionClosedIfSpuriousPacketFromServerInKex() throws Exception {
-        testConnectionClosedIfSupriousPacketInKex(false);
+        testConnectionClosedIfSpuriousPacketInKex(false);
     }
 
-    private void testConnectionClosedIfSupriousPacketInKex(boolean clientInitiates) throws Exception {
+    private void testConnectionClosedIfSpuriousPacketInKex(boolean clientInitiates) throws Exception {
         AtomicReference<IoWriteFuture> debugMsg = new AtomicReference<>();
         SessionListener messageInitiator = new SessionListener() {
             @Override // At this stage the peer's KEX_INIT has been received

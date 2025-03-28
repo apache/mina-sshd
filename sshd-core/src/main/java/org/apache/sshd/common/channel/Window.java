@@ -69,6 +69,26 @@ public abstract class Window extends AbstractLoggingBean implements ChannelHolde
         return channelInstance;
     }
 
+    /**
+     * Retrieves the current size of the window; i.e., the maximum number of bytes available for consumption via
+     * {@link #consume(long)}.
+     *
+     * <p>
+     * The value is outdated immediately; you <em>cannot</em> rely on
+     * </p>
+     *
+     * <pre>
+     * long toConsume = ...;
+     * if (toConsume < window.getSize()) {
+     *   window.consume(toConsume); // Might throw an exception if some other thread consumed some space already
+     * }
+     * </pre>
+     * <p>
+     * <em>not</em> to throw an exception. Use the return value only for informative purposes, such as logging.
+     * </p>
+     *
+     * @return the currently available window size
+     */
     public long getSize() {
         synchronized (lock) {
             return size;
@@ -111,7 +131,14 @@ public abstract class Window extends AbstractLoggingBean implements ChannelHolde
         }
     }
 
-    public abstract void consume(long len) throws IOException;
+    /**
+     * Consume {@code len} bytes from the window.
+     *
+     * @param  len         number of bytes to consume
+     * @return             the number of bytes by which the window was actually reduced
+     * @throws IOException if the request cannot be honored
+     */
+    public abstract long consume(long len) throws IOException;
 
     protected void updateSize(long size) {
         BufferUtils.validateUint32Value(size, "Invalid updated size: %d", size);

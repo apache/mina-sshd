@@ -21,6 +21,7 @@ package org.apache.sshd.common.session.filters;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
@@ -43,7 +44,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A filter that decrypts incoming packets and encrypts outgoing ones.
  */
-public class CryptFilter extends IoFilter {
+public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
     private static final Logger LOG = LoggerFactory.getLogger(CryptFilter.class);
 
@@ -115,10 +116,12 @@ public class CryptFilter extends IoFilter {
         outCounts.set(new Counters());
     }
 
+    @Override
     public Counters getInputCounters() {
         return inCounts.get();
     }
 
+    @Override
     public Counters getOutputCounters() {
         return outCounts.get();
     }
@@ -145,14 +148,17 @@ public class CryptFilter extends IoFilter {
         return encryption.get();
     }
 
-    public long getInputSequenceNumber() {
+    @Override
+    public int getInputSequenceNumber() {
         return input.sequenceNumber;
     }
 
-    public long getOutputSequenceNumber() {
+    @Override
+    public int getOutputSequenceNumber() {
         return output.sequenceNumber;
     }
 
+    @Override
     public boolean isSecure() {
         return decryption.get().isSecure() && encryption.get().isSecure();
     }
@@ -188,7 +194,7 @@ public class CryptFilter extends IoFilter {
 
     private abstract class WithSequenceNumber {
 
-        long sequenceNumber;
+        volatile int sequenceNumber;
 
         WithSequenceNumber() {
             super();
@@ -316,7 +322,7 @@ public class CryptFilter extends IoFilter {
                 }
 
                 inCounts.get().update(bytes / cipherSize, bytes);
-                sequenceNumber = (sequenceNumber + 1) & 0xFFFF_FFFFL;
+                sequenceNumber++;
 
                 int endOfDataReceived = buffer.wpos();
                 int afterPacket = packetLength + Integer.BYTES + settings.getTagSize();
@@ -347,7 +353,7 @@ public class CryptFilter extends IoFilter {
 
         private void checkMac(byte[] data, int offset, int length, Mac mac) throws Exception {
             if (mac != null) {
-                mac.updateUInt(sequenceNumber);
+                mac.updateUInt(sequenceNumber & 0xFFFF_FFFFL);
                 mac.update(data, offset, length);
                 byte[] x = mac.doFinal();
                 if (!Mac.equals(x, 0, data, offset + length, x.length)) {
@@ -424,7 +430,7 @@ public class CryptFilter extends IoFilter {
                 }
             }
             outCounts.get().update(bytes / cipherSize, bytes);
-            sequenceNumber = (sequenceNumber + 1) & 0xFFFF_FFFFL;
+            sequenceNumber++;
 
             packet.rpos(start);
             return packet;
@@ -512,34 +518,37 @@ public class CryptFilter extends IoFilter {
         }
     }
 
-    public static class Counters {
+    public static class Counters implements CryptStatisticsProvider.Counters {
 
-        long bytes;
+        private AtomicLong bytes = new AtomicLong();
 
-        long blocks;
+        private AtomicLong blocks = new AtomicLong();
 
-        long packets;
+        private AtomicLong packets = new AtomicLong();
 
         Counters() {
             super();
         }
 
         public void update(int blocks, int bytes) {
-            this.blocks += blocks;
-            this.bytes += bytes;
-            packets++;
+            this.blocks.addAndGet(blocks);
+            this.bytes.addAndGet(bytes);
+            this.packets.incrementAndGet();
         }
 
+        @Override
         public long getBytes() {
-            return bytes;
+            return bytes.get();
         }
 
+        @Override
         public long getBlocks() {
-            return blocks;
+            return blocks.get();
         }
 
+        @Override
         public long getPackets() {
-            return packets;
+            return packets.get();
         }
     }
 }

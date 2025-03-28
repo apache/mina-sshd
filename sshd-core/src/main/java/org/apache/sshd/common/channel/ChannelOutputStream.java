@@ -272,21 +272,18 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
             while (remaining > 0) {
                 session.resetIdleTimeout();
 
-                long total = remaining;
-                long available;
-                try {
-                    available = remoteWindow.waitForSpace(maxWaitTimeout);
-                    if (traceEnabled) {
-                        log.trace("flush({}) len={}, available={}", this, total, available);
+                long total = Math.min(remaining, remoteWindow.getPacketSize());
+                long length = remoteWindow.consume(total);
+                if (length == 0) {
+                    try {
+                        remoteWindow.waitAndConsume(total, maxWaitTimeout);
+                        length = total;
+                    } catch (IOException e) {
+                        LoggingUtils.debug(log, "flush({}) failed ({}) to wait for space of len={} of total={}: {}", this,
+                                e.getClass().getSimpleName(), total, remaining, e.getMessage(), e);
+                        throw e;
                     }
-                } catch (IOException e) {
-                    LoggingUtils.debug(log, "flush({}) failed ({}) to wait for space of len={}: {}",
-                            this, e.getClass().getSimpleName(), total, e.getMessage(), e);
-                    throw e;
                 }
-
-                long lenToSend = Math.min(available, total);
-                long length = Math.min(lenToSend, remoteWindow.getPacketSize());
                 if (length > Integer.MAX_VALUE) {
                     throw new StreamCorruptedException("Accumulated " + SshConstants.getCommandMessageName(cmd)
                                                        + " command bytes size (" + length + ") exceeds int boundaries");
@@ -313,12 +310,16 @@ public class ChannelOutputStream extends OutputStream implements java.nio.channe
                 }
 
                 session.resetIdleTimeout();
-                remoteWindow.waitAndConsume(length, maxWaitTimeout);
                 if (traceEnabled) {
                     log.trace("flush({}) send {} len={}",
                             channel, SshConstants.getCommandMessageName(cmd), length);
                 }
-                packetWriter.writeData(buf);
+                long consumed = length;
+                packetWriter.writeData(buf).addListener(f -> {
+                    if (!f.isWritten()) {
+                        remoteWindow.expand(consumed);
+                    }
+                });
                 buf = freshBuffer;
             }
         } catch (WindowClosedException e) {
