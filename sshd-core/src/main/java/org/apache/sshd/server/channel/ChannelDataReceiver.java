@@ -69,8 +69,8 @@ public interface ChannelDataReceiver extends Closeable {
      * <p>
      * On the other hand, if the callee is queueing up the received bytes somewhere to be consumed later (for example by
      * another thread), then this method should return 0, for the bytes aren't really consumed yet. And when at some
-     * later point the bytes are actually used, then you'll invoke {@code channel.getLocalWindow().consumeAndCheck(len)}
-     * to let the channel know that bytes are consumed.
+     * later point the bytes are actually used, then you'll invoke {@code channel.getLocalWindow().release(len)} to let
+     * the channel know that bytes are consumed.
      * </p>
      *
      * <p>
@@ -81,8 +81,9 @@ public interface ChannelDataReceiver extends Closeable {
      *
      * <p>
      * In either case, the callee must account for every bytes it receives in this method. Returning 0 and failing to
-     * call back {@code channel.getLocalWindow().consumeAndCheck(len)} later will dry up the window size, and eventually
-     * the client will stop sending you any data.
+     * call back {@code channel.getLocalWindow().release(len)} later will dry up the window size, and eventually the
+     * client will stop sending any data. (And if it does despite the window size being zero, the channel will be
+     * forcibly closed.)
      * </p>
      *
      * <p>
@@ -95,7 +96,7 @@ public interface ChannelDataReceiver extends Closeable {
      * @param  start       buf[start] is the first byte that received from the client.
      * @param  len         the length of the bytes received. Can be zero.
      * @return             The number of bytes consumed, for the purpose of the flow control. For a simple use case, you
-     *                     return the value given by the 'len' parameter. See the method javadoc for more details.
+     *                     return the value given by the 'len' parameter. See above for more details.
      * @throws IOException if failed to consume the data
      */
     int data(ChannelSession channel, byte[] buf, int start, int len) throws IOException;
