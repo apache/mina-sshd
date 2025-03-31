@@ -18,10 +18,6 @@
  */
 package org.apache.sshd.client.channel;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Map;
-
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
@@ -33,6 +29,11 @@ import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * <P>
@@ -80,7 +81,14 @@ import org.apache.sshd.core.CoreModuleProperties;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PtyCapableChannelSession extends ChannelSession implements PtyChannelConfigurationMutator {
+
+    private static final byte[] X_COOKIE_TABLE = new byte[] {
+            0x30, 0x31, 0x32, 0x33, 0x34, 0x35, 0x36, 0x37, 0x38, 0x39, 0x61,
+            0x62, 0x63, 0x64, 0x65, 0x66
+    };
+
     private boolean agentForwarding;
+    private boolean xForwarding;
     private boolean usePty;
     private final PtyChannelConfiguration config;
 
@@ -125,6 +133,14 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
 
     public void setAgentForwarding(boolean agentForwarding) {
         this.agentForwarding = agentForwarding;
+    }
+
+    public boolean isXForwarding() {
+        return xForwarding;
+    }
+
+    public void setXForwarding(boolean xForwarding) {
+        this.xForwarding = xForwarding;
     }
 
     public boolean isUsePty() {
@@ -239,6 +255,21 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             writePacket(buffer);
         }
 
+        if (xForwarding) {
+            if (debugEnabled) {
+                log.debug("doOpenPty({}) Send xForwarding request", this);
+            }
+            Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_REQUEST);
+            buffer.putInt(getRecipient());
+            buffer.putString("x11-req");
+            buffer.putBoolean(false); // want-reply
+            buffer.putBoolean(false);
+            buffer.putString("MIT-MAGIC-COOKIE-1");
+            buffer.putBytes(getXCookie());
+            buffer.putInt(0);
+            writePacket(buffer);
+        }
+
         if (usePty) {
             if (debugEnabled) {
                 log.debug("doOpenPty({}) Send SSH_MSG_CHANNEL_REQUEST pty-req: {}", this, config);
@@ -270,5 +301,35 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
         }
 
         sendEnvVariables(session);
+    }
+
+    protected byte[] getXCookie() {
+        final Session session = getSession();
+        Object xCookie = ChannelX11.X11_COOKIE.getOrNull(session);
+        Object xCookieHex = ChannelX11.X11_COOKIE_HEX.getOrNull(session);
+        if (xCookie instanceof byte[] && xCookieHex instanceof byte[]) {
+            return (byte[]) xCookieHex;
+        }
+
+        synchronized (session) {
+            xCookieHex = ChannelX11.X11_COOKIE_HEX.getOrNull(session);
+            if (xCookieHex instanceof byte[]) {
+                return (byte[]) xCookieHex;
+            }
+
+            byte[] foo = new byte[16];
+            ThreadLocalRandom.current().nextBytes(foo);
+            ChannelX11.X11_COOKIE.set(session, foo);
+
+            byte[] bar = new byte[32];
+            for (int i = 0; i < 16; i++) {
+                bar[2 * i] = X_COOKIE_TABLE[(foo[i] >>> 4) & 0xf];
+                bar[2 * i + 1] = X_COOKIE_TABLE[(foo[i]) & 0xf];
+            }
+
+            ChannelX11.X11_COOKIE_HEX.set(session, bar);
+
+            return bar;
+        }
     }
 }
