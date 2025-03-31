@@ -46,6 +46,15 @@ import org.slf4j.LoggerFactory;
  */
 public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
+    /**
+     * The maximum padding length we use. RFC 4253: at least 4 bytes padding, at most 255 bytes.
+     * <p>
+     * Keep the padding size &lt;= 127, though: JSch has a bug where it reads the pad byte as a signed value when
+     * compression is used!
+     * </p>
+     */
+    public static final int MAX_PADDING = 127;
+
     private static final Logger LOG = LoggerFactory.getLogger(CryptFilter.class);
 
     // The minimum value for the packet length field of a valid SSH packet:
@@ -57,11 +66,6 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
     // zero-length payload was allowed, it would be 8 or 12.) So in practice the minimum length
     // is 8 bytes.
     private static final int MIN_PACKET_LENGTH = 8;
-
-    // RFC 4253: at least 4 bytes padding, at most 255 bytes.
-    //
-    // Keep the padding size <= 127, though: JSch has a bug where it reads the pad byte as a signed int!
-    private static final int MAX_PADDING = 127;
 
     private static final int UNKNOWN_PACKET_LENGTH = -1;
 

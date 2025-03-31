@@ -77,6 +77,7 @@ import org.apache.sshd.common.session.filters.CompressionFilter;
 import org.apache.sshd.common.session.filters.CryptFilter;
 import org.apache.sshd.common.session.filters.DelayKexInitFilter;
 import org.apache.sshd.common.session.filters.IdentFilter;
+import org.apache.sshd.common.session.filters.InjectIgnoreFilter;
 import org.apache.sshd.common.session.filters.SshIdentHandler;
 import org.apache.sshd.common.session.filters.kex.KexFilter;
 import org.apache.sshd.common.session.filters.kex.KexListener;
@@ -334,6 +335,8 @@ public abstract class AbstractSession extends SessionHelper {
         compressionFilter = new CompressionFilter();
         compressionFilter.setSession(this);
         filters.addLast(compressionFilter);
+
+        filters.addLast(new InjectIgnoreFilter(this, random));
 
         DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
         delayKexFilter.setSession(this);
