@@ -63,7 +63,7 @@ abstract class FilterTestSupport extends JUnitTestSupport {
 
         @Override
         public InputHandler in() {
-            return buf -> owner().passOn(this, buf);
+            return owner()::passOn;
         }
 
         @Override
@@ -96,7 +96,7 @@ abstract class FilterTestSupport extends JUnitTestSupport {
 
         @Override
         public OutputHandler out() {
-            return buf -> owner().send(this, buf);
+            return owner()::send;
         }
 
     }

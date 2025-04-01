@@ -25,7 +25,7 @@ import java.util.Objects;
  */
 public abstract class IoFilter implements Filter {
 
-    private volatile FilterChain chain;
+    private volatile FilterContext ctx;
 
     protected IoFilter() {
         super();
@@ -37,12 +37,12 @@ public abstract class IoFilter implements Filter {
     }
 
     @Override
-    public void adding(FilterChain chain) {
-        this.chain = Objects.requireNonNull(chain);
+    public void adding(FilterContext context) {
+        this.ctx = Objects.requireNonNull(context);
     }
 
     @Override
-    public void added(FilterChain chain) {
+    public void added(FilterContext context) {
         // Nothing
     }
 
@@ -52,13 +52,13 @@ public abstract class IoFilter implements Filter {
     }
 
     @Override
-    public void removed(FilterChain chain) {
-        this.chain = null;
+    public void removed(FilterContext context) {
+        this.ctx = null;
     }
 
     @Override
-    public FilterChain owner() {
-        return chain;
+    public FilterContext owner() {
+        return ctx;
     }
 
 }

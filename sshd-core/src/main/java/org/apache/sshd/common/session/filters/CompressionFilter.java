@@ -125,7 +125,7 @@ public class CompressionFilter extends IoFilter {
             if (comp != null && comp.isCompressionExecuted() && (delayedEnable.get() || !comp.isDelayed())) {
                 decompressed = decompress(comp, message);
             }
-            owner().passOn(CompressionFilter.this, decompressed);
+            owner().passOn(decompressed);
         }
 
         private Buffer decompress(Compression comp, Buffer message) throws IOException {
@@ -159,7 +159,7 @@ public class CompressionFilter extends IoFilter {
                     }
                 }
             }
-            return owner().send(CompressionFilter.this, message);
+            return owner().send(message);
         }
     }
 

@@ -19,9 +19,9 @@
 package org.apache.sshd.common.filter;
 
 /**
- * A message filter belonging to a {@link FilterChain}.
+ * A message filter belonging to a {@link FilterContext} of a {@link FilterChain}.
  */
-public interface Filter extends Owned<FilterChain> {
+public interface Filter extends Owned<FilterContext> {
 
     /**
      * Retrieves the filter's {@link InputHandler}.

@@ -230,7 +230,7 @@ public abstract class AbstractSession extends SessionHelper {
 
             @Override
             public InputHandler in() {
-                return message -> owner().passOn(this, message);
+                return owner()::passOn;
             }
 
             @Override
@@ -260,7 +260,7 @@ public abstract class AbstractSession extends SessionHelper {
 
             @Override
             public OutputHandler out() {
-                return message -> owner().send(this, message);
+                return owner()::send;
             }
         };
         filters.addLast(sessionConnector);
@@ -336,11 +336,11 @@ public abstract class AbstractSession extends SessionHelper {
         compressionFilter.setSession(this);
         filters.addLast(compressionFilter);
 
-        filters.addLast(new InjectIgnoreFilter(this, random));
-
         DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
         delayKexFilter.setSession(this);
         filters.addLast(delayKexFilter);
+
+        filters.addLast(new InjectIgnoreFilter(this, random));
 
         kexFilter = new KexFilter(this, random, cryptFilter, compressionFilter, new SessionListener() {
 

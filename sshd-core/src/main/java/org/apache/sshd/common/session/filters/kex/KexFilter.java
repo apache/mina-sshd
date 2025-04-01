@@ -1137,7 +1137,7 @@ public class KexFilter extends IoFilter {
                     if (isKexNeeded(false)) {
                         startKex();
                     }
-                    owner().passOn(KexFilter.this, message);
+                    owner().passOn(message);
                 }
                 return;
             }
@@ -1170,7 +1170,7 @@ public class KexFilter extends IoFilter {
                     throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, MessageFormat
                             .format("{0} not allowed during key exchange", SshConstants.getCommandMessageName(cmd)));
                 }
-                owner().passOn(KexFilter.this, message);
+                owner().passOn(message);
             }
         }
 
@@ -1180,7 +1180,7 @@ public class KexFilter extends IoFilter {
 
         private void passOnBeforeKexInit(int cmd, Buffer message) throws Exception {
             // TODO: message handling per the class javadoc.
-            owner().passOn(KexFilter.this, message);
+            owner().passOn(message);
         }
 
         private void handleKexMessage(KexState state, int cmd, Buffer message) throws Exception {
@@ -1231,7 +1231,7 @@ public class KexFilter extends IoFilter {
                 LOG.debug("KexFilter.send({}) {} with packet size {}", getSession(),
                         SshConstants.getCommandMessageName(message.rawByte(message.rpos()) & 0xFF), message.available());
             }
-            return owner().send(KexFilter.this, message);
+            return owner().send(message);
         }
     }
 }

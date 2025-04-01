@@ -345,7 +345,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
                 }
                 // Pass it on (directly the slice of this buffer)
                 buffer.wpos(endOfPayload);
-                owner().passOn(CryptFilter.this, buffer);
+                owner().passOn(buffer);
 
                 // Reset buffer positions
                 buffer.rpos(afterPacket);
@@ -386,7 +386,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
                     throw new IOException(e.getMessage(), e);
                 }
             }
-            return owner().send(CryptFilter.this, encrypted);
+            return owner().send(encrypted);
         }
 
         private Buffer encode(Buffer packet) throws Exception {

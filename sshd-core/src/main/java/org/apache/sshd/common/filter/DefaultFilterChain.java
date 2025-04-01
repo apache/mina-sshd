@@ -19,9 +19,7 @@
 package org.apache.sshd.common.filter;
 
 import java.io.IOException;
-import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Readable;
@@ -32,147 +30,122 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class DefaultFilterChain implements FilterChain {
 
-    private final CopyOnWriteArrayList<Filter> chain = new CopyOnWriteArrayList<>();
+    private FilterContext head;
+
+    private FilterContext tail;
 
     public DefaultFilterChain() {
         super();
     }
 
-    private Filter notDuplicate(Filter filter) {
-        if (chain.indexOf(Objects.requireNonNull(filter)) >= 0) {
-            throw new IllegalStateException("Duplicate filter " + filter);
-        }
-        return filter;
-    }
-
-    private void addAt(int i, Filter filter) {
-        if (i < 0) {
-            throw new NoSuchElementException();
-        }
-        notDuplicate(filter).adding(this);
-        chain.add(i, filter);
-        filter.added(this);
-    }
-
     @Override
     public boolean isEmpty() {
-        return chain.isEmpty();
+        return head == null;
     }
 
     @Override
-    public void addFirst(Filter filter) {
-        addAt(0, filter);
-    }
-
-    @Override
-    public void addLast(Filter filter) {
-        addAt(chain.size(), filter);
-    }
-
-    @Override
-    public void addBefore(Filter toAdd, Filter before) {
-        addAt(chain.indexOf(Objects.requireNonNull(before)), notDuplicate(toAdd));
-    }
-
-    @Override
-    public void addAfter(Filter toAdd, Filter after) {
-        addAt(chain.indexOf(Objects.requireNonNull(after)) + 1, notDuplicate(toAdd));
-    }
-
-    @Override
-    public void remove(Filter filter) {
-        int i = chain.indexOf(Objects.requireNonNull(filter));
-        if (i < 0) {
-            throw new IllegalArgumentException("Filter not in filter chain " + filter);
+    public synchronized FilterContext addFirst(Filter filter) {
+        FilterContext ctx = new FilterContext(this, filter);
+        filter.adding(ctx);
+        ctx.prev = null;
+        ctx.next = head;
+        if (head != null) {
+            ctx.next.prev = ctx;
         }
-        filter.removing();
-        chain.remove(filter);
-        filter.removed(this);
+        head = ctx;
+        if (tail == null) {
+            tail = ctx;
+        }
+        filter.added(ctx);
+        return ctx;
     }
 
     @Override
-    public void replace(Filter oldFilter, Filter newFilter) {
-        if (oldFilter.equals(Objects.requireNonNull(newFilter))) {
-            return;
+    public synchronized FilterContext addLast(Filter filter) {
+        FilterContext ctx = new FilterContext(this, filter);
+        filter.adding(ctx);
+        ctx.next = null;
+        ctx.prev = tail;
+        if (tail != null) {
+            ctx.prev.next = ctx;
         }
-        int i = chain.indexOf(oldFilter);
-        if (i < 0) {
-            throw new IllegalArgumentException("Filter not in filter chain " + oldFilter);
+        tail = ctx;
+        if (head == null) {
+            head = ctx;
         }
-        oldFilter.removing();
-        chain.remove(i);
-        oldFilter.removed(this);
-        newFilter.adding(this);
-        chain.add(i, newFilter);
-        newFilter.added(this);
+        filter.added(ctx);
+        return ctx;
     }
 
     @Override
-    public Filter getFirst() {
-        return chain.isEmpty() ? null : chain.get(0);
+    public synchronized FilterContext addBefore(Filter filter, FilterContext before) {
+        Objects.requireNonNull(before);
+        FilterContext ctx = new FilterContext(this, filter);
+        filter.adding(ctx);
+        ctx.next = before;
+        ctx.prev = before.prev;
+        before.prev = ctx;
+        if (ctx.prev == null) {
+            head = ctx;
+        } else {
+            ctx.prev.next = ctx;
+        }
+        filter.added(ctx);
+        return ctx;
     }
 
     @Override
-    public Filter getLast() {
-        int i = chain.size();
-        if (i == 0) {
-            return null;
+    public synchronized FilterContext addAfter(Filter filter, FilterContext after) {
+        Objects.requireNonNull(after);
+        FilterContext ctx = new FilterContext(this, filter);
+        filter.adding(ctx);
+        ctx.prev = after;
+        ctx.next = after.next;
+        after.next = ctx;
+        if (ctx.next == null) {
+            tail = ctx;
+        } else {
+            ctx.next.prev = ctx;
         }
-        return chain.get(i - 1);
+        filter.added(ctx);
+        return ctx;
     }
 
     @Override
-    public Filter getNext(Filter from) {
-        int i = chain.indexOf(from);
-        if (i < 0) {
-            throw new IllegalArgumentException("Filter not in filter chain: " + from);
-        }
-        if (i == chain.size() - 1) {
-            return null;
-        }
-        return chain.get(i + 1);
+    public synchronized Filter getFirst() {
+        return head == null ? null : head.filter;
     }
 
     @Override
-    public Filter getPrevious(Filter from) {
-        int i = chain.indexOf(from);
-        if (i < 0) {
-            throw new IllegalArgumentException("Filter not in filter chain: " + from);
-        }
-        return i == 0 ? null : chain.get(i - 1);
+    public synchronized Filter getLast() {
+        return tail == null ? null : tail.filter;
     }
 
     @Override
-    public IoWriteFuture send(Filter current, Buffer message) throws IOException {
-        int i = chain.indexOf(current);
-        if (i < 0) {
-            throw new IllegalArgumentException("Filter not in filter chain: " + current);
-        }
-        for (int j = i - 1; j >= 0; j--) {
-            Filter f = chain.get(j);
-            OutputHandler handler = f.out();
+    public IoWriteFuture send(FilterContext current, Buffer message) throws IOException {
+        FilterContext ctx = current.prev;
+        while (ctx != null) {
+            OutputHandler handler = ctx.filter.out();
             if (handler != null) {
                 return handler.send(message);
             }
+            ctx = ctx.prev;
         }
-        throw new IllegalStateException("Fell off filter chain in send from " + current);
+        throw new IllegalStateException("Fell off filter chain in send from " + current.filter);
     }
 
     @Override
-    public void passOn(Filter current, Readable message) throws Exception {
-        int i = chain.indexOf(current);
-        if (i < 0) {
-            throw new IllegalArgumentException("Filter not in filter chain: " + current);
-        }
-        for (int j = i + 1; j < chain.size(); j++) {
-            Filter f = chain.get(j);
-            InputHandler handler = f.in();
+    public void passOn(FilterContext current, Readable message) throws Exception {
+        FilterContext ctx = current.next;
+        while (ctx != null) {
+            InputHandler handler = ctx.filter.in();
             if (handler != null) {
                 handler.received(message);
                 return;
             }
+            ctx = ctx.next;
         }
-        throw new IllegalStateException("Unhandled message: fell off filter chain in receive after " + current);
+        throw new IllegalStateException("Unhandled message: fell off filter chain in receive after " + current.filter);
     }
 
 }

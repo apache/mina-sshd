@@ -84,14 +84,14 @@ public class InjectIgnoreFilter extends IoFilter {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Injector.send({}) injecting SSH_MSG_IGNORE", resolver);
                 }
-                owner().send(InjectIgnoreFilter.this, createIgnoreBuffer(length)).addListener(f -> {
+                owner().send(createIgnoreBuffer(length)).addListener(f -> {
                     Throwable t = f.getException();
                     if (t != null && (resolver instanceof Session)) {
                         ((Session) resolver).exceptionCaught(t);
                     }
                 });
             }
-            return owner().send(InjectIgnoreFilter.this, message);
+            return owner().send(message);
         }
 
         private Settings getSettings() {

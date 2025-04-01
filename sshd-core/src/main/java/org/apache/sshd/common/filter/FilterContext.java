@@ -19,56 +19,54 @@
 package org.apache.sshd.common.filter;
 
 import java.io.IOException;
+import java.util.Objects;
 
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 
-/**
- * A general chain of {@link Filter}s.
- */
-public interface FilterChain {
+public final class FilterContext {
 
-    boolean isEmpty();
+    volatile FilterContext prev;
+
+    volatile FilterContext next;
+
+    final Filter filter;
+
+    private final FilterChain chain;
+
+    FilterContext(FilterChain chain, Filter filter) {
+        this.chain = Objects.requireNonNull(chain);
+        this.filter = Objects.requireNonNull(filter);
+    }
 
     /**
-     * Adds the given filter at the front of the filter chain.
+     * Retrieves the {@link FilterChain} containing this context.
      *
-     * @param filter to add
+     * @return the {@link FilterChain}
      */
-    FilterContext addFirst(Filter filter);
+    public FilterChain chain() {
+        return chain;
+    }
 
     /**
-     * Adds the given filter at the end of the filter chain.
+     * Pass on an outgoing message to the next filter before this one that has an {@link OutputHandler}.
      *
-     * @param filter to add
-     */
-    FilterContext addLast(Filter filter);
-
-    FilterContext addBefore(Filter toAdd, FilterContext before);
-
-    FilterContext addAfter(Filter toAdd, FilterContext after);
-
-    Filter getFirst();
-
-    Filter getLast();
-
-    /**
-     * Pass on an outgoing message to the next filter before {@code current} that has an {@link OutputHandler}.
-     *
-     * @param  current     {@link Filter} that is passing on the message
      * @param  message     being passed on
      * @return             an {@link IoWriteFuture} that is fulfilled when the message has been sent.
      * @throws IOException if an error occurs
      */
-    IoWriteFuture send(FilterContext current, Buffer message) throws IOException;
+    public IoWriteFuture send(Buffer message) throws IOException {
+        return chain.send(this, message);
+    }
 
     /**
-     * Pass on an incoming message to the next filter after {@code current} that has an {@link InputHandler}.
+     * Pass on an incoming message to the next filter after this one that has an {@link InputHandler}.
      *
-     * @param  current   {@link Filter} that is passing on the message
      * @param  message   being passed on
      * @throws Exception if an error occurs
      */
-    void passOn(FilterContext current, Readable message) throws Exception;
+    public void passOn(Readable message) throws Exception {
+        chain.passOn(this, message);
+    }
 }

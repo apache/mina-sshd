@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.PropertyResolver;
-import org.apache.sshd.common.filter.FilterChain;
 import org.apache.sshd.common.filter.InputHandler;
 import org.apache.sshd.common.filter.IoFilter;
 import org.apache.sshd.common.filter.OutputHandler;
@@ -61,12 +60,6 @@ public class IdentFilter extends IoFilter {
     private final CopyOnWriteArrayList<IdentListener> listeners = new CopyOnWriteArrayList<>();
 
     public IdentFilter() {
-        super();
-    }
-
-    @Override
-    public void adding(FilterChain chain) {
-        super.adding(chain);
         readHandler.set(new ReadHandler());
         writeHandler.set(new WriteHandler());
     }
@@ -119,7 +112,7 @@ public class IdentFilter extends IoFilter {
             if (haveIdent) {
                 // Something called IdentFilter.in() and got this ReadHandler before we could set it to null below.
                 // Just pass on the message.
-                owner().passOn(IdentFilter.this, message);
+                owner().passOn(message);
             } else {
                 buffer.putBuffer(message);
                 List<String> lines = identHandler.readIdentification(buffer);
@@ -129,12 +122,9 @@ public class IdentFilter extends IoFilter {
                     buffer.compact();
                     received.setValue(Boolean.TRUE);
                     if (buffer.available() > 0) {
-                        owner().passOn(IdentFilter.this, buffer);
+                        owner().passOn(buffer);
                     }
                     readHandler.set(null);
-                    if (writeHandler.get() == null) {
-                        owner().remove(IdentFilter.this);
-                    }
                 }
             }
         }
@@ -172,14 +162,14 @@ public class IdentFilter extends IoFilter {
                 IoWriteFuture identSent;
                 if (identHandler.isServer()
                         || CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION.getRequired(properties).booleanValue()) {
-                    identSent = owner().send(IdentFilter.this, getIdent());
+                    identSent = owner().send(getIdent());
                 } else {
                     // We're a client, and we wait for the server's ident to arrive first.
                     DefaultIoWriteFuture delayed = new DefaultIoWriteFuture("DelayedIdent", null);
                     identSent = delayed;
                     received.addListener(identReceived -> {
                         try {
-                            owner().send(IdentFilter.this, getIdent()).addListener(idSent -> {
+                            owner().send(getIdent()).addListener(idSent -> {
                                 delayed.setValue(idSent.isWritten() ? Boolean.TRUE : idSent.getException());
                             });
                         } catch (IOException e) {
@@ -198,11 +188,8 @@ public class IdentFilter extends IoFilter {
             IoWriteFuture queue = lastWrite.get();
             if (queue == null || queue.isDone()) {
                 lastWrite.set(null);
-                IoWriteFuture result = owner().send(IdentFilter.this, message);
+                IoWriteFuture result = owner().send(message);
                 writeHandler.set(null);
-                if (readHandler.get() == null) {
-                    owner().remove(IdentFilter.this);
-                }
                 return result;
             }
             DefaultIoWriteFuture result = new DefaultIoWriteFuture("Ident", null);
@@ -211,7 +198,7 @@ public class IdentFilter extends IoFilter {
                 lastWrite.compareAndSet(result, null);
                 if (f.isWritten()) {
                     try {
-                        owner().send(IdentFilter.this, message).addListener(msgSent -> {
+                        owner().send(message).addListener(msgSent -> {
                             result.setValue(msgSent.isWritten() ? Boolean.TRUE : msgSent.getException());
                         });
                     } catch (IOException e) {
@@ -231,7 +218,7 @@ public class IdentFilter extends IoFilter {
             }
             listeners.forEach(listener -> listener.ident(false, ident.get(ident.size() - 1)));
             String myIdentification = ident.stream().collect(Collectors.joining(CRLF)) + CRLF;
-            return new ByteArrayBuffer((myIdentification).getBytes(StandardCharsets.UTF_8));
+            return new ByteArrayBuffer(myIdentification.getBytes(StandardCharsets.UTF_8));
         }
     }
 }

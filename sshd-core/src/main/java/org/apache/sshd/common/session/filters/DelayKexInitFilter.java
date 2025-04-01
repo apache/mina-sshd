@@ -21,6 +21,7 @@ package org.apache.sshd.common.session.filters;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.filter.BufferInputHandler;
@@ -34,34 +35,34 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
- * A filter implementing the KEX protocol.
+ * A filter implementing "delayed KEX-INIT" where the client waits for the server's initial KEX-INIT to arrive first
+ * before sending its own.
  */
 public class DelayKexInitFilter extends IoFilter {
-
-    // Currently we just handle the "delayed KEX-INIT", where the client waits for the server's KEX to arrive first.
 
     private AtomicBoolean isFirst = new AtomicBoolean(true);
 
     private final DefaultIoWriteFuture initReceived = new DefaultIoWriteFuture(this, null);
 
-    private final InputHandler input = new KexInputHandler();
+    private final AtomicReference<InputHandler> input = new AtomicReference<>();
 
-    private final OutputHandler output = new KexOutputHandler();
+    private final AtomicReference<OutputHandler> output = new AtomicReference<>();
 
     private Session session;
 
     public DelayKexInitFilter() {
-        super();
+        input.set(new KexInputHandler());
+        output.set(new KexOutputHandler());
     }
 
     @Override
     public InputHandler in() {
-        return input;
+        return input.get();
     }
 
     @Override
     public OutputHandler out() {
-        return output;
+        return output.get();
     }
 
     public void setSession(Session session) {
@@ -76,16 +77,18 @@ public class DelayKexInitFilter extends IoFilter {
 
         @Override
         public void handleMessage(Buffer message) throws Exception {
-            int cmd = message.rawByte(message.rpos());
-            if (cmd == SshConstants.SSH_MSG_KEXINIT) {
-                initReceived.setValue(Boolean.TRUE);
+            if (input.get() != null) {
+                int cmd = message.rawByte(message.rpos());
+                if (cmd == SshConstants.SSH_MSG_KEXINIT) {
+                    initReceived.setValue(Boolean.TRUE);
+                    input.set(null);
+                }
             }
-            owner().passOn(DelayKexInitFilter.this, message);
+            owner().passOn(message);
         }
 
     }
 
-    // TODO lastWrite?
     private class KexOutputHandler implements OutputHandler {
 
         KexOutputHandler() {
@@ -94,17 +97,20 @@ public class DelayKexInitFilter extends IoFilter {
 
         @Override
         public IoWriteFuture send(Buffer message) throws IOException {
+            if (output.get() == null) {
+                return owner().send(message);
+            }
             int cmd = message.rawByte(message.rpos());
             if (cmd != SshConstants.SSH_MSG_KEXINIT) {
-                return owner().send(DelayKexInitFilter.this, message);
+                return owner().send(message);
             }
             boolean first = isFirst.getAndSet(false);
             if (!first || session.isServerSession()
                     || CoreModuleProperties.SEND_IMMEDIATE_KEXINIT.getRequired(session).booleanValue()) {
-                return owner().send(DelayKexInitFilter.this, message);
+                return owner().send(message).addListener(f -> output.set(null));
             }
             // We're a client, and we delay sending the initial KEX-INIT until we have received the peer's KEX-INIT
-            IoWriteFuture initial = owner().send(DelayKexInitFilter.this, null);
+            IoWriteFuture initial = owner().send(null);
             DefaultIoWriteFuture result = new DefaultIoWriteFuture(KexOutputHandler.this, null);
             initial.addListener(init -> {
                 Throwable t = init.getException();
@@ -114,7 +120,8 @@ public class DelayKexInitFilter extends IoFilter {
                 }
                 initReceived.addListener(f -> {
                     try {
-                        owner().send(DelayKexInitFilter.this, message).addListener(g -> {
+                        owner().send(message).addListener(g -> {
+                            output.set(null);
                             result.setValue(g.isWritten() ? Boolean.TRUE : g.getException());
                         });
                     } catch (IOException e) {
