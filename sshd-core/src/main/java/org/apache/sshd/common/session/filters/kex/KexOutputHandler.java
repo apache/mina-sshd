@@ -211,17 +211,15 @@ public class KexOutputHandler implements OutputHandler {
      * @throws IOException if an error occurs
      */
     @Override
-    public IoWriteFuture send(Buffer buffer) throws IOException {
+    public IoWriteFuture send(int cmd, Buffer buffer) throws IOException {
         // While exchanging key, queue high level packets.
-        byte[] bufData = buffer.array();
-        int cmd = bufData[buffer.rpos()] & 0xFF;
         boolean isLowLevelMessage = cmd <= SshConstants.SSH_MSG_KEX_LAST && cmd != SshConstants.SSH_MSG_SERVICE_REQUEST
                 && cmd != SshConstants.SSH_MSG_SERVICE_ACCEPT;
         IoWriteFuture future = null;
         try {
             if (isLowLevelMessage) {
                 // Low-level messages can always be sent.
-                future = filter.write(buffer, true);
+                future = filter.write(cmd, buffer, true);
             } else {
                 future = writeOrEnqueue(cmd, buffer);
                 if (!(future instanceof PendingWriteFuture)) {
@@ -267,7 +265,7 @@ public class KexOutputHandler implements OutputHandler {
                 boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
                 if (kexDone && kexFlushed.get()) {
                     // Not in KEX, no pending packets: out it goes.
-                    return filter.write(buffer, false);
+                    return filter.write(cmd, buffer, false);
                 } else {
                     // Still in KEX or still flushing. Enqueue the packet; it will get written by the flushing thread at
                     // the end of KEX. See the javadoc of KexFilter.
@@ -401,7 +399,9 @@ public class KexOutputHandler implements OutputHandler {
                                     log.trace("flushQueue({}): Flushing a packet at end of KEX for {}", filter.getSession(),
                                             pending.getId());
                                 }
-                                written = filter.write(pending.getBuffer(), true);
+                                Buffer buf = pending.getBuffer();
+                                int cmd = buf.rawByte(buf.rpos()) & 0xFF;
+                                written = filter.write(cmd, buf, true);
                             } catch (Throwable e) {
                                 log.error("flushQueue({}): Exception while flushing packet at end of KEX for {}",
                                         filter.getSession(),

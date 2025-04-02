@@ -76,7 +76,7 @@ class InjectIgnoreFilterTest extends FilterTestSupport {
 
         final int rounds = 10;
         for (int i = 0; i < frequency * rounds; i++) {
-            filterChain.getLast().out().send(msg);
+            filterChain.getLast().out().send(0xff, msg);
         }
         assertEquals((frequency + 1) * rounds, outputs.outputs.size());
         List<IoWriteFutureWithData> out = outputs.outputs;

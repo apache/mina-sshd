@@ -21,6 +21,7 @@ package org.apache.sshd.common.session.filters;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -138,14 +139,14 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
     public void setInput(Settings settings, boolean resetSequence) {
         decryption.set(Objects.requireNonNull(settings));
         if (resetSequence) {
-            input.sequenceNumber = 0;
+            input.sequenceNumber.set(0);
         }
     }
 
     public void setOutput(Settings settings, boolean resetSequence) {
         encryption.set(Objects.requireNonNull(settings));
         if (resetSequence) {
-            output.sequenceNumber = 0;
+            output.sequenceNumber.set(0);
         }
     }
 
@@ -159,12 +160,12 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
     @Override
     public int getInputSequenceNumber() {
-        return input.sequenceNumber;
+        return input.sequenceNumber.get();
     }
 
     @Override
     public int getOutputSequenceNumber() {
-        return output.sequenceNumber;
+        return output.sequenceNumber.get();
     }
 
     @Override
@@ -190,7 +191,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
     private abstract class WithSequenceNumber {
 
-        volatile int sequenceNumber;
+        final AtomicInteger sequenceNumber = new AtomicInteger();
 
         WithSequenceNumber() {
             super();
@@ -318,7 +319,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
                 }
 
                 inCounts.get().update(bytes / cipherSize, bytes);
-                sequenceNumber++;
+                sequenceNumber.incrementAndGet();
 
                 int endOfDataReceived = buffer.wpos();
                 int afterPacket = packetLength + Integer.BYTES + settings.getTagSize();
@@ -349,7 +350,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
         private void checkMac(byte[] data, int offset, int length, Mac mac) throws Exception {
             if (mac != null) {
-                mac.updateUInt(sequenceNumber & 0xFFFF_FFFFL);
+                mac.updateUInt(sequenceNumber.get());
                 mac.update(data, offset, length);
                 byte[] x = mac.doFinal();
                 if (!Mac.equals(x, 0, data, offset + length, x.length)) {
@@ -366,22 +367,22 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
         }
 
         @Override
-        public synchronized IoWriteFuture send(Buffer message) throws IOException {
+        public synchronized IoWriteFuture send(int cmd, Buffer message) throws IOException {
             Buffer encrypted = message;
             if (encrypted != null) {
                 try {
-                    listeners.forEach(listener -> listener.aboutToEncrypt(message, sequenceNumber));
-                    encrypted = encode(message);
+                    listeners.forEach(listener -> listener.aboutToEncrypt(message, sequenceNumber.get()));
+                    encrypted = encode(cmd, message);
                 } catch (IOException e) {
                     throw e;
                 } catch (Exception e) {
                     throw new IOException(e.getMessage(), e);
                 }
             }
-            return owner().send(encrypted);
+            return owner().send(cmd, encrypted);
         }
 
-        private Buffer encode(Buffer packet) throws Exception {
+        private Buffer encode(int cmd, Buffer packet) throws Exception {
             Settings settings = encryption.get();
             Cipher cipher = settings.getCipher();
             boolean isAead = cipher != null && settings.isAead();
@@ -394,7 +395,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
             if (start < 0) {
                 throw new IllegalArgumentException("Message is not an SSH packet buffer; need 5 spare bytes at the front");
             }
-            int pad = paddingLength(length, cipherSize, !isAead && !isEtm);
+            int pad = paddingLength(cmd, length, cipherSize, !isAead && !isEtm);
             // RFC 4253: at least 4 bytes padding, at most 255 bytes
             if (pad < 4 || pad > MAX_PADDING) {
                 throw new IllegalStateException("Invalid packet length computed: " + pad + " not in range [4..255]");
@@ -426,20 +427,30 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
                 }
             }
             outCounts.get().update(bytes / cipherSize, bytes);
-            sequenceNumber++;
+            sequenceNumber.incrementAndGet();
 
             packet.rpos(start);
             return packet;
         }
 
-        private int paddingLength(int payloadLength, int blockSize, boolean includePacketLength) {
+        private int paddingLength(int cmd, int payloadLength, int blockSize, boolean includePacketLength) {
             int toEncrypt = payloadLength + 1; // For the padding count itself.
             if (includePacketLength) {
                 toEncrypt += Integer.BYTES;
             }
             // RFC 4253: at least 4, at most 255 bytes.
-            // RFC 4253: variable amounts of random padding may help thwart traffic analysis.
-            int pad = 4 + random.random(MAX_PADDING + 1 - 4);
+            int minPadding = 4;
+            // Minor layering break here: always pad messages that might carry user passwords with at least 64 bytes
+            // to prevent that traffic analysis might make guesses about password lengths.
+            if (cmd >= SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST && cmd <= SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) {
+                minPadding = 64; // Must be smaller than MAX_PADDING, of course
+            }
+            int pad = minPadding;
+            // For low-level messages, do not add extra padding.
+            if (cmd >= SshConstants.SSH_MSG_KEXINIT) {
+                // RFC 4253: variable amounts of random padding may help thwart traffic analysis.
+                pad = minPadding + random.random(MAX_PADDING + 1 - minPadding);
+            }
             // Now pad is in the range [4..MAX_PADDING]
             int totalLength = toEncrypt + pad;
             // Adjust pad such that totalLength is a multiple of the blockSize, and is still larger than 4.
@@ -452,7 +463,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
         private void appendMac(byte[] data, int start, int end, Mac mac) throws Exception {
             if (mac != null) {
-                mac.updateUInt(sequenceNumber);
+                mac.updateUInt(sequenceNumber.get());
                 mac.update(data, start, end - start);
                 mac.doFinal(data, end);
             }

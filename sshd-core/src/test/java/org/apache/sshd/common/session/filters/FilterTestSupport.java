@@ -68,7 +68,7 @@ abstract class FilterTestSupport extends JUnitTestSupport {
 
         @Override
         public OutputHandler out() {
-            return buf -> {
+            return (cmd, buf) -> {
                 IoWriteFutureWithData result = new IoWriteFutureWithData(this, null,
                         ByteArrayBuffer.getCompactClone(buf.array(), buf.rpos(), buf.available()));
                 outputs.add(result);

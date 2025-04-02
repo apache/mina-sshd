@@ -156,20 +156,20 @@ public class IdentFilter extends IoFilter {
         }
 
         @Override
-        public IoWriteFuture send(Buffer message) throws IOException {
+        public IoWriteFuture send(int cmd, Buffer message) throws IOException {
             boolean isFirst = firstMessage.getAndSet(false);
             if (isFirst) {
                 IoWriteFuture identSent;
                 if (identHandler.isServer()
                         || CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION.getRequired(properties).booleanValue()) {
-                    identSent = owner().send(getIdent());
+                    identSent = owner().send(-1, getIdent());
                 } else {
                     // We're a client, and we wait for the server's ident to arrive first.
                     DefaultIoWriteFuture delayed = new DefaultIoWriteFuture("DelayedIdent", null);
                     identSent = delayed;
                     received.addListener(identReceived -> {
                         try {
-                            owner().send(getIdent()).addListener(idSent -> {
+                            owner().send(-1, getIdent()).addListener(idSent -> {
                                 delayed.setValue(idSent.isWritten() ? Boolean.TRUE : idSent.getException());
                             });
                         } catch (IOException e) {
@@ -188,7 +188,7 @@ public class IdentFilter extends IoFilter {
             IoWriteFuture queue = lastWrite.get();
             if (queue == null || queue.isDone()) {
                 lastWrite.set(null);
-                IoWriteFuture result = owner().send(message);
+                IoWriteFuture result = owner().send(cmd, message);
                 writeHandler.set(null);
                 return result;
             }
@@ -198,7 +198,7 @@ public class IdentFilter extends IoFilter {
                 lastWrite.compareAndSet(result, null);
                 if (f.isWritten()) {
                     try {
-                        owner().send(message).addListener(msgSent -> {
+                        owner().send(cmd, message).addListener(msgSent -> {
                             result.setValue(msgSent.isWritten() ? Boolean.TRUE : msgSent.getException());
                         });
                     } catch (IOException e) {

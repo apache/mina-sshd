@@ -77,21 +77,20 @@ public class InjectIgnoreFilter extends IoFilter {
         }
 
         @Override
-        public synchronized IoWriteFuture send(Buffer message) throws IOException {
-            int cmd = message.rawByte(message.rpos()) & 0xFF;
+        public synchronized IoWriteFuture send(int cmd, Buffer message) throws IOException {
             int length = shouldSendIgnore(cmd);
             if (length > 0) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Injector.send({}) injecting SSH_MSG_IGNORE", resolver);
                 }
-                owner().send(createIgnoreBuffer(length)).addListener(f -> {
+                owner().send(SshConstants.SSH_MSG_IGNORE, createIgnoreBuffer(length)).addListener(f -> {
                     Throwable t = f.getException();
                     if (t != null && (resolver instanceof Session)) {
                         ((Session) resolver).exceptionCaught(t);
                     }
                 });
             }
-            return owner().send(message);
+            return owner().send(cmd, message);
         }
 
         private Settings getSettings() {

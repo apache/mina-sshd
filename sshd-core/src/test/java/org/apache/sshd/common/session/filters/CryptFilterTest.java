@@ -179,7 +179,7 @@ class CryptFilterTest extends FilterTestSupport {
             b.rpos(5);
             b.wpos(5);
             b.putBytes(data);
-            filterChain.getLast().out().send(b);
+            filterChain.getLast().out().send(0, b);
         }
         assertEquals(1000, outputs.outputs.size());
         if (outCipher == null && outMac == null) {

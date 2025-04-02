@@ -230,7 +230,7 @@ public abstract class AbstractSession extends SessionHelper {
 
             @Override
             public OutputHandler out() {
-                return message -> getIoSession().writeBuffer(message);
+                return (cmd, message) -> getIoSession().writeBuffer(message);
             }
         };
         filters.addFirst(ioSessionConnector);
@@ -646,7 +646,8 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public IoWriteFuture writePacket(Buffer buffer) throws IOException {
-        return filters.getLast().out().send(buffer);
+        int cmd = buffer.rawByte(buffer.rpos()) & 0xFF;
+        return filters.getLast().out().send(cmd, buffer);
     }
 
     @Override

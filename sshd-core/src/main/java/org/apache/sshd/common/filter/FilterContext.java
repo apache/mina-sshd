@@ -52,12 +52,13 @@ public final class FilterContext {
     /**
      * Pass on an outgoing message to the next filter before this one that has an {@link OutputHandler}.
      *
+     * @param  cmd         the SSH command code of the buffer being written; must also be included in the buffer
      * @param  message     being passed on
      * @return             an {@link IoWriteFuture} that is fulfilled when the message has been sent.
      * @throws IOException if an error occurs
      */
-    public IoWriteFuture send(Buffer message) throws IOException {
-        return chain.send(this, message);
+    public IoWriteFuture send(int cmd, Buffer message) throws IOException {
+        return chain.send(this, cmd, message);
     }
 
     /**

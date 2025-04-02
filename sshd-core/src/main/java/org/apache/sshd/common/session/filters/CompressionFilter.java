@@ -146,11 +146,10 @@ public class CompressionFilter extends IoFilter {
         }
 
         @Override
-        public synchronized IoWriteFuture send(Buffer message) throws IOException {
+        public synchronized IoWriteFuture send(int cmd, Buffer message) throws IOException {
             if (message != null) {
                 Compression comp = outbound.get();
                 if (comp != null && comp.isCompressionExecuted() && (delayedEnable.get() || !comp.isDelayed())) {
-                    int cmd = message.rawByte(message.rpos()) & 0xFF;
                     int oldLength = message.available();
                     comp.compress(message);
                     if (LOG.isDebugEnabled()) {
@@ -159,7 +158,7 @@ public class CompressionFilter extends IoFilter {
                     }
                 }
             }
-            return owner().send(message);
+            return owner().send(cmd, message);
         }
     }
 

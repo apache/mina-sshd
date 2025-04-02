@@ -81,7 +81,7 @@ class IdentFilterTest extends FilterTestSupport {
 
     @Test
     void normalOperation() throws Exception {
-        IoWriteFuture future = filterChain.getLast().out().send(buf("kex-init"));
+        IoWriteFuture future = filterChain.getLast().out().send(0, buf("kex-init"));
         assertFalse(future.isDone());
         assertEquals(1, outputs.outputs.size());
         IoWriteFutureWithData first = outputs.outputs.get(0);
@@ -97,9 +97,9 @@ class IdentFilterTest extends FilterTestSupport {
 
     @Test
     void secondWriteIsQueued() throws Exception {
-        IoWriteFuture future = filterChain.getLast().out().send(buf("kex-init"));
+        IoWriteFuture future = filterChain.getLast().out().send(0, buf("kex-init"));
         assertFalse(future.isDone());
-        IoWriteFuture future2 = filterChain.getLast().out().send(buf("second"));
+        IoWriteFuture future2 = filterChain.getLast().out().send(0, buf("second"));
         assertEquals(1, outputs.outputs.size());
         IoWriteFutureWithData first = outputs.outputs.get(0);
         assertEquals("SSH-2.0-foo bar\r\n", str(first.data));
@@ -118,7 +118,7 @@ class IdentFilterTest extends FilterTestSupport {
 
     @Test
     void onlyIdent() throws Exception {
-        IoWriteFuture future = filterChain.getLast().out().send(null);
+        IoWriteFuture future = filterChain.getLast().out().send(0, null);
         assertFalse(future.isDone());
         assertEquals(1, outputs.outputs.size());
         IoWriteFutureWithData first = outputs.outputs.get(0);
@@ -127,7 +127,7 @@ class IdentFilterTest extends FilterTestSupport {
         assertTrue(future.isWritten());
         assertEquals(1, outputs.outputs.size());
         outputs.autoFulfill = true;
-        IoWriteFuture future2 = filterChain.getLast().out().send(buf("kex-init"));
+        IoWriteFuture future2 = filterChain.getLast().out().send(0, buf("kex-init"));
         assertEquals(2, outputs.outputs.size());
         IoWriteFutureWithData second = outputs.outputs.get(1);
         assertEquals("kex-init", str(second.data));
@@ -152,7 +152,7 @@ class IdentFilterTest extends FilterTestSupport {
             }
         });
         outputs.autoFulfill = true;
-        IoWriteFuture future = filterChain.getLast().out().send(buf("kex-init"));
+        IoWriteFuture future = filterChain.getLast().out().send(0, buf("kex-init"));
         assertFalse(future.isDone());
         assertEquals(0, outputs.outputs.size());
         filterChain.getFirst().in().received(buf("SSH-2.0-"));
@@ -161,7 +161,7 @@ class IdentFilterTest extends FilterTestSupport {
         assertEquals(0, inputs.buffers.size());
         filterChain.getFirst().in().received(buf("foo foo"));
         assertFalse(future.isDone());
-        IoWriteFuture future2 = filterChain.getLast().out().send(buf("second"));
+        IoWriteFuture future2 = filterChain.getLast().out().send(0, buf("second"));
         assertFalse(future2.isDone());
         assertEquals(0, outputs.outputs.size());
         assertEquals(0, inputs.buffers.size());

@@ -122,12 +122,12 @@ public class DefaultFilterChain implements FilterChain {
     }
 
     @Override
-    public IoWriteFuture send(FilterContext current, Buffer message) throws IOException {
+    public IoWriteFuture send(FilterContext current, int cmd, Buffer message) throws IOException {
         FilterContext ctx = current.prev;
         while (ctx != null) {
             OutputHandler handler = ctx.filter.out();
             if (handler != null) {
-                return handler.send(message);
+                return handler.send(cmd, message);
             }
             ctx = ctx.prev;
         }

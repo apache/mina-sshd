@@ -113,7 +113,7 @@ class CompressionFilterTest extends FilterTestSupport {
             b.rpos(5);
             b.wpos(5);
             b.putBytes(original);
-            filterChain.getLast().out().send(b);
+            filterChain.getLast().out().send(0, b);
             assertEquals(1, outputs.outputs.size());
             IoWriteFutureWithData outFuture = outputs.outputs.get(0);
             outputs.outputs.clear();

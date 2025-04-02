@@ -31,11 +31,12 @@ public interface OutputHandler {
     /**
      * Sends an outgoing message.
      *
+     * @param  cmd       the SSH command code of the buffer being written; must also be included in the buffer
      * @param  message   {@link Buffer} containing the message; not to be re-used before the returned future is
      *                   fulfilled
      * @return           an {@link IoWriteFuture} that will be fulfilled once the message has been sent.
      * @throws Exception if an error occurs in handling the message
      */
-    IoWriteFuture send(Buffer message) throws IOException;
+    IoWriteFuture send(int cmd, Buffer message) throws IOException;
 
 }

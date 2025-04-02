@@ -511,7 +511,7 @@ public class KexFilter extends IoFilter {
                     LOG.debug("sendKexInit({}) : SSH_MSG_KEXINIT sent by reserved messages handler", session);
                 }
             } else {
-                future = forward.send(message);
+                future = forward.send(SshConstants.SSH_MSG_KEXINIT, message);
             }
             initFuture.setValue(Boolean.TRUE);
             return future;
@@ -870,7 +870,7 @@ public class KexFilter extends IoFilter {
 
     private IoWriteFuture sendNewKeys() throws Exception {
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_NEWKEYS, 1);
-        IoWriteFuture future = forward.send(buffer);
+        IoWriteFuture future = forward.send(SshConstants.SSH_MSG_NEWKEYS, buffer);
         // Use the new settings from now on for any outgoing packet
         setOutputEncoding();
         output.updateState(() -> kexState.set(KexState.KEYS));
@@ -958,6 +958,7 @@ public class KexFilter extends IoFilter {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                     "KEX: received SSH_MSG_NEWKEYS in state " + currentState);
         }
+        input.sequenceNumberCheckEnabled = false;
         // It is guaranteed that we handle the peer's SSH_MSG_NEWKEYS after having sent our own.
         // prepareNewKeys() was already called in sendNewKeys().
         //
@@ -1076,8 +1077,8 @@ public class KexFilter extends IoFilter {
     }
 
     // Entry points for the KexOutputHandler
-    IoWriteFuture write(Buffer buffer, boolean checkForKex) throws IOException {
-        IoWriteFuture result = forward.send(buffer);
+    IoWriteFuture write(int cmd, Buffer buffer, boolean checkForKex) throws IOException {
+        IoWriteFuture result = forward.send(cmd, buffer);
         if (checkForKex) {
             startKexIfNeeded();
         }
@@ -1098,6 +1099,8 @@ public class KexFilter extends IoFilter {
     }
 
     private abstract class WithSequenceNumber {
+
+        volatile boolean sequenceNumberCheckEnabled = true;
 
         private int initialSequenceNumber;
 
@@ -1126,7 +1129,9 @@ public class KexFilter extends IoFilter {
 
         @Override
         public void handleMessage(Buffer message) throws Exception {
-            checkSequence("Incoming", crypt::getInputSequenceNumber);
+            if (sequenceNumberCheckEnabled) {
+                checkSequence("Incoming", crypt::getInputSequenceNumber);
+            }
             int cmd = message.rawByte(message.rpos()) & 0xFF;
             if (LOG.isDebugEnabled()) {
                 LOG.debug("KexFilter.handleMessage({}) {} with packet size {}", getSession(),
@@ -1222,14 +1227,12 @@ public class KexFilter extends IoFilter {
 
     private class Sender extends WithSequenceNumber implements OutputHandler {
 
-        volatile boolean sequenceNumberCheckEnabled = true;
-
         Sender() {
             super();
         }
 
         @Override
-        public IoWriteFuture send(Buffer message) throws IOException {
+        public IoWriteFuture send(int cmd, Buffer message) throws IOException {
             if (sequenceNumberCheckEnabled) {
                 checkSequence("Outgoing", crypt::getOutputSequenceNumber);
             }
@@ -1237,7 +1240,7 @@ public class KexFilter extends IoFilter {
                 LOG.debug("KexFilter.send({}) {} with packet size {}", getSession(),
                         SshConstants.getCommandMessageName(message.rawByte(message.rpos()) & 0xFF), message.available());
             }
-            return owner().send(message);
+            return owner().send(cmd, message);
         }
     }
 }
