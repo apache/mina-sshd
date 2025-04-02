@@ -301,9 +301,9 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         IoSession networkSession = getIoSession();
         setUsername(username);
         setAuthenticated();
-        getCompressionFilter().enableInput();
+        getTransport().enableInputCompression();
         startService(authService, buffer);
-        IoWriteFuture future = writePacket(response).addListener(f -> getCompressionFilter().enableOutput());
+        IoWriteFuture future = writePacket(response).addListener(f -> getTransport().enableOutputCompression());
 
         resetIdleTimeout();
         log.info("Session {}@{} authenticated", username, networkSession.getRemoteAddress());

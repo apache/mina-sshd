@@ -73,13 +73,10 @@ import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.session.filters.CompressionFilter;
 import org.apache.sshd.common.session.filters.CryptFilter;
-import org.apache.sshd.common.session.filters.DelayKexInitFilter;
-import org.apache.sshd.common.session.filters.IdentFilter;
-import org.apache.sshd.common.session.filters.InjectIgnoreFilter;
+import org.apache.sshd.common.session.filters.CryptFilter.EncryptionListener;
 import org.apache.sshd.common.session.filters.SshIdentHandler;
-import org.apache.sshd.common.session.filters.kex.KexFilter;
+import org.apache.sshd.common.session.filters.SshTransportFilter;
 import org.apache.sshd.common.session.filters.kex.KexListener;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ExceptionUtils;
@@ -179,9 +176,7 @@ public abstract class AbstractSession extends SessionHelper {
 
     private final FilterChain filters = new DefaultFilterChain();
 
-    private CryptFilter cryptFilter;
-    private CompressionFilter compressionFilter;
-    private KexFilter kexFilter;
+    private SshTransportFilter sshTransport;
 
     /**
      * Create a new session.
@@ -267,9 +262,7 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected void setupFilterChain() {
-        IdentFilter ident = new IdentFilter();
-        ident.setPropertyResolver(this);
-        ident.setIdentHandler(new SshIdentHandler() {
+        SshIdentHandler identities = new SshIdentHandler() {
 
             @Override
             public boolean isServer() {
@@ -317,32 +310,8 @@ public abstract class AbstractSession extends SessionHelper {
                 }
                 return lines;
             }
-        });
-        filters.addLast(ident);
-
-        cryptFilter = new CryptFilter();
-        cryptFilter.setSession(this);
-        cryptFilter.setRandom(random);
-        cryptFilter.addEncryptionListener((buffer, sequenceNumber) -> {
-            // SSHD-968 - remember global request outgoing sequence number
-            LongConsumer setter = globalSequenceNumbers.remove(buffer);
-            if (setter != null) {
-                setter.accept(sequenceNumber);
-            }
-        });
-        filters.addLast(cryptFilter);
-
-        compressionFilter = new CompressionFilter();
-        compressionFilter.setSession(this);
-        filters.addLast(compressionFilter);
-
-        DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
-        delayKexFilter.setSession(this);
-        filters.addLast(delayKexFilter);
-
-        filters.addLast(new InjectIgnoreFilter(this, random));
-
-        kexFilter = new KexFilter(this, random, cryptFilter, compressionFilter, new SessionListener() {
+        };
+        SessionListener sessionEvents = new SessionListener() {
 
             @Override
             public void sessionNegotiationStart(
@@ -369,16 +338,17 @@ public abstract class AbstractSession extends SessionHelper {
                     throw new RuntimeSshException(e.getMessage(), e);
                 }
             }
-        }, this::getKexProposal, this::checkKeys);
-        filters.addLast(kexFilter);
-
-        ident.addIdentListener((peer, id) -> {
-            if (peer == isServerSession()) {
-                kexFilter.setClientIdent(id);
-            } else {
-                kexFilter.setServerIdent(id);
+        };
+        EncryptionListener sequenceListener = (buffer, sequenceNumber) -> {
+            // SSHD-968 - remember global request outgoing sequence number
+            LongConsumer setter = globalSequenceNumbers.remove(buffer);
+            if (setter != null) {
+                setter.accept(sequenceNumber);
             }
-        });
+        };
+        sshTransport = new SshTransportFilter(this, random, identities, sessionEvents, sequenceListener,
+                this::getKexProposal, this::checkKeys);
+        filters.addLast(sshTransport);
     }
 
     @Override
@@ -386,24 +356,24 @@ public abstract class AbstractSession extends SessionHelper {
         return filters;
     }
 
-    protected boolean isConnectionSecure() {
-        return cryptFilter.isSecure();
+    protected SshTransportFilter getTransport() {
+        return sshTransport;
     }
 
-    protected CompressionFilter getCompressionFilter() {
-        return compressionFilter;
+    protected boolean isConnectionSecure() {
+        return sshTransport.isSecure();
     }
 
     public void addKexListener(KexListener listener) {
-        kexFilter.addKexListener(listener);
+        sshTransport.addKexListener(listener);
     }
 
     public void removeKexListener(KexListener listener) {
-        kexFilter.addKexListener(listener);
+        sshTransport.addKexListener(listener);
     }
 
     protected void initializeKeyExchangePhase() throws Exception {
-        KeyExchangeFuture future = kexFilter.startKex();
+        KeyExchangeFuture future = sshTransport.startKex();
         Throwable t = future.getException();
         if (t != null) {
             if (t instanceof Exception) {
@@ -415,7 +385,7 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     protected boolean isStrictKex() {
-        return kexFilter.isStrictKex();
+        return sshTransport.isStrictKex();
     }
 
     /**
@@ -438,7 +408,7 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public Map<KexProposalOption, String> getServerKexProposals() {
-        return kexFilter.getServerProposal();
+        return sshTransport.getServerProposal();
     }
 
     @Override
@@ -448,42 +418,42 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     public Map<KexProposalOption, String> getClientKexProposals() {
-        return kexFilter.getClientProposal();
+        return sshTransport.getClientProposal();
     }
 
     @Override
     public KexState getKexState() {
-        return kexFilter.getKexState().get();
+        return sshTransport.getKexState().get();
     }
 
     @Override
     public byte[] getSessionId() {
-        return kexFilter.getSessionId();
+        return sshTransport.getSessionId();
     }
 
     @Override
     public Map<KexProposalOption, String> getKexNegotiationResult() {
-        return kexFilter.getNegotiated();
+        return sshTransport.getNegotiated();
     }
 
     @Override
     public String getNegotiatedKexParameter(KexProposalOption paramType) {
-        return kexFilter.getNegotiated().get(paramType);
+        return sshTransport.getNegotiated().get(paramType);
     }
 
     @Override
     public CipherInformation getCipherInformation(boolean incoming) {
-        return incoming ? cryptFilter.getInputSettings().getCipher() : cryptFilter.getOutputSettings().getCipher();
+        return sshTransport.getCipherInformation(incoming);
     }
 
     @Override
     public CompressionInformation getCompressionInformation(boolean incoming) {
-        return incoming ? compressionFilter.getInputCompression() : compressionFilter.getOutputCompression();
+        return sshTransport.getCompressionInformation(incoming);
     }
 
     @Override
     public MacInformation getMacInformation(boolean incoming) {
-        return incoming ? cryptFilter.getInputSettings().getMac() : cryptFilter.getOutputSettings().getMac();
+        return sshTransport.getMacInformation(incoming);
     }
 
     /**
@@ -498,7 +468,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected void handleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (log.isDebugEnabled()) {
-            log.debug("doHandleMessage({}) process #{} {}", this, cryptFilter.getInputSequenceNumber() - 1,
+            log.debug("doHandleMessage({}) process #{} {}", this, sshTransport.getInputSequenceNumber() - 1,
                     SshConstants.getCommandMessageName(cmd));
         }
 
@@ -622,8 +592,8 @@ public abstract class AbstractSession extends SessionHelper {
 
     @Override
     protected void preClose() {
-        if (kexFilter != null) {
-            kexFilter.shutdown();
+        if (sshTransport != null) {
+            sshTransport.shutdown();
         }
 
         // if anyone waiting for global response notify them about the closing session
@@ -913,13 +883,7 @@ public abstract class AbstractSession extends SessionHelper {
         // Since the caller claims to know how many bytes they will need
         // increase their request to account for our headers/footers if
         // they actually send exactly this amount.
-        int finalLength;
-        if (cryptFilter != null) {
-            finalLength = cryptFilter.precomputeBufferLength(len);
-        } else {
-            // Can occur in some tests
-            finalLength = len + SshConstants.SSH_PACKET_HEADER_LEN + 255 + 32;
-        }
+        int finalLength = len + SshConstants.SSH_PACKET_HEADER_LEN + CryptFilter.MAX_PADDING + CryptFilter.MAX_TAG_LENGTH;
         return prepareBuffer(cmd, new PacketBuffer(new byte[finalLength], false));
     }
 
@@ -974,7 +938,7 @@ public abstract class AbstractSession extends SessionHelper {
             return null;
         }
 
-        int seq = cryptFilter.getInputSequenceNumber() - 1;
+        int seq = sshTransport.getInputSequenceNumber() - 1;
         return sendNotImplemented(seq & 0xFFFF_FFFFL);
     }
 
@@ -1153,7 +1117,7 @@ public abstract class AbstractSession extends SessionHelper {
     @Override
     public KeyExchangeFuture reExchangeKeys() throws IOException {
         try {
-            return kexFilter.startKex();
+            return sshTransport.startKex();
         } catch (GeneralSecurityException e) {
             debug("reExchangeKeys({}) failed ({}) to request new keys: {}",
                     this, e.getClass().getSimpleName(), e.getMessage(), e);

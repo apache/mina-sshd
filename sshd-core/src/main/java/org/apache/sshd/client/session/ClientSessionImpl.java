@@ -98,8 +98,8 @@ public class ClientSessionImpl extends AbstractClientSession {
 
     @Override
     public void setAuthenticated() throws IOException {
-        getCompressionFilter().enableInput();
-        getCompressionFilter().enableOutput();
+        getTransport().enableInputCompression();
+        getTransport().enableOutputCompression();
         super.setAuthenticated();
     }
 

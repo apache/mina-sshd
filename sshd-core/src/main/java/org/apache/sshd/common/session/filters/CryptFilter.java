@@ -55,6 +55,11 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
      */
     public static final int MAX_PADDING = 127;
 
+    /**
+     * An arbitrary constant >= the largest authentication tag size we will ever have.
+     */
+    public static final int MAX_TAG_LENGTH = 64;
+
     private static final Logger LOG = LoggerFactory.getLogger(CryptFilter.class);
 
     // The minimum value for the packet length field of a valid SSH packet:
@@ -165,19 +170,6 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
     @Override
     public boolean isSecure() {
         return decryption.get().isSecure() && encryption.get().isSecure();
-    }
-
-    /**
-     * Performs a best-effort precalculation of the needed packet buffer size assuming an a priori known packet length.
-     * This may help avoid needing to grow the buffer later on.
-     *
-     * @param  knownPayloadLength expected payload length
-     * @return                    a buffer size that will be sufficient to hold the full SSH packet including header,
-     *                            padding, and MAC, if any.
-     */
-    public int precomputeBufferLength(int knownPayloadLength) {
-        Settings out = getOutputSettings();
-        return knownPayloadLength + SshConstants.SSH_PACKET_HEADER_LEN + MAX_PADDING + out.getTagSize();
     }
 
     public void addEncryptionListener(EncryptionListener listener) {

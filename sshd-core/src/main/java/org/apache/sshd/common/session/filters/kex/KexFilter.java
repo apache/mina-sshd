@@ -247,7 +247,11 @@ public class KexFilter extends IoFilter {
         this.compression = Objects.requireNonNull(compression);
         this.signals = Objects.requireNonNull(listener);
         this.proposer = Objects.requireNonNull(proposer);
-        this.hostKeyChecker = Objects.requireNonNull(checker);
+        if (!session.isServerSession()) {
+            Objects.requireNonNull(checker);
+        }
+        this.hostKeyChecker = checker;
+
         rekeyAfterBytes = CoreModuleProperties.REKEY_BYTES_LIMIT.getRequired(session);
         rekeyAfterPackets = CoreModuleProperties.REKEY_PACKETS_LIMIT.getRequired(session);
         rekeyAfterBlocks = rekeyAfterBytes / 16; // Initial setting, will be updated once we know the cipher
@@ -1204,7 +1208,9 @@ public class KexFilter extends IoFilter {
             }
             if (kex.next(cmd, message)) {
                 // We're done
-                hostKeyChecker.check();
+                if (hostKeyChecker != null) {
+                    hostKeyChecker.check();
+                }
                 prepareNewSettings();
                 lastKexEnd.set(Instant.now());
                 sendNewKeys();
