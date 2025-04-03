@@ -26,7 +26,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 /**
  * Message encoding or decoding settings as determined at the end of a key exchange.
  */
-public class MessageCodingSettings {
+class MessageCodingSettings {
 
     private final Cipher cipher;
 
@@ -40,7 +40,7 @@ public class MessageCodingSettings {
 
     private byte[] iv;
 
-    public MessageCodingSettings(Cipher cipher, Mac mac, Compression compression, Cipher.Mode mode, byte[] key, byte[] iv) {
+    MessageCodingSettings(Cipher cipher, Mac mac, Compression compression, Cipher.Mode mode, byte[] key, byte[] iv) {
         this.cipher = cipher;
         this.mac = mac;
         this.compression = compression;
@@ -67,16 +67,16 @@ public class MessageCodingSettings {
      * @return                      the fully initialized cipher
      * @throws Exception            if the cipher cannot be initialized
      */
-    public Cipher getCipher(long packetSequenceNumber) throws Exception {
+    Cipher getCipher(long packetSequenceNumber) throws Exception {
         initCipher(packetSequenceNumber);
         return cipher;
     }
 
-    public Mac getMac() {
+    Mac getMac() {
         return mac;
     }
 
-    public Compression getCompression() {
+    Compression getCompression() {
         return compression;
     }
 }

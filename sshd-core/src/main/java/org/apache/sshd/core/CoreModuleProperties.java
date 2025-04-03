@@ -799,6 +799,28 @@ public final class CoreModuleProperties {
         }
     });
 
+    public static final int DEFAULT_MAX_MSGS_BEFORE_KEX_INIT = 1_000;
+
+    /**
+     * After having sent our own SSH_MSG_KEXINIT when starting a new key exchange, we expect the peer's SSH_MSG_KEXINIT.
+     * But a peer can send any number of other messages first. If those messages require replies, we must buffer these
+     * replies because once we've sent SSH_MSG_KEXINIT, we may send only key exchange messages until the key exchange is
+     * over. Buffering replies means a broken peer that just doesn't send its SSH_MSG_KEXINIT could cause unbounded
+     * memory consumption on our end. This concerns in particular SSH_MSG_GLOBAL_REQUEST with the "want-reply" flag
+     * {@code true}, SSH_MSG_CHANNEL_REQUEST and SSH_MSG_CHANNEL_OPEN. This property set an upper limit on the number of
+     * such messages that we'll handle if no SSH_MSG_KEXINIT from the peer is received yet after having sent our own. If
+     * the limit is exceeded, the session disconnects.
+     *
+     * <p>
+     * The default value is {@link #DEFAULT_MAX_MSGS_BEFORE_KEX_INIT} (1000), which should be very generous. If zero or
+     * negative, no limit is assumed.
+     * </p>
+     *
+     * @see #DEFAULT_MAX_MSGS_BEFORE_KEX_INIT
+     */
+    public static final Property<Integer> MAX_MSGS_BEFORE_KEX_INIT = Property.integer("kex-max-msgs-before-kex-init",
+            DEFAULT_MAX_MSGS_BEFORE_KEX_INIT);
+
     private CoreModuleProperties() {
         throw new UnsupportedOperationException("No instance");
     }

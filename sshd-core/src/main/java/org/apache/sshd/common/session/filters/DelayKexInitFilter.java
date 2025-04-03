@@ -97,7 +97,7 @@ public class DelayKexInitFilter extends IoFilter {
 
         @Override
         public IoWriteFuture send(int cmd, Buffer message) throws IOException {
-            if (cmd != SshConstants.SSH_MSG_KEXINIT || output.get() == null) {
+            if (cmd != SshConstants.SSH_MSG_KEXINIT || output.get() == null || message == null) {
                 return owner().send(cmd, message);
             }
             boolean first = isFirst.getAndSet(false);

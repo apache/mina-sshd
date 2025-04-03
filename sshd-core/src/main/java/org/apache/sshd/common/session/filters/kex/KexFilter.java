@@ -33,8 +33,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.IntSupplier;
 import java.util.stream.Collectors;
 
 import org.apache.sshd.common.NamedFactory;
@@ -100,14 +100,19 @@ import org.slf4j.LoggerFactory;
  * </p>
  * <ul>
  * <li>SSH_MSG_PING from the {@code ping@openssh.com} extension. This is not implemented in Apache MINA sshd (yet).
- * These messages are dropped on input. See CVE-2025-26466 linked below.</li>
- * <li>SSH_MSG_GLOBAL_REQUEST or SSH_MSG_CHANNEL_REQUEST with {@code want-reply = true}.</li>
- * <li>SSH_MSG_CHANNEL_OPEN messages. User code can guard against this by limiting the number of concurrently open
- * channels.</lI>
+ * These messages are dropped on input during KEX in OpenSSH. See CVE-2025-26466 linked below.</li>
+ * <li>SSH_MSG_GLOBAL_REQUEST or SSH_MSG_CHANNEL_REQUEST with {@code want-reply = true} should send back a success or
+ * failure reply that would be queued.</li>
+ * <li>SSH_MSG_CHANNEL_OPEN messages should send back success or failure messages, which would be queued. User code can
+ * guard against this by limiting the number of concurrently open channels.</li>
  * <li>SSH_MSG_SERVICE_REQUEST messages. This is somewhat unlikely to occur, since normally there are only two such
  * requests in an SSH connection: a first one for user authentication, then a second one to switch to the connection
  * service. There should be no key exchanges running at these times; they're both early on in the protocol. The request
- * for user auth is sent right after the first key exchange.</li>
+ * for user auth is sent right after the first key exchange. The failure reply to this is SSH_MSG_DISCONNECT, which will
+ * not be queued. But the SSH_MSG_SERVICE_ACCEPT would be queued. But the number of services is limited (in normal SSH
+ * exactly two: a user authentication service and then a connection service), and our implementation allows only one
+ * service to be active. So there will be exactly one SSH_MSG_SERVCIE_ACCEPT queued; further SSH_MSG_SERVICE_REQUESTs
+ * will lead to failure replies and disconnection.</li>
  * <li>SSH_MSG_CHANNEL_DATA: these messages <em>must</em> be passed on and handled. LocalWindow needs to listen to the
  * KEX state, too, and not send back SSH_CHANNEL_WINDOW_ADJUST because those would get queued. At some point, the
  * channel window will be zero, and if the broken or malicious client keeps sending data, the channel will be closed
@@ -115,20 +120,17 @@ import org.slf4j.LoggerFactory;
  * <li>SSH_MSG_CHANNEL_WINDOW_ADJUST: see above. We pass these messages on, but make the adjustment take effect in the
  * RemoteWindow only after KEX. Sending a large number of window adjustments thus does not cause excessive queueing; at
  * worst (if the peer opens its window too far) it may cause trouble at the malicious peer.</li>
- * <li>Unknown messages. We should reply with SSH_MSG_UNIMPLEMENTED except if in strict KEX. During strict KEX, we will
- * drop any unknown messages on input.</li>
+ * <li>Unknown messages. We should reply with SSH_MSG_UNIMPLEMENTED, which is a low-level message that will not be
+ * queued.</li>
  * </p>
  * <p>
- * As an additional guard against this kind of misbehavior we implement two configurable parameters:
+ * As an additional guard against this kind of misbehavior we implement a configurable parameters:
  * </p>
- * <li>MAX_PACKETS_UNTIL_KEX_INIT: if we haven't received the peer's KEX_INIT with the next MAX_PACKETS_UNTIL_KEX_INIT
+ * <li>MAX_MSGS_BEFORE_KEX_INIT: if we haven't received the peer's KEX_INIT with the next MAX_MSGS_BEFORE_KEX_INIT
  * incoming messages after having sent our own KEX_INIT, we disconnect the session.</li>
- * <li>MAX_TIME_UNTIL_KEX_INIT: if we haven't received the peer's KEX_INIT within MAX_TIME_UNTIL_KEX_INIT after having
- * sent our own KEX_INIT, we disconnect the session.</li>
  * <p>
- * Both settings have rather high defaults (1000 messages or 10min). With these settings, we will disconnect even if a
- * peer just keeps sending SSH_MSG_IGNORE packets. If a peer doesn't send any messages, the session idle timeout will
- * disconnect the session.
+ * The setting has rather high default (1000 messages). With this, we will disconnect even if a peer just keeps sending
+ * SSH_MSG_IGNORE packets. If a peer doesn't send any messages, the session idle timeout will disconnect the session.
  * </p>
  *
  * @see <a href="https://www.cve.org/CVERecord?id=CVE-2025-26466">CVE-2025-26466</a>
@@ -157,9 +159,13 @@ public class KexFilter extends IoFilter {
 
     private final AtomicReference<byte[]> peerData = new AtomicReference<>();
 
+    private final AtomicReference<KeyExchange> kex = new AtomicReference<>();
+
     private final AtomicReference<MessageCodingSettings> inputSettings = new AtomicReference<>();
 
     private final AtomicReference<MessageCodingSettings> outputSettings = new AtomicReference<>();
+
+    private final int maxMsgsBeforeKexInit;
 
     // Rekeying
 
@@ -210,21 +216,12 @@ public class KexFilter extends IoFilter {
 
     private final HostKeyChecker hostKeyChecker;
 
-    private enum KexStart {
-        PEER,
-        BOTH,
-        ONGOING
-    }
-
     private volatile String clientIdent;
 
     private volatile String serverIdent;
 
     // Set and checked on the input chain
     private boolean firstKexPacketFollows;
-
-    // Set and checked on the input chain
-    private KeyExchange kex;
 
     // Guarded by synchronized(KexFilter.this)
     private DefaultKeyExchangeFuture myProposalReady;
@@ -252,11 +249,13 @@ public class KexFilter extends IoFilter {
         }
         this.hostKeyChecker = checker;
 
+        maxMsgsBeforeKexInit = CoreModuleProperties.MAX_MSGS_BEFORE_KEX_INIT.getRequired(session);
+
         rekeyAfterBytes = CoreModuleProperties.REKEY_BYTES_LIMIT.getRequired(session);
         rekeyAfterPackets = CoreModuleProperties.REKEY_PACKETS_LIMIT.getRequired(session);
         rekeyAfterBlocks = rekeyAfterBytes / 16; // Initial setting, will be updated once we know the cipher
         Duration interval = CoreModuleProperties.REKEY_TIME_LIMIT.getRequired(session);
-        if (interval.isZero() || interval.isNegative()) {
+        if (interval.compareTo(Duration.ZERO) <= 0) {
             interval = null;
         }
         rekeyAfter = interval;
@@ -351,7 +350,14 @@ public class KexFilter extends IoFilter {
 
     // Receiving
 
+    private enum KexStart {
+        PEER,
+        BOTH,
+        ONGOING
+    }
+
     private void receiveKexInit(Buffer message) throws Exception {
+        input.messagesBeforeKexInit.set(0);
         // Update the KEX state
         KexStart starting = output.updateState(() -> {
             if (kexState.compareAndSet(KexState.DONE, KexState.RUN)) {
@@ -521,29 +527,6 @@ public class KexFilter extends IoFilter {
             }
             throw e;
         }
-    }
-
-    public KeyExchangeFuture startKex() throws Exception {
-        boolean start = output.updateState(() -> {
-            if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-                output.initNewKeyExchange();
-                return true;
-            }
-            return false;
-        });
-        DefaultKeyExchangeFuture result = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
-        if (start) {
-            listeners.forEach(listener -> listener.event(true));
-            kexFuture.set(result);
-            sendKexInit().addListener(f -> {
-                if (!f.isWritten()) {
-                    exceptionCaught(f.getException());
-                }
-            });
-        } else {
-            result.setValue(new SshException("KEX already ongoing"));
-        }
-        return result;
     }
 
     // Negotiation
@@ -726,8 +709,9 @@ public class KexFilter extends IoFilter {
         byte[] iS = isServer ? myData.get() : peerData.get();
         byte[] iC = isServer ? peerData.get() : myData.get();
 
-        kex = kexFactory.createKeyExchange(session);
-        kex.init(vS, vC, iS, iC);
+        KeyExchange k = kexFactory.createKeyExchange(session);
+        k.init(vS, vC, iS, iC);
+        kex.set(k);
 
         synchronized (this) {
             myProposalReady = null;
@@ -739,9 +723,13 @@ public class KexFilter extends IoFilter {
 
     @SuppressWarnings("checkstyle:VariableDeclarationUsageDistance")
     private void prepareNewSettings() throws Exception {
-        byte[] k = kex.getK();
-        byte[] h = kex.getH();
-        Digest hash = kex.getHash();
+        KeyExchange exchange = kex.get();
+        if (exchange == null) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED, "No KEX");
+        }
+        byte[] k = exchange.getK();
+        byte[] h = exchange.getH();
+        Digest hash = exchange.getHash();
 
         byte[] sessionIdValue = sessionId.get();
         if (sessionIdValue == null) {
@@ -753,9 +741,10 @@ public class KexFilter extends IoFilter {
         }
 
         Buffer buffer = new ByteArrayBuffer();
-        buffer.putBytes(k);
+        buffer.putBytes(k); // K encoded with length, see RFC 4253, section 7.2
         buffer.putRawBytes(h);
-        buffer.putByte((byte) 0x41);
+        int j = buffer.wpos();
+        buffer.putByte((byte) 0x41); // 'A', see RFC 4253, section 7.2
         buffer.putRawBytes(sessionIdValue);
 
         int pos = buffer.available();
@@ -763,25 +752,24 @@ public class KexFilter extends IoFilter {
         hash.update(buf, 0, pos);
 
         byte[] iv_c2s = hash.digest();
-        int j = pos - sessionIdValue.length - 1;
 
-        buf[j]++;
+        buf[j]++; // 'B'
         hash.update(buf, 0, pos);
         byte[] iv_s2c = hash.digest();
 
-        buf[j]++;
+        buf[j]++; // 'C'
         hash.update(buf, 0, pos);
         byte[] e_c2s = hash.digest();
 
-        buf[j]++;
+        buf[j]++; // 'D'
         hash.update(buf, 0, pos);
         byte[] e_s2c = hash.digest();
 
-        buf[j]++;
+        buf[j]++; // 'E'
         hash.update(buf, 0, pos);
         byte[] mac_c2s = hash.digest();
 
-        buf[j]++;
+        buf[j]++; // 'F'
         hash.update(buf, 0, pos);
         byte[] mac_s2c = hash.digest();
 
@@ -870,7 +858,9 @@ public class KexFilter extends IoFilter {
 
     private IoWriteFuture sendNewKeys() throws Exception {
         Buffer buffer = session.createBuffer(SshConstants.SSH_MSG_NEWKEYS, 1);
+
         IoWriteFuture future = forward.send(SshConstants.SSH_MSG_NEWKEYS, buffer);
+
         // Use the new settings from now on for any outgoing packet
         setOutputEncoding();
         output.updateState(() -> kexState.set(KexState.KEYS));
@@ -941,8 +931,6 @@ public class KexFilter extends IoFilter {
 
         lastKexEnd.set(Instant.now());
 
-        forward.sequenceNumberCheckEnabled = false;
-
         if (LOG.isDebugEnabled()) {
             LOG.debug("setOutputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", session, cipher, mac,
                     comp, maxRekeyBlocks);
@@ -958,9 +946,7 @@ public class KexFilter extends IoFilter {
             throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
                     "KEX: received SSH_MSG_NEWKEYS in state " + currentState);
         }
-        input.sequenceNumberCheckEnabled = false;
         // It is guaranteed that we handle the peer's SSH_MSG_NEWKEYS after having sent our own.
-        // prepareNewKeys() was already called in sendNewKeys().
         //
         // From now on, use the new settings for any incoming message.
         setInputEncoding();
@@ -976,7 +962,7 @@ public class KexFilter extends IoFilter {
         listeners.forEach(listener -> listener.event(false));
 
         output.updateState(() -> {
-            kex = null; // discard and GC since KEX is completed
+            kex.set(null); // discard and GC since KEX is completed
             kexState.set(KexState.DONE);
         });
 
@@ -1008,8 +994,6 @@ public class KexFilter extends IoFilter {
         Cipher outCipher = crypt.getOutputSettings().getCipher();
         int outBlockSize = outCipher == null ? 8 : outCipher.getCipherBlockSize();
         long maxRekeyBlocks = determineRekeyBlockLimit(cipher.getCipherBlockSize(), outBlockSize);
-
-        lastKexEnd.set(Instant.now());
 
         if (LOG.isDebugEnabled()) {
             LOG.debug("setInputEncoding({}): cipher {}; mac {}; compression {}; blocks limit {}", session, cipher, mac,
@@ -1056,7 +1040,7 @@ public class KexFilter extends IoFilter {
 
     // Starting a KEX
 
-    private boolean isKexNeeded(boolean input) {
+    private boolean isKexNeeded() {
         if (!initialKexDone || !session.isOpen()) {
             return false;
         }
@@ -1076,6 +1060,30 @@ public class KexFilter extends IoFilter {
                 || rekeyAfterPackets > 0 && rekeyAfterPackets <= counts.getPackets();
     }
 
+    public KeyExchangeFuture startKex() throws Exception {
+        boolean start = output.updateState(() -> {
+            if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
+                output.initNewKeyExchange();
+                return true;
+            }
+            return false;
+        });
+        DefaultKeyExchangeFuture result = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
+        if (start) {
+            listeners.forEach(listener -> listener.event(true));
+            kexFuture.set(result);
+            input.messagesBeforeKexInit.set(0);
+            sendKexInit().addListener(f -> {
+                if (!f.isWritten()) {
+                    exceptionCaught(f.getException());
+                }
+            });
+        } else {
+            result.setValue(new SshException("KEX already ongoing"));
+        }
+        return result;
+    }
+
     // Entry points for the KexOutputHandler
     IoWriteFuture write(int cmd, Buffer buffer, boolean checkForKex) throws IOException {
         IoWriteFuture result = forward.send(cmd, buffer);
@@ -1087,7 +1095,7 @@ public class KexFilter extends IoFilter {
 
     void startKexIfNeeded() throws IOException {
         KexState state = kexState.get();
-        if (state == KexState.DONE && isKexNeeded(true)) {
+        if (state == KexState.DONE && isKexNeeded()) {
             try {
                 startKex();
             } catch (IOException e) {
@@ -1100,8 +1108,6 @@ public class KexFilter extends IoFilter {
 
     private abstract class WithSequenceNumber {
 
-        volatile boolean sequenceNumberCheckEnabled = true;
-
         private int initialSequenceNumber;
 
         private boolean first = true;
@@ -1110,18 +1116,23 @@ public class KexFilter extends IoFilter {
             super();
         }
 
-        protected void checkSequence(String message, IntSupplier sequence) throws SshException {
+        protected void checkSequence() throws SshException {
+            if (initialKexDone) {
+                return;
+            }
             if (first) {
                 first = false;
-                initialSequenceNumber = sequence.getAsInt();
-            } else if (!initialKexDone && initialSequenceNumber == sequence.getAsInt()) {
+                initialSequenceNumber = crypt.getInputSequenceNumber();
+            } else if (initialSequenceNumber == crypt.getInputSequenceNumber()) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                        message + " sequence number wraps around during initial KEX");
+                        "Incoming sequence number wraps around during initial KEX");
             }
         }
     }
 
     private class KexInputHandler extends WithSequenceNumber implements BufferInputHandler {
+
+        final AtomicLong messagesBeforeKexInit = new AtomicLong();
 
         KexInputHandler() {
             super();
@@ -1129,9 +1140,7 @@ public class KexFilter extends IoFilter {
 
         @Override
         public void handleMessage(Buffer message) throws Exception {
-            if (sequenceNumberCheckEnabled) {
-                checkSequence("Incoming", crypt::getInputSequenceNumber);
-            }
+            checkSequence();
             int cmd = message.rawByte(message.rpos()) & 0xFF;
             if (LOG.isDebugEnabled()) {
                 LOG.debug("KexFilter.handleMessage({}) {} with packet size {}", getSession(),
@@ -1143,7 +1152,7 @@ public class KexFilter extends IoFilter {
                 if (cmd == SshConstants.SSH_MSG_KEXINIT) {
                     receiveKexInit(message);
                 } else {
-                    if (isKexNeeded(false)) {
+                    if (isKexNeeded()) {
                         startKex();
                     }
                     owner().passOn(message);
@@ -1187,8 +1196,48 @@ public class KexFilter extends IoFilter {
             return cmd >= SshConstants.SSH_MSG_KEXINIT && cmd <= SshConstants.SSH_MSG_KEX_LAST;
         }
 
+        private boolean isWantReply(Buffer message, boolean isChannelRequest) {
+            boolean wantReply = false;
+            int pos = message.rpos();
+            message.getUByte();
+            if (isChannelRequest) {
+                message.getUInt(); // Skip the channel id
+            }
+            long length = message.getUInt();
+            if (length < message.available()) {
+                wantReply = message.rawByte(pos + 5 + (int) length) != 0;
+            }
+            message.rpos(pos);
+            return wantReply;
+        }
+
         private void passOnBeforeKexInit(int cmd, Buffer message) throws Exception {
-            // TODO: message handling per the class javadoc.
+            if (maxMsgsBeforeKexInit > 0) {
+                long valueNow = 0;
+                switch (cmd) {
+                    case SshConstants.SSH_MSG_GLOBAL_REQUEST:
+                        if (isWantReply(message, false)) {
+                            valueNow = messagesBeforeKexInit.incrementAndGet();
+                        }
+                        break;
+                    case SshConstants.SSH_MSG_CHANNEL_REQUEST:
+                        if (isWantReply(message, true)) {
+                            valueNow = messagesBeforeKexInit.incrementAndGet();
+                        }
+                        break;
+                    case SshConstants.SSH_MSG_CHANNEL_OPEN:
+                        valueNow = messagesBeforeKexInit.incrementAndGet();
+                        break;
+                    default:
+                        // All other messages do not require a reply; see class comment.
+                        break;
+                }
+                if (valueNow > maxMsgsBeforeKexInit) {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "KEX: no SSH_MSG_KEX_INIT received from peer within MAX_MSGS_BEFORE_KEX_INIT limit "
+                                                                                        + maxMsgsBeforeKexInit);
+                }
+            }
             owner().passOn(message);
         }
 
@@ -1211,21 +1260,25 @@ public class KexFilter extends IoFilter {
                     }
                 }
             }
-            if (kex.next(cmd, message)) {
+            KeyExchange exchange = kex.get();
+            if (exchange == null) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, MessageFormat
+                        .format("KEX message {0} received at the wrong time in KEX", SshConstants.getCommandMessageName(cmd)));
+            }
+            if (exchange.next(cmd, message)) {
                 // We're done
                 if (hostKeyChecker != null) {
                     hostKeyChecker.check();
                 }
                 prepareNewSettings();
-                lastKexEnd.set(Instant.now());
                 sendNewKeys();
             } else if (LOG.isDebugEnabled()) {
-                LOG.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", session, kex.getName(), cmd);
+                LOG.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", session, exchange.getName(), cmd);
             }
         }
     }
 
-    private class Sender extends WithSequenceNumber implements OutputHandler {
+    private class Sender implements OutputHandler {
 
         Sender() {
             super();
@@ -1233,12 +1286,9 @@ public class KexFilter extends IoFilter {
 
         @Override
         public IoWriteFuture send(int cmd, Buffer message) throws IOException {
-            if (sequenceNumberCheckEnabled) {
-                checkSequence("Outgoing", crypt::getOutputSequenceNumber);
-            }
             if (LOG.isDebugEnabled()) {
                 LOG.debug("KexFilter.send({}) {} with packet size {}", getSession(),
-                        SshConstants.getCommandMessageName(message.rawByte(message.rpos()) & 0xFF), message.available());
+                        SshConstants.getCommandMessageName(cmd), message.available());
             }
             return owner().send(cmd, message);
         }

@@ -57,7 +57,7 @@ import org.slf4j.Logger;
  *
  * @see <a href="https://tools.ietf.org/html/rfc4253#section-7">RFC 4253</a>
  */
-public class KexOutputHandler implements OutputHandler {
+class KexOutputHandler implements OutputHandler {
 
     // With asynchronous flushing we get a classic producer-consumer problem. The flushing thread is the single
     // consumer, and there is a risk that it might get overrun by the producers. The classical solution of using a
@@ -78,39 +78,39 @@ public class KexOutputHandler implements OutputHandler {
      *
      * @see #flushQueue(DefaultKeyExchangeFuture)
      */
-    protected static ExecutorService flushRunner = ThreadUtils.newCachedThreadPool("kex-flusher");
+    private static ExecutorService flushRunner = ThreadUtils.newCachedThreadPool("kex-flusher");
 
     /**
      * We need the flushing thread to have priority over writing threads. So we use a lock that favors writers over
      * readers, and any state updates and the flushing thread are writers, while writePacket() is a reader.
      */
-    protected final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock(false);
 
     /**
      * The {@link KexFilter} this {@link KexOutputHandler} belongs to.
      */
-    protected final KexFilter filter;
+    private final KexFilter filter;
 
     /**
      * The {@link Logger} to use.
      */
-    protected final Logger log;
+    private final Logger log;
 
     /**
      * Queues up high-level packets written during an ongoing key exchange.
      */
-    protected final Queue<PendingWriteFuture> pendingPackets = new ConcurrentLinkedQueue<>();
+    private final Queue<PendingWriteFuture> pendingPackets = new ConcurrentLinkedQueue<>();
 
     /**
      * Indicates that all pending packets have been flushed. Set to {@code true} by the flushing thread, or at the end
      * of KEX if there are no packets to be flushed. Set to {@code false} when a new KEX starts. Initially {@code true}.
      */
-    protected final AtomicBoolean kexFlushed = new AtomicBoolean(true);
+    private final AtomicBoolean kexFlushed = new AtomicBoolean(true);
 
     /**
      * Indicates that the handler has been shut down.
      */
-    protected final AtomicBoolean shutDown = new AtomicBoolean();
+    private final AtomicBoolean shutDown = new AtomicBoolean();
 
     /**
      * Never {@code null}. Used to block some threads when writing packets while pending packets are still being flushed
@@ -118,7 +118,7 @@ public class KexOutputHandler implements OutputHandler {
      * of a KEX a new future is installed, which is fulfilled at the end of the KEX once there are no more pending
      * packets to be flushed.
      */
-    protected final AtomicReference<DefaultKeyExchangeFuture> kexFlushedFuture = new AtomicReference<>();
+    private final AtomicReference<DefaultKeyExchangeFuture> kexFlushedFuture = new AtomicReference<>();
 
     /**
      * Creates a new {@link KexOutputHandler} for the given {@code session}, using the given {@code Logger}.
@@ -126,7 +126,7 @@ public class KexOutputHandler implements OutputHandler {
      * @param filter {@link KexFilter} the new instance belongs to
      * @param log    {@link Logger} to use for writing log messages
      */
-    public KexOutputHandler(KexFilter filter, Logger log) {
+    KexOutputHandler(KexFilter filter, Logger log) {
         this.filter = Objects.requireNonNull(filter);
         this.log = Objects.requireNonNull(log);
         // Start with a fulfilled kexFlushed future.
@@ -135,14 +135,14 @@ public class KexOutputHandler implements OutputHandler {
         kexFlushedFuture.set(initialFuture);
     }
 
-    public void updateState(Runnable update) {
+    void updateState(Runnable update) {
         updateState(() -> {
             update.run();
             return null;
         });
     }
 
-    public <V> V updateState(Supplier<V> update) {
+    <V> V updateState(Supplier<V> update) {
         lock.writeLock().lock();
         try {
             return update.get();
@@ -160,7 +160,7 @@ public class KexOutputHandler implements OutputHandler {
      *
      * @return the previous {@link DefaultKeyExchangeFuture} indicating whether all pending packets were flushed.
      */
-    public DefaultKeyExchangeFuture initNewKeyExchange() {
+    DefaultKeyExchangeFuture initNewKeyExchange() {
         return updateState(() -> {
             kexFlushed.set(false);
             return kexFlushedFuture.getAndSet(
@@ -175,7 +175,7 @@ public class KexOutputHandler implements OutputHandler {
      *
      * @return the current {@link DefaultKeyExchangeFuture} and the number of currently pending packets
      */
-    public SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> terminateKeyExchange() {
+    SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> terminateKeyExchange() {
         return updateState(() -> {
             int numPending = pendingPackets.size();
             if (numPending == 0) {
@@ -248,7 +248,7 @@ public class KexOutputHandler implements OutputHandler {
      * @return             an {@link IoWriteFuture} that will be fulfilled once the packet has indeed been written.
      * @throws IOException if an error occurs
      */
-    protected IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer) throws IOException {
+    private IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer) throws IOException {
         for (;;) {
             // We must decide _and_ write the packet while holding the lock. If we'd write the packet outside this
             // lock, there is no guarantee that a concurrently running KEX_INIT received from the peer doesn't change
@@ -291,7 +291,7 @@ public class KexOutputHandler implements OutputHandler {
      * @param  buffer the {@link Buffer} containing the packet to be sent
      * @return        the enqueued {@link PendingWriteFuture}
      */
-    protected PendingWriteFuture enqueuePendingPacket(int cmd, Buffer buffer) {
+    private PendingWriteFuture enqueuePendingPacket(int cmd, Buffer buffer) {
         String cmdName = SshConstants.getCommandMessageName(cmd);
         PendingWriteFuture future;
         int numPending;
@@ -321,7 +321,7 @@ public class KexOutputHandler implements OutputHandler {
      * @param flushDone the future obtained from {@code getFlushedFuture}; will be fulfilled once all pending packets
      *                  have been written
      */
-    protected void flushQueue(DefaultKeyExchangeFuture flushDone) {
+    void flushQueue(DefaultKeyExchangeFuture flushDone) {
         // kexFlushed must be set to true in all cases when this thread exits, **except** if a new KEX has started while
         // flushing.
         flushRunner.submit(() -> {
