@@ -111,7 +111,7 @@
         <jgit.version>5.13.3.202401111512-r</jgit.version>
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
-        <bytebuddy.version>1.17.2</bytebuddy.version>
+        <bytebuddy.version>1.17.5</bytebuddy.version>
         <testcontainers.version>1.20.6</testcontainers.version>
         <grpc.version>1.71.0</grpc.version> <!-- Used only in tests -->
 
