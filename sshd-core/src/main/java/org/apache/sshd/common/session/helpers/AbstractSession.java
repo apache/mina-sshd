@@ -220,7 +220,10 @@ public abstract class AbstractSession extends SessionHelper {
      * @throws Exception on errors
      */
     protected void start() throws Exception {
-        boolean isConfigured = !filters.isEmpty();
+        if (filters.isEmpty()) {
+            setupFilterChain();
+        }
+
         IoFilter ioSessionConnector = new IoFilter() {
 
             @Override
@@ -235,12 +238,6 @@ public abstract class AbstractSession extends SessionHelper {
         };
         filters.addFirst(ioSessionConnector);
 
-        if (!isConfigured) {
-            setupFilterChain();
-        }
-
-        // Temporary. This is work in progress, and actually a lot is still handled by the SSH session.
-        // The idea is to migrate parts step by step into filters on this filter chain.
         IoFilter sessionConnector = new IoFilter() {
             @Override
             public InputHandler in() {

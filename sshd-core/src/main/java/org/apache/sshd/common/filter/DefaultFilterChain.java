@@ -18,12 +18,7 @@
  */
 package org.apache.sshd.common.filter;
 
-import java.io.IOException;
 import java.util.Objects;
-
-import org.apache.sshd.common.io.IoWriteFuture;
-import org.apache.sshd.common.util.Readable;
-import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * A default implementation of a {@link FilterChain}.
@@ -45,7 +40,7 @@ public class DefaultFilterChain implements FilterChain {
 
     @Override
     public synchronized FilterContext addFirst(Filter filter) {
-        FilterContext ctx = new FilterContext(this, filter);
+        FilterContext ctx = new FilterContext(filter);
         filter.adding(ctx);
         ctx.prev = null;
         ctx.next = head;
@@ -62,7 +57,7 @@ public class DefaultFilterChain implements FilterChain {
 
     @Override
     public synchronized FilterContext addLast(Filter filter) {
-        FilterContext ctx = new FilterContext(this, filter);
+        FilterContext ctx = new FilterContext(filter);
         filter.adding(ctx);
         ctx.next = null;
         ctx.prev = tail;
@@ -80,7 +75,7 @@ public class DefaultFilterChain implements FilterChain {
     @Override
     public synchronized FilterContext addBefore(Filter filter, FilterContext before) {
         Objects.requireNonNull(before);
-        FilterContext ctx = new FilterContext(this, filter);
+        FilterContext ctx = new FilterContext(filter);
         filter.adding(ctx);
         ctx.next = before;
         ctx.prev = before.prev;
@@ -97,7 +92,7 @@ public class DefaultFilterChain implements FilterChain {
     @Override
     public synchronized FilterContext addAfter(Filter filter, FilterContext after) {
         Objects.requireNonNull(after);
-        FilterContext ctx = new FilterContext(this, filter);
+        FilterContext ctx = new FilterContext(filter);
         filter.adding(ctx);
         ctx.prev = after;
         ctx.next = after.next;
@@ -119,33 +114,6 @@ public class DefaultFilterChain implements FilterChain {
     @Override
     public synchronized Filter getLast() {
         return tail == null ? null : tail.filter;
-    }
-
-    @Override
-    public IoWriteFuture send(FilterContext current, int cmd, Buffer message) throws IOException {
-        FilterContext ctx = current.prev;
-        while (ctx != null) {
-            OutputHandler handler = ctx.filter.out();
-            if (handler != null) {
-                return handler.send(cmd, message);
-            }
-            ctx = ctx.prev;
-        }
-        throw new IllegalStateException("Fell off filter chain in send from " + current.filter);
-    }
-
-    @Override
-    public void passOn(FilterContext current, Readable message) throws Exception {
-        FilterContext ctx = current.next;
-        while (ctx != null) {
-            InputHandler handler = ctx.filter.in();
-            if (handler != null) {
-                handler.received(message);
-                return;
-            }
-            ctx = ctx.next;
-        }
-        throw new IllegalStateException("Unhandled message: fell off filter chain in receive after " + current.filter);
     }
 
 }

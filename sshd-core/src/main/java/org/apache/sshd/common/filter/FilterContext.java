@@ -27,26 +27,14 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 public final class FilterContext {
 
+    final Filter filter;
+
     volatile FilterContext prev;
 
     volatile FilterContext next;
 
-    final Filter filter;
-
-    private final FilterChain chain;
-
-    FilterContext(FilterChain chain, Filter filter) {
-        this.chain = Objects.requireNonNull(chain);
+    FilterContext(Filter filter) {
         this.filter = Objects.requireNonNull(filter);
-    }
-
-    /**
-     * Retrieves the {@link FilterChain} containing this context.
-     *
-     * @return the {@link FilterChain}
-     */
-    public FilterChain chain() {
-        return chain;
     }
 
     /**
@@ -58,7 +46,15 @@ public final class FilterContext {
      * @throws IOException if an error occurs
      */
     public IoWriteFuture send(int cmd, Buffer message) throws IOException {
-        return chain.send(this, cmd, message);
+        FilterContext ctx = prev;
+        while (ctx != null) {
+            OutputHandler handler = ctx.filter.out();
+            if (handler != null) {
+                return handler.send(cmd, message);
+            }
+            ctx = ctx.prev;
+        }
+        throw new IllegalStateException("Fell off filter chain in send from " + filter);
     }
 
     /**
@@ -68,6 +64,15 @@ public final class FilterContext {
      * @throws Exception if an error occurs
      */
     public void passOn(Readable message) throws Exception {
-        chain.passOn(this, message);
+        FilterContext ctx = next;
+        while (ctx != null) {
+            InputHandler handler = ctx.filter.in();
+            if (handler != null) {
+                handler.received(message);
+                return;
+            }
+            ctx = ctx.next;
+        }
+        throw new IllegalStateException("Unhandled message: fell off filter chain in receive after " + filter);
     }
 }
