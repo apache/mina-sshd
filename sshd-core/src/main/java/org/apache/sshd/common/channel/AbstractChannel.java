@@ -33,6 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.IntUnaryOperator;
 
@@ -64,7 +65,6 @@ import org.apache.sshd.common.util.closeable.IoBaseCloseable;
 import org.apache.sshd.common.util.closeable.SimpleCloseable;
 import org.apache.sshd.common.util.functors.Int2IntFunction;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.common.util.io.functors.Invoker;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.common.util.threads.ExecutorServiceCarrier;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -130,7 +130,6 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     private CloseableExecutorService executor;
     private final List<RequestHandler<Channel>> requestHandlers = new CopyOnWriteArrayList<>();
 
-    private final boolean isClient;
     private final CloseableLocalWindow localWindow;
     private final CloseableRemoteWindow remoteWindow;
 
@@ -166,7 +165,6 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         gracefulFuture = new DefaultCloseFuture(discriminator, futureLock);
         localWindow = new CloseableLocalWindow(this, client);
         remoteWindow = new CloseableRemoteWindow(this, client);
-        isClient = client;
         channelListenerProxy = EventListenerUtils.proxyWrapper(ChannelListener.class, channelListeners);
         executor = executorService;
         addRequestHandlers(handlers);
@@ -427,7 +425,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                     Buffer b = new ByteArrayBuffer(4);
                     b.putUInt(0);
                     handleWindowAdjust(b);
-                } catch (IOException | ClassCastException e) {
+                } catch (IOException e) {
                     getSession().exceptionCaught(e);
                 }
             } else if (log.isDebugEnabled()) {
@@ -439,10 +437,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
     protected void signalChannelInitialized() throws IOException {
         try {
-            invokeChannelSignaller(l -> {
-                signalChannelInitialized(l);
-                return null;
-            });
+            invokeChannelSignaller(l -> l.channelInitialized(this));
 
             notifyStateChanged("init");
         } catch (Throwable err) {
@@ -459,33 +454,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
     }
 
-    protected void signalChannelInitialized(ChannelListener listener) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.channelInitialized(this);
-    }
-
     protected void signalChannelOpenSuccess() {
-        try {
-            invokeChannelSignaller(l -> {
-                signalChannelOpenSuccess(l);
-                return null;
-            });
-        } catch (Error | RuntimeException err) {
-            throw err;
-        } catch (Throwable err) {
-            throw new IllegalStateException(err);
-        }
-    }
-
-    protected void signalChannelOpenSuccess(ChannelListener listener) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.channelOpenSuccess(this);
+        invokeChannelSignaller(l -> l.channelOpenSuccess(this));
     }
 
     @Override
@@ -510,10 +480,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
     protected void signalChannelOpenFailure(Throwable reason) {
         try {
-            invokeChannelSignaller(l -> {
-                signalChannelOpenFailure(l, reason);
-                return null;
-            });
+            invokeChannelSignaller(l -> l.channelOpenFailure(this, reason));
         } catch (Throwable err) {
             Throwable ignored = ExceptionUtils.peelException(err);
             debug("signalChannelOpenFailure({}) failed ({}) to inform listener of open failure={}: {}", this,
@@ -522,20 +489,9 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
     }
 
-    protected void signalChannelOpenFailure(ChannelListener listener, Throwable reason) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.channelOpenFailure(this, reason);
-    }
-
     protected void notifyStateChanged(String hint) {
         try {
-            invokeChannelSignaller(l -> {
-                notifyStateChanged(l, hint);
-                return null;
-            });
+            invokeChannelSignaller(l -> l.channelStateChanged(this, hint));
         } catch (Throwable err) {
             Throwable e = ExceptionUtils.peelException(err);
             debug("notifyStateChanged({})[{}] {} while signal channel state change: {}", this, hint,
@@ -545,14 +501,6 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 futureLock.notifyAll();
             }
         }
-    }
-
-    protected void notifyStateChanged(ChannelListener listener, String hint) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.channelStateChanged(this, hint);
     }
 
     @Override
@@ -800,10 +748,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 }
             }
 
-            invokeChannelSignaller(l -> {
-                signalChannelClosed(l, reason);
-                return null;
-            });
+            invokeChannelSignaller(l -> l.channelClosed(this, reason));
         } catch (Throwable err) {
             Throwable e = ExceptionUtils.peelException(err);
             debug("signalChannelClosed({}) {} while signal channel closed: {}", this, e.getClass().getSimpleName(),
@@ -813,15 +758,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         }
     }
 
-    protected void signalChannelClosed(ChannelListener listener, Throwable reason) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.channelClosed(this, reason);
-    }
-
-    protected void invokeChannelSignaller(Invoker<ChannelListener, Void> invoker) throws Throwable {
+    protected void invokeChannelSignaller(Consumer<ChannelListener> invoker) {
         Session session = getSession();
         FactoryManager manager = (session == null) ? null : session.getFactoryManager();
         ChannelListener[] listeners = {
@@ -834,14 +771,14 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
                 continue;
             }
             try {
-                invoker.invoke(l);
-            } catch (Throwable t) {
-                err = ExceptionUtils.accumulateException(err, t);
+                invoker.accept(l);
+            } catch (RuntimeException e) {
+                err = ExceptionUtils.accumulateException(err, e);
             }
         }
 
         if (err != null) {
-            throw err;
+            ExceptionUtils.rethrowAsRuntimeException(err);
         }
     }
 

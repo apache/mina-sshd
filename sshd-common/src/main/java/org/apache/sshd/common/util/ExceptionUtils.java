@@ -20,6 +20,7 @@
 package org.apache.sshd.common.util;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.UndeclaredThrowableException;
 import java.util.concurrent.ExecutionException;
@@ -44,6 +45,18 @@ public final class ExceptionUtils {
             throw (Error) e;
         } else {
             throw new IOException(e);
+        }
+    }
+
+    public static void rethrowAsRuntimeException(Throwable e) {
+        if (e instanceof RuntimeException) {
+            throw (RuntimeException) e;
+        } else if (e instanceof Error) {
+            throw (Error) e;
+        } else if (e instanceof IOException) {
+            throw new UncheckedIOException((IOException) e);
+        } else {
+            throw new UncheckedIOException(new IOException(e));
         }
     }
 
