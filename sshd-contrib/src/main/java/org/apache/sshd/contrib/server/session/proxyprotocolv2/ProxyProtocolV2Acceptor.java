@@ -41,8 +41,13 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class ProxyProtocolV2Acceptor extends ProxyProtocolAcceptor {
 
+    // CR LF CR LF NUL CR LF 'Q' 'U' 'I' 'T' LF
     private static final byte[] PROXY_V2_HEADER
             = new byte[] { 0x0D, 0x0A, 0x0D, 0x0A, 0x00, 0x0D, 0x0A, 0x51, 0x55, 0x49, 0x54, 0x0A };
+
+    // Minimum protocol V2 header length: the magic header (12 bytes), a version byte, a protocol byte, and a two-byte
+    // MSB-first unsigned short.
+    private static final int MIN_HEADER_LENGTH = PROXY_V2_HEADER.length + 4;
 
     private static final char FIELD_SEPARATOR = ' ';
 
@@ -54,10 +59,10 @@ public class ProxyProtocolV2Acceptor extends ProxyProtocolAcceptor {
     public boolean acceptServerProxyMetadata(ServerSession session, Buffer buffer) throws Exception {
         int mark = buffer.rpos();
         int dataLen = buffer.available();
-        if (dataLen < PROXY_V2_HEADER.length) {
+        if (dataLen < MIN_HEADER_LENGTH) {
             if (log.isDebugEnabled()) {
                 log.debug("acceptServerProxyMetadata(session={}) incomplete data - {}/{}", session, dataLen,
-                        PROXY_V2_HEADER.length);
+                        MIN_HEADER_LENGTH);
             }
             return false;
         }
@@ -88,9 +93,17 @@ public class ProxyProtocolV2Acceptor extends ProxyProtocolAcceptor {
         proxyPayload.append(FIELD_SEPARATOR).append(familyAndTransport.name());
         // Read the data length
         int dataLength = buffer.getUShort();
+        if (dataLength > buffer.available()) {
+            if (log.isDebugEnabled()) {
+                log.debug("readProxyV2Header(session={}) incomplete data after header - {}/{}", session, buffer.available(),
+                        dataLength);
+            }
+            buffer.rpos(markPosition);
+            return false;
+        }
         // Unix Socket are not supported by SSHD
         if (familyAndTransport.hasSockAddress()) {
-            log.warn("parseProxyHeader(session={}) unsupported sub-protocol - {} - continue as usual", session,
+            log.warn("readProxyV2Header(session={}) unsupported sub-protocol - {} - continue as usual", session,
                     familyAndTransport);
             // Skip socket address data
             AddressData.skipUnprocessedData(log, session, buffer, FamilyAndTransport.UNSPEC, dataLength);
@@ -100,12 +113,11 @@ public class ProxyProtocolV2Acceptor extends ProxyProtocolAcceptor {
         AddressData data = AddressData.extractAddressData(log, session, buffer, familyAndTransport, dataLength);
         proxyPayload.append(FIELD_SEPARATOR).append(data);
         // Parse the converted proxy header
-        return parseProxyHeader(session, proxyPayload.toString(), markPosition, buffer);
+        return parseProxyHeader(session, proxyPayload.toString());
     }
 
     @Override
-    protected boolean parseProxyHeader(ServerSession session, String proxyHeader, int markPosition, Buffer buffer)
-            throws Exception {
+    protected boolean parseProxyHeader(ServerSession session, String proxyHeader) {
         String[] proxyFields = GenericUtils.split(proxyHeader, FIELD_SEPARATOR);
         // Trim all fields just in case more than one space used
         for (int index = 0; index < proxyFields.length; index++) {
@@ -117,6 +129,6 @@ public class ProxyProtocolV2Acceptor extends ProxyProtocolAcceptor {
             log.debug("parseProxyHeader(session={}) local proxy check", session);
             return true;
         }
-        return super.parseProxyHeader(session, proxyHeader, markPosition, buffer);
+        return super.parseProxyHeader(session, proxyHeader);
     }
 }

@@ -54,7 +54,6 @@ import org.apache.sshd.server.auth.password.PasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.session.ServerConnectionServiceFactory;
-import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerUserAuthServiceFactory;
 import org.apache.sshd.server.session.SessionFactory;
 import org.apache.sshd.server.shell.ShellFactory;
@@ -96,7 +95,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
     protected String host;
     protected int port;
 
-    private ServerProxyAcceptor proxyAcceptor;
     private ShellFactory shellFactory;
     private SessionFactory sessionFactory;
     private CommandFactory commandFactory;
@@ -169,16 +167,6 @@ public class SshServer extends AbstractFactoryManager implements ServerFactoryMa
 
     public void setSessionFactory(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
-    }
-
-    @Override
-    public ServerProxyAcceptor getServerProxyAcceptor() {
-        return proxyAcceptor;
-    }
-
-    @Override
-    public void setServerProxyAcceptor(ServerProxyAcceptor proxyAcceptor) {
-        this.proxyAcceptor = proxyAcceptor;
     }
 
     @Override

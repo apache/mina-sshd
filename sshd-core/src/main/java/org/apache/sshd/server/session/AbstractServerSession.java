@@ -77,7 +77,6 @@ import org.apache.sshd.server.auth.pubkey.PublickeyAuthenticator;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractServerSession extends AbstractSession implements ServerSession {
-    private ServerProxyAcceptor proxyAcceptor;
     private SocketAddress clientAddress;
     private PasswordAuthenticator passwordAuthenticator;
     private PublickeyAuthenticator publickeyAuthenticator;
@@ -95,17 +94,6 @@ public abstract class AbstractServerSession extends AbstractSession implements S
     @Override
     public ServerFactoryManager getFactoryManager() {
         return (ServerFactoryManager) super.getFactoryManager();
-    }
-
-    @Override
-    public ServerProxyAcceptor getServerProxyAcceptor() {
-        return resolveEffectiveProvider(
-                ServerProxyAcceptor.class, proxyAcceptor, getFactoryManager().getServerProxyAcceptor());
-    }
-
-    @Override
-    public void setServerProxyAcceptor(ServerProxyAcceptor proxyAcceptor) {
-        this.proxyAcceptor = proxyAcceptor;
     }
 
     @Override
@@ -412,28 +400,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
     @Override
     protected boolean readIdentification(Buffer buffer) throws Exception {
-        ServerProxyAcceptor acceptor = getServerProxyAcceptor();
         int rpos = buffer.rpos();
         boolean debugEnabled = log.isDebugEnabled();
-        if (acceptor != null) {
-            try {
-                boolean completed = acceptor.acceptServerProxyMetadata(this, buffer);
-                if (!completed) {
-                    buffer.rpos(rpos); // restore original buffer position
-                    return false; // more data required
-                }
-            } catch (Throwable t) {
-                warn("readIdentification({}) failed ({}) to accept proxy metadata: {}",
-                        this, t.getClass().getSimpleName(), t.getMessage(), t);
-
-                if (t instanceof IOException) {
-                    throw (IOException) t;
-                } else {
-                    throw new SshException(t);
-                }
-            }
-        }
-
         List<String> ident = doReadIdentification(buffer, true);
         int numLines = GenericUtils.size(ident);
         clientVersion = (numLines <= 0) ? null : ident.remove(numLines - 1);

@@ -22,7 +22,6 @@ import java.util.List;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.server.command.CommandFactory;
-import org.apache.sshd.server.session.ServerProxyAcceptorHolder;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.apache.sshd.server.subsystem.SubsystemFactory;
 
@@ -34,7 +33,6 @@ import org.apache.sshd.server.subsystem.SubsystemFactory;
  */
 public interface ServerFactoryManager
         extends FactoryManager,
-        ServerProxyAcceptorHolder,
         ServerAuthenticationManager {
 
     /**

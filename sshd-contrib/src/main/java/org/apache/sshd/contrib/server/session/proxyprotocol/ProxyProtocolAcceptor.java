@@ -28,7 +28,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
 import org.apache.sshd.server.session.AbstractServerSession;
-import org.apache.sshd.server.session.ServerProxyAcceptor;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -38,18 +37,35 @@ import org.apache.sshd.server.session.ServerSession;
  * @see    <A HREF="https://gist.github.com/codingtony/a8684c9ffa08ad56899f94d3b6c2a040">Tony Bussieres contribution</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ProxyProtocolAcceptor extends AbstractLoggingBean implements ServerProxyAcceptor {
+public class ProxyProtocolAcceptor extends AbstractLoggingBean {
     // 108 bytes is the largest buffer needed for the PROXY protocol, but we are a bit more lenient
     public static final int MAX_PROXY_HEADER_LENGTH = Byte.MAX_VALUE;
     public static final String PROX_PROTOCOL_PREFIX = "PROXY";
 
+    // 'P' 'R' 'O' 'X' 'Y' ' '
     private static final byte[] PROXY_HEADER = new byte[] { 0x50, 0x52, 0x4F, 0x58, 0x59, 0x20 };
 
     public ProxyProtocolAcceptor() {
         super();
     }
 
-    @Override
+    /**
+     * Invoked by the ProxyProtocolFilter; may get called multiple times if the proxy header is not received in a single
+     * message. Should parse the proxy header from the beginning of the given {@link Buffer} and return {@code true} if
+     * the header was fully consumed (or there is no proxy header at all), and {@code false} if the buffer contains only
+     * a partial (potential) proxy header.
+     *
+     * <p>
+     * Upon a successful return, calling code assumes that the proxy header has been consumed from the buffer and the
+     * buffer's read position is right after the last byte of the proxy header.
+     *
+     * @param  session   the {@link ServerSession} instance
+     * @param  buffer    the received data
+     * @return           {@code true} if successfully extracted the remote client peer meta-data or if there is no proxy
+     *                   header at all, {@code false} if more data is required.
+     * @throws Exception if failed to correctly extract and parse the meta-data, in which case the session will be
+     *                   closed
+     */
     public boolean acceptServerProxyMetadata(ServerSession session, Buffer buffer) throws Exception {
         int mark = buffer.rpos();
         int dataLen = buffer.available();
@@ -87,7 +103,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
                 proxyPayload.setLength(ppLen - 1);
             }
 
-            return parseProxyHeader(session, proxyPayload.toString(), mark, buffer);
+            return parseProxyHeader(session, proxyPayload.toString());
         }
 
         // Could not see LF before MAX_PROXY_HEADER_LENGTH expired
@@ -95,8 +111,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean implements Server
         return false;
     }
 
-    protected boolean parseProxyHeader(ServerSession session, String proxyHeader, int markPosition, Buffer buffer)
-            throws Exception {
+    protected boolean parseProxyHeader(ServerSession session, String proxyHeader) {
         boolean debugEnabled = log.isDebugEnabled();
         if (debugEnabled) {
             log.debug("parseProxyHeader(session={}) parsing header='{}'", session, proxyHeader);
