@@ -203,14 +203,6 @@ public abstract class AbstractSession extends SessionHelper {
                 ChannelListener.class, channelListeners);
         tunnelListenerProxy = EventListenerUtils.proxyWrapper(
                 PortForwardingEventListener.class, tunnelListeners);
-
-        try {
-            signalSessionEstablished(ioSession);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeSshException(e);
-        }
     }
 
     /**

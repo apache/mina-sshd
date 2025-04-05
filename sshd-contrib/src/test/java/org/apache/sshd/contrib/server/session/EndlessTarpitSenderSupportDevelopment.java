@@ -238,8 +238,8 @@ public final class EndlessTarpitSenderSupportDevelopment extends AbstractLogging
                 private final AtomicInteger lastCount = new AtomicInteger();
 
                 @Override
-                public void sessionEstablished(Session session) {
-                    log.info("sessionEstablished({})", session);
+                public void sessionStarting(Session session) {
+                    log.info("sessionStarting({})", session);
                 }
 
                 @Override

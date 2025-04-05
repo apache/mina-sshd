@@ -549,10 +549,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return writePacket(buffer);
     }
 
-    protected void signalSessionEstablished(IoSession ioSession) throws Exception {
-        callSignaller("established", l -> l.sessionEstablished(this));
-    }
-
     protected void signalSessionCreated(IoSession ioSession) throws Exception {
         callSignaller("created", l -> l.sessionCreated(this));
     }
