@@ -43,7 +43,7 @@ public interface PortForwardingEventListenerManager {
     void removePortForwardingEventListener(PortForwardingEventListener listener);
 
     /**
-     * @return A proxy listener representing all the currently registered listener through this manager
+     * @return A proxy listener representing all the currently registered listeners in this manager
      */
     PortForwardingEventListener getPortForwardingEventListenerProxy();
 }

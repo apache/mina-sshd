@@ -63,7 +63,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
-import org.apache.sshd.common.util.io.functors.Invoker;
+import org.apache.sshd.common.util.io.functors.IOConsumer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -166,7 +166,7 @@ public class DefaultForwarder
             defaultListeners.add(l);
         }
 
-        FactoryManager manager = (session == null) ? null : session.getFactoryManager();
+        FactoryManager manager = session.getFactoryManager();
         l = (manager == null) ? null : manager.getPortForwardingEventListenerProxy();
         if (l != null) {
             defaultListeners.add(l);
@@ -376,59 +376,14 @@ public class DefaultForwarder
     protected void signalTearingDownExplicitTunnel(
             SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remote)
             throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalTearingDownExplicitTunnel(l, boundAddress, localForwarding, remote);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException(
-                    "Failed (" + t.getClass().getSimpleName() + ")" + " to signal tearing down explicit tunnel for local="
-                                  + localForwarding + " on bound=" + boundAddress,
-                    t);
-        }
-    }
-
-    protected void signalTearingDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding,
-            SshdSocketAddress remoteAddress)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress);
+        invokePortEventListenerSignaller(l -> l.tearingDownExplicitTunnel(getSession(), boundAddress, localForwarding, remote));
     }
 
     protected void signalTornDownExplicitTunnel(
             SshdSocketAddress boundAddress, boolean localForwarding, SshdSocketAddress remoteAddress, Throwable reason)
             throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalTornDownExplicitTunnel(l, boundAddress, localForwarding, remoteAddress, reason);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException(
-                    "Failed (" + t.getClass().getSimpleName() + ")" + " to signal torn down explicit tunnel local="
-                                  + localForwarding + " on bound=" + boundAddress,
-                    t);
-        }
-    }
-
-    protected void signalTornDownExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress boundAddress, boolean localForwarding,
-            SshdSocketAddress remoteAddress, Throwable reason)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress, reason);
+        invokePortEventListenerSignaller(
+                l -> l.tornDownExplicitTunnel(getSession(), boundAddress, localForwarding, remoteAddress, reason));
     }
 
     @Override
@@ -491,53 +446,11 @@ public class DefaultForwarder
     protected void signalEstablishedDynamicTunnel(
             SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
             throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalEstablishedDynamicTunnel(l, local, boundAddress, reason);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                  + " to signal establishing dynamic tunnel for local=" + local + " on bound=" + boundAddress,
-                    t);
-        }
-    }
-
-    protected void signalEstablishedDynamicTunnel(
-            PortForwardingEventListener listener,
-            SshdSocketAddress local, SshdSocketAddress boundAddress, Throwable reason)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.establishedDynamicTunnel(getSession(), local, boundAddress, reason);
+        invokePortEventListenerSignaller(l -> l.establishedDynamicTunnel(getSession(), local, boundAddress, reason));
     }
 
     protected void signalEstablishingDynamicTunnel(SshdSocketAddress local) throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalEstablishingDynamicTunnel(l, local);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                  + " to signal establishing dynamic tunnel for local=" + local,
-                    t);
-        }
-    }
-
-    protected void signalEstablishingDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress local)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.establishingDynamicTunnel(getSession(), local);
+        invokePortEventListenerSignaller(l -> l.establishingDynamicTunnel(getSession(), local));
     }
 
     @Override
@@ -599,52 +512,11 @@ public class DefaultForwarder
     }
 
     protected void signalTearingDownDynamicTunnel(SshdSocketAddress address) throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalTearingDownDynamicTunnel(l, address);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                  + " to signal tearing down dynamic tunnel for address=" + address,
-                    t);
-        }
-    }
-
-    protected void signalTearingDownDynamicTunnel(PortForwardingEventListener listener, SshdSocketAddress address)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.tearingDownDynamicTunnel(getSession(), address);
+        invokePortEventListenerSignaller(l -> l.tearingDownDynamicTunnel(getSession(), address));
     }
 
     protected void signalTornDownDynamicTunnel(SshdSocketAddress address, Throwable reason) throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalTornDownDynamicTunnel(l, address, reason);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                  + " to signal torn down dynamic tunnel for address=" + address,
-                    t);
-        }
-    }
-
-    protected void signalTornDownDynamicTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress address, Throwable reason)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.tornDownDynamicTunnel(getSession(), address, reason);
+        invokePortEventListenerSignaller(l -> l.tornDownDynamicTunnel(getSession(), address, reason));
     }
 
     @Override
@@ -746,63 +618,18 @@ public class DefaultForwarder
     protected void signalEstablishingExplicitTunnel(
             SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
             throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalEstablishingExplicitTunnel(l, local, remote, localForwarding);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException(
-                    "Failed (" + t.getClass().getSimpleName() + ")" + " to signal establishing explicit tunnel for local="
-                                  + local + ", remote=" + remote + ", localForwarding=" + localForwarding,
-                    t);
-        }
-    }
-
-    protected void signalEstablishingExplicitTunnel(
-            PortForwardingEventListener listener, SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.establishingExplicitTunnel(getSession(), local, remote, localForwarding);
+        invokePortEventListenerSignaller(l -> l.establishingExplicitTunnel(getSession(), local, remote, localForwarding));
     }
 
     protected void signalEstablishedExplicitTunnel(
             SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
             SshdSocketAddress boundAddress, Throwable reason)
             throws IOException {
-        try {
-            invokePortEventListenerSignaller(l -> {
-                signalEstablishedExplicitTunnel(l, local, remote, localForwarding, boundAddress, reason);
-                return null;
-            });
-        } catch (Error | RuntimeException | IOException e) {
-            throw e;
-        } catch (Throwable t) {
-            throw new IOException("Failed (" + t.getClass().getSimpleName() + ")"
-                                  + " to signal established explicit tunnel for local=" + local + ", remote=" + remote
-                                  + ", localForwarding=" + localForwarding + ", bound=" + boundAddress,
-                    t);
-        }
+        invokePortEventListenerSignaller(
+                l -> l.establishedExplicitTunnel(getSession(), local, remote, localForwarding, boundAddress, reason));
     }
 
-    protected void signalEstablishedExplicitTunnel(
-            PortForwardingEventListener listener,
-            SshdSocketAddress local, SshdSocketAddress remote, boolean localForwarding,
-            SshdSocketAddress boundAddress, Throwable reason)
-            throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.establishedExplicitTunnel(getSession(), local, remote, localForwarding, boundAddress, reason);
-    }
-
-    protected void invokePortEventListenerSignaller(Invoker<PortForwardingEventListener, Void> invoker) throws Throwable {
+    protected void invokePortEventListenerSignaller(IOConsumer<PortForwardingEventListener> invoker) throws IOException {
         Throwable err = null;
         try {
             invokePortEventListenerSignallerListeners(getDefaultListeners(), invoker);
@@ -819,26 +646,25 @@ public class DefaultForwarder
         }
 
         if (err != null) {
-            throw err;
+            ExceptionUtils.rethrowAsIoException(err);
         }
     }
 
     protected void invokePortEventListenerSignallerListeners(
-            Collection<? extends PortForwardingEventListener> listeners, Invoker<PortForwardingEventListener, Void> invoker)
-            throws Throwable {
+            Collection<? extends PortForwardingEventListener> listeners, IOConsumer<PortForwardingEventListener> invoker)
+            throws IOException {
         if (GenericUtils.isEmpty(listeners)) {
             return;
         }
 
         Throwable err = null;
-        // Need to go over the hierarchy (session, factory managed, connection service, etc...)
         for (PortForwardingEventListener l : listeners) {
             if (l == null) {
                 continue;
             }
 
             try {
-                invoker.invoke(l);
+                invoker.accept(l);
             } catch (Throwable t) {
                 Throwable e = ExceptionUtils.peelException(t);
                 err = ExceptionUtils.accumulateException(err, e);
@@ -846,44 +672,33 @@ public class DefaultForwarder
         }
 
         if (err != null) {
-            throw err;
+            ExceptionUtils.rethrowAsIoException(err);
         }
     }
 
     protected void invokePortEventListenerSignallerHolders(
             Collection<? extends PortForwardingEventListenerManager> holders,
-            Invoker<PortForwardingEventListener, Void> invoker)
-            throws Throwable {
+            IOConsumer<PortForwardingEventListener> invoker)
+            throws IOException {
         if (GenericUtils.isEmpty(holders)) {
             return;
         }
 
         Throwable err = null;
-        // Need to go over the hierarchy (session, factory managed, connection service, etc...)
         for (PortForwardingEventListenerManager m : holders) {
             try {
                 PortForwardingEventListener listener = m.getPortForwardingEventListenerProxy();
                 if (listener != null) {
-                    invoker.invoke(listener);
+                    invoker.accept(listener);
                 }
             } catch (Throwable t) {
                 Throwable e = ExceptionUtils.peelException(t);
                 err = ExceptionUtils.accumulateException(err, e);
             }
-
-            if (m instanceof PortForwardingEventListenerManagerHolder) {
-                try {
-                    invokePortEventListenerSignallerHolders(
-                            ((PortForwardingEventListenerManagerHolder) m).getRegisteredManagers(), invoker);
-                } catch (Throwable t) {
-                    Throwable e = ExceptionUtils.peelException(t);
-                    err = ExceptionUtils.accumulateException(err, e);
-                }
-            }
         }
 
         if (err != null) {
-            throw err;
+            ExceptionUtils.rethrowAsIoException(err);
         }
     }
 
