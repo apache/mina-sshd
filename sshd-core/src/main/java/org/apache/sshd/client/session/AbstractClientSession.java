@@ -94,7 +94,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private HostBasedAuthenticationReporter hostBasedAuthenticationReporter;
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
-    private ClientProxyConnector proxyConnector;
 
     private volatile boolean useNoneCipher;
 
@@ -240,17 +239,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     }
 
     @Override
-    public ClientProxyConnector getClientProxyConnector() {
-        ClientFactoryManager manager = getFactoryManager();
-        return resolveEffectiveProvider(ClientProxyConnector.class, proxyConnector, manager.getClientProxyConnector());
-    }
-
-    @Override
-    public void setClientProxyConnector(ClientProxyConnector proxyConnector) {
-        this.proxyConnector = proxyConnector;
-    }
-
-    @Override
     public void addPasswordIdentity(String password) {
         // DO NOT USE checkNotNullOrNotEmpty SINCE IT TRIMS THE RESULT
         ValidateUtils.checkTrue((password != null) && (!password.isEmpty()), "No password provided");
@@ -301,38 +289,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             return (KeyPair) identities.remove(index);
         } else {
             return null;
-        }
-    }
-
-    protected void initializeProxyConnector() throws Exception {
-        ClientProxyConnector proxyConnector = getClientProxyConnector();
-        boolean debugEnabled = log.isDebugEnabled();
-        if (proxyConnector == null) {
-            if (debugEnabled) {
-                log.debug("initializeProxyConnector({}) no proxy to initialize", this);
-            }
-            return;
-        }
-
-        try {
-            if (debugEnabled) {
-                log.debug("initializeProxyConnector({}) initialize proxy={}", this, proxyConnector);
-            }
-
-            proxyConnector.sendClientProxyMetadata(this);
-
-            if (debugEnabled) {
-                log.debug("initializeProxyConnector({}) proxy={} initialized", this, proxyConnector);
-            }
-        } catch (Throwable t) {
-            warn("initializeProxyConnector({}) failed ({}) to send proxy metadata: {}",
-                    this, t.getClass().getSimpleName(), t.getMessage(), t);
-
-            if (t instanceof Exception) {
-                throw (Exception) t;
-            } else {
-                throw new RuntimeSshException(t);
-            }
         }
     }
 

@@ -86,7 +86,7 @@ import org.apache.sshd.common.util.net.SshdSocketAddress;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ClientSession
-        extends Session, ClientProxyConnectorHolder,
+        extends Session,
         ClientAuthenticationManager, PortForwardingManager {
     enum ClientSessionEvent {
         TIMEOUT,
