@@ -63,12 +63,27 @@ public interface SessionListener extends SshdEventListener {
     }
 
     /**
-     * A new session just been created
+     * A new session just been created. The event is emitted before the session is started. The session's filter chain
+     * is not yet set up.
      *
      * @param session The created {@link Session}
      */
     default void sessionCreated(Session session) {
         // ignored
+    }
+
+    /**
+     * A new session is about to start. The session's filter chain is defined, and it will start the SSH protocol next
+     * by sending its SSH protocol identification. The listener has a last chance to modify the filter chain.
+     *
+     * <p>
+     * This event could be used for instance to insert a proxy filter at the front of the filter chain.
+     * </p>
+     *
+     * @param session the starting {@link Session}
+     */
+    default void sessionStarting(Session session) {
+        // empty
     }
 
     /**

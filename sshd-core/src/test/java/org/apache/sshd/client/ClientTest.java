@@ -88,6 +88,10 @@ import org.apache.sshd.common.channel.exception.SshChannelClosedException;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyEncryptionContext;
 import org.apache.sshd.common.config.keys.writer.openssh.OpenSSHKeyPairResourceWriter;
+import org.apache.sshd.common.filter.FilterChain;
+import org.apache.sshd.common.filter.InputHandler;
+import org.apache.sshd.common.filter.IoFilter;
+import org.apache.sshd.common.filter.OutputHandler;
 import org.apache.sshd.common.future.CancelFuture;
 import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.CloseFuture;
@@ -1891,6 +1895,52 @@ public class ClientTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
+    }
+
+    @Test
+    void customFilter() throws IOException {
+        client.setUserAuthFactories(Collections.singletonList(UserAuthPasswordFactory.INSTANCE));
+        AtomicBoolean outCalled = new AtomicBoolean();
+        AtomicBoolean inCalled = new AtomicBoolean();
+        client.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionStarting(Session session) {
+                FilterChain filters = session.getFilterChain();
+                filters.addFirst(new IoFilter() {
+
+                    @Override
+                    public OutputHandler out() {
+                        return (cmd, msg) -> {
+                            outCalled.set(true);
+                            return owner().send(cmd, msg);
+                        };
+                    }
+
+                    @Override
+                    public InputHandler in() {
+                        return msg -> {
+                            inCalled.set(true);
+                            owner().passOn(msg);
+                        };
+                    }
+                });
+            }
+        });
+        client.start();
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            assertNotNull(clientSessionHolder.get(), "Client session creation not signalled");
+            session.addPasswordIdentity(getClass().getSimpleName());
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+        } finally {
+            client.stop();
+        }
+        assertNull(clientSessionHolder.get(), "Session closure not signalled");
+        assertTrue(inCalled.get(), "Custom filter IN should have been called");
+        assertTrue(outCalled.get(), "Custom filter OUT should have been called");
     }
 
     @Test

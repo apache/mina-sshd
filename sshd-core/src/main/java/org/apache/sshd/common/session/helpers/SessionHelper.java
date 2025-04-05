@@ -36,6 +36,7 @@ import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.function.Consumer;
 import java.util.function.Function;
 
 import org.apache.sshd.common.AttributeRepository;
@@ -47,14 +48,12 @@ import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolver;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriterResolverManager;
-import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.extension.KexExtensionHandler;
-import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
 import org.apache.sshd.common.session.Session;
@@ -68,9 +67,6 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.buffer.BufferUtils;
-import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
-import org.apache.sshd.common.util.io.functors.Invoker;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.core.CoreModuleProperties;
 
@@ -554,131 +550,44 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
     }
 
     protected void signalSessionEstablished(IoSession ioSession) throws Exception {
-        try {
-            invokeSessionSignaller(l -> {
-                signalSessionEstablished(l);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("Failed ({}) to announce session={} established: {}",
-                    e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
-    }
-
-    protected void signalSessionEstablished(SessionListener listener) {
-        if (listener == null) {
-            return;
-        }
-        listener.sessionEstablished(this);
+        callSignaller("established", l -> l.sessionEstablished(this));
     }
 
     protected void signalSessionCreated(IoSession ioSession) throws Exception {
-        try {
-            invokeSessionSignaller(l -> {
-                signalSessionCreated(l);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("Failed ({}) to announce session={} created: {}",
-                    e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
+        callSignaller("created", l -> l.sessionCreated(this));
     }
 
-    protected void signalSessionCreated(SessionListener listener) {
-        if (listener == null) {
-            return;
-        }
-        listener.sessionCreated(this);
+    protected void signalSessionStarting() throws Exception {
+        callSignaller("starting", l -> l.sessionStarting(this));
     }
 
     protected void signalSendIdentification(String version, List<String> extraLines) throws Exception {
-        try {
-            invokeSessionSignaller(l -> {
-                signalSendIdentification(l, version, extraLines);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
+        callSignaller("send identification", l -> l.sessionPeerIdentificationSend(this, version, extraLines));
     }
 
-    protected void signalSendIdentification(SessionListener listener, String version, List<String> extraLines) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionPeerIdentificationSend(this, version, extraLines);
-    }
-
-    protected void signalReadPeerIdentificationLine(String line, List<String> extraLines) throws Exception {
-        try {
-            invokeSessionSignaller(l -> {
-                signalReadPeerIdentificationLine(l, line, extraLines);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("signalReadPeerIdentificationLine({}) Failed ({}) to announce peer={}: {}",
-                    this, e.getClass().getSimpleName(), line, e.getMessage(), e);
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
-    }
-
-    protected void signalReadPeerIdentificationLine(
-            SessionListener listener, String version, List<String> extraLines) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionPeerIdentificationLine(this, version, extraLines);
+    protected void signalReadPeerIdentificationLine(String version, List<String> extraLines) throws Exception {
+        callSignaller("read peer identification line", l -> l.sessionPeerIdentificationLine(this, version, extraLines));
     }
 
     protected void signalPeerIdentificationReceived(String version, List<String> extraLines) throws Exception {
-        try {
-            invokeSessionSignaller(l -> {
-                signalPeerIdentificationReceived(l, version, extraLines);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("signalPeerIdentificationReceived({}) Failed ({}) to announce peer={}: {}",
-                    this, e.getClass().getSimpleName(), version, e.getMessage(), e);
-            if (e instanceof Exception) {
-                throw (Exception) e;
-            } else {
-                throw new RuntimeSshException(e);
-            }
-        }
+        callSignaller("receive peer identification version",
+                l -> l.sessionPeerIdentificationReceived(this, version, extraLines));
     }
 
-    protected void signalPeerIdentificationReceived(
-            SessionListener listener, String version, List<String> extraLines) {
-        if (listener == null) {
-            return;
-        }
+    protected void signalNegotiationOptionsCreated(Map<KexProposalOption, String> proposal) {
+        callSignaller(l -> l.sessionNegotiationOptionsCreated(this, proposal));
+    }
 
-        listener.sessionPeerIdentificationReceived(this, version, extraLines);
+    protected void signalNegotiationStart(
+            Map<KexProposalOption, String> c2sOptions,
+            Map<KexProposalOption, String> s2cOptions) {
+        callSignaller(l -> l.sessionNegotiationStart(this, c2sOptions, s2cOptions));
+    }
+
+    protected void signalNegotiationEnd(
+            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
+            Map<KexProposalOption, String> negotiatedGuess, Throwable reason) {
+        callSignaller(l -> l.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, reason));
     }
 
     /**
@@ -689,10 +598,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
      */
     protected void signalSessionEvent(SessionListener.Event event) throws Exception {
         try {
-            invokeSessionSignaller(l -> {
-                signalSessionEvent(l, event);
-                return null;
-            });
+            invokeSessionSignaller(l -> l.sessionEvent(this, event));
         } catch (Throwable err) {
             Throwable t = ExceptionUtils.peelException(err);
             debug("sendSessionEvent({})[{}] failed ({}) to inform listeners: {}",
@@ -705,15 +611,19 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
     }
 
-    protected void signalSessionEvent(SessionListener listener, SessionListener.Event event) throws IOException {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionEvent(this, event);
+    protected void signalDisconnect(int code, String msg, String lang, boolean initiator) {
+        callSignallerSilently("signalDisconnect", l -> l.sessionDisconnect(this, code, msg, lang, initiator));
     }
 
-    protected void invokeSessionSignaller(Invoker<SessionListener, Void> invoker) throws Throwable {
+    protected void signalExceptionCaught(Throwable t) {
+        callSignallerSilently("signalExceptionCaught", l -> l.sessionException(this, t));
+    }
+
+    protected void signalSessionClosed() {
+        callSignallerSilently("signalSessionClosed", l -> l.sessionClosed(this));
+    }
+
+    protected void invokeSessionSignaller(Consumer<SessionListener> listener) throws Throwable {
         FactoryManager manager = getFactoryManager();
         SessionListener[] listeners = {
                 (manager == null) ? null : manager.getSessionListenerProxy(),
@@ -727,7 +637,7 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             }
 
             try {
-                invoker.invoke(l);
+                listener.accept(l);
             } catch (Throwable t) {
                 err = ExceptionUtils.accumulateException(err, t);
             }
@@ -738,39 +648,42 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
     }
 
-    /**
-     * Method used while putting new keys into use that will resize the key used to initialize the cipher to the needed
-     * length.
-     *
-     * @param  e         the key to resize
-     * @param  kdfSize   the cipher key-derivation-factor (in bytes)
-     * @param  hash      the hash algorithm
-     * @param  k         the key exchange k parameter
-     * @param  h         the key exchange h parameter
-     * @return           the resized key
-     * @throws Exception if a problem occur while resizing the key
-     */
-    protected byte[] resizeKey(
-            byte[] e, int kdfSize, Digest hash, byte[] k, byte[] h)
-            throws Exception {
-        for (Buffer buffer = null; kdfSize > e.length; buffer = BufferUtils.clear(buffer)) {
-            if (buffer == null) {
-                buffer = new ByteArrayBuffer();
-            }
-
-            buffer.putBytes(k);
-            buffer.putRawBytes(h);
-            buffer.putRawBytes(e);
-            hash.update(buffer.array(), 0, buffer.available());
-
-            byte[] foo = hash.digest();
-            byte[] bar = new byte[e.length + foo.length];
-            System.arraycopy(e, 0, bar, 0, e.length);
-            System.arraycopy(foo, 0, bar, e.length, foo.length);
-            e = bar;
+    private void callSignallerSilently(String msg, Consumer<SessionListener> listener) {
+        try {
+            invokeSessionSignaller(listener);
+        } catch (Throwable t) {
+            Throwable e = ExceptionUtils.peelException(t);
+            debug("{}({}) {} while signal session closed: {}", msg, this, e.getClass().getSimpleName(), e.getMessage(), e);
         }
+    }
 
-        return e;
+    private void callSignaller(Consumer<SessionListener> listener) {
+        try {
+            invokeSessionSignaller(listener);
+        } catch (Throwable t) {
+            Throwable err = ExceptionUtils.peelException(t);
+            if (err instanceof RuntimeException) {
+                throw (RuntimeException) err;
+            } else if (err instanceof Error) {
+                throw (Error) err;
+            } else {
+                throw new IllegalArgumentException(err);
+            }
+        }
+    }
+
+    private void callSignaller(String msg, Consumer<SessionListener> listener) throws Exception {
+        try {
+            invokeSessionSignaller(listener);
+        } catch (Throwable err) {
+            Throwable e = ExceptionUtils.peelException(err);
+            debug("Failed ({}) to announce session={} {}: {}", e.getClass().getSimpleName(), ioSession, msg, e.getMessage(), e);
+            if (e instanceof Exception) {
+                throw (Exception) e;
+            } else {
+                throw new RuntimeSshException(e);
+            }
+        }
     }
 
     /**
@@ -784,24 +697,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
 
         IoSession s = getIoSession();
         return (s == null) ? null : s.getRemoteAddress();
-    }
-
-    protected long calculateNextIgnorePacketCount(Random r, long freq, int variance) {
-        if ((freq <= 0L) || (variance < 0)) {
-            return -1L;
-        }
-
-        if (variance == 0) {
-            return freq;
-        }
-
-        int extra = r.random((variance < 0) ? (0 - variance) : variance);
-        long count = (variance < 0) ? (freq - extra) : (freq + extra);
-        if (log.isTraceEnabled()) {
-            log.trace("calculateNextIgnorePacketCount({}) count={}", this, count);
-        }
-
-        return count;
     }
 
     /**
@@ -1027,91 +922,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         return proposal;
     }
 
-    protected void signalNegotiationOptionsCreated(Map<KexProposalOption, String> proposal) {
-        try {
-            invokeSessionSignaller(l -> {
-                signalNegotiationOptionsCreated(l, proposal);
-                return null;
-            });
-        } catch (Throwable t) {
-            Throwable err = ExceptionUtils.peelException(t);
-            if (err instanceof RuntimeException) {
-                throw (RuntimeException) err;
-            } else if (err instanceof Error) {
-                throw (Error) err;
-            } else {
-                throw new IllegalArgumentException(err);
-            }
-        }
-    }
-
-    protected void signalNegotiationOptionsCreated(SessionListener listener, Map<KexProposalOption, String> proposal) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionNegotiationOptionsCreated(this, proposal);
-    }
-
-    protected void signalNegotiationStart(
-            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
-        try {
-            invokeSessionSignaller(l -> {
-                signalNegotiationStart(l, c2sOptions, s2cOptions);
-                return null;
-            });
-        } catch (Throwable t) {
-            Throwable err = ExceptionUtils.peelException(t);
-            if (err instanceof RuntimeException) {
-                throw (RuntimeException) err;
-            } else if (err instanceof Error) {
-                throw (Error) err;
-            } else {
-                throw new IllegalArgumentException(err);
-            }
-        }
-    }
-
-    protected void signalNegotiationStart(
-            SessionListener listener, Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionNegotiationStart(this, c2sOptions, s2cOptions);
-    }
-
-    protected void signalNegotiationEnd(
-            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
-            Map<KexProposalOption, String> negotiatedGuess, Throwable reason) {
-        try {
-            invokeSessionSignaller(l -> {
-                signalNegotiationEnd(l, c2sOptions, s2cOptions, negotiatedGuess, reason);
-                return null;
-            });
-        } catch (Throwable t) {
-            Throwable err = ExceptionUtils.peelException(t);
-            if (err instanceof RuntimeException) {
-                throw (RuntimeException) err;
-            } else if (err instanceof Error) {
-                throw (Error) err;
-            } else {
-                throw new IllegalArgumentException(err);
-            }
-        }
-    }
-
-    protected void signalNegotiationEnd(
-            SessionListener listener,
-            Map<KexProposalOption, String> c2sOptions, Map<KexProposalOption, String> s2cOptions,
-            Map<KexProposalOption, String> negotiatedGuess, Throwable reason) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionNegotiationEnd(this, c2sOptions, s2cOptions, negotiatedGuess, reason);
-    }
-
     @Override
     public void disconnect(int reason, String msg) throws IOException {
         log.info("Disconnecting({}): {} - {}",
@@ -1185,28 +995,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         close(true);
     }
 
-    protected void signalDisconnect(int code, String msg, String lang, boolean initiator) {
-        try {
-            invokeSessionSignaller(l -> {
-                signalDisconnect(l, code, msg, lang, initiator);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("signalDisconnect({}) {}: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage(), e);
-        }
-    }
-
-    protected void signalDisconnect(
-            SessionListener listener, int code, String msg, String lang, boolean initiator) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionDisconnect(this, code, msg, lang, initiator);
-    }
-
     /**
      * Handle any exceptions that occurred on this session. The session will be closed and a disconnect packet will be
      * sent before if the given exception is an {@link SshException}.
@@ -1243,49 +1031,6 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
         }
 
         close(true);
-    }
-
-    protected void signalExceptionCaught(Throwable t) {
-        try {
-            invokeSessionSignaller(l -> {
-                signalExceptionCaught(l, t);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("signalExceptionCaught({}) {}: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage(), e);
-        }
-    }
-
-    protected void signalExceptionCaught(SessionListener listener, Throwable t) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionException(this, t);
-    }
-
-    protected void signalSessionClosed() {
-        try {
-            invokeSessionSignaller(l -> {
-                signalSessionClosed(l);
-                return null;
-            });
-        } catch (Throwable err) {
-            Throwable e = ExceptionUtils.peelException(err);
-            debug("signalSessionClosed({}) {} while signal session closed: {}",
-                    this, e.getClass().getSimpleName(), e.getMessage(), e);
-            // Do not re-throw since session closed anyway
-        }
-    }
-
-    protected void signalSessionClosed(SessionListener listener) {
-        if (listener == null) {
-            return;
-        }
-
-        listener.sessionClosed(this);
     }
 
     protected abstract ConnectionService getConnectionService();

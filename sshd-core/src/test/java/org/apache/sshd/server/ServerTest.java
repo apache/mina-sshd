@@ -36,6 +36,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,6 +53,10 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.channel.RemoteWindow;
 import org.apache.sshd.common.channel.WindowClosedException;
+import org.apache.sshd.common.filter.FilterChain;
+import org.apache.sshd.common.filter.InputHandler;
+import org.apache.sshd.common.filter.IoFilter;
+import org.apache.sshd.common.filter.OutputHandler;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
@@ -554,6 +559,47 @@ public class ServerTest extends BaseTestSupport {
         } finally {
             client.stop();
         }
+    }
+
+    @Test
+    void customFilter() throws Exception {
+        AtomicBoolean outCalled = new AtomicBoolean();
+        AtomicBoolean inCalled = new AtomicBoolean();
+        sshd.addSessionListener(new SessionListener() {
+
+            @Override
+            public void sessionStarting(Session session) {
+                FilterChain filters = session.getFilterChain();
+                filters.addFirst(new IoFilter() {
+
+                    @Override
+                    public OutputHandler out() {
+                        return (cmd, msg) -> {
+                            outCalled.set(true);
+                            return owner().send(cmd, msg);
+                        };
+                    }
+
+                    @Override
+                    public InputHandler in() {
+                        return msg -> {
+                            inCalled.set(true);
+                            owner().passOn(msg);
+                        };
+                    }
+                });
+            }
+        });
+        sshd.start();
+
+        client.start();
+        try (ClientSession s = createTestClientSession(sshd)) {
+            s.close(false);
+        } finally {
+            client.stop();
+        }
+        assertTrue(inCalled.get(), "Custom filter IN should have been called");
+        assertTrue(outCalled.get(), "Custom filter OUT should have been called");
     }
 
     // see SSHD-645

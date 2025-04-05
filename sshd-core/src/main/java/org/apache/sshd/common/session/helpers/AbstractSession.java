@@ -223,6 +223,7 @@ public abstract class AbstractSession extends SessionHelper {
         if (filters.isEmpty()) {
             setupFilterChain();
         }
+        signalSessionStarting();
 
         IoFilter ioSessionConnector = new IoFilter() {
 
