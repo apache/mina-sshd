@@ -130,8 +130,6 @@ public abstract class AbstractSession extends SessionHelper {
     protected final Collection<PortForwardingEventListener> tunnelListeners = new CopyOnWriteArraySet<>();
     protected final PortForwardingEventListener tunnelListenerProxy;
 
-    protected final Object requestLock = new Object();
-
     protected final CurrentService currentService;
 
     protected String serverVersion;
