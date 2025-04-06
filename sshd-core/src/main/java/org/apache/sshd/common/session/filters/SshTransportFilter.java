@@ -80,6 +80,8 @@ public class SshTransportFilter extends IoFilter {
         compressionFilter.setSession(session);
         filters.addLast(compressionFilter);
 
+        filters.addLast(new PacketLoggingFilter(session, cryptFilter));
+
         DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
         delayKexFilter.setSession(session);
         filters.addLast(delayKexFilter);
@@ -89,6 +91,7 @@ public class SshTransportFilter extends IoFilter {
         kexFilter = new KexFilter(session, random, cryptFilter, compressionFilter, events, proposer, checker);
         filters.addLast(kexFilter);
 
+        // Forward the protocol identification to the KexFilter; it's needed for KEX.
         ident.addIdentListener((peer, id) -> {
             if (peer == session.isServerSession()) {
                 kexFilter.setClientIdent(id);
@@ -96,6 +99,8 @@ public class SshTransportFilter extends IoFilter {
                 kexFilter.setServerIdent(id);
             }
         });
+
+        // Connect the local filter chain to the one containing this SshTransportFilter
         filters.addFirst(new InConnector(this));
         filters.addLast(new OutConnector(this));
     }
