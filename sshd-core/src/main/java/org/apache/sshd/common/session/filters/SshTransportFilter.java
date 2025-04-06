@@ -163,11 +163,15 @@ public class SshTransportFilter extends IoFilter {
         return cryptFilter.isSecure();
     }
 
-    public int getInputSequenceNumber() {
+    public long getLastInputSequenceNumber() {
+        return cryptFilter.getLastInputSequenceNumber();
+    }
+
+    public long getInputSequenceNumber() {
         return cryptFilter.getInputSequenceNumber();
     }
 
-    public int getOutputSequenceNumber() {
+    public long getOutputSequenceNumber() {
         return cryptFilter.getOutputSequenceNumber();
     }
 

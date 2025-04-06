@@ -159,13 +159,18 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
     }
 
     @Override
-    public int getInputSequenceNumber() {
-        return input.sequenceNumber.get();
+    public long getLastInputSequenceNumber() {
+        return (input.sequenceNumber.get() - 1) & 0xFFFF_FFFFL;
     }
 
     @Override
-    public int getOutputSequenceNumber() {
-        return output.sequenceNumber.get();
+    public long getInputSequenceNumber() {
+        return input.sequenceNumber.get() & 0xFFFF_FFFFL;
+    }
+
+    @Override
+    public long getOutputSequenceNumber() {
+        return output.sequenceNumber.get() & 0xFFFF_FFFFL;
     }
 
     @Override
@@ -371,7 +376,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
             Buffer encrypted = message;
             if (encrypted != null) {
                 try {
-                    listeners.forEach(listener -> listener.aboutToEncrypt(message, sequenceNumber.get()));
+                    listeners.forEach(listener -> listener.aboutToEncrypt(message, getOutputSequenceNumber()));
                     encrypted = encode(cmd, message);
                 } catch (IOException e) {
                     throw e;

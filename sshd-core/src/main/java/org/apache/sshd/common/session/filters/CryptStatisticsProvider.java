@@ -21,15 +21,24 @@ package org.apache.sshd.common.session.filters;
 public interface CryptStatisticsProvider {
 
     /**
-     * Retrieves the current input sequence number.
+     * Retrieves the previous input sequence number.
      * <p>
-     * This is the sequence number expected for the next packet. To get the sequence number of the <em>current</em>
-     * packet, subtract one.
+     * This is the sequence number of the last received packet.
      * </p>
      *
      * @return the sequence number as an unsigned 32bit value.
      */
-    int getInputSequenceNumber();
+    long getLastInputSequenceNumber();
+
+    /**
+     * Retrieves the current input sequence number.
+     * <p>
+     * This is the sequence number expected for the next packet.
+     * </p>
+     *
+     * @return the sequence number as an unsigned 32bit value.
+     */
+    long getInputSequenceNumber();
 
     /**
      * Retrieves the current output sequence number.
@@ -39,7 +48,7 @@ public interface CryptStatisticsProvider {
      *
      * @return the sequence number as an unsigned 32bit value.
      */
-    int getOutputSequenceNumber();
+    long getOutputSequenceNumber();
 
     /**
      * Retrieves the input counters.

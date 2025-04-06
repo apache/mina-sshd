@@ -456,7 +456,7 @@ public abstract class AbstractSession extends SessionHelper {
     protected void handleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();
         if (log.isDebugEnabled()) {
-            log.debug("doHandleMessage({}) process #{} {}", this, sshTransport.getInputSequenceNumber() - 1,
+            log.debug("doHandleMessage({}) process #{} {}", this, sshTransport.getLastInputSequenceNumber(),
                     SshConstants.getCommandMessageName(cmd));
         }
 
@@ -926,9 +926,7 @@ public abstract class AbstractSession extends SessionHelper {
         if (doInvokeUnimplementedMessageHandler(cmd, buffer)) {
             return null;
         }
-
-        int seq = sshTransport.getInputSequenceNumber() - 1;
-        return sendNotImplemented(seq & 0xFFFF_FFFFL);
+        return sendNotImplemented(sshTransport.getLastInputSequenceNumber());
     }
 
     /**

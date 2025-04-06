@@ -234,7 +234,7 @@ public class KexFilter extends IoFilter {
 
     private volatile boolean strictKex;
 
-    private volatile int initialKexInitSequenceNumber;
+    private volatile long initialKexInitSequenceNumber;
 
     public KexFilter(AbstractSession session, Random random, CryptFilter crypt, CompressionFilter compression,
                      SessionListener listener, Proposer proposer, HostKeyChecker checker) {
@@ -373,7 +373,7 @@ public class KexFilter extends IoFilter {
                     "KEX: received SSH_MSG_KEXINIT while already in KEX");
         }
         if (!initialKexDone) {
-            initialKexInitSequenceNumber = crypt.getInputSequenceNumber();
+            initialKexInitSequenceNumber = crypt.getLastInputSequenceNumber();
         }
         parsePeerProposal(message);
         if (starting == KexStart.PEER) {
@@ -605,11 +605,11 @@ public class KexFilter extends IoFilter {
                     LOG.debug("negotiate({}) strict KEX={} client={} server={}", session, strictKex, strictKexClient,
                             strictKexServer);
                 }
-                if (strictKex && initialKexInitSequenceNumber != 1) {
+                if (strictKex && initialKexInitSequenceNumber != 0) {
                     throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                             MessageFormat.format(
                                     "KEX: strict KEX negotiated but there were {0} messages before the first SSH_MSG_KEXINIT",
-                                    initialKexInitSequenceNumber - 1));
+                                    initialKexInitSequenceNumber));
                 }
             }
             KexExtensionHandler extHandler = session.getKexExtensionHandler();
@@ -1108,7 +1108,7 @@ public class KexFilter extends IoFilter {
 
     private abstract class WithSequenceNumber {
 
-        private int initialSequenceNumber;
+        private long initialSequenceNumber;
 
         private boolean first = true;
 
@@ -1122,8 +1122,8 @@ public class KexFilter extends IoFilter {
             }
             if (first) {
                 first = false;
-                initialSequenceNumber = crypt.getInputSequenceNumber();
-            } else if (initialSequenceNumber == crypt.getInputSequenceNumber()) {
+                initialSequenceNumber = crypt.getLastInputSequenceNumber();
+            } else if (initialSequenceNumber == crypt.getLastInputSequenceNumber()) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "Incoming sequence number wraps around during initial KEX");
             }

@@ -50,17 +50,16 @@ public class PacketLoggingFilter extends IoFilter {
 
     private final OutputHandler output;
 
-    public PacketLoggingFilter(Session session, CryptFilter crypt) {
+    public PacketLoggingFilter(Session session, CryptStatisticsProvider crypt) {
         Objects.requireNonNull(session);
         Objects.requireNonNull(crypt);
         this.input = new BufferInputHandler() {
 
             @Override
             public void handleMessage(Buffer message) throws Exception {
-                int sequenceNumber = crypt.getInputSequenceNumber() - 1;
                 if (LOG.isTraceEnabled()) {
                     message.dumpHex(SIMPLE, Level.FINEST,
-                            "receivePacket(" + session + ") packet #" + sequenceNumber, session);
+                            "receivePacket(" + session + ") packet #" + crypt.getLastInputSequenceNumber(), session);
                 }
                 owner().passOn(message);
             }
