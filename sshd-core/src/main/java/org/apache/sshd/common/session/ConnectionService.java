@@ -19,6 +19,9 @@
 package org.apache.sshd.common.session;
 
 import java.io.IOException;
+import java.time.Duration;
+import java.util.Objects;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.agent.common.AgentForwardSupport;
 import org.apache.sshd.common.Service;
@@ -26,6 +29,10 @@ import org.apache.sshd.common.channel.Channel;
 import org.apache.sshd.common.forward.Forwarder;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManager;
 import org.apache.sshd.common.forward.PortForwardingEventListenerManagerHolder;
+import org.apache.sshd.common.future.GlobalRequestFuture;
+import org.apache.sshd.common.future.GlobalRequestFuture.ReplyHandler;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.server.x11.X11ForwardSupport;
 
 /**
@@ -62,6 +69,78 @@ public interface ConnectionService
      * @return The {@link Forwarder}
      */
     Forwarder getForwarder();
+
+    /**
+     * Send a global request and wait for the response, if the request is sent with {@code want-reply = true}.
+     *
+     * @param  request                         the request name - used mainly for logging and debugging
+     * @param  buffer                          the buffer containing the global request
+     * @param  timeout                         The number of time units to wait - must be <U>positive</U>
+     * @param  unit                            The {@link TimeUnit} to wait for the response
+     * @return                                 the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException                     if an error occurred when encoding or sending the packet
+     * @throws java.net.SocketTimeoutException If no response received within specified timeout
+     */
+    default Buffer request(String request, Buffer buffer, long timeout, TimeUnit unit) throws IOException {
+        ValidateUtils.checkTrue(timeout > 0L, "Non-positive timeout requested: %d", timeout);
+        return request(request, buffer, TimeUnit.MILLISECONDS.convert(timeout, unit));
+    }
+
+    /**
+     *
+     * Send a global request and wait for the response, if the request is sent with {@code want-reply = true}.
+     *
+     * @param  request                         the request name - used mainly for logging and debugging
+     * @param  buffer                          the buffer containing the global request
+     * @param  timeout                         The (never {@code null}) timeout to wait - its milliseconds value is used
+     * @return                                 the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException                     if an error occurred when encoding or sending the packet
+     * @throws java.net.SocketTimeoutException If no response received within specified timeout
+     */
+    default Buffer request(String request, Buffer buffer, Duration timeout) throws IOException {
+        Objects.requireNonNull(timeout, "No timeout specified");
+        return request(request, buffer, timeout.toMillis());
+    }
+
+    /**
+     * Send a global request and wait for the response, if the request is sent with {@code want-reply = true}.
+     *
+     * @param  request                         the request name - used mainly for logging and debugging
+     * @param  buffer                          the buffer containing the global request
+     * @param  maxWaitMillis                   maximum time in milliseconds to wait for the request to finish - must be
+     *                                         <U>positive</U>
+     * @return                                 the return buffer if the request was successful, {@code null} otherwise.
+     * @throws IOException                     if an error occurred when encoding or sending the packet
+     * @throws java.net.SocketTimeoutException If no response received within specified timeout
+     */
+    Buffer request(String request, Buffer buffer, long maxWaitMillis) throws IOException;
+
+    /**
+     * Send a global request and handle the reply asynchronously. If {@code want-reply = true}, pass the received
+     * {@link Buffer} to the given {@link ReplyHandler}, which may execute in a different thread.
+     *
+     * <dl>
+     * <dt>want-reply == true && replyHandler != null</dt>
+     * <dd>The returned future is fulfilled with {@code null} when the request was sent, or with an exception if the
+     * request could not be sent. The {@code replyHandler} is invoked once the reply is received, with the SSH reply
+     * code and the data received.</dd>
+     * <dt>want-reply == true && replyHandler == null</dt>
+     * <dd>The returned future is fulfilled with an exception if the request could not be sent, or a failure reply was
+     * received. If a success reply was received, the future is fulfilled with the received data buffer.</dd>
+     * <dt>want-reply == false</dt>
+     * <dd>The returned future is fulfilled with an empty {@link Buffer} when the request was sent, or with an exception
+     * if the request could not be sent. If a reply handler is given, it is invoked with that empty buffer. The handler
+     * is not invoked if sending the request failed.</dd>
+     * </dl>
+     *
+     * @param  buffer       the {@link Buffer} containing the global request, with the {@code want-reply} flag set as
+     *                      appropriate
+     * @param  request      the request name
+     * @param  replyHandler {@link ReplyHandler} for handling the reply; may be {@code null}
+     * @return              Created {@link GlobalRequestFuture}
+     * @throws IOException  if an error occurred while encoding or sending the packet
+     */
+    GlobalRequestFuture request(Buffer buffer, String request, ReplyHandler replyHandler) throws IOException;
 
     // TODO: remove from interface, it's server side only
     AgentForwardSupport getAgentForwardSupport();

@@ -1198,16 +1198,16 @@ public class KexFilter extends IoFilter {
 
         private boolean isWantReply(Buffer message, boolean isChannelRequest) {
             boolean wantReply = false;
-            int pos = message.rpos();
+            int mark = message.rpos();
             message.getUByte();
             if (isChannelRequest) {
                 message.getUInt(); // Skip the channel id
             }
             long length = message.getUInt();
             if (length < message.available()) {
-                wantReply = message.rawByte(pos + 5 + (int) length) != 0;
+                wantReply = message.rawByte(message.rpos() + (int) length) != 0;
             }
-            message.rpos(pos);
+            message.rpos(mark);
             return wantReply;
         }
 

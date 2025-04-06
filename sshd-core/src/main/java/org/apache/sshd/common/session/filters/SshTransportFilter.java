@@ -55,16 +55,15 @@ public class SshTransportFilter extends IoFilter {
     /**
      * Creates a new SSH transport filter.
      *
-     * @param session       {@link AbstractSession} this filter is for
-     * @param random        {@link Random} instance to use
-     * @param identities    {@link SshIdentHandler} for handling the SSH identificaton string
-     * @param events        {@link SessionListener} to report some events
-     * @param cryptListener {@link EncryptionListener} called just before a buffer is encrypted
-     * @param proposer      {@link Proposer} to get KEX proposals
-     * @param checker       {@link HostKeyChecker} to check the peer's host key; may be {@code null} if on a server
+     * @param session    {@link AbstractSession} this filter is for
+     * @param random     {@link Random} instance to use
+     * @param identities {@link SshIdentHandler} for handling the SSH identificaton string
+     * @param events     {@link SessionListener} to report some events
+     * @param proposer   {@link Proposer} to get KEX proposals
+     * @param checker    {@link HostKeyChecker} to check the peer's host key; may be {@code null} if on a server
      */
     public SshTransportFilter(AbstractSession session, Random random, SshIdentHandler identities, SessionListener events,
-                              EncryptionListener cryptListener, Proposer proposer, HostKeyChecker checker) {
+                              Proposer proposer, HostKeyChecker checker) {
         IdentFilter ident = new IdentFilter();
         ident.setPropertyResolver(session);
         ident.setIdentHandler(identities);
@@ -73,7 +72,6 @@ public class SshTransportFilter extends IoFilter {
         cryptFilter = new CryptFilter();
         cryptFilter.setSession(session);
         cryptFilter.setRandom(random);
-        cryptFilter.addEncryptionListener(cryptListener);
         filters.addLast(cryptFilter);
 
         compressionFilter = new CompressionFilter();
@@ -157,6 +155,14 @@ public class SshTransportFilter extends IoFilter {
 
     public void removeKexListener(KexListener listener) {
         kexFilter.removeKexListener(listener);
+    }
+
+    public void addEncryptionListener(EncryptionListener listener) {
+        cryptFilter.addEncryptionListener(listener);
+    }
+
+    public void removeEncryptionListener(EncryptionListener listener) {
+        cryptFilter.removeEncryptionListener(listener);
     }
 
     public boolean isSecure() {
