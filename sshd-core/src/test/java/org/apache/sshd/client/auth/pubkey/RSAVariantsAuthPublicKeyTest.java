@@ -49,13 +49,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
+class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
     private static final List<NamedFactory<Signature>> RSA_FACTORIES = Collections.unmodifiableList(
             BaseBuilder.DEFAULT_SIGNATURE_PREFERENCE.stream()
                     .filter(f -> f.getName().contains("rsa"))
@@ -71,13 +69,6 @@ public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
-
-    private SignatureFactory factory;
-
-    public void initRSAVariantsAuthPublicKeyTest(SignatureFactory factory) {
-        Assumptions.assumeTrue(factory.isSupported(), "Skip unsupported factory");
-        this.factory = factory;
-    }
 
     @BeforeAll
     static void setupClientAndServer() throws Exception {
@@ -123,14 +114,15 @@ public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
         }
     }
 
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return parameterize(RSA_FACTORIES);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void rsaVariantAuth(SignatureFactory factory) throws IOException {
-        initRSAVariantsAuthPublicKeyTest(factory);
+    void rsaVariantAuth(SignatureFactory factory) throws IOException {
+        Assumptions.assumeTrue(factory.isSupported(), "Skip unsupported factory");
+
         client.setSignatureFactories(Collections.singletonList(factory));
         try (ClientSession session = createClientSession(client, port)) {
             List<KeyPair> keys = KEYS_PROVIDER.loadKeys(session);
@@ -142,10 +134,5 @@ public class RSAVariantsAuthPublicKeyTest extends BaseTestSupport {
             String serverKeyType = session.getNegotiatedKexParameter(KexProposalOption.SERVERKEYS);
             assertEquals(factory.getName(), serverKeyType, "Mismatched host key used");
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + factory + "]";
     }
 }

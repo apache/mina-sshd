@@ -46,9 +46,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * TODO Add javadoc
  *
@@ -56,16 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
-    private String algorithm;
-    private int keySize;
+class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
 
-    public void initPKCS8PEMResourceKeyPairParserTest(String algorithm, int keySize) {
-        this.algorithm = algorithm;
-        this.keySize = keySize;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (Integer ks : RSA_SIZES) {
             params.add(new Object[] { KeyUtils.RSA_ALGORITHM, ks });
@@ -91,8 +81,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}-{1}") // see SSHD-760
-    public void locallyGeneratedPkcs8(String algorithm, int keySize) throws IOException, GeneralSecurityException {
-        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
+    void locallyGeneratedPkcs8(String algorithm, int keySize) throws IOException, GeneralSecurityException {
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(algorithm);
         if (keySize > 0) {
             generator.initialize(keySize);
@@ -134,8 +123,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      */
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}-{1}") // see SSHD-989
-    public void pkcs8FileParsing(String algorithm, int keySize) throws Exception {
-        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
+    void pkcs8FileParsing(String algorithm, int keySize) throws Exception {
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".pem";
         URL url = getClass().getResource(resourceKey);
@@ -154,8 +142,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      */
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}-{1}")
-    public void traditionalEncryptedPEMParsing(String algorithm, int keySize) throws Exception {
-        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
+    void traditionalEncryptedPEMParsing(String algorithm, int keySize) throws Exception {
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".enc";
         URL url = getClass().getResource(resourceKey);
@@ -184,8 +171,7 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
      */
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}-{1}")
-    public void encryptedPEMParsing(String algorithm, int keySize) throws Exception {
-        initPKCS8PEMResourceKeyPairParserTest(algorithm, keySize);
+    void encryptedPEMParsing(String algorithm, int keySize) throws Exception {
         Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered());
         String baseName = "pkcs8-" + algorithm.toLowerCase();
         String resourceKey = baseName + ((keySize > 0) ? "-" + keySize : "") + ".enc2";
@@ -202,10 +188,5 @@ public class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
             assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
             validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + algorithm + "/" + keySize + "]";
     }
 }

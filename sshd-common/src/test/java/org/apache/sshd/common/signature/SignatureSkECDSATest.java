@@ -28,14 +28,12 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class SignatureSkECDSATest extends JUnitTestSupport {
+class SignatureSkECDSATest extends JUnitTestSupport {
 
     @SuppressWarnings("checkstyle:linelength")
     private static final String AUTHORIZED_KEY_ENTRY
@@ -55,7 +53,7 @@ public class SignatureSkECDSATest extends JUnitTestSupport {
 
     private static final Base64.Decoder B64_DECODER = Base64.getDecoder();
 
-    public SignatureSkECDSATest() {
+    SignatureSkECDSATest() {
         super();
     }
 

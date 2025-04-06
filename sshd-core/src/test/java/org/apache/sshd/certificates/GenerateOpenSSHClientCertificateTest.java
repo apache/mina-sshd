@@ -44,21 +44,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
 
-    private TestParams params;
-
-    public void initGenerateOpenSSHClientCertificateTest(TestParams params) {
-        this.params = params;
-    }
-
-    public static Iterable<? extends TestParams> privateKeyParams() {
+    static Iterable<? extends TestParams> privateKeyParams() {
         return Arrays.asList(
                 new TestParams("ca_rsa2_256", "user01_rsa_sha2_256_4096"),
                 new TestParams("ca_rsa2_256", "user01_rsa_sha2_512_4096"),
@@ -91,20 +80,20 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
                 new TestParams("ca_ecdsa_521", "user01_ecdsa_384"), new TestParams("ca_ecdsa_521", "user01_ecdsa_521"));
     }
 
-    protected String getCAPrivateKeyResource() {
+    protected String getCAPrivateKeyResource(TestParams params) {
         return "org/apache/sshd/client/opensshcerts/ca/" + params.caPrivateKey;
     }
 
-    protected String getCAPublicKeyResource() {
-        return getCAPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
+    protected String getCAPublicKeyResource(TestParams params) {
+        return getCAPrivateKeyResource(params) + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
-    protected String getClientPrivateKeyResource() {
+    protected String getClientPrivateKeyResource(TestParams params) {
         return "org/apache/sshd/client/opensshcerts/user/" + params.privateKey;
     }
 
-    protected String getClientPublicKeyResource() {
-        return getClientPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
+    protected String getClientPublicKeyResource(TestParams params) {
+        return getClientPrivateKeyResource(params) + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected PublicKey readPublicKeyFromResource(String resource) throws Exception {
@@ -134,13 +123,10 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
 
     @MethodSource("privateKeyParams")
     @ParameterizedTest(name = "{0}")
-    public void signCertificate(TestParams params) throws Exception {
+    void signCertificate(TestParams params) throws Exception {
+        final PublicKey clientPublicKey = readPublicKeyFromResource(getClientPublicKeyResource(params));
 
-        initGenerateOpenSSHClientCertificateTest(params);
-
-        final PublicKey clientPublicKey = readPublicKeyFromResource(getClientPublicKeyResource());
-
-        final String caName = getCAPrivateKeyResource();
+        final String caName = getCAPrivateKeyResource(params);
         final FileKeyPairProvider keyPairProvider
                 = CommonTestSupportUtils.createTestKeyPairProvider(caName);
 

@@ -39,21 +39,18 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ClientDeadlockTest extends BaseTestSupport {
+class ClientDeadlockTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
     private int port;
 
-    public ClientDeadlockTest() {
+    ClientDeadlockTest() {
         super();
     }
 

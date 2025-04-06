@@ -52,22 +52,17 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-@SuppressWarnings("checkstyle:MethodCount")
-public class SecurityUtilsTest extends SecurityUtilsTestSupport {
+class SecurityUtilsTest extends SecurityUtilsTestSupport {
+
     private static final String DEFAULT_PASSWORD = "super secret passphrase";
     private static final FilePasswordProvider TEST_PASSWORD_PROVIDER = (session, file, index) -> DEFAULT_PASSWORD;
 
-    public SecurityUtilsTest() {
+    SecurityUtilsTest() {
         super();
     }
 

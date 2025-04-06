@@ -39,15 +39,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class PublickeyAuthenticatorTest extends BaseTestSupport {
-    public PublickeyAuthenticatorTest() {
+class PublickeyAuthenticatorTest extends BaseTestSupport {
+
+    PublickeyAuthenticatorTest() {
         super();
     }
 

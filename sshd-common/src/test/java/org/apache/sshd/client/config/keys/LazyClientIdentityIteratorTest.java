@@ -34,18 +34,15 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class LazyClientIdentityIteratorTest extends JUnitTestSupport {
-    public LazyClientIdentityIteratorTest() {
+class LazyClientIdentityIteratorTest extends JUnitTestSupport {
+
+    LazyClientIdentityIteratorTest() {
         super();
     }
 

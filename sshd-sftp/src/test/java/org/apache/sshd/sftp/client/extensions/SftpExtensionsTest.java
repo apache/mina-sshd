@@ -52,12 +52,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.testcontainers.shaded.com.google.common.base.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @TestMethodOrder(MethodName.class)
-public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
-    public SftpExtensionsTest() throws IOException {
+class SftpExtensionsTest extends AbstractSftpClientTestSupport {
+
+    SftpExtensionsTest() throws IOException {
         super();
     }
 

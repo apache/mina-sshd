@@ -38,12 +38,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.Timeout;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * TODO Add javadoc
  *
@@ -51,8 +45,9 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class ThrottlingChannelStreamWriterTest extends BaseTestSupport {
-    public ThrottlingChannelStreamWriterTest() {
+class ThrottlingChannelStreamWriterTest extends BaseTestSupport {
+
+    ThrottlingChannelStreamWriterTest() {
         super();
     }
 

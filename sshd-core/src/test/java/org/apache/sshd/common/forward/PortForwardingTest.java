@@ -96,21 +96,14 @@ import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Port forwarding tests
  */
 @TestMethodOrder(MethodName.class)
 @SuppressWarnings("checkstyle:MethodCount")
-public class PortForwardingTest extends BaseTestSupport {
+class PortForwardingTest extends BaseTestSupport {
 
-    public static final int SO_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(13L);
+    private static final int SO_TIMEOUT = (int) TimeUnit.SECONDS.toMillis(13L);
 
     @SuppressWarnings("checkstyle:anoninnerlength")
     private static final PortForwardingEventListener SERVER_SIDE_LISTENER = new PortForwardingEventListener() {
@@ -190,7 +183,7 @@ public class PortForwardingTest extends BaseTestSupport {
 
     private final Logger log = LoggerFactory.getLogger(getClass());
 
-    public PortForwardingTest() {
+    PortForwardingTest() {
         super();
     }
 

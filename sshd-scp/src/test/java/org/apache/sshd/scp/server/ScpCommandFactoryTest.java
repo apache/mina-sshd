@@ -31,18 +31,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class ScpCommandFactoryTest extends BaseTestSupport {
-    public ScpCommandFactoryTest() {
+class ScpCommandFactoryTest extends BaseTestSupport {
+
+    ScpCommandFactoryTest() {
         super();
     }
 

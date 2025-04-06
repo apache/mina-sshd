@@ -42,21 +42,10 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport {
+class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport {
 
-    private TestParams params;
-
-    public void initGenerateOpenSshClientCertificateOracleTest(TestParams params) {
-        this.params = params;
-    }
-
-    public static Iterable<? extends TestParams> privateKeyParams() {
+    static Iterable<? extends TestParams> privateKeyParams() {
         return Arrays.asList(
                 new TestParams("rsa-sha2-256", "user_rsa_sha2_256_4096"),
                 new TestParams("rsa-sha2-512", "user_rsa_sha2_512_4096"),
@@ -70,16 +59,16 @@ public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport 
         return "org/apache/sshd/client/opensshcerts/ca/ca";
     }
 
-    protected String getClientPrivateKeyResource() {
+    protected String getClientPrivateKeyResource(TestParams params) {
         return "org/apache/sshd/client/opensshcerts/user/certificateoptions/" + params.privateKey;
     }
 
-    protected String getClientPublicKeyResource() {
-        return getClientPrivateKeyResource() + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
+    protected String getClientPublicKeyResource(TestParams params) {
+        return getClientPrivateKeyResource(params) + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
-    protected String getOracle() {
-        return getClientPrivateKeyResource() + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
+    protected String getOracle(TestParams params) {
+        return getClientPrivateKeyResource(params) + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     protected PublicKey readPublicKeyFromResource(String resource) throws Exception {
@@ -107,20 +96,17 @@ public class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport 
         return (OpenSshCertificate) certPublicKey;
     }
 
-    protected OpenSshCertificate readCertificateOracle() throws Exception {
-        PublicKey cert = readPublicKeyFromResource(getOracle());
+    protected OpenSshCertificate readCertificateOracle(TestParams params) throws Exception {
+        PublicKey cert = readPublicKeyFromResource(getOracle(params));
         assertObjectInstanceOf("Must be OpenSshCertificate instance", OpenSshCertificate.class, cert);
         return (OpenSshCertificate) cert;
     }
 
     @MethodSource("privateKeyParams")
     @ParameterizedTest(name = "{0}")
-    public void signCertificate(TestParams params) throws Exception {
-
-        initGenerateOpenSshClientCertificateOracleTest(params);
-
-        final PublicKey clientPublicKey = readPublicKeyFromResource(getClientPublicKeyResource());
-        final OpenSshCertificate oracle = readCertificateOracle();
+    void signCertificate(TestParams params) throws Exception {
+        final PublicKey clientPublicKey = readPublicKeyFromResource(getClientPublicKeyResource(params));
+        final OpenSshCertificate oracle = readCertificateOracle(params);
 
         final String caName = getCAPrivateKeyResource();
         final FileKeyPairProvider keyPairProvider

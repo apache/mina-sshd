@@ -40,14 +40,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
+ * Tests for running git commands.
  */
 @TestMethodOrder(MethodName.class)
-public class GitPgmCommandTest extends BaseTestSupport {
-    public GitPgmCommandTest() {
+class GitPgmCommandTest extends BaseTestSupport {
+
+    GitPgmCommandTest() {
         super();
     }
 

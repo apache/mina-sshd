@@ -40,8 +40,9 @@ import org.junit.jupiter.api.TestMethodOrder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class LazyIterablesConcatenatorTest extends JUnitTestSupport {
-    public LazyIterablesConcatenatorTest() {
+class LazyIterablesConcatenatorTest extends JUnitTestSupport {
+
+    LazyIterablesConcatenatorTest() {
         super();
     }
 

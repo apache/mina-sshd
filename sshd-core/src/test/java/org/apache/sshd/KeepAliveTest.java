@@ -52,13 +52,11 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class KeepAliveTest extends BaseTestSupport {
+class KeepAliveTest extends BaseTestSupport {
 
     private static final Duration HEARTBEAT = Duration.ofSeconds(2L);
     private static final Duration TIMEOUT = HEARTBEAT.multipliedBy(2L);
@@ -249,8 +247,8 @@ public class KeepAliveTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShellFactory extends EchoShellFactory {
-        public TestEchoShellFactory() {
+    static class TestEchoShellFactory extends EchoShellFactory {
+        TestEchoShellFactory() {
             super();
         }
 
@@ -260,12 +258,12 @@ public class KeepAliveTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShell extends EchoShell {
+    static class TestEchoShell extends EchoShell {
         // CHECKSTYLE:OFF
-        public static CountDownLatch latch;
+        static CountDownLatch latch;
         // CHECKSTYLE:ON
 
-        public TestEchoShell() {
+        TestEchoShell() {
             super();
         }
 

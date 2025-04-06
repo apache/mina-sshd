@@ -39,12 +39,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class InvertedShellWrapperTest extends BaseTestSupport {
-    public InvertedShellWrapperTest() {
+class InvertedShellWrapperTest extends BaseTestSupport {
+
+    InvertedShellWrapperTest() {
         super();
     }
 

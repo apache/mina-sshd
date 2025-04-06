@@ -35,8 +35,9 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class PuttySpecialKeysTest extends AbstractPuttyTestSupport {
-    public PuttySpecialKeysTest() {
+class PuttySpecialKeysTest extends AbstractPuttyTestSupport {
+
+    PuttySpecialKeysTest() {
         super();
     }
 

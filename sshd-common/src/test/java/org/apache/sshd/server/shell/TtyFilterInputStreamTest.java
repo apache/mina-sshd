@@ -26,12 +26,10 @@ import java.io.OutputStream;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -47,37 +45,23 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class TtyFilterInputStreamTest extends JUnitTestSupport {
+class TtyFilterInputStreamTest extends JUnitTestSupport {
     private static final List<PtyMode> MODES = Collections.unmodifiableList(
             Stream.concat(Stream.of(PtyMode.ECHO), TtyFilterInputStream.INPUT_OPTIONS.stream())
                     .collect(Collectors.toList()));
 
-    private PtyMode mode;
-
-    public TtyFilterInputStreamTest() {
-    }
-
-    public void initTtyFilterInputStreamTest(PtyMode mode) {
-        this.mode = Objects.requireNonNull(mode, "No test modes");
-    }
-
-    public static Collection<Object[]> parameters() {
-        return parameterize(MODES);
+    static List<PtyMode> parameters() {
+        return MODES;
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "mode={0}")
-    public void crlfHandling(PtyMode mode) throws IOException {
-        initTtyFilterInputStreamTest(mode);
+    void crlfHandling(PtyMode mode) throws IOException {
         List<String> lines = Arrays.asList(getClass().getPackage().getName(),
                 getClass().getSimpleName(), getCurrentTestName(),
                 "(" + mode + ")", new Date(System.currentTimeMillis()).toString());
@@ -108,8 +92,7 @@ public class TtyFilterInputStreamTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "mode={0}")
-    public void internalBufferSizeDoesNotGrow(PtyMode mode) throws Exception {
-        initTtyFilterInputStreamTest(mode);
+    void internalBufferSizeDoesNotGrow(PtyMode mode) throws Exception {
         try (TtyFilterInputStream is = new TtyFilterInputStream(new InputStream() {
             int next;
 

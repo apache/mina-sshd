@@ -35,17 +35,15 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
-    public AbstractGeneratorHostKeyProviderTest() {
+class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
+
+    AbstractGeneratorHostKeyProviderTest() {
         super();
     }
 
     @Test
-    @SuppressWarnings("synthetic-access")
     void overwriteKey() throws Exception {
         Path tempDir = assertHierarchyTargetFolderExists(getTempTargetFolder());
         Path keyPairFile = tempDir.resolve(getCurrentTestName() + ".key");
@@ -64,7 +62,7 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
     private static final class TestProvider extends AbstractGeneratorHostKeyProvider {
         private final AtomicInteger writes = new AtomicInteger(0);
 
-        private TestProvider(Path file) {
+        TestProvider(Path file) {
             setPath(file);
         }
 
@@ -81,7 +79,7 @@ public class AbstractGeneratorHostKeyProviderTest extends JUnitTestSupport {
             writes.incrementAndGet();
         }
 
-        public int getWriteCount() {
+        int getWriteCount() {
             return writes.get();
         }
     }

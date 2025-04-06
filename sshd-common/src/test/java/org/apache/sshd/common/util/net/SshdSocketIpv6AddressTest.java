@@ -36,8 +36,8 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class SshdSocketIpv6AddressTest extends JUnitTestSupport {
-    public static final List<String> VALID_ADDRESSES = Collections.unmodifiableList(
+class SshdSocketIpv6AddressTest extends JUnitTestSupport {
+    static final List<String> VALID_ADDRESSES = Collections.unmodifiableList(
             Arrays.asList(
                     "2001:0db8:85a3:0000:0000:8a2e:0370:7334", "2001:db8:85a3:0:0:8a2e:370:7334",
                     "2001:db8:85a3::8a2e:370:7334",
@@ -49,15 +49,7 @@ public class SshdSocketIpv6AddressTest extends JUnitTestSupport {
                     "fe80::1ff:fe23:4567:890a%3", "fe80:3::1ff:fe23:4567:890a",
                     "::ffff:c000:0280", "::ffff:192.0.2.128"));
 
-    private String address;
-    private boolean matches;
-
-    public void initSshdSocketIpv6AddressTest(String address, boolean matches) {
-        this.address = address;
-        this.matches = matches;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return Stream
                 .concat(SshdSocketAddress.WELL_KNOWN_IPV6_ADDRESSES.stream(), VALID_ADDRESSES.stream())
                 .map(address -> new Object[] { address, Boolean.TRUE })
@@ -66,16 +58,8 @@ public class SshdSocketIpv6AddressTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void iPv6AddressValidity(String address, boolean matches) {
-        initSshdSocketIpv6AddressTest(address, matches);
+    void iPv6AddressValidity(String address, boolean matches) {
         assertEquals(address, matches, SshdSocketAddress.isIPv6Address(address));
     }
 
-    @Override
-    public String toString() {
-        return getClass().getSimpleName()
-               + "[address=" + address
-               + " , matches=" + matches
-               + "]";
-    }
 }

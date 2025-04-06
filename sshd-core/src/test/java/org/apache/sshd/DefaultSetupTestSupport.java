@@ -44,10 +44,6 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * Makes sure default client/server setup satisfies various conditions
  *

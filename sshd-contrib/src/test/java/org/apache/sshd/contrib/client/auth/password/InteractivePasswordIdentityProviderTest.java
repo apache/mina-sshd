@@ -37,10 +37,6 @@ import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * TODO Add javadoc
  *
@@ -48,8 +44,9 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
-    public InteractivePasswordIdentityProviderTest() {
+class InteractivePasswordIdentityProviderTest extends BaseTestSupport {
+
+    InteractivePasswordIdentityProviderTest() {
         super();
     }
 

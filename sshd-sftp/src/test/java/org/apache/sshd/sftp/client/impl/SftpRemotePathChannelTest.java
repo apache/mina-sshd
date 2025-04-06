@@ -54,17 +54,13 @@ import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-@SuppressWarnings("checkstyle:MethodCount")
-public class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
-    public SftpRemotePathChannelTest() throws IOException {
+class SftpRemotePathChannelTest extends AbstractSftpClientTestSupport {
+
+    SftpRemotePathChannelTest() throws IOException {
         super();
     }
 

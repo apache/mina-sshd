@@ -35,9 +35,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -48,11 +45,11 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @CreateLdapServer(allowAnonymousAccess = true,
                   transports = { @CreateTransport(protocol = "LDAP", address = "localhost") })
 @ApplyLdifFiles({ "auth-users.ldif" })
-public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
+class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
 
     private static Map<String, String> usersMap;
 
-    public LdapPasswordAuthenticatorTest() {
+    LdapPasswordAuthenticatorTest() {
         super();
     }
 

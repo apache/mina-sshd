@@ -27,8 +27,9 @@ import org.junit.jupiter.api.TestMethodOrder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ServerDefaultSetupTest extends DefaultSetupTestSupport<SshServer> {
-    public ServerDefaultSetupTest() {
+class ServerDefaultSetupTest extends DefaultSetupTestSupport<SshServer> {
+
+    ServerDefaultSetupTest() {
         super(SshServer.setUpDefaultServer());
     }
 }

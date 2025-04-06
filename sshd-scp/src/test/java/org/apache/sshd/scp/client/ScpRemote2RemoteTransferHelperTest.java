@@ -48,20 +48,15 @@ import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
+class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
     protected Logger log;
     private boolean preserveAttributes;
 
-    public void initScpRemote2RemoteTransferHelperTest(boolean preserveAttributes) {
+    void initScpRemote2RemoteTransferHelperTest(boolean preserveAttributes) {
         this.preserveAttributes = preserveAttributes;
         this.log = LoggerFactory.getLogger(getClass());
     }
@@ -117,13 +112,13 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
         });
     }
 
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return parameterize(Arrays.asList(Boolean.TRUE, Boolean.FALSE));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "preserveAttributes={0}")
-    public void transferFiles(boolean preserveAttributes) throws Exception {
+    void transferFiles(boolean preserveAttributes) throws Exception {
         initScpRemote2RemoteTransferHelperTest(preserveAttributes);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -201,7 +196,7 @@ public class ScpRemote2RemoteTransferHelperTest extends AbstractScpTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "preserveAttributes={0}")
-    public void transferDirectoriesRecursively(boolean preserveAttributes) throws Exception {
+    void transferDirectoriesRecursively(boolean preserveAttributes) throws Exception {
         initScpRemote2RemoteTransferHelperTest(preserveAttributes);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();

@@ -31,27 +31,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSupport {
-    private LocalForwardingEntry entry;
-    private SshdSocketAddress expected;
+class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSupport {
 
-    public void initLocalForwardingEntryCombinedBoundAddressTest(
-            SshdSocketAddress local, SshdSocketAddress bound,
-            SshdSocketAddress expected) {
-        this.entry = new LocalForwardingEntry(local, bound);
-        this.expected = expected;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
             private static final long serialVersionUID = 1L;
@@ -85,22 +72,22 @@ public class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSuppo
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "local={0}, bound={1}, expected={2}")
-    public void resolvedValue(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
-        initLocalForwardingEntryCombinedBoundAddressTest(local, bound, expected);
+    void resolvedValue(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
+        LocalForwardingEntry entry = new LocalForwardingEntry(local, bound);
         assertEquals(expected, entry.getCombinedBoundAddress());
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "local={0}, bound={1}, expected={2}")
-    public void testHashCode(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
-        initLocalForwardingEntryCombinedBoundAddressTest(local, bound, expected);
+    void testHashCode(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
+        LocalForwardingEntry entry = new LocalForwardingEntry(local, bound);
         assertEquals(expected.hashCode(), entry.hashCode());
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "local={0}, bound={1}, expected={2}")
-    public void sameInstanceReuse(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
-        initLocalForwardingEntryCombinedBoundAddressTest(local, bound, expected);
+    void sameInstanceReuse(SshdSocketAddress local, SshdSocketAddress bound, SshdSocketAddress expected) {
+        LocalForwardingEntry entry = new LocalForwardingEntry(local, bound);
         SshdSocketAddress combined = entry.getCombinedBoundAddress();
         boolean eqLocal = Objects.equals(combined, local);
         boolean eqBound = Objects.equals(combined, bound);
@@ -112,10 +99,5 @@ public class LocalForwardingEntryCombinedBoundAddressTest extends JUnitTestSuppo
             assertNotSame(combined, local, "Unexpected same local reference");
             assertNotSame(combined, bound, "Unexpected same bound reference");
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[entry=" + entry + ", expected=" + expected + "]";
     }
 }

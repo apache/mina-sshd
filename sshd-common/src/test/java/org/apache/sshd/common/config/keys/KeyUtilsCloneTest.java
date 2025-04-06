@@ -30,7 +30,6 @@ import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
@@ -39,25 +38,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class KeyUtilsCloneTest extends JUnitTestSupport {
-    private String keyType;
-    private int keySize;
+class KeyUtilsCloneTest extends JUnitTestSupport {
 
-    public void initKeyUtilsCloneTest(String keyType, int keySize) {
-        this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
-        this.keySize = keySize;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
         addTests(list, KeyPairProvider.SSH_DSS, DSS_SIZES);
         addTests(list, KeyPairProvider.SSH_RSA, RSA_SIZES);
@@ -83,9 +71,7 @@ public class KeyUtilsCloneTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, size={1}")
-    @SuppressWarnings("checkstyle:avoidnestedblocks")
     public void keyPairCloning(String keyType, int keySize) throws GeneralSecurityException {
-        initKeyUtilsCloneTest(keyType, keySize);
         outputDebugMessage("generateKeyPair(%s)[%d]", keyType, keySize);
         KeyPair original = KeyUtils.generateKeyPair(keyType, keySize);
 
@@ -96,22 +82,18 @@ public class KeyUtilsCloneTest extends JUnitTestSupport {
         assertNotSame(original, cloned, prefix + ": Key pair not cloned");
         assertTrue(KeyUtils.compareKeyPairs(original, cloned), prefix + ": Cloned pair not equals");
 
-        {
-            PublicKey k1 = original.getPublic();
-            PublicKey k2 = cloned.getPublic();
-            assertNotSame(k1, k2, prefix + ": Public key not cloned");
-            assertTrue(KeyUtils.compareKeys(k1, k2), prefix + ": Cloned public key not equals");
+        PublicKey k1 = original.getPublic();
+        PublicKey k2 = cloned.getPublic();
+        assertNotSame(k1, k2, prefix + ": Public key not cloned");
+        assertTrue(KeyUtils.compareKeys(k1, k2), prefix + ": Cloned public key not equals");
 
-            String f1 = KeyUtils.getFingerPrint(k1);
-            String f2 = KeyUtils.getFingerPrint(k2);
-            assertEquals(f1, f2, prefix + ": Mismatched fingerprints");
-        }
+        String f1 = KeyUtils.getFingerPrint(k1);
+        String f2 = KeyUtils.getFingerPrint(k2);
+        assertEquals(f1, f2, prefix + ": Mismatched fingerprints");
 
-        {
-            PrivateKey k1 = original.getPrivate();
-            PrivateKey k2 = cloned.getPrivate();
-            assertNotSame(k1, k2, prefix + ": Private key not cloned");
-            assertTrue(KeyUtils.compareKeys(k1, k2), prefix + ": Cloned private key not equals");
-        }
+        PrivateKey pk1 = original.getPrivate();
+        PrivateKey pk2 = cloned.getPrivate();
+        assertNotSame(pk1, pk2, prefix + ": Private key not cloned");
+        assertTrue(KeyUtils.compareKeys(pk1, pk2), prefix + ": Cloned private key not equals");
     }
 }

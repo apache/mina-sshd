@@ -19,8 +19,7 @@
 
 package org.apache.sshd.scp.common;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -29,58 +28,38 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class ScpLocationParsingTest extends JUnitTestSupport {
-    private String value;
-    private ScpLocation location;
+class ScpLocationParsingTest extends JUnitTestSupport {
 
-    public void initScpLocationParsingTest(String value, ScpLocation location) {
-        this.value = value;
-        this.location = location;
-    }
-
-    public static List<Object[]> parameters() {
-        return new ArrayList<Object[]>() {
-            // not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTestCase(null, null);
-                addTestCase("", null);
-                addTestCase("/local/path/value", new ScpLocation(null, null, "/local/path/value"));
-                addTestCase("user@host:/remote/path/value", new ScpLocation("user", "host", "/remote/path/value"));
-                addTestCase("scp://user@host/remote/path/value", new ScpLocation("user", "host", "/remote/path/value"));
-                addTestCase("scp://user@host:22/remote/path/value", new ScpLocation("user", "host", "/remote/path/value"));
-                addTestCase("scp://user@host:2222/remote/path/value",
-                        new ScpLocation("user", "host", 2222, "/remote/path/value"));
-            }
-
-            private void addTestCase(String value, ScpLocation expected) {
-                add(new Object[] { value, expected });
-            }
-        };
+    static Stream<Arguments> parameters() {
+        return Stream.of( //
+                Arguments.of(null, null), //
+                Arguments.of("", null), //
+                Arguments.of("/local/path/value", new ScpLocation(null, null, "/local/path/value")),
+                Arguments.of("user@host:/remote/path/value", new ScpLocation("user", "host", "/remote/path/value")),
+                Arguments.of("scp://user@host/remote/path/value", new ScpLocation("user", "host", "/remote/path/value")),
+                Arguments.of("scp://user@host:22/remote/path/value", new ScpLocation("user", "host", "/remote/path/value")),
+                Arguments.of("scp://user@host:2222/remote/path/value",
+                        new ScpLocation("user", "host", 2222, "/remote/path/value")));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "value={0}")
-    public void locationParsing(String value, ScpLocation location) {
-        initScpLocationParsingTest(value, location);
+    void locationParsing(String value, ScpLocation location) {
         ScpLocation actual = ScpLocation.parse(value);
         assertEquals(location, actual);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "value={0}")
-    public void locationToString(String value, ScpLocation location) {
-        initScpLocationParsingTest(value, location);
+    void locationToString(String value, ScpLocation location) {
         Assumptions.assumeTrue(location != null, "No expected value to compate");
         Assumptions.assumeTrue(location.isLocal() || (location.resolvePort() != SshConstants.DEFAULT_PORT),
                 "Default port being used");

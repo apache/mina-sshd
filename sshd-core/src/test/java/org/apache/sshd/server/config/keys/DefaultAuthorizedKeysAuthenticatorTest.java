@@ -39,8 +39,9 @@ import org.mockito.Mockito;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
-    public DefaultAuthorizedKeysAuthenticatorTest() {
+class DefaultAuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
+
+    DefaultAuthorizedKeysAuthenticatorTest() {
         super();
     }
 

@@ -41,16 +41,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class KexExtensionHandlerTest extends JUnitTestSupport {
-    public KexExtensionHandlerTest() {
+class KexExtensionHandlerTest extends JUnitTestSupport {
+
+    KexExtensionHandlerTest() {
         super();
     }
 

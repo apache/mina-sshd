@@ -31,19 +31,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class AttributeStoreTest extends BaseTestSupport {
+class AttributeStoreTest extends BaseTestSupport {
     private static final AttributeRepository.AttributeKey<String> KEY = new AttributeRepository.AttributeKey<>();
 
-    public AttributeStoreTest() {
+    AttributeStoreTest() {
         super();
     }
 

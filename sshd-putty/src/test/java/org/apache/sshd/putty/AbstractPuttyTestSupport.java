@@ -40,7 +40,8 @@ import static org.junit.jupiter.api.Assumptions.assumeTrue;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPuttyTestSupport extends JUnitTestSupport {
+abstract class AbstractPuttyTestSupport extends JUnitTestSupport {
+
     protected AbstractPuttyTestSupport() {
         super();
     }
@@ -72,7 +73,7 @@ public abstract class AbstractPuttyTestSupport extends JUnitTestSupport {
 
     ////////////////////////////////////////////////////////////////////////////////////
 
-    public static KeyPair assertLoadedKeyPair(String prefix, KeyPair kp, String keyType) throws GeneralSecurityException {
+    static KeyPair assertLoadedKeyPair(String prefix, KeyPair kp, String keyType) throws GeneralSecurityException {
         assertNotNull(kp, prefix + ": no key pair loaded");
 
         PublicKey pubKey = kp.getPublic();

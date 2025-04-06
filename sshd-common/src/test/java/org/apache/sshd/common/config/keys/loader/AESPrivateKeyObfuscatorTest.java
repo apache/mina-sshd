@@ -39,31 +39,22 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
-    private int keyLength;
+class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
 
-    public void initAESPrivateKeyObfuscatorTest(int keyLength) {
-        this.keyLength = keyLength;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Integer> parameters() {
         List<Integer> lengths = AESPrivateKeyObfuscator.getAvailableKeyLengths();
         assertFalse(GenericUtils.isEmpty(lengths), "No lengths available");
-        return parameterize(lengths);
+        return lengths;
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "keyLength={0}")
-    public void availableKeyLengthExists(int keyLength) throws GeneralSecurityException {
-        initAESPrivateKeyObfuscatorTest(keyLength);
+    void availableKeyLengthExists(int keyLength) throws GeneralSecurityException {
         assertEquals(0, keyLength % Byte.SIZE, "Not a BYTE size multiple");
 
         PrivateKeyEncryptionContext encContext = new PrivateKeyEncryptionContext();
@@ -85,18 +76,12 @@ public class AESPrivateKeyObfuscatorTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "keyLength={0}")
-    public void singleCipherMatch(int keyLength) {
-        initAESPrivateKeyObfuscatorTest(keyLength);
+    void singleCipherMatch(int keyLength) {
         Predicate<CipherInformation> selector = AESPrivateKeyObfuscator.createCipherSelector(
                 keyLength, PrivateKeyEncryptionContext.DEFAULT_CIPHER_MODE);
         Collection<CipherInformation> matches = BuiltinCiphers.VALUES.stream()
                 .filter(selector)
                 .collect(Collectors.toList());
         assertEquals(1, GenericUtils.size(matches), "Mismatched matching ciphers: " + matches);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[keyLength=" + keyLength + "]";
     }
 }

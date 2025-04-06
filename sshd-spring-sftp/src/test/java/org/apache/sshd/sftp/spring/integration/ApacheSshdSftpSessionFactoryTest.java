@@ -63,18 +63,13 @@ import org.springframework.integration.file.remote.session.Session;
 import org.springframework.integration.file.remote.session.SessionFactory;
 import org.springframework.integration.sftp.session.DefaultSftpSessionFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
+class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
     private static final Comparator<LsEntry> BY_CASE_INSENSITIVE_FILENAME = new Comparator<LsEntry>() {
         @Override
         public int compare(LsEntry o1, LsEntry o2) {
@@ -98,7 +93,7 @@ public class ApacheSshdSftpSessionFactoryTest extends BaseTestSupport {
 
     private final FileSystemFactory fileSystemFactory;
 
-    public ApacheSshdSftpSessionFactoryTest() {
+    ApacheSshdSftpSessionFactoryTest() {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);

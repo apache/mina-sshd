@@ -34,17 +34,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class DefaultCloseableHandleTest extends JUnitTestSupport {
-    public DefaultCloseableHandleTest() {
+class DefaultCloseableHandleTest extends JUnitTestSupport {
+
+    DefaultCloseableHandleTest() {
         super();
     }
 

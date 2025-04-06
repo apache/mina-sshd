@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.util.io.der;
 
-import java.util.List;
+import java.util.Collection;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
@@ -27,28 +27,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class ASN1TypeTest extends JUnitTestSupport {
-    private ASN1Type expected;
+class ASN1TypeTest extends JUnitTestSupport {
 
-    public void initASN1TypeTest(ASN1Type expected) {
-        this.expected = expected;
-    }
-
-    public static List<Object[]> parameters() {
-        return parameterize(ASN1Type.VALUES);
+    static Collection<ASN1Type> parameters() {
+        return ASN1Type.VALUES;
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fromName(ASN1Type expected) {
-        initASN1TypeTest(expected);
+    void fromName(ASN1Type expected) {
         String name = expected.name();
         for (int index = 1, count = name.length(); index <= count; index++) {
             assertSame(expected, ASN1Type.fromName(name), name);
@@ -58,8 +50,7 @@ public class ASN1TypeTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fromTypeValue(ASN1Type expected) {
-        initASN1TypeTest(expected);
+    void fromTypeValue(ASN1Type expected) {
         assertSame(expected, ASN1Type.fromTypeValue(expected.getTypeValue()));
     }
 }

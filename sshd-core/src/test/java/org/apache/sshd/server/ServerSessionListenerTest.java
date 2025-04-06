@@ -55,21 +55,16 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ServerSessionListenerTest extends BaseTestSupport {
+class ServerSessionListenerTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
 
-    public ServerSessionListenerTest() {
+    ServerSessionListenerTest() {
         super();
     }
 

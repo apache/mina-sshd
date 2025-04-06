@@ -26,8 +26,8 @@ import org.junit.jupiter.api.TestMethodOrder;
  * Port forwarding tests - Control, direct connect. No SSH
  */
 @TestMethodOrder(MethodName.class)
-public class NoServerNoClientTest extends AbstractServerCloseTestSupport {
-    public NoServerNoClientTest() {
+class NoServerNoClientTest extends AbstractServerCloseTestSupport {
+    NoServerNoClientTest() {
         super();
     }
 

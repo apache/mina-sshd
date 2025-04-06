@@ -57,16 +57,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ProxyTest extends BaseTestSupport {
+class ProxyTest extends BaseTestSupport {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -75,7 +70,7 @@ public class ProxyTest extends BaseTestSupport {
 
     private ClientSession proxySession;
 
-    public ProxyTest() {
+    ProxyTest() {
         super();
     }
 

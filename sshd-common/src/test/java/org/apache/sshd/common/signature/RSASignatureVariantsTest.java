@@ -36,12 +36,12 @@ import org.junit.jupiter.params.provider.EnumSource;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class RSASignatureVariantsTest extends SignatureVariantTestSupport {
+class RSASignatureVariantsTest extends SignatureVariantTestSupport {
     private static KeyPair kp;
 
     @ParameterizedTest
     @EnumSource(value = BuiltinSignatures.class, names = { "rsa", "rsaSHA256", "rsaSHA512" })
-    public void initRSASignatureVariantsTest(SignatureFactory factory) throws Exception {
+    void initRSASignatureVariantsTest(SignatureFactory factory) throws Exception {
         signature(factory, kp);
     }
 

@@ -36,21 +36,17 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class SimpleScpClientTest extends BaseSimpleClientTestSupport {
+class SimpleScpClientTest extends BaseSimpleClientTestSupport {
     private final Path targetPath;
     private final Path parentPath;
     private final FileSystemFactory fileSystemFactory;
     private SimpleScpClient scpClient;
 
-    public SimpleScpClientTest() throws Exception {
+    SimpleScpClientTest() throws Exception {
         targetPath = detectTargetFolder();
         parentPath = targetPath.getParent();
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);

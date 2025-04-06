@@ -28,15 +28,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class NoneFileSystemFactoryTest extends JUnitTestSupport {
-    public NoneFileSystemFactoryTest() {
+class NoneFileSystemFactoryTest extends JUnitTestSupport {
+
+    NoneFileSystemFactoryTest() {
         super();
     }
 

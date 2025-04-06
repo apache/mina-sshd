@@ -56,12 +56,10 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 @TestMethodOrder(MethodName.class)
-public class AgentTest extends BaseTestSupport {
-    public AgentTest() {
+class AgentTest extends BaseTestSupport {
+
+    AgentTest() {
         super();
     }
 
@@ -206,12 +204,12 @@ public class AgentTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShellFactory extends EchoShellFactory {
+    static class TestEchoShellFactory extends EchoShellFactory {
         // CHECKSTYLE:OFF
-        public final TestEchoShell shell = new TestEchoShell();
+        final TestEchoShell shell = new TestEchoShell();
         // CHECKSTYLE:ON
 
-        public TestEchoShellFactory() {
+        TestEchoShellFactory() {
             super();
         }
 
@@ -221,12 +219,12 @@ public class AgentTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShell extends EchoShell {
+    static class TestEchoShell extends EchoShell {
         // CHECKSTYLE:OFF
-        public boolean started;
+        boolean started;
         // CHECKSTYLE:ON
 
-        public TestEchoShell() {
+        TestEchoShell() {
             super();
         }
 

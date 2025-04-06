@@ -21,42 +21,47 @@ package org.apache.sshd.common.config.keys;
 
 import java.time.Instant;
 
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 @TestMethodOrder(MethodName.class)
-public class OpenSshCertificateValuesTest {
+class OpenSshCertificateValuesTest extends JUnitTestSupport {
 
-    public OpenSshCertificateValuesTest() {
+    OpenSshCertificateValuesTest() {
         super();
     }
 
     @Test
     void validAfterMinMaxSuccess() {
-        new OpenSshCertificateImpl().setValidAfter(OpenSshCertificate.MIN_EPOCH);
-        new OpenSshCertificateImpl().setValidAfter(OpenSshCertificate.INFINITY);
+        OpenSshCertificateImpl cert = new OpenSshCertificateImpl();
+        cert.setValidAfter(OpenSshCertificate.MIN_EPOCH);
+        assertEquals(0L, cert.getValidAfter());
+        cert.setValidAfter(OpenSshCertificate.INFINITY);
+        assertEquals(-1L, cert.getValidAfter());
     }
 
     @Test
     void validBeforeMinMaxSuccess() {
-        new OpenSshCertificateImpl().setValidBefore(OpenSshCertificate.MIN_EPOCH);
-        new OpenSshCertificateImpl().setValidBefore(OpenSshCertificate.INFINITY);
+        OpenSshCertificateImpl cert = new OpenSshCertificateImpl();
+        cert.setValidBefore(OpenSshCertificate.MIN_EPOCH);
+        assertEquals(0L, cert.getValidBefore());
+        cert.setValidBefore(OpenSshCertificate.INFINITY);
+        assertEquals(-1L, cert.getValidBefore());
     }
 
     @Test
     void validAfterOutOfBounds() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            new OpenSshCertificateImpl().setValidAfter(Instant.EPOCH.minusSeconds(1L));
-        });
+        OpenSshCertificateImpl cert = new OpenSshCertificateImpl();
+        Instant time = Instant.EPOCH.minusSeconds(1L);
+        assertThrows(IllegalArgumentException.class, () -> cert.setValidAfter(time));
     }
 
     @Test
     void validBeforeOutOfBounds() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            new OpenSshCertificateImpl().setValidBefore(Instant.EPOCH.minusSeconds(1L));
-        });
+        OpenSshCertificateImpl cert = new OpenSshCertificateImpl();
+        Instant time = Instant.EPOCH.minusSeconds(1L);
+        assertThrows(IllegalArgumentException.class, () -> cert.setValidBefore(time));
     }
 }

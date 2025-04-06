@@ -44,11 +44,11 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class SpringConfigTest extends BaseTestSupport {
+class SpringConfigTest extends BaseTestSupport {
 
     private ClassPathXmlApplicationContext context;
 
-    public SpringConfigTest() {
+    SpringConfigTest() {
         super();
     }
 

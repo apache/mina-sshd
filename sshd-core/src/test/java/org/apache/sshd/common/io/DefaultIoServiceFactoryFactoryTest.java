@@ -29,14 +29,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
-    public DefaultIoServiceFactoryFactoryTest() {
+class DefaultIoServiceFactoryFactoryTest extends BaseTestSupport {
+
+    DefaultIoServiceFactoryFactoryTest() {
         super();
     }
 

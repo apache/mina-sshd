@@ -30,7 +30,6 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Objects;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.channel.PtyMode;
@@ -41,32 +40,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class TtyFilterOutputStreamTest extends JUnitTestSupport {
-    private PtyMode mode;
+class TtyFilterOutputStreamTest extends JUnitTestSupport {
 
-    public TtyFilterOutputStreamTest() {
-    }
-
-    public void initTtyFilterOutputStreamTest(PtyMode mode) {
-        this.mode = Objects.requireNonNull(mode, "No test modes");
-    }
-
-    public static Collection<Object[]> parameters() {
-        return parameterize(TtyFilterOutputStream.OUTPUT_OPTIONS);
+    static Collection<PtyMode> parameters() {
+        return TtyFilterOutputStream.OUTPUT_OPTIONS;
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "mode={0}")
-    public void crlfHandling(PtyMode mode) throws IOException {
-        initTtyFilterOutputStreamTest(mode);
+    void crlfHandling(PtyMode mode) throws IOException {
         List<String> lines = Arrays.asList(getClass().getPackage().getName(),
                 getClass().getSimpleName(), getCurrentTestName(),
                 "(" + mode + ")", new Date(System.currentTimeMillis()).toString());

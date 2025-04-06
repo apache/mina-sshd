@@ -42,8 +42,9 @@ import org.junit.jupiter.api.TestMethodOrder;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class DirectoryScannerTest extends JUnitTestSupport {
-    public DirectoryScannerTest() {
+class DirectoryScannerTest extends JUnitTestSupport {
+
+    DirectoryScannerTest() {
         super();
     }
 

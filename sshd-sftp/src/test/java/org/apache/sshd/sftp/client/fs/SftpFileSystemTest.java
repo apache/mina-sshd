@@ -97,27 +97,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-@SuppressWarnings("checkstyle:MethodCount")
-public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
+class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(SftpFileSystemTest.class);
 
-    public SftpFileSystemTest() throws IOException {
+    SftpFileSystemTest() throws IOException {
         super();
     }
 

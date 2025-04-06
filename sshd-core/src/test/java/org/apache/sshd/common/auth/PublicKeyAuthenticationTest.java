@@ -77,8 +77,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
-    public PublicKeyAuthenticationTest() {
+class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
+
+    PublicKeyAuthenticationTest() {
         super();
     }
 

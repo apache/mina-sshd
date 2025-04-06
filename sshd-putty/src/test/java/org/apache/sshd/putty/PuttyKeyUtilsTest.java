@@ -43,26 +43,20 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
-    public static final String PASSWORD = "super secret passphrase";
+class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
+    static final String PASSWORD = "super secret passphrase";
 
     private String keyType;
     private String regularFile;
     private String encryptedFile;
     private PuttyKeyPairResourceParser<?, ?> parser;
 
-    public void initPuttyKeyUtilsTest(String keyType) {
+    void initPuttyKeyUtilsTest(String keyType) {
         this.keyType = keyType;
         this.parser = PuttyKeyUtils.BY_KEY_TYPE.get(keyType);
         this.regularFile = getClass().getSimpleName()
@@ -73,13 +67,13 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
                              + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX;
     }
 
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return parameterize(PuttyKeyUtils.BY_KEY_TYPE.keySet());
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void canDecodePuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
+    void canDecodePuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
         initPuttyKeyUtilsTest(keyType);
         for (String resource : new String[] { regularFile, encryptedFile }) {
             URL url = getClass().getResource(resource);
@@ -109,7 +103,7 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void decodePuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
+    void decodePuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
         initPuttyKeyUtilsTest(keyType);
         URL url = getClass().getResource(regularFile);
         assertNotNull(url, "Missing test resource: " + regularFile);
@@ -121,14 +115,14 @@ public class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void decodeEncryptedPuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
+    void decodeEncryptedPuttyKeyFile(String keyType) throws IOException, GeneralSecurityException {
         initPuttyKeyUtilsTest(keyType);
         testDecodeEncryptedPuttyKeyFile(encryptedFile, true, PASSWORD, parser, keyType);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void decideEncryptedFileWithRetries(String keyType) throws IOException, GeneralSecurityException {
+    void decideEncryptedFileWithRetries(String keyType) throws IOException, GeneralSecurityException {
         initPuttyKeyUtilsTest(keyType);
         Assumptions.assumeTrue(BuiltinCiphers.aes256cbc.isSupported(), BuiltinCiphers.aes256cbc.getTransformation() + " N/A");
 

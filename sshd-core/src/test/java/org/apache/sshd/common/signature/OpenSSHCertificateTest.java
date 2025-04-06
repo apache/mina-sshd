@@ -46,7 +46,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class OpenSSHCertificateTest extends BaseTestSupport {
+class OpenSSHCertificateTest extends BaseTestSupport {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
@@ -55,7 +55,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
     private FileKeyPairProvider keyPairProvider;
     private List<NamedFactory<Signature>> signatureFactory;
 
-    public void initOpenSSHCertificateTest(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory) {
+    void initOpenSSHCertificateTest(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory) {
         Path testResourcesFolder = getTestResourcesFolder();
         this.keyPairProvider = new FileKeyPairProvider(testResourcesFolder.resolve(keyPath));
         this.certificateProvider = new FileHostKeyCertificateProvider(testResourcesFolder.resolve(certPath));
@@ -98,7 +98,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
     }
 
     @SuppressWarnings("deprecation")
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
 
         String key = "ssh_host_rsa_key";
@@ -123,7 +123,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={2}")
-    public void openSshCertificates(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
+    void openSshCertificates(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
             throws Exception {
         initOpenSSHCertificateTest(keyPath, certPath, signatureFactory);
         // default client
@@ -137,7 +137,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={2}") // invalid principal, but continue
-    public void continueOnInvalidPrincipal(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
+    void continueOnInvalidPrincipal(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
             throws Exception {
         initOpenSSHCertificateTest(keyPath, certPath, signatureFactory);
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, false);
@@ -152,7 +152,7 @@ public class OpenSSHCertificateTest extends BaseTestSupport {
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={2}") // invalid principal, abort
     @SuppressWarnings("deprecation")
-    public void abortOnInvalidPrincipal(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
+    void abortOnInvalidPrincipal(String keyPath, String certPath, List<NamedFactory<Signature>> signatureFactory)
             throws Exception {
         initOpenSSHCertificateTest(keyPath, certPath, signatureFactory);
         CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE.set(client, true);

@@ -43,13 +43,10 @@ import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Port forwarding test multiple clients connecting at once.
  */
-public class ConcurrentConnectionTest extends BaseTestSupport {
+class ConcurrentConnectionTest extends BaseTestSupport {
     private static final byte[] PAYLOAD_TO_SERVER = "To Server -> To Server -> To Server".getBytes();
     private static final byte[] PAYLOAD_TO_CLIENT = "<- To Client <- To Client <-".getBytes();
     private static final Logger LOG = LoggerFactory.getLogger(ConcurrentConnectionTest.class);
@@ -74,7 +71,7 @@ public class ConcurrentConnectionTest extends BaseTestSupport {
     // SSH Client State
     private ClientSession session;
 
-    public ConcurrentConnectionTest() {
+    ConcurrentConnectionTest() {
         super();
     }
 

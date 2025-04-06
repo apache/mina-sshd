@@ -20,7 +20,6 @@
 package org.apache.sshd.sftp.client.extensions.helpers;
 
 import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -48,14 +47,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
+class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
     private static final List<Object[]> PARAMETERS = Collections.unmodifiableList(
             Arrays.asList(
                     new Object[] {
@@ -83,19 +79,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
                             Long.valueOf(0L)
                     }));
 
-    private int size;
-    private int srcOffset;
-    private int length;
-    private long dstOffset;
-
-    public void initCopyDataExtensionImplTest(int size, int srcOffset, int length, long dstOffset) throws IOException {
-        this.size = size;
-        this.srcOffset = srcOffset;
-        this.length = length;
-        this.dstOffset = dstOffset;
-    }
-
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         return PARAMETERS;
     }
 
@@ -106,8 +90,7 @@ public class CopyDataExtensionImplTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "size={0}, readOffset={1}, readLength={2}, writeOffset={3}")
-    public void copyDataExtension(int size, int srcOffset, int length, long dstOffset) throws Exception {
-        initCopyDataExtensionImplTest(size, srcOffset, length, dstOffset);
+    void copyDataExtension(int size, int srcOffset, int length, long dstOffset) throws Exception {
         testCopyDataExtension(size, srcOffset, length, dstOffset);
     }
 

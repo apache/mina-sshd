@@ -35,14 +35,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
+class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
 
     // CHECKSTYLE:OFF
     private static final String KEY_STRING =
@@ -60,21 +58,13 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
 
     private static PublicKey key;
 
-    private String expected;
-    private String test;
-
-    public void initKeyUtilsFingerprintCaseSensitivityTest(String expected, String test) {
-        this.expected = expected;
-        this.test = test;
-    }
-
     @BeforeAll
     static void beforeClass() throws GeneralSecurityException, IOException {
         PublicKeyEntry keyEntry = PublicKeyEntry.parsePublicKeyEntry(KEY_STRING);
         key = keyEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
     }
 
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         return Arrays.asList(
                 new Object[] { MD5_FULL, MD5_FULL },
                 new Object[] { MD5_FULL, MD5_FULL.toUpperCase() },
@@ -90,8 +80,7 @@ public class KeyUtilsFingerprintCaseSensitivityTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "expected={0}, test={1}")
-    public void testCase(String expected, String test) throws Exception {
-        initKeyUtilsFingerprintCaseSensitivityTest(expected, test);
+    void testCase(String expected, String test) throws Exception {
         assertEquals(new SimpleImmutableEntry<>(true, expected), KeyUtils.checkFingerPrint(test, key), "Check failed");
     }
 }

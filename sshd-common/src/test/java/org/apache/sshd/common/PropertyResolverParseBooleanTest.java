@@ -30,21 +30,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
-    private String value;
-    private Boolean expected;
-
-    public void initPropertyResolverParseBooleanTest(String value, Boolean expected) {
-        this.value = value;
-        this.expected = expected;
-    }
+class PropertyResolverParseBooleanTest extends JUnitTestSupport {
 
     public static List<Object[]> parameters() {
         List<Object[]> result = new ArrayList<>();
@@ -62,16 +53,14 @@ public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "value={0}, expected={1}")
-    public void simpleParseBoolean(String value, Boolean expected) {
-        initPropertyResolverParseBooleanTest(value, expected);
+    void simpleParseBoolean(String value, Boolean expected) {
         Boolean actual = PropertyResolverUtils.parseBoolean(value);
         assertSame(expected, actual);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "value={0}, expected={1}")
-    public void caseInsensitiveParseBoolean(String value, Boolean expected) {
-        initPropertyResolverParseBooleanTest(value, expected);
+    void caseInsensitiveParseBoolean(String value, Boolean expected) {
         if (!GenericUtils.isEmpty(value)) {
             String v = value;
             for (int index = 1, count = v.length(); index <= (2 * count); index++) {
@@ -80,10 +69,5 @@ public class PropertyResolverParseBooleanTest extends JUnitTestSupport {
                 assertSame(expected, actual, "Mismatched result for '" + v + "'");
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + value + " => " + expected + "]";
     }
 }

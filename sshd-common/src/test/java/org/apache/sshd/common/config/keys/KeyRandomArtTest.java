@@ -37,29 +37,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class KeyRandomArtTest extends JUnitTestSupport {
+class KeyRandomArtTest extends JUnitTestSupport {
     private static final Collection<KeyPair> KEYS = new LinkedList<>();
 
-    private String algorithm;
-    private int keySize;
-    private KeyPair keyPair;
-
-    public void initKeyRandomArtTest(String algorithm, int keySize) throws Exception {
-        this.algorithm = algorithm;
-        this.keySize = keySize;
-        this.keyPair = CommonTestSupportUtils.generateKeyPair(algorithm, keySize);
-        KEYS.add(this.keyPair);
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         for (int keySize : RSA_SIZES) {
             params.add(new Object[] { KeyUtils.RSA_ALGORITHM, keySize });
@@ -90,8 +76,9 @@ public class KeyRandomArtTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "algorithm={0}, key-size={1}")
-    public void randomArtString(String algorithm, int keySize) throws Exception {
-        initKeyRandomArtTest(algorithm, keySize);
+    void randomArtString(String algorithm, int keySize) throws Exception {
+        KeyPair keyPair = CommonTestSupportUtils.generateKeyPair(algorithm, keySize);
+        KEYS.add(keyPair);
         KeyRandomArt art = new KeyRandomArt(keyPair.getPublic());
         assertEquals(algorithm, art.getAlgorithm(), "Mismatched algorithm");
         assertEquals(keySize, art.getKeySize(), "Mismatched key size");

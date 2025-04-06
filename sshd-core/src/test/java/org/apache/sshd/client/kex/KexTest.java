@@ -50,29 +50,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 /**
  * Test client key exchange algorithms.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class KexTest extends BaseTestSupport {
+class KexTest extends BaseTestSupport {
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
 
-    private BuiltinDHFactories factory;
-
-    public void initKexTest(BuiltinDHFactories factory) {
-        this.factory = factory;
-    }
-
-    public static Collection<Object[]> parameters() {
-        return parameterize(BuiltinDHFactories.VALUES);
+    static Collection<BuiltinDHFactories> parameters() {
+        return BuiltinDHFactories.VALUES;
     }
 
     @BeforeAll
@@ -106,8 +97,7 @@ public class KexTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "Factory={0}")
-    public void clientKeyExchange(BuiltinDHFactories factory) throws Exception {
-        initKexTest(factory);
+    void clientKeyExchange(BuiltinDHFactories factory) throws Exception {
         if (factory.isGroupExchange()) {
             assertEquals(factory.getName() + " not supported even though DH group exchange supported",
                     SecurityUtils.isDHGroupExchangeSupported(), factory.isSupported());

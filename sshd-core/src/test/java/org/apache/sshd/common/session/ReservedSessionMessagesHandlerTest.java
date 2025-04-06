@@ -41,19 +41,16 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
+class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
     private int port;
 
-    public ReservedSessionMessagesHandlerTest() {
+    ReservedSessionMessagesHandlerTest() {
         super();
     }
 
@@ -194,21 +191,21 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
         }
     }
 
-    public static class AccumulatingHandler extends ReservedSessionMessagesHandlerAdapter {
+    static class AccumulatingHandler extends ReservedSessionMessagesHandlerAdapter {
         private final Semaphore ignoredSignal = new Semaphore(0);
         private final List<byte[]> ignoredMessages = new ArrayList<>();
         private final Semaphore debugSignal = new Semaphore(0);
         private final List<SimpleImmutableEntry<String, Boolean>> debugMessages = new ArrayList<>();
 
-        public AccumulatingHandler() {
+        AccumulatingHandler() {
             super();
         }
 
-        public List<byte[]> getIgnoredMessages() {
+        List<byte[]> getIgnoredMessages() {
             return ignoredMessages;
         }
 
-        public boolean waitForIgnoreCount(int count, TimeUnit unit, long duration) throws InterruptedException {
+        boolean waitForIgnoreCount(int count, TimeUnit unit, long duration) throws InterruptedException {
             return ignoredSignal.tryAcquire(count, duration, unit);
         }
 
@@ -219,11 +216,11 @@ public class ReservedSessionMessagesHandlerTest extends BaseTestSupport {
             ignoredSignal.release();
         }
 
-        public List<SimpleImmutableEntry<String, Boolean>> getDebugMessages() {
+        List<SimpleImmutableEntry<String, Boolean>> getDebugMessages() {
             return debugMessages;
         }
 
-        public boolean waitForDebugCount(int count, TimeUnit unit, long duration) throws InterruptedException {
+        boolean waitForDebugCount(int count, TimeUnit unit, long duration) throws InterruptedException {
             return debugSignal.tryAcquire(count, duration, unit);
         }
 

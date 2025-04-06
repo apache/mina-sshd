@@ -36,13 +36,12 @@ import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @Tag("NoIoTestCase")
-public abstract class BaseCipherTest extends JUnitTestSupport {
+abstract class BaseCipherTest extends JUnitTestSupport {
+
     protected BaseCipherTest() {
         super();
     }

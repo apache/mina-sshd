@@ -36,16 +36,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class CommandFactorySplitterTest extends JUnitTestSupport {
-    private String command;
-    private List<String> expected;
+class CommandFactorySplitterTest extends JUnitTestSupport {
 
-    public void initCommandFactorySplitterTest(String command, List<String> expected) {
-        this.command = command;
-        this.expected = expected;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // not serializing it
             private static final long serialVersionUID = 1L;
@@ -78,14 +71,8 @@ public class CommandFactorySplitterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "cmd={0}")
-    public void splitter(String command, List<String> expected) {
-        initCommandFactorySplitterTest(command, expected);
+    void splitter(String command, List<String> expected) {
         List<String> actual = CommandFactory.split(command);
         assertListEquals(command, expected, actual);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + command + "]";
     }
 }

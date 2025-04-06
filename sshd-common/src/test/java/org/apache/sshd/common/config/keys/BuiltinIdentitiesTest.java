@@ -26,7 +26,6 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.functors.UnaryEquator;
@@ -40,25 +39,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class BuiltinIdentitiesTest extends JUnitTestSupport {
-    private BuiltinIdentities expected;
+class BuiltinIdentitiesTest extends JUnitTestSupport {
 
-    public void initBuiltinIdentitiesTest(BuiltinIdentities expected) {
-        this.expected = expected;
-    }
-
-    public static List<Object[]> parameters() {
-        return parameterize(BuiltinIdentities.VALUES);
+    public static Collection<BuiltinIdentities> parameters() {
+        return BuiltinIdentities.VALUES;
     }
 
     @BeforeAll // Dirty hack around the parameterized run
@@ -88,8 +77,7 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fromName(BuiltinIdentities expected) {
-        initBuiltinIdentitiesTest(expected);
+    void fromName(BuiltinIdentities expected) {
         String name = expected.getName();
         for (int index = 0, count = name.length(); index < count; index++) {
             assertSame(expected, BuiltinIdentities.fromName(name), name);
@@ -99,8 +87,7 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fromAlgorithm(BuiltinIdentities expected) {
-        initBuiltinIdentitiesTest(expected);
+    void fromAlgorithm(BuiltinIdentities expected) {
         String algorithm = expected.getAlgorithm();
         for (int index = 0, count = algorithm.length(); index < count; index++) {
             assertSame(expected, BuiltinIdentities.fromAlgorithm(algorithm), algorithm);
@@ -110,8 +97,7 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fromKey(BuiltinIdentities expected) throws GeneralSecurityException {
-        initBuiltinIdentitiesTest(expected);
+    void fromKey(BuiltinIdentities expected) throws GeneralSecurityException {
         Assumptions.assumeTrue(expected.isSupported(), "Unsupported built-in identity");
         KeyPairGenerator gen = SecurityUtils.getKeyPairGenerator(expected.getAlgorithm());
         KeyPair kp = gen.generateKeyPair();
@@ -123,15 +109,13 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void nonEmptySupportedKeyTypeNames(BuiltinIdentities expected) {
-        initBuiltinIdentitiesTest(expected);
+    void nonEmptySupportedKeyTypeNames(BuiltinIdentities expected) {
         assertTrue(GenericUtils.isNotEmpty(expected.getSupportedKeyTypes()));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void noOverlappingKeyTypeNamesWithOtherIdentities(BuiltinIdentities expected) {
-        initBuiltinIdentitiesTest(expected);
+    void noOverlappingKeyTypeNamesWithOtherIdentities(BuiltinIdentities expected) {
         Collection<String> current = expected.getSupportedKeyTypes();
         for (BuiltinIdentities identity : BuiltinIdentities.VALUES) {
             if (UnaryEquator.isSameReference(expected, identity)) {
@@ -145,10 +129,5 @@ public class BuiltinIdentitiesTest extends JUnitTestSupport {
                      + " and " + identity + " (" + other + ")");
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + expected + "]";
     }
 }

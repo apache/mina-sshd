@@ -58,7 +58,7 @@ import org.junit.jupiter.params.provider.MethodSource;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator, KeySizeIndicator, OptionalFeature {
+class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator, KeySizeIndicator, OptionalFeature {
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
@@ -66,15 +66,14 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
     private String keyType;
     private int keySize;
     private boolean supported;
-    private NamedFactory<Signature> factory;
     private PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
 
-    public void initSignatureFactoriesTest(
+    private void initSignatureFactoriesTest(
             String keyType, NamedFactory<Signature> factory,
             int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
         this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
-        this.factory = supported ? Objects.requireNonNull(factory, "No signature factory provided") : factory;
         if (supported) {
+            Objects.requireNonNull(factory, "No signature factory provided");
             ValidateUtils.checkTrue(keySize > 0, "Invalid key size: %d", keySize);
         }
         this.keySize = keySize;
@@ -83,7 +82,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
     }
 
     @SuppressWarnings("deprecation")
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> list = new ArrayList<>();
         addTests(list, KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);
         addTests(list, KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
@@ -159,7 +158,7 @@ public class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIn
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, size={2}")
-    public void publicKeyAuth(
+    void publicKeyAuth(
             String keyType, NamedFactory<Signature> factory, int keySize, boolean supported,
             PublicKeyEntryDecoder<?, ?> decoder) throws Exception {
         initSignatureFactoriesTest(keyType, factory, keySize, supported, decoder);

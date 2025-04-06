@@ -39,25 +39,13 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Simple short-circuited test for {@link AbstractAgentClient} and {@link AbstractAgentProxy}.
  */
 @Tag("NoIoTestCase")
-public class AgentUnitTest extends BaseTestSupport {
+class AgentUnitTest extends BaseTestSupport {
 
-    private String algorithm;
-
-    private BuiltinSignatures factory;
-
-    public void initAgentUnitTest(String algorithm, BuiltinSignatures factory) {
-        this.algorithm = algorithm;
-        this.factory = factory;
-    }
-
-    public static List<Object[]> getParameters() {
+    static List<Object[]> getParameters() {
         return Arrays.asList(new Object[] { KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS, BuiltinSignatures.rsaSHA512 },
                 new Object[] { KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS, BuiltinSignatures.rsaSHA256 },
                 new Object[] { KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa });
@@ -65,8 +53,7 @@ public class AgentUnitTest extends BaseTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "{0}")
-    public void rsaSignature(String algorithm, BuiltinSignatures factory) throws Exception {
-        initAgentUnitTest(algorithm, factory);
+    void rsaSignature(String algorithm, BuiltinSignatures factory) throws Exception {
         SshAgent agent = new AgentImpl();
         KeyPair pair = SecurityUtils.getKeyPairGenerator(KeyUtils.RSA_ALGORITHM).generateKeyPair();
         agent.addIdentity(pair, "test key");

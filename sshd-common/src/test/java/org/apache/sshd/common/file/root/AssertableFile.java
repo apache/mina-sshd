@@ -25,8 +25,6 @@ import java.nio.file.Path;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO upgrade to default methods in JDK 8
  *

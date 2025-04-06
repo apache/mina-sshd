@@ -40,25 +40,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
-    private PublicKey key;
-    private DigestFactory digestFactory;
-    private String expected;
+class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
 
-    public void initKeyUtilsFingerprintGenerationTest(PublicKey key, DigestFactory digestFactory, String expected) {
-        this.key = key;
-        this.digestFactory = digestFactory;
-        this.expected = expected;
-    }
-
-    public static Collection<Object[]> parameters() throws IOException, GeneralSecurityException {
+    static Collection<Object[]> parameters() throws IOException, GeneralSecurityException {
         List<? extends Map.Entry<String, List<? extends Map.Entry<DigestFactory, String>>>> keyEntries
                 = Collections.unmodifiableList(Arrays.asList(
                         new SimpleImmutableEntry<>(
@@ -131,8 +120,7 @@ public class KeyUtilsFingerprintGenerationTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "key={0}, digestFactory={1}, expected={2}")
-    public void fingerprint(PublicKey key, DigestFactory digestFactory, String expected) throws Exception {
-        initKeyUtilsFingerprintGenerationTest(key, digestFactory, expected);
+    void fingerprint(PublicKey key, DigestFactory digestFactory, String expected) throws Exception {
         String name = digestFactory.getName();
         assertEquals(
                 expected,

@@ -50,22 +50,18 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class SinglePublicKeyAuthTest extends BaseTestSupport {
+class SinglePublicKeyAuthTest extends BaseTestSupport {
     private SshServer sshd;
     private int port;
     private final KeyPair kpGood;
     private final KeyPair kpBad;
     private PublickeyAuthenticator delegate;
 
-    public SinglePublicKeyAuthTest() throws IOException, GeneralSecurityException {
+    SinglePublicKeyAuthTest() throws IOException, GeneralSecurityException {
         SimpleGeneratorHostKeyProvider provider = new SimpleGeneratorHostKeyProvider();
         provider.setAlgorithm(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_PROVIDER_ALGORITHM);
         provider.setKeySize(CommonTestSupportUtils.DEFAULT_TEST_HOST_KEY_SIZE);
@@ -176,14 +172,14 @@ public class SinglePublicKeyAuthTest extends BaseTestSupport {
         assertEquals(2, goodIndex.intValue(), "Mismatched attempt index for good key");
     }
 
-    public static class TestCachingPublicKeyAuthenticator extends CachingPublicKeyAuthenticator {
+    static class TestCachingPublicKeyAuthenticator extends CachingPublicKeyAuthenticator {
         private final Map<Session, Map<PublicKey, Boolean>> cache = new ConcurrentHashMap<>();
 
-        public TestCachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
+        TestCachingPublicKeyAuthenticator(PublickeyAuthenticator authenticator) {
             super(authenticator);
         }
 
-        public Map<Session, Map<PublicKey, Boolean>> getCache() {
+        Map<Session, Map<PublicKey, Boolean>> getCache() {
             return cache;
         }
 

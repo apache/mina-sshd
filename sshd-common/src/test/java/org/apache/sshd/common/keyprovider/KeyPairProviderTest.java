@@ -37,17 +37,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class KeyPairProviderTest extends JUnitTestSupport {
-    public KeyPairProviderTest() {
+class KeyPairProviderTest extends JUnitTestSupport {
+
+    KeyPairProviderTest() {
         super();
     }
 

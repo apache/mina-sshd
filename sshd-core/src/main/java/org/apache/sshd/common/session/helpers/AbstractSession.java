@@ -80,19 +80,12 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
- * <P>
- * The AbstractSession handles all the basic SSH protocol such as key exchange, authentication, encoding and decoding.
- * Both server side and client side sessions should inherit from this abstract class. Some basic packet processing
- * methods are defined but the actual call to these methods should be done from the {@link #handleMessage(Buffer)}
- * method, which is dependent on the state and side of this session.
- * </P>
- *
- * TODO: if there is any very big packet, decoderBuffer and uncompressBuffer will get quite big and they won't be
- * resized down at any time. Though the packet size is really limited by the channel max packet size
+ * Encapsulates common behavior for both client and server sessions. In particular, holds the {@link FilterChain}
+ * implementing the SSH transport protocol, and provides convenience methods to write SSH packets or make Channel global
+ * requests.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@SuppressWarnings("checkstyle:MethodCount")
 public abstract class AbstractSession extends SessionHelper {
     /**
      * Name of the property where this session is stored in the attributes of the underlying MINA session. See

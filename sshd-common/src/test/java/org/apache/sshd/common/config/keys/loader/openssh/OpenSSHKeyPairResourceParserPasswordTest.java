@@ -41,25 +41,19 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairResourceParserTestSupport {
+class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairResourceParserTestSupport {
     private static final int MAX_RETRIES = 3;
 
     private ResourceDecodeResult decodeResult;
     private final AtomicInteger retriesCount = new AtomicInteger(0);
     private FilePasswordProvider passwordProvider;
 
-    public void initOpenSSHKeyPairResourceParserPasswordTest(BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
+    void initOpenSSHKeyPairResourceParserPasswordTest(BuiltinIdentities identity, ResourceDecodeResult reportedResult) {
         setIdentity(identity);
         this.decodeResult = reportedResult;
         this.passwordProvider = new FilePasswordProvider() {
@@ -132,7 +126,7 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0} / {1}")
-    public void loadEncryptedFileWithPasswordRetry(BuiltinIdentities identity, ResourceDecodeResult reportedResult)
+    void loadEncryptedFileWithPasswordRetry(BuiltinIdentities identity, ResourceDecodeResult reportedResult)
             throws Exception {
         initOpenSSHKeyPairResourceParserPasswordTest(identity, reportedResult);
         try {
@@ -143,11 +137,6 @@ public class OpenSSHKeyPairResourceParserPasswordTest extends OpenSSHKeyPairReso
                 throw e;
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return super.toString() + "[" + decodeResult + "]";
     }
 
     @Override

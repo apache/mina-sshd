@@ -44,17 +44,13 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
-    public AuthorizedKeysAuthenticatorTest() {
+class AuthorizedKeysAuthenticatorTest extends AuthorizedKeysTestSupport {
+
+    AuthorizedKeysAuthenticatorTest() {
         super();
     }
 

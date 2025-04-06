@@ -54,13 +54,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * Tests the RootedFileSystemProvider implementation of {@link java.nio.file.spi.FileSystemProvider} checking that
  * permissions for generic FS commands are not permitted outside of the root directory.
@@ -72,7 +65,7 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class RootedFileSystemProviderTest extends AssertableFile {
+class RootedFileSystemProviderTest extends AssertableFile {
     private static final String SKIP_ON_WINDOWS = "Test fails due to windows normalizing paths before opening them, " +
                                                   "allowing one to open a file like \"C:\\directory_doesnt_exist\\..\\myfile.txt\" whereas this is blocked in unix";
     private static final String DOESNT_EXIST = "../doesnt_exist/../";
@@ -81,7 +74,7 @@ public class RootedFileSystemProviderTest extends AssertableFile {
     private final Path rootSandbox;
     private final FileHelper fileHelper;
 
-    public RootedFileSystemProviderTest() throws Exception {
+    RootedFileSystemProviderTest() throws Exception {
         super();
         fileHelper = new FileHelper();
         Path targetFolder = Objects.requireNonNull(

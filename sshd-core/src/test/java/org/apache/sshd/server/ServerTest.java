@@ -100,11 +100,11 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ServerTest extends BaseTestSupport {
+class ServerTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
 
-    public ServerTest() {
+    ServerTest() {
         super();
     }
 
@@ -1048,8 +1048,8 @@ public class ServerTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShellFactory extends EchoShellFactory {
-        public TestEchoShellFactory() {
+    static class TestEchoShellFactory extends EchoShellFactory {
+        TestEchoShellFactory() {
             super();
         }
 
@@ -1059,12 +1059,12 @@ public class ServerTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShell extends EchoShell {
+    static class TestEchoShell extends EchoShell {
         // CHECKSTYLE:OFF
-        public static CountDownLatch latch;
+        static CountDownLatch latch;
         // CHECKSTYLE:ON
 
-        public TestEchoShell() {
+        TestEchoShell() {
             super();
         }
 
@@ -1077,15 +1077,15 @@ public class ServerTest extends BaseTestSupport {
         }
     }
 
-    public static class StreamCommand implements Command, Runnable {
+    static class StreamCommand implements Command, Runnable {
         // CHECKSTYLE:OFF
-        public static CountDownLatch latch;
+        static CountDownLatch latch;
         // CHECKSTYLE:ON
 
         private final String name;
         private OutputStream out;
 
-        public StreamCommand(String name) {
+        StreamCommand(String name) {
             this.name = name;
         }
 

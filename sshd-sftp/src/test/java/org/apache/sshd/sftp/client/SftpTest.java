@@ -123,27 +123,21 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class)
 @SuppressWarnings("checkstyle:MethodCount")
-public class SftpTest extends AbstractSftpClientTestSupport {
+class SftpTest extends AbstractSftpClientTestSupport {
+
     private static final Map<String, OptionalFeature> EXPECTED_EXTENSIONS
             = AbstractSftpSubsystemHelper.DEFAULT_SUPPORTED_CLIENT_EXTENSIONS;
 
     private com.jcraft.jsch.Session session;
 
-    private int sftpHandleSize;
-
-    public void initSftpTest(int handleSize) throws Exception {
-        sftpHandleSize = handleSize;
-        setUp();
-    }
-
-    public static List<Integer> getParameters() {
+    static List<Integer> getParameters() {
         List<Integer> result = new ArrayList<>();
         result.add(Integer.valueOf(4));
         result.add(Integer.valueOf(16));
         return result;
     }
 
-    void setUp() throws Exception {
+    void initSftpTest(int handleSize) throws Exception {
         setupServer();
 
         Map<String, Object> props = sshd.getProperties();
@@ -152,7 +146,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
             outputDebugMessage("Removed forced version=%s", forced);
         }
 
-        SftpModuleProperties.FILE_HANDLE_SIZE.set(sshd, Integer.valueOf(sftpHandleSize));
+        SftpModuleProperties.FILE_HANDLE_SIZE.set(sshd, Integer.valueOf(handleSize));
         JSch sch = new JSch();
         session = sch.getSession("sshd", TEST_LOCALHOST, port);
         session.setUserInfo(new SimpleUserInfo("sshd"));
@@ -168,7 +162,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-547
-    public void writeOffsetIgnoredForAppendMode(int handleSize) throws Exception {
+    void writeOffsetIgnoredForAppendMode(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -220,7 +214,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-545
-    public void readBufferLimit(int handleSize) throws Exception {
+    void readBufferLimit(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -258,7 +252,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1287
-    public void readWithLargeBuffer(int handleSize) throws Exception {
+    void readWithLargeBuffer(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -304,7 +298,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1287
-    public void zeroRead(int handleSize) throws Exception {
+    void zeroRead(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -352,7 +346,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1288
-    public void readWriteDownload(int handleSize) throws Exception {
+    void readWriteDownload(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Assumptions.assumeTrue(OsUtils.isUNIX() || OsUtils.isOSX(),
                 "Not sure appending to a file opened for reading works on Windows");
@@ -398,7 +392,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void emptyFileDownload(int handleSize) throws Exception {
+    void emptyFileDownload(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Assumptions.assumeTrue(OsUtils.isUNIX() || OsUtils.isOSX(),
                 "Not sure appending to a file opened for reading works on Windows");
@@ -421,7 +415,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see extra fix for SSHD-538
-    public void navigateBeyondRootFolder(int handleSize) throws Exception {
+    void navigateBeyondRootFolder(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path rootLocation = Paths.get(OsUtils.isUNIX() ? "/" : "C:\\");
         FileSystem fsRoot = rootLocation.getFileSystem();
@@ -446,14 +440,14 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-605
-    public void cannotEscapeUserAbsoluteRoot(int handleSize) throws Exception {
+    void cannotEscapeUserAbsoluteRoot(int handleSize) throws Exception {
         initSftpTest(handleSize);
         testCannotEscapeRoot(true);
     }
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-605
-    public void cannotEscapeUserRelativeRoot(int handleSize) throws Exception {
+    void cannotEscapeUserRelativeRoot(int handleSize) throws Exception {
         initSftpTest(handleSize);
         testCannotEscapeRoot(false);
     }
@@ -492,7 +486,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void normalizeRemoteRootValues(int handleSize) throws Exception {
+    void normalizeRemoteRootValues(int handleSize) throws Exception {
         initSftpTest(handleSize);
         try (SftpClient sftp = createSingleSessionClient()) {
             String expected = sftp.canonicalPath("/");
@@ -515,7 +509,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void normalizeRemotePathsValues(int handleSize) throws Exception {
+    void normalizeRemotePathsValues(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -565,7 +559,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void open(int handleSize) throws Exception {
+    void open(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -661,7 +655,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // SSHD-899
-    public void noAttributeImpactOnOpen(int handleSize) throws Exception {
+    void noAttributeImpactOnOpen(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -727,7 +721,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void inputStreamSkipAndReset(int handleSize) throws Exception {
+    void inputStreamSkipAndReset(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -765,7 +759,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-1182
-    public void inputStreamSkipBeforeRead(int handleSize) throws Exception {
+    void inputStreamSkipBeforeRead(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
@@ -797,7 +791,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void sftpFileSystemAccessor(int handleSize) throws Exception {
+    void sftpFileSystemAccessor(int handleSize) throws Exception {
         initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
@@ -888,7 +882,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
     @SuppressWarnings({ "checkstyle:anoninnerlength", "checkstyle:methodlength" })
-    public void client(int handleSize) throws Exception {
+    void client(int handleSize) throws Exception {
         initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
@@ -1113,7 +1107,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
      */
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void writeChunking(int handleSize) throws Exception {
+    void writeChunking(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -1163,7 +1157,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // SSHD-1215
-    public void writeCreateAppend(int handleSize) throws Exception {
+    void writeCreateAppend(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
@@ -1188,7 +1182,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // SSHD-1215
-    public void listDirWithBlank(int handleSize) throws Exception {
+    void listDirWithBlank(int handleSize) throws Exception {
         Assumptions.assumeFalse(OsUtils.isWin32(), "Windows does not allow trailing blanks anyway");
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
@@ -1222,7 +1216,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void handleSize(int handleSize) throws Exception {
+    void handleSize(int handleSize) throws Exception {
         initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
@@ -1393,7 +1387,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void sftp(int handleSize) throws Exception {
+    void sftp(int handleSize) throws Exception {
         initSftpTest(handleSize);
         String d = getCurrentTestName() + "\n";
 
@@ -1424,7 +1418,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void readWriteWithOffset(int handleSize) throws Exception {
+    void readWriteWithOffset(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -1461,7 +1455,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void readDir(int handleSize) throws Exception {
+    void readDir(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path cwdPath = Paths.get(System.getProperty("user.dir")).toAbsolutePath();
         Path tgtPath = detectTargetFolder();
@@ -1507,7 +1501,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void rename(int handleSize) throws Exception {
+    void rename(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(
@@ -1553,7 +1547,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void serverExtensionsDeclarations(int handleSize) throws Exception {
+    void serverExtensionsDeclarations(int handleSize) throws Exception {
         initSftpTest(handleSize);
         try (SftpClient sftp = createSingleSessionClient()) {
             Map<String, byte[]> extensions = sftp.getServerExtensions();
@@ -1664,7 +1658,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void sftpVersionSelector(int handleSize) throws Exception {
+    void sftpVersionSelector(int handleSize) throws Exception {
         initSftpTest(handleSize);
         AtomicInteger selected = new AtomicInteger(-1);
         SftpVersionSelector selector = (session, initial, current, available) -> {
@@ -1687,7 +1681,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-621
-    public void serverDoesNotSupportSftp(int handleSize) throws Exception {
+    void serverDoesNotSupportSftp(int handleSize) throws Exception {
         initSftpTest(handleSize);
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         assertEquals(1, GenericUtils.size(factories), "Mismatched subsystem factories count");
@@ -1816,7 +1810,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
-    public void createSymbolicLink(int handleSize) throws Exception {
+    void createSymbolicLink(int handleSize) throws Exception {
         initSftpTest(handleSize);
         // Do not execute on windows as the file system does not support symlinks
         Assumptions.assumeTrue(OsUtils.isUNIX() || OsUtils.isOSX(), "Skip non-Unix O/S");
@@ -1908,7 +1902,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see SSHD-903
-    public void forcedVersionNegotiation(int handleSize) throws Exception {
+    void forcedVersionNegotiation(int handleSize) throws Exception {
         initSftpTest(handleSize);
         SftpModuleProperties.SFTP_VERSION.set(sshd, SftpConstants.SFTP_V3);
         try (SftpClient sftp = createSingleSessionClient()) {
@@ -1953,7 +1947,7 @@ public class SftpTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")   // see SSHD-1022
-    public void flushOutputStreamWithoutWrite(int handleSize) throws Exception {
+    void flushOutputStreamWithoutWrite(int handleSize) throws Exception {
         initSftpTest(handleSize);
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(

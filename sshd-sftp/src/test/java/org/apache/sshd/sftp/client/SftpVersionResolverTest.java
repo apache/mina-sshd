@@ -19,8 +19,7 @@
 
 package org.apache.sshd.sftp.client;
 
-import java.util.Collection;
-import java.util.LinkedList;
+import java.util.stream.Stream;
 
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.sftp.client.SftpVersionSelector.NamedVersionSelector;
@@ -30,70 +29,44 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class SftpVersionResolverTest extends JUnitTestSupport {
-    private NamedVersionSelector expected;
-    private NamedVersionSelector actual;
+class SftpVersionResolverTest extends JUnitTestSupport {
 
-    public void initSftpVersionResolverTest(String selector, NamedVersionSelector expected) {
-        this.expected = expected;
-        this.actual = SftpVersionSelector.resolveVersionSelector(selector);
+    private static Arguments addTestCase(NamedVersionSelector expected) {
+        return Arguments.of(expected.getName(), expected);
     }
 
-    public static Collection<Object[]> parameters() {
-        return new LinkedList<Object[]>() {
-            // Not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTestCase(null, SftpVersionSelector.CURRENT);
-                addTestCase("", SftpVersionSelector.CURRENT);
-                addTestCase(SftpVersionSelector.CURRENT);
-                addTestCase(SftpVersionSelector.MINIMUM);
-                addTestCase(SftpVersionSelector.MAXIMUM);
-                addTestCase(SftpVersionSelector.fixedVersionSelector(3));
-                addTestCase(SftpVersionSelector.preferredVersionSelector(3, 4, 5));
-            }
-
-            private void addTestCase(NamedVersionSelector expected) {
-                addTestCase(expected.getName(), expected);
-            }
-
-            private void addTestCase(String selector, NamedVersionSelector expected) {
-                add(new Object[] { selector, expected });
-            }
-        };
+    static Stream<Arguments> parameters() {
+        return Stream.of( //
+                Arguments.of(null, SftpVersionSelector.CURRENT), //
+                Arguments.of("", SftpVersionSelector.CURRENT), //
+                addTestCase(SftpVersionSelector.CURRENT), //
+                addTestCase(SftpVersionSelector.MINIMUM), //
+                addTestCase(SftpVersionSelector.MAXIMUM), //
+                addTestCase(SftpVersionSelector.fixedVersionSelector(3)),
+                addTestCase(SftpVersionSelector.preferredVersionSelector(3, 4, 5)));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "selector={0}")
-    public void resolvedResult(String selector, NamedVersionSelector expected) {
-        initSftpVersionResolverTest(selector, expected);
-        assertEquals(expected, actual);
+    void resolvedResult(String selector, NamedVersionSelector expected) {
+        assertEquals(expected, SftpVersionSelector.resolveVersionSelector(selector));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "selector={0}")
-    public void preDefinedSelectorResolution(String selector, NamedVersionSelector expected) {
-        initSftpVersionResolverTest(selector, expected);
+    void preDefinedSelectorResolution(String selector, NamedVersionSelector expected) {
         Assumptions.assumeTrue((NamedResource.safeCompareByName(SftpVersionSelector.CURRENT, expected, false) == 0)
                 || (NamedResource.safeCompareByName(SftpVersionSelector.MINIMUM, expected, false) == 0)
                 || (NamedResource.safeCompareByName(SftpVersionSelector.MAXIMUM, expected, false) == 0),
                 "Pre-defined selector ?");
-        assertSame(expected, actual);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[expected=" + expected + ", actual=" + actual + "]";
+        assertSame(expected, SftpVersionSelector.resolveVersionSelector(selector));
     }
 }

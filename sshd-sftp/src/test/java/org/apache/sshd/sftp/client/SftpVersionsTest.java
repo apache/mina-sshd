@@ -70,39 +70,25 @@ import org.apache.sshd.sftp.server.SftpSubsystem;
 import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 public class SftpVersionsTest extends AbstractSftpClientTestSupport {
-    private static final List<Integer> VERSIONS = Collections.unmodifiableList(
-            IntStream.rangeClosed(SftpSubsystemEnvironment.LOWER_SFTP_IMPL, SftpSubsystemEnvironment.HIGHER_SFTP_IMPL)
-                    .boxed()
-                    .collect(Collectors.toList()));
 
-    private int testVersion;
-
-    public void initSftpVersionsTest(int version) throws Exception {
-        testVersion = version;
-        setUp();
+    static Collection<Integer> parameters() {
+        return Collections.unmodifiableList(
+                IntStream.rangeClosed(SftpSubsystemEnvironment.LOWER_SFTP_IMPL, SftpSubsystemEnvironment.HIGHER_SFTP_IMPL)
+                        .boxed().collect(Collectors.toList()));
     }
 
-    public static Collection<Object[]> parameters() {
-        return parameterize(VERSIONS);
-    }
-
+    @BeforeEach
     void setUp() throws Exception {
         setupServer();
 
@@ -113,25 +99,20 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         }
     }
 
-    public final int getTestedVersion() {
-        return testVersion;
-    }
-
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}") // See SSHD-749
-    public void sftpOpenFlags(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpOpenFlags(int version) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
-        Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + version + ".txt");
         Files.deleteIfExists(lclFile);
 
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write)) {
                 out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
             }
@@ -142,19 +123,18 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}")
-    public void sftpCreateNew(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpCreateNew(int version) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
         Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
-        Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+        Path lclFile = lclParent.resolve(getCurrentTestName() + "-" + version + ".txt");
         Files.write(lclFile, Collections.singleton("existing"));
 
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             SftpException ex = assertThrows(SftpException.class, () -> {
                 try (OutputStream out = sftp.write(remotePath, OpenMode.Create, OpenMode.Write, OpenMode.Exclusive)) {
                     out.write(getCurrentTestName().getBytes(StandardCharsets.UTF_8));
@@ -166,25 +146,24 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}")
-    public void sftpRenameNoReplace(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpRenameNoReplace(int version) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
                 getClass().getSimpleName());
         Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
-        Path aFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + "-a.txt");
+        Path aFile = lclParent.resolve(getCurrentTestName() + "-" + version + "-a.txt");
         Files.write(aFile, Collections.singleton("a"));
-        Path bFile = lclParent.resolve(getCurrentTestName() + "-" + getTestedVersion() + "-b.txt");
+        Path bFile = lclParent.resolve(getCurrentTestName() + "-" + version + "-b.txt");
         Files.write(bFile, Collections.singleton("b"));
 
         Path parentPath = targetPath.getParent();
         String aPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, aFile);
         String bPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, bFile);
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             SftpException ex = assertThrows(SftpException.class, () -> sftp.rename(aPath, bPath));
             assertEquals(SftpConstants.SSH_FX_FILE_ALREADY_EXISTS, ex.getStatus());
-            if (getTestedVersion() >= SftpConstants.SFTP_V5) {
+            if (version >= SftpConstants.SFTP_V5) {
                 // For CopyMode.Atomic we use StandardCopyOptions.ATOMIC_MOVE. It is implementation defined whether an
                 // atomic move overwrites an already existing file. See javadoc of Files.move().
                 sftp.rename(aPath, bPath, CopyMode.Overwrite);
@@ -203,28 +182,26 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}")
-    public void sftpVersionSelector(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpVersionSelector(int version) throws Exception {
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
-            assertEquals(getTestedVersion(), sftp.getVersion(), "Mismatched negotiated version");
+             SftpClient sftp = createSftpClient(session, version)) {
+            assertEquals(version, sftp.getVersion(), "Mismatched negotiated version");
         }
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}") // see SSHD-572
-    public void sftpFileTimesUpdate(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpFileTimesUpdate(int version) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path lclFile
-                = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+                = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + version + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile);
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             Attributes attrs = sftp.lstat(remotePath);
             long expectedSeconds = TimeUnit.SECONDS.convert(System.currentTimeMillis() - TimeUnit.HOURS.toMillis(1L),
                     TimeUnit.MILLISECONDS);
@@ -249,29 +226,28 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}") // see SSHD-573
-    public void sftpFileTypeAndPermissionsUpdate(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpFileTypeAndPermissionsUpdate(int version) throws Exception {
         Path targetPath = detectTargetFolder();
         Path lclSftp
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Path subFolder = Files.createDirectories(lclSftp.resolve("sub-folder"));
         String subFolderName = subFolder.getFileName().toString();
         Path lclFile
-                = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+                = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + version + ".txt");
         String lclFileName = lclFile.getFileName().toString();
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();
         String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclSftp);
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             for (DirEntry entry : sftp.readDir(remotePath)) {
                 String fileName = entry.getFilename();
                 if (".".equals(fileName) || "..".equals(fileName)) {
                     continue;
                 }
 
-                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, version, entry.getAttributes());
                 if (subFolderName.equals(fileName)) {
                     assertEquals(SftpConstants.SSH_FILEXFER_TYPE_DIRECTORY, attrs.getType(), "Mismatched sub-folder type");
                     assertTrue(attrs.isDirectory(), "Sub-folder not marked as directory");
@@ -285,8 +261,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}") // see SSHD-574
-    public void sftpACLEncodeDecode(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpACLEncodeDecode(int version) throws Exception {
         AclEntryType[] types = AclEntryType.values();
         final List<AclEntry> aclExpected = new ArrayList<>(types.length);
         for (AclEntryType t : types) {
@@ -347,7 +322,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 @SuppressWarnings("unchecked")
                 List<AclEntry> aclActual
                         = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get(IoUtils.ACL_VIEW_ATTR);
-                if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                if (version > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modifying ACL for file=" + path, aclExpected, aclActual);
                 } else {
                     assertNull(aclActual, "Unexpected modifying ACL for file=" + path);
@@ -360,7 +335,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 @SuppressWarnings("unchecked")
                 List<AclEntry> aclActual
                         = MapEntryUtils.isEmpty(attrs) ? null : (List<AclEntry>) attrs.get(IoUtils.ACL_VIEW_ATTR);
-                if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                if (version > SftpConstants.SFTP_V3) {
                     assertListEquals("Mismatched modified ACL for file=" + path, aclExpected, aclActual);
                 } else {
                     assertNull(aclActual, "Unexpected modified ACL for file=" + path);
@@ -373,7 +348,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Files.createDirectories(lclSftp.resolve("sub-folder"));
         Path lclFile = assertHierarchyTargetFolderExists(lclSftp)
-                .resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+                .resolve(getCurrentTestName() + "-" + version + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();
@@ -383,16 +358,16 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             for (DirEntry entry : sftp.readDir(remotePath)) {
                 String fileName = entry.getFilename();
                 if (".".equals(fileName) || "..".equals(fileName)) {
                     continue;
                 }
 
-                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, version, entry.getAttributes());
                 List<AclEntry> aclActual = attrs.getAcl();
-                if (getTestedVersion() == SftpConstants.SFTP_V3) {
+                if (version == SftpConstants.SFTP_V3) {
                     assertNull(aclActual, "Unexpected ACL for entry=" + fileName);
                 } else {
                     assertListEquals("Mismatched ACL for entry=" + fileName, aclExpected, aclActual);
@@ -401,7 +376,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 attrs.getFlags().clear();
                 attrs.setAcl(aclExpected);
                 sftp.setStat(remotePath + "/" + fileName, attrs);
-                if (getTestedVersion() > SftpConstants.SFTP_V3) {
+                if (version > SftpConstants.SFTP_V3) {
                     numInvoked++;
                 }
             }
@@ -414,8 +389,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}") // see SSHD-575
-    public void sftpExtensionsEncodeDecode(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void sftpExtensionsEncodeDecode(int version) throws Exception {
         Class<?> anchor = getClass();
         Map<String, String> expExtensions = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
                 .put("class", anchor.getSimpleName())
@@ -453,7 +427,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                         assertExtensionsMapEquals("setFileExtensions(" + file + ")", expExtensions, extensions);
                         numInvocations.incrementAndGet();
 
-                        int currentVersion = getTestedVersion();
+                        int currentVersion = version;
                         try {
                             super.setFileExtensions(file, extensions, options);
                             assertFalse(currentVersion >= SftpConstants.SFTP_V6,
@@ -498,7 +472,7 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
         Files.createDirectories(lclSftp.resolve("sub-folder"));
         Path lclFile
-                = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + getTestedVersion() + ".txt");
+                = assertHierarchyTargetFolderExists(lclSftp).resolve(getCurrentTestName() + "-" + version + ".txt");
         Files.write(lclFile, getClass().getName().getBytes(StandardCharsets.UTF_8));
 
         Path parentPath = targetPath.getParent();
@@ -508,14 +482,14 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
         List<? extends SubsystemFactory> factories = sshd.getSubsystemFactories();
         sshd.setSubsystemFactories(Collections.singletonList(factory));
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             for (DirEntry entry : sftp.readDir(remotePath)) {
                 String fileName = entry.getFilename();
                 if (".".equals(fileName) || "..".equals(fileName)) {
                     continue;
                 }
 
-                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, getTestedVersion(), entry.getAttributes());
+                Attributes attrs = validateSftpFileTypeAndPermissions(fileName, version, entry.getAttributes());
                 Map<String, byte[]> actExtensions = attrs.getExtensions();
                 assertExtensionsMapEquals("dirEntry=" + fileName, expExtensions, actExtensions);
                 attrs.getFlags().clear();
@@ -532,10 +506,9 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "version={0}") // see SSHD-623
-    public void endOfListIndicator(int version) throws Exception {
-        initSftpVersionsTest(version);
+    void endOfListIndicator(int version) throws Exception {
         try (ClientSession session = createAuthenticatedClientSession();
-             SftpClient sftp = createSftpClient(session, getTestedVersion())) {
+             SftpClient sftp = createSftpClient(session, version)) {
             AtomicReference<Boolean> eolIndicator = new AtomicReference<>();
             Path targetPath = detectTargetFolder();
             Path parentPath = targetPath.getParent();
@@ -567,11 +540,6 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                 }
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + getTestedVersion() + "]";
     }
 
     public static void assertExtensionsMapEquals(String message, Map<String, String> expected, Map<String, byte[]> actual) {

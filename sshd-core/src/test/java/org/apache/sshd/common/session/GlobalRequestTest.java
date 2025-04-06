@@ -48,20 +48,15 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Tests for sending global requests.
  */
-public class GlobalRequestTest extends BaseTestSupport {
+class GlobalRequestTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
     private int port;
 
-    public GlobalRequestTest() {
+    GlobalRequestTest() {
         super();
     }
 

@@ -32,15 +32,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class NoCloseOutputStreamTest extends JUnitTestSupport {
-    public NoCloseOutputStreamTest() {
+class NoCloseOutputStreamTest extends JUnitTestSupport {
+
+    NoCloseOutputStreamTest() {
         super();
     }
 

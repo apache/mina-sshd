@@ -44,24 +44,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
-    private String keyType;
-    private int keySize;
+class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
-    public void initBouncyCastleGeneratorHostKeyProviderTest(String keyType, int keySize) {
-        this.keyType = keyType;
-        this.keySize = keySize;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         if (!SecurityUtils.isBouncyCastleRegistered()) {
             return Collections.emptyList();
         }
@@ -84,8 +74,7 @@ public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0} / {1}")
-    public void keyReadWrite(String keyType, int keySize) throws IOException, GeneralSecurityException {
-        initBouncyCastleGeneratorHostKeyProviderTest(keyType, keySize);
+    void keyReadWrite(String keyType, int keySize) throws IOException, GeneralSecurityException {
         KeyPair expected;
         if (BuiltinIdentities.Constants.RSA.equalsIgnoreCase(keyType)) {
             expected = KeyUtils.generateKeyPair(KeyPairProvider.SSH_RSA, keySize);
@@ -126,10 +115,5 @@ public class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         }
 
         assertKeyPairEquals(keyType + "/" + keySize, expected, actual);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + keyType + "/" + keySize + "]";
     }
 }

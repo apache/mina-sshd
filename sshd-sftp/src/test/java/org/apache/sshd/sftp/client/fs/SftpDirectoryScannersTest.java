@@ -47,18 +47,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
-    public SftpDirectoryScannersTest() throws IOException {
+class SftpDirectoryScannersTest extends AbstractSftpFilesSystemSupport {
+
+    SftpDirectoryScannersTest() throws IOException {
         super();
     }
 

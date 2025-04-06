@@ -55,25 +55,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
+class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
-    private TestData data;
-    private KeyPair testKey;
-
-    public void initOpenSSHKeyPairResourceWriterTest(TestData data) throws Exception {
-        this.data = data;
-        setUp();
-    }
-
-    public static Collection<Object[]> parameters() {
+    static Collection<TestData> parameters() {
         List<TestData> result = new ArrayList<>();
         result.add(new TestData("RSA", 1024, null));
         result.add(new TestData("RSA", 2048, null));
@@ -102,10 +88,10 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
                     new EdDSAGenParameterSpec("Ed25519")));
         }
 
-        return parameterize(result);
+        return result;
     }
 
-    void setUp() throws Exception {
+    private KeyPair generateKey(TestData data) throws Exception {
         KeyPairGenerator generator;
         if (data.provider == null) {
             generator = KeyPairGenerator.getInstance(data.algorithm);
@@ -118,7 +104,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         } else {
             generator.initialize(data.keySize);
         }
-        testKey = generator.generateKeyPair();
+        return generator.generateKeyPair();
     }
 
     private boolean compare(KeyPair a, KeyPair b) {
@@ -141,8 +127,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fileRoundtripNoEncryption(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void fileRoundtripNoEncryption(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (SecureByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", null, out);
@@ -174,8 +160,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fileRoundtripWithEncryption(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void fileRoundtripWithEncryption(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
         options.setPassword("nonsense");
@@ -214,8 +200,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fileRoundtripAsymmetric(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void fileRoundtripAsymmetric(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         // Write first unencrypted, then encrypted. read both and compare.
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
@@ -253,8 +239,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePrivateKeyNoEncryption(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePrivateKeyNoEncryption(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePrivateKey(testKey, "a comment", null, out);
@@ -271,8 +257,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePrivateKeyNoPassword(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePrivateKeyNoPassword(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
@@ -290,8 +276,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePrivateKeyEncryptedAesCbc128(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePrivateKeyEncryptedAesCbc128(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
@@ -315,8 +301,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePrivateKeyEncryptedAesCtr256(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePrivateKeyEncryptedAesCtr256(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
@@ -340,8 +326,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePrivateKeyEncryptedWrongPassword(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePrivateKeyEncryptedWrongPassword(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
@@ -364,8 +350,8 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePrivateKeyEncryptedNoPassword(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePrivateKeyEncryptedNoPassword(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (ByteArrayOutputStream out = new SecureByteArrayOutputStream()) {
             OpenSSHKeyEncryptionContext options = new OpenSSHKeyEncryptionContext();
@@ -383,7 +369,7 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         }
     }
 
-    private void checkPublicKey(Path tmp, String comment) throws Exception {
+    private void checkPublicKey(KeyPair testKey, Path tmp, String comment) throws Exception {
         List<AuthorizedKeyEntry> keysRead = AuthorizedKeyEntry.readAuthorizedKeys(tmp);
         assertEquals(1, keysRead.size(), "Unexpected list size");
         AuthorizedKeyEntry entry = keysRead.get(0);
@@ -401,19 +387,19 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePublicKeyWithComment(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePublicKeyWithComment(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (OutputStream out = Files.newOutputStream(tmp)) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePublicKey(testKey, "a comment", out);
         }
-        checkPublicKey(tmp, "a comment");
+        checkPublicKey(testKey, tmp, "a comment");
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePublicKeyWithMultilineComment(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePublicKeyWithMultilineComment(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (OutputStream out = Files.newOutputStream(tmp)) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePublicKey(testKey,
@@ -422,29 +408,29 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         assertEquals(1,
                 Files.readAllLines(tmp).size(),
                 "Unexpected number of lines");
-        checkPublicKey(tmp, "a comment");
+        checkPublicKey(testKey, tmp, "a comment");
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePublicKeyNoComment(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePublicKeyNoComment(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (OutputStream out = Files.newOutputStream(tmp)) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePublicKey(testKey, null, out);
         }
-        checkPublicKey(tmp, null);
+        checkPublicKey(testKey, tmp, null);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void writePublicKeyEmptyComment(TestData data) throws Exception {
-        initOpenSSHKeyPairResourceWriterTest(data);
+    void writePublicKeyEmptyComment(TestData data) throws Exception {
+        final KeyPair testKey = generateKey(data);
         Path tmp = getTemporaryOutputFile();
         try (OutputStream out = Files.newOutputStream(tmp)) {
             OpenSSHKeyPairResourceWriter.INSTANCE.writePublicKey(testKey, "", out);
         }
-        checkPublicKey(tmp, null);
+        checkPublicKey(testKey, tmp, null);
     }
 
     private Path getTemporaryOutputFile(String suffix) throws IOException {
@@ -471,24 +457,22 @@ public class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         return getTemporaryOutputFile(null);
     }
 
-    @SuppressWarnings("checkstyle:VisibilityModifier")
     private static class TestData {
-        public final String algorithm;
 
-        public final String provider;
+        final String algorithm;
 
-        public final int keySize;
+        final String provider;
 
-        public final AlgorithmParameterSpec spec;
+        final int keySize;
 
-        TestData(
-                 String algorithm, int keySize,
+        final AlgorithmParameterSpec spec;
+
+        TestData(String algorithm, int keySize,
                  AlgorithmParameterSpec spec) {
             this(algorithm, null, keySize, spec);
         }
 
-        TestData(
-                 String algorithm, String provider, int keySize,
+        TestData(String algorithm, String provider, int keySize,
                  AlgorithmParameterSpec spec) {
             this.algorithm = algorithm;
             this.provider = provider;

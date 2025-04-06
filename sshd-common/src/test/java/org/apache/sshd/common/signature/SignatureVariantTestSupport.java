@@ -33,8 +33,6 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Assumptions;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -52,7 +50,7 @@ public abstract class SignatureVariantTestSupport extends JUnitTestSupport {
         }
     }
 
-    public void signature(SignatureFactory factory, KeyPair kp) throws Exception {
+    protected void signature(SignatureFactory factory, KeyPair kp) throws Exception {
         Assumptions.assumeTrue(factory.isSupported(), "Unsupported factory: " + factory);
 
         byte[] data = (getClass().getName() + "#" + getCurrentTestName())

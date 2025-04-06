@@ -52,25 +52,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Test MAC algorithms with other known implementations.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class MacCompatibilityTest extends BaseTestSupport {
+class MacCompatibilityTest extends BaseTestSupport {
     private static final Collection<String> GANYMEDE_MACS = Collections.unmodifiableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, Connection.getAvailableMACs()));
 
     private static SshServer sshd;
     private static int port;
 
-    private MacFactory factory;
-
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         List<Object[]> ret = new ArrayList<>();
         for (MacFactory f : BuiltinMacs.VALUES) {
             if (!f.isSupported()) {
@@ -144,7 +139,7 @@ public class MacCompatibilityTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "factory={0}")
-    public void withJSCH(MacFactory factory, String jschMacClass) throws Exception {
+    void withJSCH(MacFactory factory, String jschMacClass) throws Exception {
         sshd.setMacFactories(Collections.singletonList(factory));
         String macName = factory.getName();
         Assumptions.assumeTrue(!BuiltinMacs.hmacsha512.equals(factory), "Known JSCH bug with " + macName);
@@ -190,7 +185,7 @@ public class MacCompatibilityTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "factory={0}")
-    public void withGanymede(MacFactory factory, String jschMacClass) throws Exception {
+    void withGanymede(MacFactory factory, String jschMacClass) throws Exception {
         sshd.setMacFactories(Collections.singletonList(factory));
         String macName = factory.getName();
         Assumptions.assumeTrue(GANYMEDE_MACS.contains(macName), "Factory not supported: " + macName);

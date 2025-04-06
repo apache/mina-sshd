@@ -41,11 +41,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
@@ -53,8 +48,9 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class JaasPasswordAuthenticatorTest extends BaseTestSupport {
-    public JaasPasswordAuthenticatorTest() {
+class JaasPasswordAuthenticatorTest extends BaseTestSupport {
+
+    JaasPasswordAuthenticatorTest() {
         super();
     }
 

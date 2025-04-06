@@ -68,16 +68,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * Port forwarding tests
  */
 @TestMethodOrder(MethodName.class)
-public class PortForwardingLoadTest extends BaseTestSupport {
+class PortForwardingLoadTest extends BaseTestSupport {
     private final Logger log;
 
     @SuppressWarnings({ "checkstyle:anoninnerlength", "synthetic-access" })
@@ -152,7 +147,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
     private int sshPort;
     private IoAcceptor acceptor;
 
-    public PortForwardingLoadTest() {
+    PortForwardingLoadTest() {
         log = LoggerFactory.getLogger(getClass());
     }
 

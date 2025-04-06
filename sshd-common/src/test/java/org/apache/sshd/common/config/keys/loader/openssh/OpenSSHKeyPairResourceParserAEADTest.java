@@ -29,26 +29,16 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Tests reading an ed25519 private key in OpenSSH format AES encrypted and encrypted with AEAD ciphers (AES-GCM and
  * chacha20-poly1305@openssh.com).
  */
 @Tag("NoIoTestCase")
-public class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
+class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
 
     private static final String BASE = "ed25519_priv";
 
-    private String testFileName;
-
     private KeyPair unencrypted;
-
-    public void initOpenSSHKeyPairResourceParserAEADTest(String fileName) {
-        testFileName = fileName;
-    }
 
     public static String[] parameters() {
         return new String[] { BASE + ".aes", BASE + ".cha", BASE + ".gcm" };
@@ -71,8 +61,7 @@ public class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void decrypt(String fileName) throws Exception {
-        initOpenSSHKeyPairResourceParserAEADTest(fileName);
-        assertTrue(KeyUtils.compareKeyPairs(unencrypted, load(testFileName)), "Unequal keys");
+    void decrypt(String fileName) throws Exception {
+        assertTrue(KeyUtils.compareKeyPairs(unencrypted, load(fileName)), "Unequal keys");
     }
 }

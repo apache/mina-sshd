@@ -32,16 +32,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class PublicKeyEntryTest extends JUnitTestSupport {
-    public PublicKeyEntryTest() {
+class PublicKeyEntryTest extends JUnitTestSupport {
+
+    PublicKeyEntryTest() {
         super();
     }
 

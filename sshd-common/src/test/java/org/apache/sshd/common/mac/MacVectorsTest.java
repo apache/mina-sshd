@@ -40,8 +40,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-
 /**
  * @see    <A HREF="https://tools.ietf.org/html/rfc4231">RFC 4321</A>
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -49,18 +47,17 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
 public class MacVectorsTest extends JUnitTestSupport {
-    private VectorSeed seed;
     private Factory<? extends Mac> macFactory;
     private byte[] expected;
 
-    public void initMacVectorsTest(VectorSeed seed, String factoryName, String expected) {
-        this.seed = Objects.requireNonNull(seed, "No seed");
+    void initMacVectorsTest(VectorSeed seed, String factoryName, String expected) {
+        Objects.requireNonNull(seed, "No seed");
         this.macFactory = ValidateUtils.checkNotNull(BuiltinMacs.fromFactoryName(factoryName), "Unknown MAC: %s", factoryName);
         this.expected = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, expected);
     }
 
     @SuppressWarnings("checkstyle:MethodLength")
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         List<Object[]> ret = new ArrayList<>();
         for (VectorTestData vector : Collections.unmodifiableList(
                 Arrays.asList(
@@ -251,7 +248,7 @@ public class MacVectorsTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "factory={1}, expected={2}, seed={0}")
-    public void standardVectorMac(VectorSeed seed, String factoryName, String expected) throws Exception {
+    void standardVectorMac(VectorSeed seed, String factoryName, String expected) throws Exception {
         initMacVectorsTest(seed, factoryName, expected);
         Mac mac = macFactory.create();
         mac.init(seed.getKey());

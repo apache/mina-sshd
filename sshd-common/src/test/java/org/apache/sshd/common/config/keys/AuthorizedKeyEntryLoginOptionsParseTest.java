@@ -31,30 +31,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
-    private String value;
-    private String loginPart;
-    private String keyPart;
-    private Map<String, String> options;
+class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
 
-    public void initAuthorizedKeyEntryLoginOptionsParseTest(
-            String value, String loginPart, String keyPart,
-            Map<String, String> options) {
-        this.value = value;
-        this.loginPart = loginPart;
-        this.keyPart = keyPart;
-        this.options = options;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         addData(params, "ssh-rsa AAAAB2...19Q==", "john@example.net", "from=\"*.sales.example.net,!pc.sales.example.net\"");
         addData(params, "ssh-dss AAAAC3...51R==", "example.net", "command=\"dump /home\"", "no-pty", "no-port-forwarding");
@@ -101,8 +85,7 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void resolveEntryComponents(String value, String loginPart, String keyPart, Map<String, String> options) {
-        initAuthorizedKeyEntryLoginOptionsParseTest(value, loginPart, keyPart, options);
+    void resolveEntryComponents(String value, String loginPart, String keyPart, Map<String, String> options) {
         Map.Entry<String, String> actual = AuthorizedKeyEntry.resolveEntryComponents(value);
         assertNotNull(actual, value);
         assertEquals(loginPart, actual.getKey(), "login(" + value + ")");
@@ -111,18 +94,12 @@ public class AuthorizedKeyEntryLoginOptionsParseTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void parseLoginOptions(String value, String loginPart, String keyPart, Map<String, String> options) {
-        initAuthorizedKeyEntryLoginOptionsParseTest(value, loginPart, keyPart, options);
+    void parseLoginOptions(String value, String loginPart, String keyPart, Map<String, String> options) {
         Map<String, String> parsed = AuthorizedKeyEntry.parseLoginOptions(loginPart);
         options.forEach((key, expected) -> {
             String actual = parsed.get(key);
             assertEquals(expected, actual, key);
         });
         assertEquals(options.size(), parsed.size(), "Mismatched size");
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + value + "]";
     }
 }

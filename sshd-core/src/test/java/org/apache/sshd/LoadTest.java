@@ -42,16 +42,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 @TestMethodOrder(MethodName.class)
-public class LoadTest extends BaseTestSupport {
+class LoadTest extends BaseTestSupport {
 
     private SshServer sshd;
     private int port;
 
-    public LoadTest() {
+    LoadTest() {
         super();
     }
 

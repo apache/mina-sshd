@@ -37,17 +37,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
-    public CopyFileExtensionImplTest() throws IOException {
+class CopyFileExtensionImplTest extends AbstractSftpClientTestSupport {
+
+    CopyFileExtensionImplTest() throws IOException {
         super();
     }
 

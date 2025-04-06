@@ -31,14 +31,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class ChannelPipedInputStreamTest extends BaseTestSupport {
-    public ChannelPipedInputStreamTest() {
+class ChannelPipedInputStreamTest extends BaseTestSupport {
+
+    ChannelPipedInputStreamTest() {
         super();
     }
 

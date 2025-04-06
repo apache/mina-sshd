@@ -40,23 +40,18 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
+class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
+
     private final Path targetPath;
     private final Path parentPath;
     private final FileSystemFactory fileSystemFactory;
     private SimpleSftpClient sftpClient;
 
-    public SimpleSftpClientTest() throws Exception {
+    SimpleSftpClientTest() throws Exception {
         targetPath = detectTargetFolder();
         parentPath = targetPath.getParent();
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);

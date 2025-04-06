@@ -36,22 +36,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
-    private BuiltinUserAuthFactories factory;
-
-    public void initBuiltinUserAuthFactoriesTest(BuiltinUserAuthFactories factory) {
-        this.factory = factory;
-    }
+class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
 
     public static Collection<Object[]> parameters() {
         return parameterize(BuiltinUserAuthFactories.VALUES);
@@ -88,8 +78,7 @@ public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "Factory={0}")
-    public void singletonFactoryInstance(BuiltinUserAuthFactories factory) {
-        initBuiltinUserAuthFactoriesTest(factory);
+    void singletonFactoryInstance(BuiltinUserAuthFactories factory) {
         UserAuthFactory expected = factory.create();
         for (int index = 1; index <= Byte.SIZE; index++) {
             assertSame(expected, factory.create(), "Mismatched factory instance at invocation #" + index);
@@ -98,8 +87,7 @@ public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "Factory={0}")
-    public void fromFactoryName(BuiltinUserAuthFactories factory) {
-        initBuiltinUserAuthFactoriesTest(factory);
+    void fromFactoryName(BuiltinUserAuthFactories factory) {
         String name = factory.getName();
         UserAuthFactory expected = factory.create();
         for (int index = 1, count = name.length(); index <= count; index++) {
@@ -111,8 +99,7 @@ public class BuiltinUserAuthFactoriesTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "Factory={0}")
-    public void parseResult(BuiltinUserAuthFactories factory) {
-        initBuiltinUserAuthFactoriesTest(factory);
+    void parseResult(BuiltinUserAuthFactories factory) {
         ParseResult result = BuiltinUserAuthFactories.parseFactoriesList(factory.getName());
         assertNotNull(result, "No parse result");
 

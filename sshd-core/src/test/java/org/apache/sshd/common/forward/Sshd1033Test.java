@@ -49,22 +49,19 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * Local + dynamic port forwarding test
  */
 @TestMethodOrder(MethodName.class)
-public class Sshd1033Test extends BaseTestSupport {
+class Sshd1033Test extends BaseTestSupport {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(Sshd1033Test.class);
 
     private static SshServer sshd;
     private static int sshPort;
 
-    public Sshd1033Test() {
-        // Default constructor
+    Sshd1033Test() {
+        super();
     }
 
     @BeforeAll

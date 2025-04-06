@@ -54,16 +54,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSupport {
+class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSupport {
     private static final Collection<Integer> DATA_SIZES = Collections.unmodifiableList(
             Arrays.asList(
                     (int) Byte.MAX_VALUE,
@@ -76,9 +71,8 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                     SftpConstants.MIN_CHKFILE_BLOCKSIZE,
                     1024,
                     IoUtils.DEFAULT_COPY_SIZE));
-    private static final Collection<Object[]> PARAMETERS;
 
-    static {
+    static Collection<Object[]> parameters() {
         Collection<Object[]> list = new ArrayList<>();
         for (DigestFactory factory : BuiltinDigests.VALUES) {
             if (!factory.isSupported()) {
@@ -93,21 +87,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
                 }
             }
         }
-        PARAMETERS = list;
-    }
-
-    private String algorithm;
-    private int dataSize;
-    private int blockSize;
-
-    public void initAbstractCheckFileExtensionTest(String algorithm, int dataSize, int blockSize) throws IOException {
-        this.algorithm = algorithm;
-        this.dataSize = dataSize;
-        this.blockSize = blockSize;
-    }
-
-    public static Collection<Object[]> parameters() {
-        return PARAMETERS;
+        return list;
     }
 
     @BeforeEach
@@ -117,15 +97,14 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0} - dataSize={1}, blockSize={2}")
-    public void checkFileExtension(String algorithm, int dataSize, int blockSize) throws Exception {
-        initAbstractCheckFileExtensionTest(algorithm, dataSize, blockSize);
+    void checkFileExtension(String algorithm, int dataSize, int blockSize) throws Exception {
         testCheckFileExtension(algorithm, dataSize, blockSize);
     }
 
     private void testCheckFileExtension(String expectedAlgorithm, int inputDataSize, int hashBlockSize) throws Exception {
         NamedFactory<? extends Digest> factory = BuiltinDigests.fromFactoryName(expectedAlgorithm);
         Digest digest = null;
-        if (blockSize == 0) {
+        if (hashBlockSize == 0) {
             digest = factory.create();
             digest.init();
         }
@@ -149,7 +128,6 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
         }
     }
 
-    @SuppressWarnings("checkstyle:nestedtrydepth")
     private void testCheckFileExtension(
             NamedFactory<? extends Digest> factory, byte[] data, int hashBlockSize, byte[] expectedHash)
             throws Exception {
@@ -185,12 +163,7 @@ public class AbstractCheckFileExtensionTest extends AbstractSftpClientTestSuppor
 
             CheckFileHandleExtension hndl = assertExtensionCreated(sftp, CheckFileHandleExtension.class);
             try (CloseableHandle dirHandle = sftp.openDir(srcFolder)) {
-                try {
-                    Map.Entry<String, ?> result = hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize);
-                    fail("Unexpected handle success on folder=" + srcFolder + ": " + result.getKey());
-                } catch (IOException e) { // expected - not allowed to hash a folder
-                    assertTrue(e instanceof SftpException, "Not an SftpException");
-                }
+                assertThrows(SftpException.class, () -> hndl.checkFileHandle(dirHandle, algorithms, 0L, 0L, hashBlockSize));
             }
 
             String hashAlgo = algorithms.get(0);

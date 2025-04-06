@@ -33,33 +33,24 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @param  <T> Type of property being tested
  * @author     <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class PropertyTest<T> extends JUnitTestSupport {
-    private Class<T> propType;
-    private T defaultValue;
+class PropertyTest<T> extends JUnitTestSupport {
     private Property<T> prop;
 
     @SuppressWarnings("unchecked")
-    public void initPropertyTest(Class<T> propType, T defaultValue) throws Exception {
-        this.propType = propType;
-        this.defaultValue = defaultValue;
-
+    void initPropertyTest(Class<T> propType, T defaultValue) throws Exception {
         String className = Property.class.getCanonicalName() + "$" + propType.getSimpleName() + "Property";
         Class<?> propClass = Class.forName(className);
         Constructor<?> ctor = propClass.getDeclaredConstructor(String.class, propType);
         prop = (Property<T>) ctor.newInstance(propClass.getSimpleName() + "Test", defaultValue);
     }
 
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         Collection<Object[]> testCases = new LinkedList<>();
         testCases.add(new Object[] { Integer.class, null });
         testCases.add(new Object[] { Integer.class, 22 });
@@ -74,14 +65,14 @@ public class PropertyTest<T> extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, default={1}")
-    public void propertyType(Class<T> propType, T defaultValue) throws Exception {
+    void propertyType(Class<T> propType, T defaultValue) throws Exception {
         initPropertyTest(propType, defaultValue);
         assertSame(propType, prop.getType());
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, default={1}")
-    public void defaultValue(Class<T> propType, T defaultValue) throws Exception {
+    void defaultValue(Class<T> propType, T defaultValue) throws Exception {
         initPropertyTest(propType, defaultValue);
         Optional<T> actual = prop.get(null);
         if (defaultValue == null) {
@@ -93,7 +84,7 @@ public class PropertyTest<T> extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, default={1}")
-    public void getOrNullIfNoValueResolved(Class<T> propType, T defaultValue) throws Exception {
+    void getOrNullIfNoValueResolved(Class<T> propType, T defaultValue) throws Exception {
         initPropertyTest(propType, defaultValue);
         T actual = prop.getOrNull(PropertyResolver.EMPTY);
         assertNull(actual);
@@ -101,32 +92,32 @@ public class PropertyTest<T> extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, default={1}")
-    public void getOrNullIfNoValueExists(Class<T> propType, T defaultValue) throws Exception {
+    void getOrNullIfNoValueExists(Class<T> propType, T defaultValue) throws Exception {
         initPropertyTest(propType, defaultValue);
-        T expected = getNonDefaultValue();
+        T expected = getNonDefaultValue(propType);
         T actual = prop.getOrNull(asPropertyResolver(expected));
         assertSame(expected, actual);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, default={1}")
-    public void getOrCustomDefaultIfNoValueResolved(Class<T> propType, T defaultValue) throws Exception {
+    void getOrCustomDefaultIfNoValueResolved(Class<T> propType, T defaultValue) throws Exception {
         initPropertyTest(propType, defaultValue);
-        T expected = getCustomValue();
+        T expected = getCustomValue(propType);
         T actual = prop.getOrCustomDefault(PropertyResolver.EMPTY, expected);
         assertSame(expected, actual);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}, default={1}")
-    public void getOrCustomDefaultIfValueExists(Class<T> propType, T defaultValue) throws Exception {
+    void getOrCustomDefaultIfValueExists(Class<T> propType, T defaultValue) throws Exception {
         initPropertyTest(propType, defaultValue);
-        T expected = getNonDefaultValue();
-        T actual = prop.getOrCustomDefault(asPropertyResolver(expected), getCustomValue());
+        T expected = getNonDefaultValue(propType);
+        T actual = prop.getOrCustomDefault(asPropertyResolver(expected), getCustomValue(propType));
         assertSame(expected, actual);
     }
 
-    private T getCustomValue() {
+    private T getCustomValue(Class<T> propType) {
         if (propType == Integer.class) {
             return propType.cast(33);
         } else if (propType == Long.class) {
@@ -140,7 +131,7 @@ public class PropertyTest<T> extends JUnitTestSupport {
         }
     }
 
-    private T getNonDefaultValue() {
+    private T getNonDefaultValue(Class<T> propType) {
         if (propType == Integer.class) {
             return propType.cast(44);
         } else if (propType == Long.class) {

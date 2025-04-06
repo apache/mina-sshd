@@ -42,7 +42,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
  */
 @Tag("NoIoTestCase")
 @ExtendWith(MockitoExtension.class)
-public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
+class OpenSshHostKeysHandlerTest extends BaseTestSupport {
 
     @Mock
     private ConnectionService connectionService;
@@ -50,7 +50,7 @@ public class OpenSshHostKeysHandlerTest extends BaseTestSupport {
     private PublicKey key;
     private Buffer buffer;
 
-    public OpenSshHostKeysHandlerTest() {
+    OpenSshHostKeysHandlerTest() {
         super();
     }
 

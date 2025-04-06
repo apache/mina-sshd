@@ -56,9 +56,6 @@ import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Test setup: run a gRPC server on localhost; run an Apache MINA sshd server on localhost. Run an OpenSSH client in a
  * container, set up to remote forward a port on the SSH server to the gRPC server. Then connect to the gRPC server via
@@ -80,7 +77,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
  */
 @Tag("ContainerTestCase")
-public class PortForwardingWithOpenSshTest extends BaseTestSupport {
+class PortForwardingWithOpenSshTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(PortForwardingWithOpenSshTest.class);
 
@@ -99,19 +96,13 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
     private CountDownLatch forwardingSetup;
     private int forwardedPort;
 
-    private String portToForward;
-
-    public void initPortForwardingWithOpenSshTest(String portToForward) {
-        this.portToForward = portToForward;
-    }
-
     /**
      * Uses different ways to specify the remote port forwarding.
      *
      * @return the remote port specifications to use
      * @see    <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
      */
-    public static String[] portSpecifications() {
+    static String[] portSpecifications() {
         return new String[] { "127.0.0.1:0", "0.0.0.0:0", "0", "localhost:0" };
     }
 
@@ -170,8 +161,7 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
 
     @MethodSource("portSpecifications")
     @ParameterizedTest(name = "{0}")
-    public void forwardingWithConnectionClose(String portToForward) throws Exception {
-        initPortForwardingWithOpenSshTest(portToForward);
+    void forwardingWithConnectionClose(String portToForward) throws Exception {
         // Write the entrypoint file. From within the test container, the host running the container and our two servers
         // is accessible as "host.testcontainers.internal".
         File entryPoint = File.createTempFile("junit", null, tmp);

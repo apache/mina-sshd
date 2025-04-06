@@ -27,14 +27,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.fail;
-
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class AbstractDHTest extends BaseTestSupport {
-    public AbstractDHTest() {
+class AbstractDHTest extends BaseTestSupport {
+
+    AbstractDHTest() {
         super();
     }
 

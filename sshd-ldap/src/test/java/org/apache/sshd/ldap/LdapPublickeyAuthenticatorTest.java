@@ -43,9 +43,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -56,13 +53,13 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @CreateLdapServer(allowAnonymousAccess = true,
                   transports = { @CreateTransport(protocol = "LDAP", address = "localhost") })
 @ApplyLdifFiles({ "auth-users.ldif" })
-public class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
+class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
 
     private static final Map<String, PublicKey> KEYS_MAP = new TreeMap<>(Comparator.naturalOrder());
     // we use this instead of the default since the default requires some extra LDIF manipulation which we don't need
     private static final String TEST_ATTR_NAME = "description";
 
-    public LdapPublickeyAuthenticatorTest() {
+    LdapPublickeyAuthenticatorTest() {
         super();
     }
 

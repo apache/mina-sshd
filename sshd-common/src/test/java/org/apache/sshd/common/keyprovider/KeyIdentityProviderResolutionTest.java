@@ -30,8 +30,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * TODO Add javadoc
  *
@@ -39,17 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
-    private KeyIdentityProvider p1;
-    private KeyIdentityProvider p2;
-    private KeyIdentityProvider expected;
-
-    public void initKeyIdentityProviderResolutionTest(
-            KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
-        this.p1 = p1;
-        this.p2 = p2;
-        this.expected = expected;
-    }
+class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
 
     public static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
@@ -82,7 +70,6 @@ public class KeyIdentityProviderResolutionTest extends JUnitTestSupport {
     @MethodSource("parameters")
     @ParameterizedTest(name = "p1={0}, p2={1}, expected={2}")
     public void resolveKeyIdentityProvider(KeyIdentityProvider p1, KeyIdentityProvider p2, KeyIdentityProvider expected) {
-        initKeyIdentityProviderResolutionTest(p1, p2, expected);
         assertSame(expected, KeyIdentityProvider.resolveKeyIdentityProvider(p1, p2));
     }
 }

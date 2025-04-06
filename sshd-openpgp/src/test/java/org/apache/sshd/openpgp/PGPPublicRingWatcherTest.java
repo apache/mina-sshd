@@ -34,14 +34,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class PGPPublicRingWatcherTest extends JUnitTestSupport {
-    public PGPPublicRingWatcherTest() {
+class PGPPublicRingWatcherTest extends JUnitTestSupport {
+
+    PGPPublicRingWatcherTest() {
         super();
     }
 

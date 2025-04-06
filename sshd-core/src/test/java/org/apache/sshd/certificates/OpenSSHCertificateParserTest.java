@@ -41,17 +41,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class OpenSSHCertificateParserTest extends BaseTestSupport {
+class OpenSSHCertificateParserTest extends BaseTestSupport {
 
     private static final String USER_KEY_PATH = "org/apache/sshd/client/opensshcerts/user/";
 
-    private TestParams params;
-
-    public void initOpenSSHCertificateParserTest(TestParams params) {
-        this.params = params;
-    }
-
-    public static Iterable<? extends TestParams> privateKeyParams() {
+    static Iterable<TestParams> privateKeyParams() {
         return Arrays.asList(
                 new TestParams("rsa-sha2-256", "user01_rsa_sha2_256_2048"),
                 new TestParams("rsa-sha2-512", "user01_rsa_sha2_512_2048"),
@@ -63,20 +57,16 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
                 new TestParams("rsa-sha2-512", "user01_ecdsa_521"));
     }
 
-    @SuppressWarnings("synthetic-access")
-    private String getCertificateResource() {
+    private String getCertificateResource(TestParams params) {
         return USER_KEY_PATH + params.privateKey + "-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX;
     }
 
     @MethodSource("privateKeyParams")
     @ParameterizedTest(name = "{0}")
-    @SuppressWarnings("synthetic-access")
-    public void parseCertificate(TestParams params) throws Exception {
-
-        initOpenSSHCertificateParserTest(params);
+    void parseCertificate(TestParams params) throws Exception {
 
         try (InputStream certInputStream
-                = Thread.currentThread().getContextClassLoader().getResourceAsStream(getCertificateResource())) {
+                = Thread.currentThread().getContextClassLoader().getResourceAsStream(getCertificateResource(params))) {
 
             byte[] certBytes = IoUtils.toByteArray(certInputStream);
             String certLine = GenericUtils.replaceWhitespaceAndTrim(new String(certBytes, StandardCharsets.UTF_8));
@@ -129,8 +119,8 @@ public class OpenSSHCertificateParserTest extends BaseTestSupport {
     }
 
     private static class TestParams {
-        private final String sigAlgorithm;
-        private final String privateKey;
+        final String sigAlgorithm;
+        final String privateKey;
 
         TestParams(String sigAlgorithm, String privateKey) {
             this.sigAlgorithm = sigAlgorithm;

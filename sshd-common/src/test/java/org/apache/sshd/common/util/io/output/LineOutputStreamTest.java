@@ -43,21 +43,15 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class LineOutputStreamTest extends JUnitTestSupport {
-    private boolean withCR;
+class LineOutputStreamTest extends JUnitTestSupport {
 
-    public void initLineOutputStreamTest(boolean withCR) {
-        this.withCR = withCR;
-    }
-
-    public static List<Object[]> parameters() {
-        return Arrays.asList(new Object[] { Boolean.TRUE }, new Object[] { Boolean.FALSE });
+    static List<Boolean> parameters() {
+        return Arrays.asList(Boolean.TRUE, Boolean.FALSE);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "CR={0}")
-    public void lineParsing(boolean withCR) throws IOException {
-        initLineOutputStreamTest(withCR);
+    void lineParsing(boolean withCR) throws IOException {
         List<String> expected = new ArrayList<>();
         String prefix = getClass().getName() + "#" + getCurrentTestName() + "-";
         for (int index = 1; index < Byte.MAX_VALUE; index++) {
@@ -112,10 +106,5 @@ public class LineOutputStreamTest extends JUnitTestSupport {
         }
 
         assertListEquals(getCurrentTestName(), expected, actual);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[withCR=" + withCR + "]";
     }
 }

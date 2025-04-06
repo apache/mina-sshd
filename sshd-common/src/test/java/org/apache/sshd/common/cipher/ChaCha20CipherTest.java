@@ -25,10 +25,9 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+class ChaCha20CipherTest extends JUnitTestSupport {
 
-public class ChaCha20CipherTest extends JUnitTestSupport {
-    public ChaCha20CipherTest() {
+    ChaCha20CipherTest() {
         super();
     }
 

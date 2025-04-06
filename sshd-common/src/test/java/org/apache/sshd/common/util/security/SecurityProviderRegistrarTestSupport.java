@@ -24,12 +24,11 @@ import java.util.Collection;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class SecurityProviderRegistrarTestSupport extends JUnitTestSupport {
+
     protected SecurityProviderRegistrarTestSupport() {
         super();
     }

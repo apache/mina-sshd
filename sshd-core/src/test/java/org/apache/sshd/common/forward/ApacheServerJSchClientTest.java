@@ -46,7 +46,7 @@ import org.slf4j.LoggerFactory;
  * Port forwarding tests - Apache server, JSch client
  */
 @TestMethodOrder(MethodName.class)
-public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
+class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
     private static final long TIMEOUT = TimeUnit.SECONDS.toMillis(10L);
     private static final Logger LOG = LoggerFactory.getLogger(ApacheServerJSchClientTest.class);
 
@@ -55,7 +55,7 @@ public class ApacheServerJSchClientTest extends AbstractServerCloseTestSupport {
 
     private Session session;
 
-    public ApacheServerJSchClientTest() {
+    ApacheServerJSchClientTest() {
         super();
     }
 

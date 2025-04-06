@@ -30,31 +30,14 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class KnownHostHashValueTest extends JUnitTestSupport {
-    private String hostName;
-    private int port;
-    private String hashValue;
-    private KnownHostHashValue hash;
+class KnownHostHashValueTest extends JUnitTestSupport {
 
-    public void initKnownHostHashValueTest(String hostName, int port, String hashValue) {
-        this.hostName = hostName;
-        this.port = port;
-        this.hashValue = hashValue;
-        this.hash = KnownHostHashValue.parse(hashValue);
-    }
-
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         return Arrays.asList(
                 // line generated `ssh xenon@localhost -p 10022 hostname` (SSH-2.0-OpenSSH_7.5)
                 new Object[] {
@@ -71,36 +54,27 @@ public class KnownHostHashValueTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "host={0}, port={1}, hash={2}")
-    public void decodeEncode(String hostName, int port, String hashValue) {
-        initKnownHostHashValueTest(hostName, port, hashValue);
+    void decodeEncode(String hostName, int port, String hashValue) {
+        KnownHostHashValue hash = KnownHostHashValue.parse(hashValue);
         assertSame(KnownHostHashValue.DEFAULT_DIGEST, hash.getDigester(), "Mismatched digester");
         assertEquals(hashValue, hash.toString(), "Mismatched encoded form");
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "host={0}, port={1}, hash={2}")
-    public void hostMatch(String hostName, int port, String hashValue) {
-        initKnownHostHashValueTest(hostName, port, hashValue);
+    void hostMatch(String hostName, int port, String hashValue) {
+        KnownHostHashValue hash = KnownHostHashValue.parse(hashValue);
         assertTrue(hash.isHostMatch(hostName, port), "Specified host does not match");
         assertFalse(hash.isHostMatch(getCurrentTestName(), port), "Unexpected host match");
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "host={0}, port={1}, hash={2}")
-    public void calculateHashValue(String hostName, int port, String hashValue) throws Exception {
-        initKnownHostHashValueTest(hostName, port, hashValue);
+    void calculateHashValue(String hostName, int port, String hashValue) throws Exception {
+        KnownHostHashValue hash = KnownHostHashValue.parse(hashValue);
         byte[] expected = hash.getDigestValue();
         byte[] actual = KnownHostHashValue.calculateHashValue(
                 hostName, port, hash.getDigester(), hash.getSaltValue());
         assertArrayEquals(expected, actual, "Mismatched hash value");
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName()
-               + "[host=" + hostName
-               + ", port=" + port
-               + ", hashValue=" + hashValue
-               + "]";
     }
 }

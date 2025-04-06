@@ -23,7 +23,6 @@ import java.net.URL;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collection;
-import java.util.List;
 
 import org.apache.sshd.common.config.keys.BuiltinIdentities;
 import org.apache.sshd.common.config.keys.loader.openssh.kdf.BCryptKdfOptions;
@@ -36,20 +35,15 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourceParserTestSupport {
-    public void initOpenSSHMaxBCryptRoundsSettingTest(BuiltinIdentities identity) {
-        setIdentity(identity);
-    }
+class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourceParserTestSupport {
 
-    public static List<Object[]> parameters() {
-        return parameterize(BuiltinIdentities.VALUES);
+    public static Collection<BuiltinIdentities> parameters() {
+        return BuiltinIdentities.VALUES;
     }
 
     @BeforeEach
@@ -65,7 +59,7 @@ public class OpenSSHMaxBCryptRoundsSettingTest extends OpenSSHKeyPairResourcePar
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}")
     public void maxRoundsSettingFailure(BuiltinIdentities identity) throws Exception {
-        initOpenSSHMaxBCryptRoundsSettingTest(identity);
+        setIdentity(identity);
         testLoadKeyPairs(true, DEFAULT_PASSWORD_PROVIDER);
     }
 

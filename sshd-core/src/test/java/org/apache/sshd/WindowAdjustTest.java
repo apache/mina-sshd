@@ -60,8 +60,6 @@ import org.junit.jupiter.api.Timeout;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 /**
  * <p>
  * This test simulates heavy traffic coming from the server towards the client making sure the traffic does not get
@@ -71,15 +69,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  * when sending too many messages one after another.
  */
 @TestMethodOrder(MethodName.class)
-public class WindowAdjustTest extends BaseTestSupport {
+class WindowAdjustTest extends BaseTestSupport {
 
-    public static final byte END_FILE = '#';
-    public static final int BIG_MSG_SEND_COUNT = 10000;
+    private static final byte END_FILE = '#';
+    private static final int BIG_MSG_SEND_COUNT = 10000;
 
     private SshServer sshServer;
     private int port;
 
-    public WindowAdjustTest() {
+    WindowAdjustTest() {
         super();
     }
 
@@ -174,7 +172,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         }
     }
 
-    public static final class FloodingAsyncCommand extends AbstractLoggingBean implements AsyncCommand {
+    static final class FloodingAsyncCommand extends AbstractLoggingBean implements AsyncCommand {
         private static final AtomicInteger POOL_COUNT = new AtomicInteger(0);
 
         private final AtomicReference<ExecutorService> executorHolder = new AtomicReference<>();
@@ -185,7 +183,7 @@ public class WindowAdjustTest extends BaseTestSupport {
         private int sendCount;
         private byte eofSignal;
 
-        public FloodingAsyncCommand(final byte[] msg, final int sendCount, final byte eofSignal) {
+        FloodingAsyncCommand(final byte[] msg, final int sendCount, final byte eofSignal) {
             this.msg = msg;
             this.sendCount = sendCount;
             this.eofSignal = eofSignal;
@@ -280,7 +278,7 @@ public class WindowAdjustTest extends BaseTestSupport {
      * Wrapper for asyncIn stream that catches Pending exception and queues the pending messages for later retry (send
      * after previous messages were fully transfered)
      */
-    private static class AsyncInPendingWrapper extends AbstractLoggingBean {
+    static class AsyncInPendingWrapper extends AbstractLoggingBean {
         private IoOutputStream asyncIn;
 
         // Order has to be preserved for queued writes
@@ -290,7 +288,7 @@ public class WindowAdjustTest extends BaseTestSupport {
             this.asyncIn = out;
         }
 
-        public synchronized void write(Object msg) throws IOException {
+        synchronized void write(Object msg) throws IOException {
             if ((asyncIn != null) && (!asyncIn.isClosed()) && (!asyncIn.isClosing())) {
                 Buffer byteBufferMsg = (Buffer) msg;
                 if (!pending.isEmpty()) {

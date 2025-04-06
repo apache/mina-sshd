@@ -49,13 +49,11 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class ChannelSessionTest extends BaseTestSupport {
-    public ChannelSessionTest() {
+class ChannelSessionTest extends BaseTestSupport {
+
+    ChannelSessionTest() {
         super();
     }
 

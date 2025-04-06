@@ -26,17 +26,14 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author Kohsuke Kawaguchi
  * @author Michael Heemskerk
  */
 @TestMethodOrder(MethodName.class)
-public class SshServerTest extends BaseTestSupport {
-    public SshServerTest() {
+class SshServerTest extends BaseTestSupport {
+
+    SshServerTest() {
         super();
     }
 

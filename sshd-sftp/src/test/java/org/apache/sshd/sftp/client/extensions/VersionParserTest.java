@@ -33,8 +33,9 @@ import org.junit.jupiter.api.TestMethodOrder;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class VersionParserTest extends JUnitTestSupport {
-    public VersionParserTest() {
+class VersionParserTest extends JUnitTestSupport {
+
+    VersionParserTest() {
         super();
     }
 

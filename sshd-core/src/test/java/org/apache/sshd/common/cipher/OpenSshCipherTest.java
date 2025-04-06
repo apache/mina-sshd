@@ -32,7 +32,6 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -46,8 +45,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Test ciphers against OpenSSH. Force resetting ciphers every time to verify that they are res-initialized correctly.
  *
@@ -55,7 +52,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @Tag("ContainerTestCase")
 @Testcontainers
-public class OpenSshCipherTest extends BaseTestSupport {
+class OpenSshCipherTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenSshCipherTest.class);
 
@@ -83,22 +80,12 @@ public class OpenSshCipherTest extends BaseTestSupport {
             .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1)).withExposedPorts(22) //
             .withLogConsumer(new Slf4jLogConsumer(LOG));
 
-    private String providerName;
-
-    private BuiltinCiphers builtIn;
-
     public void initOpenSshCipherTest(String providerName, BuiltinCiphers factory, String name) {
-        this.providerName = providerName;
-        this.builtIn = factory;
+        BaseCipher.factory = t -> javax.crypto.Cipher.getInstance(t, providerName);
+        BaseCipher.alwaysReInit = true;
         if ("BC".equals(providerName)) {
             registerBouncyCastleProviderIfNecessary();
         }
-    }
-
-    @BeforeEach
-    void changeCipher() {
-        BaseCipher.factory = t -> javax.crypto.Cipher.getInstance(t, providerName);
-        BaseCipher.alwaysReInit = true;
     }
 
     @AfterEach
@@ -119,7 +106,7 @@ public class OpenSshCipherTest extends BaseTestSupport {
     }
 
     @SuppressWarnings("deprecation")
-    public static List<Object[]> getParameters() {
+    static List<Object[]> getParameters() {
         List<Object[]> items = new ArrayList<>();
         addCipher(BuiltinCiphers.tripledescbc, items);
         addCipher(BuiltinCiphers.aes128cbc, items);
@@ -136,12 +123,12 @@ public class OpenSshCipherTest extends BaseTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "{2} - {0}")
-    public void connection(String providerName, BuiltinCiphers factory, String name) throws Exception {
+    void connection(String providerName, BuiltinCiphers factory, String name) throws Exception {
         initOpenSshCipherTest(providerName, factory, name);
         FileKeyPairProvider keyPairProvider = CommonTestSupportUtils.createTestKeyPairProvider(TEST_RESOURCES + "/bob_key");
         SshClient client = setupTestClient();
         client.setKeyIdentityProvider(keyPairProvider);
-        client.setCipherFactories(Collections.singletonList(builtIn));
+        client.setCipherFactories(Collections.singletonList(factory));
         client.start();
 
         Integer actualPort = sshdContainer.getMappedPort(22);

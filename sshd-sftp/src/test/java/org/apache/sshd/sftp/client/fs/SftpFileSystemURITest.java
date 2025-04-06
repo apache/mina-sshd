@@ -38,9 +38,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * TODO Add javadoc
  *
@@ -49,21 +46,8 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
 public class SftpFileSystemURITest extends JUnitTestSupport {
-    private String host;
-    private int port;
-    private String username;
-    private String password;
-    private Map<String, ?> params;
 
-    public void initSftpFileSystemURITest(String host, int port, String username, String password, Map<String, ?> params) {
-        this.host = host;
-        this.port = port;
-        this.username = username;
-        this.password = password;
-        this.params = params;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return new ArrayList<Object[]>() {
             // Not serializing it
             private static final long serialVersionUID = 1L;
@@ -93,8 +77,7 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "host={0}, port={1}, user={2}, password={3}, params={4}")
-    public void fullURIEncoding(String host, int port, String username, String password, Map<String, ?> params) {
-        initSftpFileSystemURITest(host, port, username, password, params);
+    void fullURIEncoding(String host, int port, String username, String password, Map<String, ?> params) {
         URI uri = SftpFileSystemProvider.createFileSystemURI(host, port, username, password, params);
         assertEquals(SftpConstants.SFTP_SUBSYSTEM_NAME, uri.getScheme(), "Mismatched scheme");
         assertEquals(host, uri.getHost(), "Mismatched host");
@@ -111,23 +94,11 @@ public class SftpFileSystemURITest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "host={0}, port={1}, user={2}, password={3}, params={4}")
-    public void encodeDecodeCredentials(String host, int port, String username, String password, Map<String, ?> params) {
-        initSftpFileSystemURITest(host, port, username, password, params);
+    void encodeDecodeCredentials(String host, int port, String username, String password, Map<String, ?> params) {
         String userInfo = SftpFileSystemProvider.encodeCredentials(username, password);
         BasicCredentialsProvider credentials = SftpFileSystemProvider.parseCredentials(userInfo);
         assertNotNull(credentials, "No credentials provided");
         assertEquals(username, credentials.getUsername(), "Mismatched user");
         assertEquals(password, credentials.getPassword(), "Mismatched password");
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName()
-               + "[host=" + host
-               + ", port=" + port
-               + ", username=" + username
-               + ", password=" + password
-               + ", params=" + params
-               + "]";
     }
 }

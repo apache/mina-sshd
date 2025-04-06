@@ -57,24 +57,15 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
-    private String resourceName;
+class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
     private Key key;
 
-    public void initPGPUtilsKeyFingerprintTest(String resourceName) throws IOException, PGPException {
-        this.resourceName = resourceName;
-
+    void initPGPUtilsKeyFingerprintTest(String resourceName) throws IOException, PGPException {
         InputStream stream = getClass().getResourceAsStream(resourceName);
         assertNotNull(stream, "Missing " + resourceName);
 
@@ -86,7 +77,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
         }
     }
 
-    public static String[] parameters() {
+    static String[] parameters() {
         return new String[] {
                 "EC-256-gpg2-public.asc",
                 "EC-348-v1p0-public.asc",
@@ -118,7 +109,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void findSubKeyByFingerprint(String resourceName) throws Exception {
+    void findSubKeyByFingerprint(String resourceName) throws Exception {
         initPGPUtilsKeyFingerprintTest(resourceName);
         Collection<? extends Subkey> subKeys = key.getSubkeys();
         assertFalse(GenericUtils.isEmpty(subKeys), "No sub keys available in " + resourceName);
@@ -132,7 +123,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void parseAuthorizedKeyEntry(String resourceName) throws Exception {
+    void parseAuthorizedKeyEntry(String resourceName) throws Exception {
         initPGPUtilsKeyFingerprintTest(resourceName);
         Path dir = getTempTargetRelativeFile(getClass().getSimpleName());
         Path file = Files.createDirectories(dir).resolve(resourceName + ".authorized");
@@ -178,7 +169,7 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void resolveAuthorizedEntries(String resourceName)
+    void resolveAuthorizedEntries(String resourceName)
             throws IOException, GeneralSecurityException, PGPException {
         initPGPUtilsKeyFingerprintTest(resourceName);
         Collection<? extends Subkey> subKeys = key.getSubkeys();
@@ -219,10 +210,5 @@ public class PGPUtilsKeyFingerprintTest extends JUnitTestSupport {
             PublicKey actual = GenericUtils.head(keys);
             assertKeyEquals(pke.toString(), expected, actual);
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + resourceName + "]";
     }
 }

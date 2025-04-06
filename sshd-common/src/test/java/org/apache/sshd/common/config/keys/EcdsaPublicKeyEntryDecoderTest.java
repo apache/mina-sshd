@@ -23,8 +23,8 @@ import java.io.ByteArrayOutputStream;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 
 import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -41,24 +41,17 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
-    public static final int TESTS_COUNT
+class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
+    static final int TESTS_COUNT
             = Integer.parseInt(System.getProperty(EcdsaPublicKeyEntryDecoderTest.class.getName(), "500"));
 
-    private ECCurves curve;
-
-    public void initEcdsaPublicKeyEntryDecoderTest(ECCurves curve) {
-        this.curve = curve;
-    }
-
-    public static List<Object[]> parameters() {
-        return parameterize(ECCurves.VALUES);
+    static Collection<ECCurves> parameters() {
+        return ECCurves.VALUES;
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}") // see SSHD-934
-    public void encodeDecodePublicKey(ECCurves curve) throws Exception {
-        initEcdsaPublicKeyEntryDecoderTest(curve);
+    void encodeDecodePublicKey(ECCurves curve) throws Exception {
         Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
         int keySize = curve.getKeySize();
         String keyType = curve.getKeyType();
@@ -105,10 +98,5 @@ public class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
 
             assertECPublicKeyEquals("[" + index + "]", expKey, actKey);
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + curve + "]";
     }
 }

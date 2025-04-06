@@ -45,18 +45,16 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class ChannelExecTest extends BaseTestSupport {
+class ChannelExecTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
 
-    public ChannelExecTest() {
+    ChannelExecTest() {
         super();
     }
 

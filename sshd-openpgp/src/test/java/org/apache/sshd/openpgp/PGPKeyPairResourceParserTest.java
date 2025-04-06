@@ -44,19 +44,13 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
-    public static final String PASSWORD = "super secret passphrase";
+class PGPKeyPairResourceParserTest extends JUnitTestSupport {
+    static final String PASSWORD = "super secret passphrase";
 
     private String resourceName;
     private ResourceDecodeResult result;
@@ -64,7 +58,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
     private final AtomicInteger retriesCount = new AtomicInteger(0);
     private final int maxRetries = 3;
 
-    public void initPGPKeyPairResourceParserTest(String resourceName, ResourceDecodeResult result, String password) {
+    void initPGPKeyPairResourceParserTest(String resourceName, ResourceDecodeResult result, String password) {
         this.resourceName = resourceName;
         this.result = result;
         this.passwordProvider = new FilePasswordProvider() {
@@ -116,7 +110,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
         };
     }
 
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         return Collections.unmodifiableList(new ArrayList<Object[]>() {
             // Not serializing it
             private static final long serialVersionUID = 1L;
@@ -138,7 +132,7 @@ public class PGPKeyPairResourceParserTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0} / {1}")
-    public void decodePrivateKeyPair(String resourceName, ResourceDecodeResult result, String password) throws IOException {
+    void decodePrivateKeyPair(String resourceName, ResourceDecodeResult result, String password) throws IOException {
         initPGPKeyPairResourceParserTest(resourceName, result, password);
         InputStream stream = getClass().getResourceAsStream(resourceName);
         assertNotNull(stream, "Missing " + resourceName);

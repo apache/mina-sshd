@@ -51,19 +51,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * Port forwarding tests
  */
 @TestMethodOrder(MethodName.class)
-public class ProxyTest extends BaseTestSupport {
+class ProxyTest extends BaseTestSupport {
     private SshServer sshd;
     private int sshPort;
     private int echoPort;
@@ -140,7 +132,7 @@ public class ProxyTest extends BaseTestSupport {
         }
     };
 
-    public ProxyTest() {
+    ProxyTest() {
         super();
     }
 

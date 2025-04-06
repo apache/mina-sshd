@@ -36,20 +36,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.fail;
-
 @TestMethodOrder(MethodName.class)
-public class SftpTransferTest extends AbstractSftpClientTestSupport {
+class SftpTransferTest extends AbstractSftpClientTestSupport {
 
     private static final int BUFFER_SIZE = 8192;
 
-    private long rekeyBlockSize;
-
-    public void initSftpTransferTest(long rekeyBlockSize) throws IOException {
-        this.rekeyBlockSize = rekeyBlockSize;
-    }
-
-    public static List<Long> getParameters() {
+    static List<Long> getParameters() {
         List<Long> params = new ArrayList<>();
         params.add(Long.valueOf(0));
         params.add(Long.valueOf(65536));
@@ -58,23 +50,21 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "REKEY_BLOCK_SIZE {0}")
-    public void transferIntegrity(long rekeyBlockSize) throws IOException {
-        initSftpTransferTest(rekeyBlockSize);
+    void transferIntegrity(long rekeyBlockSize) throws IOException {
         for (int i = 0; i < 10; i++) {
-            doTestTransferIntegrity(0);
+            doTestTransferIntegrity(0, rekeyBlockSize);
         }
     }
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "REKEY_BLOCK_SIZE {0}")
-    public void transferIntegrityWithBufferLargerThanPacket(long rekeyBlockSize) throws IOException {
-        initSftpTransferTest(rekeyBlockSize);
+    void transferIntegrityWithBufferLargerThanPacket(long rekeyBlockSize) throws IOException {
         for (int i = 0; i < 10; i++) {
-            doTestTransferIntegrity(65536);
+            doTestTransferIntegrity(65536, rekeyBlockSize);
         }
     }
 
-    protected void doTestTransferIntegrity(int bufferSize) throws IOException {
+    private void doTestTransferIntegrity(int bufferSize, long rekeyBlockSize) throws IOException {
         Path localRoot = detectTargetFolder().resolve("sftp");
         Files.createDirectories(localRoot);
 

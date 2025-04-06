@@ -45,21 +45,17 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
+class SimpleAccessControlSftpEventListenerTest extends BaseTestSupport {
+
     private SshServer sshd;
     private int port;
     private final FileSystemFactory fileSystemFactory;
 
-    public SimpleAccessControlSftpEventListenerTest() {
+    SimpleAccessControlSftpEventListenerTest() {
         Path targetPath = detectTargetFolder();
         Path parentPath = targetPath.getParent();
         fileSystemFactory = new VirtualFileSystemFactory(parentPath);

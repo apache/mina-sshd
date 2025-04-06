@@ -19,7 +19,7 @@
 
 package org.apache.sshd.server.auth;
 
-import java.util.List;
+import java.util.Collection;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.client.SshClient;
@@ -37,27 +37,18 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class WelcomeBannerPhaseTest extends BaseTestSupport {
+class WelcomeBannerPhaseTest extends BaseTestSupport {
 
     private static SshServer sshd;
     private static SshClient client;
     private static int port;
 
-    private WelcomeBannerPhase phase;
-
-    public void initWelcomeBannerPhaseTest(WelcomeBannerPhase phase) {
-        this.phase = phase;
-    }
-
-    public static List<Object[]> parameters() {
-        return parameterize(WelcomeBannerPhase.VALUES);
+    static Collection<WelcomeBannerPhase> parameters() {
+        return WelcomeBannerPhase.VALUES;
     }
 
     @BeforeAll
@@ -91,8 +82,7 @@ public class WelcomeBannerPhaseTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void welcomeBannerPhase(WelcomeBannerPhase phase) throws Exception {
-        initWelcomeBannerPhaseTest(phase);
+    void welcomeBannerPhase(WelcomeBannerPhase phase) throws Exception {
         CoreModuleProperties.WELCOME_BANNER_PHASE.set(sshd, phase);
         CoreModuleProperties.WELCOME_BANNER.set(sshd, phase.name());
 

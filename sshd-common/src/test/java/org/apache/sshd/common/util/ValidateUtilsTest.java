@@ -25,23 +25,21 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class ValidateUtilsTest extends JUnitTestSupport {
-    public ValidateUtilsTest() {
+class ValidateUtilsTest extends JUnitTestSupport {
+
+    ValidateUtilsTest() {
         super();
     }
 
     @Test
     void checkNotNull() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            ValidateUtils.checkNotNull(getClass(), getCurrentTestName());
-            ValidateUtils.checkNotNull(null, getCurrentTestName());
-        });
+        String testName = getCurrentTestName();
+        assertEquals(testName, ValidateUtils.checkNotNull(testName, testName));
+        assertThrows(IllegalArgumentException.class, () -> ValidateUtils.checkNotNull(null, testName));
     }
 }

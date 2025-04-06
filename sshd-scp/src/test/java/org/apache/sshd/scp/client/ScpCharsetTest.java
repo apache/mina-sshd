@@ -44,9 +44,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 /**
  * Tests transferring a file named "äöü.txt" via SCP from a container that uses ISO-8859-15 as locale. The UTF-8 and
  * IOS-8859-15 encodings of these characters are different, so the file should not be found when the command is sent as
@@ -56,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  */
 @Tag("ContainerTestCase")
 @Testcontainers
-public class ScpCharsetTest extends BaseTestSupport {
+class ScpCharsetTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScpCharsetTest.class);
 
@@ -85,7 +82,7 @@ public class ScpCharsetTest extends BaseTestSupport {
     @TempDir
     File tmp;
 
-    public ScpCharsetTest() {
+    ScpCharsetTest() {
         super();
     }
 

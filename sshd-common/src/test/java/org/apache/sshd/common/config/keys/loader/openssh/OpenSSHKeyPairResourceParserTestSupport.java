@@ -36,15 +36,12 @@ import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Assumptions;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestSupport {
+abstract class OpenSSHKeyPairResourceParserTestSupport extends JUnitTestSupport {
     protected static final OpenSSHKeyPairResourceParser PARSER = OpenSSHKeyPairResourceParser.INSTANCE;
     protected static final String PASSWORD = "super secret passphrase";
     protected static final FilePasswordProvider DEFAULT_PASSWORD_PROVIDER = FilePasswordProvider.of(PASSWORD);

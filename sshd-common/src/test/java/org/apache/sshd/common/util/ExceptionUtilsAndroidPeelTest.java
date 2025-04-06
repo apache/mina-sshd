@@ -19,8 +19,6 @@
 
 package org.apache.sshd.common.util;
 
-import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.management.ReflectionException;
@@ -32,28 +30,20 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class ExceptionUtilsAndroidPeelTest extends JUnitTestSupport {
-    private boolean androidMode;
+class ExceptionUtilsAndroidPeelTest extends JUnitTestSupport {
 
-    public void initExceptionUtilsAndroidPeelTest(boolean androidMode) {
-        this.androidMode = androidMode;
-    }
-
-    public static List<Object[]> parameters() {
-        return Stream.of(Boolean.TRUE, Boolean.FALSE).map(v -> new Object[] { v }).collect(Collectors.toList());
+    static Stream<Boolean> parameters() {
+        return Stream.of(Boolean.TRUE, Boolean.FALSE);
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "android={0}")
-    public void peelJavaxManagementException(boolean androidMode) {
-        initExceptionUtilsAndroidPeelTest(androidMode);
+    void peelJavaxManagementException(boolean androidMode) {
         try {
             OsUtils.setAndroid(androidMode);
 

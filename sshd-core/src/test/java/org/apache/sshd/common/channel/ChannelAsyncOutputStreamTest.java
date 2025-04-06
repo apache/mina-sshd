@@ -36,14 +36,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 /**
  * Tests the behaviour of {@link ChannelAsyncOutputStream} regarding the chunking of the data to sent.
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
+class ChannelAsyncOutputStreamTest extends BaseTestSupport {
 
     private static final String CLIENT_WITH_COMPATIBILITY_ISSUE = "specialClient";
     private RemoteWindow remoteWindow;
@@ -52,7 +50,7 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
     private Session session;
     private IoWriteFuture ioWriteFuture;
 
-    public ChannelAsyncOutputStreamTest() {
+    ChannelAsyncOutputStreamTest() {
         super();
     }
 

@@ -37,11 +37,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
@@ -49,17 +44,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class DHGroupDataParseTest extends BaseTestSupport {
-    private String name;
-    private byte[] expected;
-
-    public void initDHGroupDataParseTest(String name, byte[] expected) {
-        this.name = name;
-        this.expected = expected;
-    }
+class DHGroupDataParseTest extends BaseTestSupport {
 
     // Note: we rely on the naming convention
-    public static List<Object[]> parameters() throws Exception {
+    static List<Object[]> parameters() throws Exception {
         Collection<String> processedResources = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
         List<Object[]> testCases = new ArrayList<>();
         for (Method m : DHGroupData.class.getMethods()) {
@@ -104,8 +92,7 @@ public class DHGroupDataParseTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void parseOakleyGroupPrimeValues(String name, byte[] expected) throws Exception {
-        initDHGroupDataParseTest(name, expected);
+    void parseOakleyGroupPrimeValues(String name, byte[] expected) throws Exception {
         List<String> lines;
         try (InputStream stream = DHGroupData.class.getResourceAsStream(name)) {
             assertNotNull(stream, "Missing prime value file for group=" + name);
@@ -156,10 +143,5 @@ public class DHGroupDataParseTest extends BaseTestSupport {
                 lines.add(l);
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + name + "]";
     }
 }

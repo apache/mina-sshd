@@ -72,20 +72,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-@SuppressWarnings("checkstyle:MethodCount")
-public class ClientTest extends BaseTestSupport {
+class ClientTest extends BaseTestSupport {
     private SshServer sshd;
     private SshClient client;
     private int port;
@@ -120,7 +113,7 @@ public class ClientTest extends BaseTestSupport {
         }
     };
 
-    public ClientTest() {
+    ClientTest() {
         super();
     }
 
@@ -412,8 +405,8 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShellFactory extends EchoShellFactory {
-        public TestEchoShellFactory() {
+    private static class TestEchoShellFactory extends EchoShellFactory {
+        TestEchoShellFactory() {
             super();
         }
 
@@ -423,12 +416,12 @@ public class ClientTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShell extends EchoShell {
+    private static class TestEchoShell extends EchoShell {
         // CHECKSTYLE:OFF
         public static CountDownLatch latch;
         // CHECKSTYLE:ON
 
-        public TestEchoShell() {
+        TestEchoShell() {
             super();
         }
 

@@ -39,21 +39,15 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class SttySupportTest extends JUnitTestSupport {
-    private String resourceName;
+class SttySupportTest extends JUnitTestSupport {
 
-    public void initSttySupportTest(String resourceName) {
-        this.resourceName = resourceName;
-    }
-
-    public static List<Object[]> parameters() {
-        return parameterize(Arrays.asList("stty-output-1.txt", "stty-output-2.txt"));
+    static List<String> parameters() {
+        return Arrays.asList("stty-output-1.txt", "stty-output-2.txt");
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void parseSttyOutput(String resourceName) throws Exception {
-        initSttySupportTest(resourceName);
+    void parseSttyOutput(String resourceName) throws Exception {
         String stty;
         try (InputStream s = ValidateUtils.checkNotNull(
                 getClass().getResourceAsStream(resourceName), "Missing %s", resourceName);
@@ -65,10 +59,5 @@ public class SttySupportTest extends JUnitTestSupport {
 
         Map<PtyMode, Integer> modes = SttySupport.parsePtyModes(stty);
         System.err.println(modes);
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + resourceName + "]";
     }
 }

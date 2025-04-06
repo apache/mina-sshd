@@ -56,7 +56,7 @@ import org.testcontainers.utility.MountableFile;
  * @see    <A HREF="https://github.com/apache/mina-sshd/issues/445">Terrapin Mitigation: &quot;strict-kex&quot;</A>
  */
 @Tag("ContainerTestCase")
-public class StrictKexInteroperabilityTest extends BaseTestSupport {
+class StrictKexInteroperabilityTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(StrictKexInteroperabilityTest.class);
 
@@ -64,7 +64,7 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
 
     private SshClient client;
 
-    public StrictKexInteroperabilityTest() {
+    StrictKexInteroperabilityTest() {
         super();
     }
 

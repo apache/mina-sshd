@@ -34,26 +34,18 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
 @Tag("NoIoTestCase")
-public class BaseCipherResetTest extends JUnitTestSupport {
+class BaseCipherResetTest extends JUnitTestSupport {
 
     private static final Random RND = new SecureRandom();
 
-    private String providerName;
-
-    private BuiltinCiphers builtIn;
-
-    public void initBaseCipherResetTest(String providerName, BuiltinCiphers builtIn, String name) {
-        this.providerName = providerName;
-        this.builtIn = builtIn;
+    public void initBaseCipherResetTest(String providerName) {
+        BaseCipher.factory = t -> javax.crypto.Cipher.getInstance(t, providerName);
+        BaseCipher.alwaysReInit = true;
         if ("BC".equals(providerName)) {
             registerBouncyCastleProviderIfNecessary();
         }
@@ -77,12 +69,6 @@ public class BaseCipherResetTest extends JUnitTestSupport {
         return items;
     }
 
-    @BeforeEach
-    void changeCipher() {
-        BaseCipher.factory = t -> javax.crypto.Cipher.getInstance(t, providerName);
-        BaseCipher.alwaysReInit = true;
-    }
-
     @AfterEach
     void resetCipher() {
         BaseCipher.factory = SecurityUtils::getCipher;
@@ -97,8 +83,8 @@ public class BaseCipherResetTest extends JUnitTestSupport {
 
     @MethodSource("getParameters")
     @ParameterizedTest(name = "{2} - {0}")
-    public void reset(String providerName, BuiltinCiphers builtIn, String name) throws Exception {
-        initBaseCipherResetTest(providerName, builtIn, name);
+    void reset(String providerName, BuiltinCiphers builtIn, String name) throws Exception {
+        initBaseCipherResetTest(providerName);
         byte[] plaintext = new byte[builtIn.getCipherBlockSize() * 30];
         for (int i = 0; i < plaintext.length; i++) {
             plaintext[i] = (byte) (' ' + i);

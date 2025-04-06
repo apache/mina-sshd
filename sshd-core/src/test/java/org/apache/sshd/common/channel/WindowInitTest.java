@@ -34,14 +34,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class WindowInitTest extends BaseTestSupport {
+class WindowInitTest extends BaseTestSupport {
     private static final AbstractChannel MOCK_CHANNEL = new AbstractChannel(true) {
         @Override
         public OpenFuture open(long recipient, long rwSize, long packetSize, Buffer buffer) {
@@ -69,15 +67,7 @@ public class WindowInitTest extends BaseTestSupport {
         }
     };
 
-    private long initialSize;
-    private long packetSize;
-
-    public void initWindowInitTest(long initialSize, long packetSize) {
-        this.initialSize = initialSize;
-        this.packetSize = packetSize;
-    }
-
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> params = new ArrayList<>();
         params.add(new Object[] { -128L, CoreModuleProperties.MAX_PACKET_SIZE.getRequiredDefault() });
         params.add(
@@ -93,8 +83,7 @@ public class WindowInitTest extends BaseTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "initial-size={0}, packet-size={1}")
-    public void initializationFailure(long initialSize, long packetSize) throws IOException {
-        initWindowInitTest(initialSize, packetSize);
+    void initializationFailure(long initialSize, long packetSize) throws IOException {
         try (RemoteWindow w = new RemoteWindow(MOCK_CHANNEL, true)) {
             assertThrows(IllegalArgumentException.class, () -> w.init(initialSize, packetSize, PropertyResolver.EMPTY));
         }

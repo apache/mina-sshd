@@ -35,18 +35,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertArrayEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class IoUtilsTest extends JUnitTestSupport {
-    public IoUtilsTest() {
+class IoUtilsTest extends JUnitTestSupport {
+
+    IoUtilsTest() {
         super();
     }
 
@@ -77,10 +73,7 @@ public class IoUtilsTest extends JUnitTestSupport {
     @Test
     void checkExists() throws IOException {
         Assumptions.assumeFalse(OsUtils.isWin32(), "Not relevant for Windows");
-        testCheckExists(Paths.get("target/IoUtilsTest").toAbsolutePath());
-    }
-
-    public void testCheckExists(Path baseDir) throws IOException {
+        Path baseDir = Paths.get("target/IoUtilsTest").toAbsolutePath();
         CommonTestSupportUtils.deleteRecursive(baseDir, LinkOption.NOFOLLOW_LINKS);
 
         Path folder = baseDir.resolve("folder1/folder2/");

@@ -63,17 +63,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-public class WindowTest extends BaseTestSupport {
+class WindowTest extends BaseTestSupport {
 
     private SshServer sshd;
     private SshClient client;
@@ -81,7 +77,7 @@ public class WindowTest extends BaseTestSupport {
     private CountDownLatch authLatch;
     private CountDownLatch channelLatch;
 
-    public WindowTest() {
+    WindowTest() {
         super();
     }
 
@@ -324,24 +320,6 @@ public class WindowTest extends BaseTestSupport {
         }
     }
 
-    private static void waitForWindowNotEquals(Window w1, Window w2, String n1, String n2, long maxWait)
-            throws InterruptedException {
-        for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos;) {
-            if (w1.getSize() != w2.getSize()) {
-                return;
-            }
-
-            long nanoStart = System.nanoTime();
-            Thread.sleep(1L);
-            long nanoEnd = System.nanoTime();
-            long nanoDuration = nanoEnd - nanoStart;
-            waited += nanoDuration;
-        }
-
-        // one last chance ...
-        assertNotEquals(w1.getSize(), w2.getSize(), n1 + " and " + n2);
-    }
-
     private static void waitForWindowEquals(Window w1, Window w2, String n1, String n2, long maxWait)
             throws InterruptedException {
         for (long waited = 0L, maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxWait); waited < maxWaitNanos;) {
@@ -360,8 +338,8 @@ public class WindowTest extends BaseTestSupport {
         assertEquals(w1.getSize(), w2.getSize(), n1 + " and " + n2);
     }
 
-    public static class TestEchoShellFactory extends EchoShellFactory {
-        public TestEchoShellFactory() {
+    static class TestEchoShellFactory extends EchoShellFactory {
+        TestEchoShellFactory() {
             super();
         }
 
@@ -371,10 +349,10 @@ public class WindowTest extends BaseTestSupport {
         }
     }
 
-    public static class TestEchoShell extends EchoShell {
-        public static final CountDownLatch LATCH = new CountDownLatch(1);
+    static class TestEchoShell extends EchoShell {
+        static final CountDownLatch LATCH = new CountDownLatch(1);
 
-        public TestEchoShell() {
+        TestEchoShell() {
             super();
         }
 

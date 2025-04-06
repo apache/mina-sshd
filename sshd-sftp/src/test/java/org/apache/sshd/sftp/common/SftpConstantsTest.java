@@ -26,16 +26,14 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class SftpConstantsTest extends JUnitTestSupport {
-    public SftpConstantsTest() {
+class SftpConstantsTest extends JUnitTestSupport {
+
+    SftpConstantsTest() {
         super();
     }
 

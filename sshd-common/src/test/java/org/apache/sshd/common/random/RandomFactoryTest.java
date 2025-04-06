@@ -36,14 +36,9 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class RandomFactoryTest extends JUnitTestSupport {
-    private RandomFactory factory;
+class RandomFactoryTest extends JUnitTestSupport {
 
-    public void initRandomFactoryTest(RandomFactory factory) {
-        this.factory = factory;
-    }
-
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         Collection<RandomFactory> testCases = new LinkedList<>();
         testCases.add(JceRandomFactory.INSTANCE);
         if (SecurityUtils.isBouncyCastleRegistered()) {
@@ -57,8 +52,7 @@ public class RandomFactoryTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "type={0}")
-    public void randomFactory(RandomFactory factory) {
-        initRandomFactoryTest(factory);
+    void randomFactory(RandomFactory factory) {
         Assumptions.assumeTrue(factory.isSupported(), "Skip unsupported factory: " + factory.getName());
         long t = testRandom(factory.create());
         System.out.println(factory.getName() + " duration: " + t + " " + TimeUnit.MICROSECONDS);

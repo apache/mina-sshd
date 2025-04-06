@@ -20,17 +20,15 @@
 package org.apache.sshd.scp.common.helpers;
 
 import java.lang.reflect.Constructor;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.stream.Stream;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /**
  * @param  <C> Generic {@link AbstractScpCommandDetails} type
@@ -39,45 +37,28 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase") // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class AbstractScpCommandDetailsTest<C extends AbstractScpCommandDetails> extends JUnitTestSupport {
-    private String header;
-    private Constructor<C> ctor;
+class AbstractScpCommandDetailsTest<C extends AbstractScpCommandDetails> extends JUnitTestSupport {
 
-    public void initAbstractScpCommandDetailsTest(String header, Class<C> cmdClass) throws Exception {
-        this.header = header;
-        this.ctor = cmdClass.getDeclaredConstructor(String.class);
-    }
-
-    public static List<Object[]> parameters() {
-        return new ArrayList<Object[]>() {
-            // not serializing it
-            private static final long serialVersionUID = 1L;
-
-            {
-                addTestCase("T123456789 0 987654321 0", ScpTimestampCommandDetails.class);
-                addTestCase("C0644 12345 file", ScpReceiveFileCommandDetails.class);
-                addTestCase("D0755 0 dir", ScpReceiveDirCommandDetails.class);
-                addTestCase(ScpDirEndCommandDetails.HEADER, ScpDirEndCommandDetails.class);
-            }
-
-            private void addTestCase(String header, Class<? extends AbstractScpCommandDetails> cmdClass) {
-                add(new Object[] { header, cmdClass });
-            }
-        };
+    static Stream<Arguments> parameters() {
+        return Stream.of( //
+                Arguments.of("T123456789 0 987654321 0", ScpTimestampCommandDetails.class),
+                Arguments.of("C0644 12345 file", ScpReceiveFileCommandDetails.class),
+                Arguments.of("D0755 0 dir", ScpReceiveDirCommandDetails.class),
+                Arguments.of(ScpDirEndCommandDetails.HEADER, ScpDirEndCommandDetails.class));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "cmd={0}")
-    public void headerEquality(String header, Class<C> cmdClass) throws Exception {
-        initAbstractScpCommandDetailsTest(header, cmdClass);
+    void headerEquality(String header, Class<C> cmdClass) throws Exception {
+        Constructor<C> ctor = cmdClass.getDeclaredConstructor(String.class);
         C details = ctor.newInstance(header);
         assertEquals(header, details.toHeader());
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "cmd={0}")
-    public void detailsEquality(String header, Class<C> cmdClass) throws Exception {
-        initAbstractScpCommandDetailsTest(header, cmdClass);
+    void detailsEquality(String header, Class<C> cmdClass) throws Exception {
+        Constructor<C> ctor = cmdClass.getDeclaredConstructor(String.class);
         C d1 = ctor.newInstance(header);
         C d2 = ctor.newInstance(header);
         assertEquals(d1.hashCode(), d2.hashCode(), "HASH ?");

@@ -37,21 +37,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class PropertyResolverUtilsTest extends JUnitTestSupport {
-    public PropertyResolverUtilsTest() {
+class PropertyResolverUtilsTest extends JUnitTestSupport {
+
+    PropertyResolverUtilsTest() {
         super();
     }
 
@@ -122,24 +115,19 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
         testLongProperty(session, name, expected);
     }
 
-    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private void testLongProperty(PropertyResolver resolver, String name, long expected) {
         Map<String, ?> props = resolver.getProperties();
         Object value = props.get(name);
         Class<?> type = value.getClass();
         String storage = type.getSimpleName();
 
-        {
-            Long actual = PropertyResolverUtils.getLong(resolver, name);
-            assertNotNull(actual, "No actual Long value found for storage as " + storage);
-            assertEquals(expected, actual.longValue(), "Mismatched values on Long retrieval for storage as " + storage);
-        }
+        Long actual = PropertyResolverUtils.getLong(resolver, name);
+        assertNotNull(actual, "No actual Long value found for storage as " + storage);
+        assertEquals(expected, actual.longValue(), "Mismatched values on Long retrieval for storage as " + storage);
 
-        {
-            String actual = PropertyResolverUtils.getString(resolver, name);
-            assertNotNull(actual, "No actual String value found for storage as " + storage);
-            assertEquals(Long.toString(expected), actual, "Mismatched values on String retrieval for storage as " + storage);
-        }
+        String str = PropertyResolverUtils.getString(resolver, name);
+        assertNotNull(str, "No actual String value found for storage as " + storage);
+        assertEquals(Long.toString(expected), str, "Mismatched values on String retrieval for storage as " + storage);
     }
 
     @Test
@@ -161,24 +149,19 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
         testIntegerProperty(session, name, expected);
     }
 
-    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private void testIntegerProperty(PropertyResolver resolver, String name, int expected) {
         Map<String, ?> props = resolver.getProperties();
         Object value = props.get(name);
         Class<?> type = value.getClass();
         String storage = type.getSimpleName();
 
-        {
-            Integer actual = PropertyResolverUtils.getInteger(resolver, name);
-            assertNotNull(actual, "No actual Integer value found for storage as " + storage);
-            assertEquals(expected, actual.intValue(), "Mismatched values on Integer retrieval for storage as " + storage);
-        }
+        Integer actual = PropertyResolverUtils.getInteger(resolver, name);
+        assertNotNull(actual, "No actual Integer value found for storage as " + storage);
+        assertEquals(expected, actual.intValue(), "Mismatched values on Integer retrieval for storage as " + storage);
 
-        {
-            String actual = PropertyResolverUtils.getString(resolver, name);
-            assertNotNull(actual, "No actual String value found for storage as " + storage);
-            assertEquals(Integer.toString(expected), actual, "Mismatched values on String retrieval for storage as " + storage);
-        }
+        String str = PropertyResolverUtils.getString(resolver, name);
+        assertNotNull(str, "No actual String value found for storage as " + storage);
+        assertEquals(Integer.toString(expected), str, "Mismatched values on String retrieval for storage as " + storage);
     }
 
     @Test
@@ -198,24 +181,19 @@ public class PropertyResolverUtilsTest extends JUnitTestSupport {
         }
     }
 
-    @SuppressWarnings("checkstyle:avoidnestedblocks")
     private void testBooleanProperty(PropertyResolver resolver, String name, boolean expected) {
         Map<String, ?> props = resolver.getProperties();
         Object value = props.get(name);
         Class<?> type = value.getClass();
         String storage = type.getSimpleName();
 
-        {
-            Boolean actual = PropertyResolverUtils.getBoolean(resolver, name);
-            assertNotNull(actual, "No actual Boolean value found for storage as " + storage);
-            assertEquals("Mismatched values on Boolean retrieval for storage as " + storage, expected, actual.booleanValue());
-        }
+        Boolean actual = PropertyResolverUtils.getBoolean(resolver, name);
+        assertNotNull(actual, "No actual Boolean value found for storage as " + storage);
+        assertEquals("Mismatched values on Boolean retrieval for storage as " + storage, expected, actual.booleanValue());
 
-        {
-            String actual = PropertyResolverUtils.getString(resolver, name);
-            assertNotNull(actual, "No actual String value found for storage as " + storage);
-            assertEquals(Boolean.toString(expected), actual, "Mismatched values on String retrieval for storage as " + storage);
-        }
+        String str = PropertyResolverUtils.getString(resolver, name);
+        assertNotNull(str, "No actual String value found for storage as " + storage);
+        assertEquals(Boolean.toString(expected), str, "Mismatched values on String retrieval for storage as " + storage);
     }
 
     @Test

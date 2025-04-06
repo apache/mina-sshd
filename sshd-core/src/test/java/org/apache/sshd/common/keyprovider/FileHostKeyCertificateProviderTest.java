@@ -22,12 +22,9 @@ import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+class FileHostKeyCertificateProviderTest extends JUnitTestSupport {
 
-public class FileHostKeyCertificateProviderTest extends JUnitTestSupport {
-
-    public FileHostKeyCertificateProviderTest() {
+    FileHostKeyCertificateProviderTest() {
         super();
     }
 

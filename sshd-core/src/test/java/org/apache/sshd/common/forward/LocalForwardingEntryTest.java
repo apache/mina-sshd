@@ -32,10 +32,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * TODO Add javadoc
  *
@@ -43,8 +39,9 @@ import static org.junit.jupiter.api.Assertions.fail;
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class LocalForwardingEntryTest extends BaseTestSupport {
-    public LocalForwardingEntryTest() {
+class LocalForwardingEntryTest extends BaseTestSupport {
+
+    LocalForwardingEntryTest() {
         super();
     }
 

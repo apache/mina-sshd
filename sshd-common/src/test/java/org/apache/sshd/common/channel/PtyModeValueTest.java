@@ -19,8 +19,8 @@
 
 package org.apache.sshd.common.channel;
 
+import java.util.Collection;
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
@@ -30,10 +30,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertSame;
-
 /**
  * TODO Add javadoc
  *
@@ -41,28 +37,21 @@ import static org.junit.jupiter.api.Assertions.assertSame;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class PtyModeValueTest extends JUnitTestSupport {
-    private PtyMode expected;
+class PtyModeValueTest extends JUnitTestSupport {
 
-    public void initPtyModeValueTest(PtyMode expected) {
-        this.expected = expected;
-    }
-
-    public static List<Object[]> parameters() {
-        return parameterize(PtyMode.MODES);
+    static Collection<PtyMode> parameters() {
+        return PtyMode.MODES;
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void opcodeExtractor(PtyMode expected) {
-        initPtyModeValueTest(expected);
+    void opcodeExtractor(PtyMode expected) {
         assertEquals(expected.toInt(), PtyMode.OPCODE_EXTRACTOR.applyAsInt(expected));
     }
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void byOpcodeComparator(PtyMode expected) {
-        initPtyModeValueTest(expected);
+    void byOpcodeComparator(PtyMode expected) {
         int v1 = expected.toInt();
         for (PtyMode actual : PtyMode.MODES) {
             int v2 = actual.toInt();
@@ -74,8 +63,7 @@ public class PtyModeValueTest extends JUnitTestSupport {
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void fromName(PtyMode expected) {
-        initPtyModeValueTest(expected);
+    void fromName(PtyMode expected) {
         String name = expected.name();
         for (int index = 0; index < Byte.SIZE; index++) {
             PtyMode actual = PtyMode.fromName(name);
@@ -87,16 +75,10 @@ public class PtyModeValueTest extends JUnitTestSupport {
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     @SuppressWarnings("unchecked")
-    public void getBooleanSettingValueOnNullOrEmptyValues(PtyMode expected) {
-        initPtyModeValueTest(expected);
+    void getBooleanSettingValueOnNullOrEmptyValues(PtyMode expected) {
         for (Map<PtyMode, ?> modes : new Map[] { null, Collections.emptyMap() }) {
             String s = (modes == null) ? "null" : "empty";
             assertFalse(PtyMode.getBooleanSettingValue(modes, expected), "Map is " + s);
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + expected + "]";
     }
 }

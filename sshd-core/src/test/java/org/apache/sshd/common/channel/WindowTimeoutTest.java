@@ -36,24 +36,19 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://issues.apache.org/jira/browse/SSHD-565">SSHD-565</A>
  */
 @TestMethodOrder(MethodName.class)
 @Tag("NoIoTestCase")
-public class WindowTimeoutTest extends BaseTestSupport {
-    public static final Duration MAX_WAIT_TIME = Duration.ofSeconds(2L);
+class WindowTimeoutTest extends BaseTestSupport {
+
+    private static final Duration MAX_WAIT_TIME = Duration.ofSeconds(2L);
 
     private AbstractChannel channel;
 
-    public WindowTimeoutTest() {
+    WindowTimeoutTest() {
         super();
     }
 

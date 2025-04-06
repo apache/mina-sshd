@@ -43,19 +43,16 @@ import org.junit.jupiter.params.provider.MethodSource;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
-public class EncryptThenMacTest extends BaseTestSupport {
+class EncryptThenMacTest extends BaseTestSupport {
     private static SshServer sshd;
     private static int port;
     private static SshClient client;
 
-    private MacFactory factory;
-
-    public void initEncryptThenMacTest(MacFactory factory) throws Exception {
-        this.factory = factory;
+    void initEncryptThenMacTest(MacFactory factory) throws Exception {
         sshd.setCipherFactories(Collections.singletonList(BuiltinCiphers.aes128ctr));
         client.setCipherFactories(Collections.singletonList(BuiltinCiphers.aes128ctr));
-        sshd.setMacFactories(Collections.singletonList(this.factory));
-        client.setMacFactories(Collections.singletonList(this.factory));
+        sshd.setMacFactories(Collections.singletonList(factory));
+        client.setMacFactories(Collections.singletonList(factory));
     }
 
     @BeforeAll
@@ -88,7 +85,7 @@ public class EncryptThenMacTest extends BaseTestSupport {
         }
     }
 
-    public static Collection<Object[]> parameters() {
+    static Collection<Object[]> parameters() {
         List<Object[]> ret = new ArrayList<>();
         for (MacFactory f : BuiltinMacs.VALUES) {
             if (!f.isSupported()) {
@@ -123,10 +120,5 @@ public class EncryptThenMacTest extends BaseTestSupport {
                 assertEquals(expected, actual, "Mismatched " + opt + " negotiation");
             }
         }
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[" + factory + "]";
     }
 }

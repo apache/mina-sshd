@@ -30,20 +30,12 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport {
-    private int expected;
-
-    public void initSecurityUtilsDHGEXGroupKeySizeTest(int expected) {
-        this.expected = expected;
-    }
+class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport {
 
     @BeforeEach
     @AfterEach
@@ -54,7 +46,7 @@ public class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport
         SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
     }
 
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         System.clearProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP);
         SecurityUtils.setMaxDHGroupExchangeKeySize(0); // force detection
         try {
@@ -74,7 +66,6 @@ public class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport
     @MethodSource("parameters")
     @ParameterizedTest(name = "keySize={0}")
     public void setMaxDHGroupExchangeKeySizeByProperty(int expected) {
-        initSecurityUtilsDHGEXGroupKeySizeTest(expected);
         System.setProperty(SecurityUtils.MAX_DHGEX_KEY_SIZE_PROP, Integer.toString(expected));
         assertTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH group not supported for key size=" + expected);
         assertEquals(expected, SecurityUtils.getMaxDHGroupExchangeKeySize(), "Mismatched values");
@@ -83,7 +74,6 @@ public class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport
     @MethodSource("parameters")
     @ParameterizedTest(name = "keySize={0}")
     public void setMaxDHGroupExchangeKeySizeProgrammatically(int expected) {
-        initSecurityUtilsDHGEXGroupKeySizeTest(expected);
         SecurityUtils.setMaxDHGroupExchangeKeySize(expected);
         assertTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH group not supported for key size=" + expected);
         assertEquals(expected, SecurityUtils.getMaxDHGroupExchangeKeySize(), "Mismatched values");
@@ -92,7 +82,6 @@ public class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport
     @MethodSource("parameters")
     @ParameterizedTest(name = "keySize={0}")
     public void setMinDHGroupExchangeKeySizeByProperty(int expected) {
-        initSecurityUtilsDHGEXGroupKeySizeTest(expected);
         System.setProperty(SecurityUtils.MIN_DHGEX_KEY_SIZE_PROP, Integer.toString(expected));
         assertTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH group not supported for key size=" + expected);
         assertEquals(expected, SecurityUtils.getMinDHGroupExchangeKeySize(), "Mismatched values");
@@ -101,14 +90,8 @@ public class SecurityUtilsDHGEXGroupKeySizeTest extends SecurityUtilsTestSupport
     @MethodSource("parameters")
     @ParameterizedTest(name = "keySize={0}")
     public void setMinDHGroupExchangeKeySizeProgrammatically(int expected) {
-        initSecurityUtilsDHGEXGroupKeySizeTest(expected);
         SecurityUtils.setMinDHGroupExchangeKeySize(expected);
         assertTrue(SecurityUtils.isDHGroupExchangeSupported(), "DH group not supported for key size=" + expected);
         assertEquals(expected, SecurityUtils.getMinDHGroupExchangeKeySize(), "Mismatched values");
-    }
-
-    @Override
-    public String toString() {
-        return getClass().getSimpleName() + "[keySize=" + expected + "]";
     }
 }

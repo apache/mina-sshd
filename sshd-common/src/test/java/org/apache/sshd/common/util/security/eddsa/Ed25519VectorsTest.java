@@ -52,7 +52,8 @@ import org.junit.jupiter.params.provider.MethodSource;
  */
 @TestMethodOrder(MethodName.class) // see https://github.com/junit-team/junit/wiki/Parameterized-tests
 @Tag("NoIoTestCase")
-public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends JUnitTestSupport {
+class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends JUnitTestSupport {
+
     private byte[] prvBytes;
     private PRV privateKey;
     private byte[] pubBytes;
@@ -60,7 +61,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
     private byte[] msgBytes;
     private byte[] expSignature;
 
-    public void initEd25519VectorsTest(
+    void initEd25519VectorsTest(
             String name, EdDSASupport<PUB, PRV> support, String prvKey, String pubKey, String msg, String signature)
             throws GeneralSecurityException, IOException {
         prvBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, prvKey);
@@ -71,7 +72,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
         expSignature = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, signature);
     }
 
-    public static List<Object[]> parameters() {
+    static List<Object[]> parameters() {
         List<Object[]> parameters = new ArrayList<>();
         Map<String, EdDSASupport<?, ?>> supportedSecurityProviders = new LinkedHashMap<>();
         supportedSecurityProviders.put(SecurityUtils.EDDSA, new NetI2pCryptoEdDSASupport());
@@ -200,7 +201,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void publicKeyBytes(
+    void publicKeyBytes(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
@@ -210,7 +211,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void privateKeyBytes(
+    void privateKeyBytes(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
@@ -220,7 +221,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void signature(
+    void signature(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
@@ -239,7 +240,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void partialBufferSignature(
+    void partialBufferSignature(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature)
             throws Exception {
@@ -266,7 +267,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void recoverEDDSAPublicKey(
+    void recoverEDDSAPublicKey(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
@@ -278,7 +279,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void createPublicKeySpec(
+    void createPublicKeySpec(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
@@ -292,7 +293,7 @@ public class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> e
 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    public void createPrivateKeySpec(
+    void createPrivateKeySpec(
             String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);

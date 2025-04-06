@@ -51,14 +51,13 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
+ * Tests for using git over ssh.
  */
 @TestMethodOrder(MethodName.class)
-public class GitPackCommandTest extends BaseTestSupport {
-    public GitPackCommandTest() {
+class GitPackCommandTest extends BaseTestSupport {
+
+    GitPackCommandTest() {
         super();
     }
 

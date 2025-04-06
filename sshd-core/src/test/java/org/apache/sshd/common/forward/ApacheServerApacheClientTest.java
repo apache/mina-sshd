@@ -37,13 +37,11 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Port forwarding tests, Apache server & client
  */
 @TestMethodOrder(MethodName.class)
-public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport {
+class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport {
     private static final Logger LOG = LoggerFactory.getLogger(ApacheServerApacheClientTest.class);
     private static final Duration TIMEOUT = Duration.ofSeconds(10L);
 
@@ -53,7 +51,7 @@ public class ApacheServerApacheClientTest extends AbstractServerCloseTestSupport
     private SshClient client;
     private ClientSession session;
 
-    public ApacheServerApacheClientTest() {
+    ApacheServerApacheClientTest() {
         super();
     }
 
