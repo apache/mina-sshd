@@ -18,10 +18,8 @@
  */
 package org.apache.sshd.common.util.threads;
 
-import java.io.IOException;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
-import java.util.concurrent.Callable;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -31,7 +29,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import org.apache.sshd.common.util.ReflectionUtils;
-import org.apache.sshd.common.util.io.functors.IOFunction;
 
 /**
  * Utility class for thread pools.
@@ -40,69 +37,8 @@ import org.apache.sshd.common.util.io.functors.IOFunction;
  */
 public final class ThreadUtils {
 
-    /**
-     * Marks framework-internal threads.
-     */
-    private static final ThreadLocal<Boolean> IS_INTERNAL_THREAD = new ThreadLocal<>();
-
     private ThreadUtils() {
         throw new UnsupportedOperationException("No instance");
-    }
-
-    /**
-     * Runs a piece of code given as a {@link Callable} with a flag set indicating that the executing thread is an
-     * Apache MINA sshd framework-internal thread.
-     *
-     * @param  <V>       return type
-     * @param  code      code to run
-     * @return           the result of {@code code}
-     * @throws Exception propagated from {@code code.call()}
-     * @see              #isInternalThread()
-     */
-    public static <V> V runAsInternal(Callable<V> code) throws Exception {
-        if (isInternalThread()) {
-            return code.call();
-        }
-        try {
-            IS_INTERNAL_THREAD.set(Boolean.TRUE);
-            return code.call();
-        } finally {
-            IS_INTERNAL_THREAD.remove();
-        }
-    }
-
-    /**
-     * Runs an {@link IOFunction} with a flag set indicating that the executing thread is an Apache MINA sshd
-     * framework-internal thread.
-     *
-     * @param  <T>         parameter type
-     * @param  <V>         return type
-     * @param  param       parameter for the function
-     * @param  code        function to run
-     * @return             the result of {@code code}
-     * @throws IOException propagated from {@code code.apply()}
-     * @see                #isInternalThread()
-     */
-    public static <T, V> V runAsInternal(T param, IOFunction<? super T, V> code) throws IOException {
-        if (isInternalThread()) {
-            return code.apply(param);
-        }
-        try {
-            IS_INTERNAL_THREAD.set(Boolean.TRUE);
-            return code.apply(param);
-        } finally {
-            IS_INTERNAL_THREAD.remove();
-        }
-    }
-
-    /**
-     * Tells whether the calling thread is an Apache MINA sshd framework-internal thread.
-     *
-     * @return {@code true} if the thread is considered internal to the framework; {@code false} if not
-     * @see    #runAsInternal(Callable)
-     */
-    public static boolean isInternalThread() {
-        return Boolean.TRUE.equals(IS_INTERNAL_THREAD.get());
     }
 
     /**

@@ -65,7 +65,6 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractInnerCloseable;
 import org.apache.sshd.common.util.io.functors.IOConsumer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.forward.TcpForwardingFilter;
 
@@ -875,7 +874,7 @@ public class DefaultForwarder
                         session, channel, totalMessages, message.available());
             }
             session.suspendRead();
-            ThreadUtils.runAsInternal(() -> channel.getAsyncIn().writeBuffer(buffer).addListener(f -> {
+            channel.getAsyncIn().writeBuffer(buffer).addListener(f -> {
                 session.resumeRead();
                 Throwable e = f.getException();
                 if (e != null) {
@@ -889,7 +888,7 @@ public class DefaultForwarder
                 } else if (log.isTraceEnabled()) {
                     log.trace("messageReceived({}) channel={} message={} forwarded", session, channel, totalMessages);
                 }
-            }));
+            });
         }
 
         @Override

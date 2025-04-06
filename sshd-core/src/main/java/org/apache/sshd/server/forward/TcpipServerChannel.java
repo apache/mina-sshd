@@ -370,7 +370,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                 Buffer buffer = new ByteArrayBuffer(length, false);
                 buffer.putBuffer(message);
                 session.suspendRead();
-                ThreadUtils.runAsInternal(() -> out.writeBuffer(buffer).addListener(f -> {
+                out.writeBuffer(buffer).addListener(f -> {
                     session.resumeRead();
                     Throwable e = f.getException();
                     if (e != null) {
@@ -380,7 +380,7 @@ public class TcpipServerChannel extends AbstractServerChannel implements Forward
                     } else if (log.isTraceEnabled()) {
                         log.trace("messageReceived({}) channel={} message forwarded", session, TcpipServerChannel.this);
                     }
-                }));
+                });
             }
         }
 

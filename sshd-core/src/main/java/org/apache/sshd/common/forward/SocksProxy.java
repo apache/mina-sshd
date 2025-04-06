@@ -33,7 +33,6 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.closeable.AbstractCloseable;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
-import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * SOCKS proxy server, supporting simple socks4/5 protocols.
@@ -102,8 +101,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         protected void onMessage(Buffer buffer) throws IOException {
             session.suspendRead();
-            ThreadUtils.runAsInternal(channel.getAsyncIn(),
-                    out -> out.writeBuffer(buffer).addListener(f -> session.resumeRead()));
+            channel.getAsyncIn().writeBuffer(buffer).addListener(f -> session.resumeRead());
         }
 
         @Override
