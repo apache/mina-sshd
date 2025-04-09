@@ -15,7 +15,7 @@
 # limitations under the License.
 #
 
-name: master-build
+name: next-build
 
 on:
   push:
