@@ -35,10 +35,9 @@ message does not contain the new encryption key or the shared secret; it is
 just a marker message telling the other side that from now on, the new encryption
 will be used.
 
-Apache MINA sshd maintains internally in [`AbstractSession`](../../sshd-core/src/main/java/org/apache/sshd/common/session/helpers/AbstractSession.java)
-a *KEX state* (in Java [`KexState`](../../sshd-common/src/main/java/org/apache/sshd/common/kex/KexState.java)).
-This models the key exchange on one side of the connection as a state machine
-going through the states `DONE`, `INIT`, `RUN`, `KEYS`, `DONE`.
+Key exchange is implemented in the `KexFilter` in the filter chain of an `AbstractSession`.
+It maintains a *KEX state* (in Java [`KexState`](../../sshd-common/src/main/java/org/apache/sshd/common/kex/KexState.java)), which models the key exchange on one side of the connection as
+a state machine going through the states `DONE`, `INIT`, `RUN`, `KEYS`, `DONE`.
 
 ![KEX state machine](./kex_states.svg)
 
@@ -50,13 +49,13 @@ These states mark important points in the key exchange sub-protocol:
 * `KEYS` means the key exchange has been done; both sides know the shared secret, and this side has sent its SSH_MS_NEW_KEYS message.
 * When the peer's SSH_MSG_NEW_KEYS message is received, the state changes back to `DONE`.
 
-In Apache MINA sshd, there are methods in `AbstractSession` for each of the KEX
+In Apache MINA sshd, there are methods in `KexFilter` for each of the KEX
 messages:
 
-* `requestNewKeyExchange`: switches from `DONE` to `INIT` and calls `sendKexInit` to send the SSH_MSG_KEX_INIT message.
-* `handleKexInit`: receives the peer's SSH_MSG_KEX_INIT message; switches to `RUN`.
+* `startKex`: switches from `DONE` to `INIT` and calls `sendKexInit` to send the SSH_MSG_KEX_INIT message.
+* `receiveKexInit`: receives the peer's SSH_MSG_KEX_INIT message; switches to `RUN`.
 * `sendNewKeys`: switches from `RUN` to `KEYS` and sends this side's SSH_MS_NEW_KEYS message.
-* `handleNewKeys`: receives the peer's SSH_MSG_KEX_INIT message; switches from `KEYS` to `DONE`.
+* `receiveNewKeys`: receives the peer's SSH_MSG_KEX_INIT message; switches from `KEYS` to `DONE`.
 
 ![KEX interactions](./kex_interaction_1.svg)
 
@@ -82,13 +81,11 @@ There may be application threads pumping out data, or one may receive, after hav
 sent one's own SSH_MSG_KEX_INIT message non-KEX messages that might require sending
 back an answer.
 
-The answer lies in the [`KeyExchangeMessageHandler`](../../sshd-core/src/main/java/org/apache/sshd/common/session/helpers/KeyExchangeMessageHandler.java).
-Each session funnels all SSH packets it sends, before encryption, through this
-per-session object. The `KeyExchangeMessageHandler` then looks at the current KEX
+The KexFilter's outgoing messages handler `KexOutputHandler` looks at the current KEX
 state and at the packet that is to be sent and decides what to do with it:
 
-* If the packet is a low-level packet allowed during KEX, it is encrypted and sent directly.
-* If no KEX is ongoing, the message is encrypted and sent directly.
+* If no KEX is ongoing, or if the packet is a low-level packet allowed during KEX,
+it is allowed through and passed on to the next lower filter in the filter chain.
 * Otherwise, the packet is queued.
 
 Once KEX is done, the queue is flushed, i.e., all the queued packets are encrypted
@@ -97,20 +94,17 @@ Once KEX is done, the queue is flushed, i.e., all the queued packets are encrypt
 This mechanism has one drawback: if there are data pumping threads sending data
 through a channel (and there is a large channel window), arbitrarily many packets
 may be queued, and sending them may itself trigger another key exchange. If the
-queue is flushed synchronously from `handleNewKeys` (or from `sendNewKeys`), this
+queue is flushed synchronously from `receiveNewKeys` (or from `sendNewKeys`), this
 side will not be able to react to a new key exchange request from the peer. (Or
 to a disconnection message.) Therefore the queue is flushed *asynchronously*.
 
-To avoid that application threads create a huge queue, Apache MINA sshd actually
-does *not* queue packets written in application threads. Instead, when the
-`KeyExchangeMessageHandler` detects a SSH_MSG_CHANNEL_DATA or SSH_MSG_CHANNEL_EXTENDED_DATA
-packet written by an application thread, it *blocks* that thread until KEX is done
-and the queue is flushed. Only then the thread is resumed and the packet is written.
+To avoid that application threads create a huge queue, Apache MINA sshd prevents
+threads from sending SSH_MSG_CHANNEL_DATA or SSH_MSG_CHANNEL_EXTEDED_DATA packets
+during KEX by closing all channel `RemoteWindows` by setting their size to zero.
+Only once the key exchange is over are these remote windows restored, and the
+threads can write data again.
 
-![KEX flush](./kex_flush.svg)
-
-The queue thus should never contain many packets (unless internal Apache MINA sshd
-threads should be writing lots of channel data). 
+The queue thus should never contain many packets; at most one per open channel. 
 
 Flushing the queue and enqueuing new packets is a classic producer-consumer problem,
 but there is a twist: because of the current architecture of the framework, the queue
@@ -120,7 +114,7 @@ the flushing thread.
 The implementation contains a number of measures that should ensure that the flushing
 thread is not overrun by producers and actually can finish.
 
-1. Application threads trying to enqueue packets may indeed be blocked until the queue is flushed; see above.
+1. Application threads are prevented from continuously sending packets during KEX because the channel windows are closed; see above.
 2. The flushing thread (the consumer) gets priority over the producers.
 3. The flushing thread flushes a number of packets (a chunk) at a time. It starts off with a chunk size of two. If it detects on the next chunk of packets to write that more packets were enqueued than were written in the last chunk, the chunk size is increased.
 4. While a chunk is written, new enqueue attempts wait.
@@ -138,9 +132,4 @@ and [CVE-2023-48795](https://nvd.nist.gov/vuln/detail/CVE-2023-48795). The "stri
 counter-measures are active if both peers indicate support for it at the start of the initial
 key exchange. By default, Apache MINA sshd always supports "strict kex" and advertises it, and
 thus it will always be active if the other party also supports it.
-
-If for whatever reason you want to disable using "strict KEX", this can be achieved by setting
-a custom session factory on the `SshClient` or `SshServer`. This custom session factory would create
-custom sessions subclassed from `ClientSessionImpl`or `ServerSessionImpl` that do not do anything
-in method `doStrictKexProposal()` (just return the proposal unchanged).
 
