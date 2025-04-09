@@ -1085,12 +1085,9 @@ public class KexFilter extends IoFilter {
     }
 
     // Entry points for the KexOutputHandler
-    IoWriteFuture write(int cmd, Buffer buffer, boolean checkForKex) throws IOException {
-        IoWriteFuture result = forward.send(cmd, buffer);
-        if (checkForKex) {
-            startKexIfNeeded();
-        }
-        return result;
+
+    IoWriteFuture write(int cmd, Buffer buffer) throws IOException {
+        return forward.send(cmd, buffer);
     }
 
     void startKexIfNeeded() throws IOException {

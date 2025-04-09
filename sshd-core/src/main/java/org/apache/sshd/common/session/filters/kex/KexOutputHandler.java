@@ -219,7 +219,8 @@ class KexOutputHandler implements OutputHandler {
         try {
             if (isLowLevelMessage) {
                 // Low-level messages can always be sent.
-                future = filter.write(cmd, buffer, true);
+                future = filter.write(cmd, buffer);
+                filter.startKexIfNeeded();
             } else {
                 future = writeOrEnqueue(cmd, buffer);
                 if (!(future instanceof PendingWriteFuture)) {
@@ -249,38 +250,36 @@ class KexOutputHandler implements OutputHandler {
      * @throws IOException if an error occurs
      */
     private IoWriteFuture writeOrEnqueue(int cmd, Buffer buffer) throws IOException {
-        for (;;) {
-            // We must decide _and_ write the packet while holding the lock. If we'd write the packet outside this
-            // lock, there is no guarantee that a concurrently running KEX_INIT received from the peer doesn't change
-            // the state to RUN and grabs the encodeLock before the thread executing this write operation. If this
-            // happened, we might send a high-level messages after our KEX_INIT, which is not allowed by RFC 4253.
-            //
-            // Use the readLock here to give KEX state updates and the flushing thread priority.
-            lock.readLock().lock();
-            try {
-                if (shutDown.get()) {
-                    throw new SshException("Write attempt on closing session: " + SshConstants.getCommandMessageName(cmd));
-                }
-                KexState state = filter.getKexState().get();
-                boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
-                if (kexDone && kexFlushed.get()) {
-                    // Not in KEX, no pending packets: out it goes.
-                    return filter.write(cmd, buffer, false);
-                } else {
-                    // Still in KEX or still flushing. Enqueue the packet; it will get written by the flushing thread at
-                    // the end of KEX. See the javadoc of KexFilter.
-                    //
-                    // If so many packets are queued that flushing them triggers another KEX flushing stops
-                    // and will be resumed at the end of the new KEX.
-                    if (kexDone && log.isDebugEnabled()) {
-                        log.debug("writeOrEnqueue({})[{}]: Queuing packet while flushing", filter.getSession(),
-                                SshConstants.getCommandMessageName(cmd));
-                    }
-                    return enqueuePendingPacket(cmd, buffer);
-                }
-            } finally {
-                lock.readLock().unlock();
+        // We must decide _and_ write the packet while holding the lock. If we'd write the packet outside this
+        // lock, there is no guarantee that a concurrently running KEX_INIT received from the peer doesn't change
+        // the state to RUN and grabs the encodeLock before the thread executing this write operation. If this
+        // happened, we might send a high-level messages after our KEX_INIT, which is not allowed by RFC 4253.
+        //
+        // Use the readLock here to give KEX state updates and the flushing thread priority.
+        lock.readLock().lock();
+        try {
+            if (shutDown.get()) {
+                throw new SshException("Write attempt on closing session: " + SshConstants.getCommandMessageName(cmd));
             }
+            KexState state = filter.getKexState().get();
+            boolean kexDone = KexState.DONE.equals(state) || KexState.KEYS.equals(state);
+            if (kexDone && kexFlushed.get()) {
+                // Not in KEX, no pending packets: out it goes.
+                return filter.write(cmd, buffer);
+            } else {
+                // Still in KEX or still flushing. Enqueue the packet; it will get written by the flushing thread at
+                // the end of KEX. See the javadoc of KexFilter.
+                //
+                // If so many packets are queued that flushing them triggers another KEX flushing stops
+                // and will be resumed at the end of the new KEX.
+                if (kexDone && log.isDebugEnabled()) {
+                    log.debug("writeOrEnqueue({})[{}]: Queuing packet while flushing", filter.getSession(),
+                            SshConstants.getCommandMessageName(cmd));
+                }
+                return enqueuePendingPacket(cmd, buffer);
+            }
+        } finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -401,7 +400,8 @@ class KexOutputHandler implements OutputHandler {
                                 }
                                 Buffer buf = pending.getBuffer();
                                 int cmd = buf.rawByte(buf.rpos()) & 0xFF;
-                                written = filter.write(cmd, buf, true);
+                                written = filter.write(cmd, buf);
+                                filter.startKexIfNeeded();
                             } catch (Throwable e) {
                                 log.error("flushQueue({}): Exception while flushing packet at end of KEX for {}",
                                         filter.getSession(),
