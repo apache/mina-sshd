@@ -1,0 +1,106 @@
+#
+# Licensed to the Apache Software Foundation (ASF) under one or more
+# contributor license agreements.  See the NOTICE file distributed with
+# this work for additional information regarding copyright ownership.
+# The ASF licenses this file to You under the Apache License, Version 2.0
+# (the "License"); you may not use this file except in compliance with
+# the License.  You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+
+name: master-build
+
+on:
+  push:
+    branches:
+      - 'dev_3.0'
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  deploy-snapshot:
+    # Skip any commit from creating releases. The first snapshot after a new release
+    # will thus be published on the first real change on the new snapshot version, but
+    # there will be no snapshot release for just bumping the version.
+    if: "!startsWith(github.event.head_commit.message ,'[maven-release-plugin]')"
+    needs: build
+    # Serialize these jobs from different workflow runs. We do not want concurrent
+    # deployments. We don't cancel already running jobs because we do not want their
+    # workflows to report a failure. Github does not guarantee order between jobs
+    # that queue within 5 minutes, see https://docs.github.com/en/actions/using-jobs/using-concurrency .
+    # We do check below that the job is operating on the latest origin/master, and
+    # we skip deployment if not.
+    concurrency: mina-sshd-next-snapshot-deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          # Create a ~/.m2/settings.xml referencing these environment variable names
+          server-id: 'apache.snapshots.https'
+          server-username: NEXUS_USERNAME
+          server-password: NEXUS_PASSWORD
+
+      - uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ubuntu-latest-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ubuntu-latest-maven-
+
+      - name: Set up Maven
+        uses: stCarolas/setup-maven@v5
+        with:
+          maven-version: '3.9.8'
+
+      - name: Check version (SNAPSHOT)
+        # Only deploy SNAPSHOT versions. We do not use "exit 1" because we still want the workflow
+        # to report success, we just want this job to do nothing.
+        #
+        # All subsequent steps are conditional.
+        run: |
+          export PROJECT_VERSION=$(mvn -B -q -DforceStdout -Dexpression=project.version help:evaluate)
+          echo "Project version: $PROJECT_VERSION"
+          [[ "$PROJECT_VERSION" =~ ^3\.[0-9]+\.[0-9]+-SNAPSHOT$ ]] || [[ "$PROJECT_VERSION" =~ ^3\.[0-9]+\.[0-9]+-M[1-9]$ ]] || {
+            echo "**** Skipping deployment because not a snapshot version: $PROJECT_VERSION" 1>&2
+            echo "SKIP_DEPLOYMENT=true" >> "$GITHUB_ENV"
+          }
+
+      - name: Check HEAD is current
+        # Must be quoted, ! is special in yaml
+        if: "! env.SKIP_DEPLOYMENT"
+        # Do not deploy if refs/heads/dev_3.0 has advanced in the meantime
+        run : |
+          export CURR_HEAD=$(git rev-parse -q origin/dev_3.0)
+          echo "Local: github.sha=${{ github.sha }} refs/heads/dev_3.0=$(git rev-parse -q refs/heads/dev_3.0)"
+          echo "Origin: origin/dev_3.0=$CURR_HEAD"
+          [[ "${{ github.sha }}" == "$CURR_HEAD" ]] || {
+            echo "**** Skipping deployment because dev_3.0 branch advanced: ${{ github.sha }} != origin/dev_3.0 $CURR_HEAD" 1>&2
+            echo "SKIP_DEPLOYMENT=true" >> "$GITHUB_ENV"
+          }
+
+      - name: Build and deploy with maven
+        # Must be quoted, ! is special in yaml
+        if: "! env.SKIP_DEPLOYMENT"
+        # NEXUS_USERNAME and NEXUS_PASSWORD are used in ~/.m2/settings.xml created by
+        # the setup-java action. The two secrets are organization-wide secrets that
+        # were enabled by Apache Infra for our repository.
+        env:
+          NEXUS_USERNAME: ${{ secrets.NEXUS_USER }}
+          NEXUS_PASSWORD: ${{ secrets.NEXUS_PW }}
+        # Our root POM overwrites the release repository with an invalid value to prevent
+        # accidental release deployments as an additional safety measure. The snapshot
+        # repo from the Apache parent POM is not overridden.
+        run: mvn -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd

@@ -21,6 +21,7 @@ on:
   pull_request:
     branches:
       - master
+      - dev_3.0
   workflow_call:
 
 jobs:
