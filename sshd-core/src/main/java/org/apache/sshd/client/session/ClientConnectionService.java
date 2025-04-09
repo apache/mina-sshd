@@ -61,44 +61,7 @@ public class ClientConnectionService
 
         heartbeatRequest = CoreModuleProperties.HEARTBEAT_REQUEST.getRequired(this);
         heartbeatInterval = CoreModuleProperties.HEARTBEAT_INTERVAL.getRequired(this);
-        heartbeatMaxNoReply = configureMaxNoReply();
-    }
-
-    protected int configureMaxNoReply() {
-        @SuppressWarnings("deprecation")
-        Duration timeout = CoreModuleProperties.HEARTBEAT_REPLY_WAIT.getOrNull(this);
-        if (timeout == null || GenericUtils.isNegativeOrNull(heartbeatInterval) || GenericUtils.isEmpty(heartbeatRequest)) {
-            return CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.getRequired(this).intValue();
-        }
-        // The deprecated timeout is configured explicitly. If the new no-reply-max is _not_ explicitly configured,
-        // set it from the timeout.
-        Integer noReplyValue = CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.getOrNull(this);
-        if (noReplyValue != null) {
-            return noReplyValue.intValue();
-        }
-        if (GenericUtils.isNegativeOrNull(timeout)) {
-            return 0;
-        }
-        if (timeout.compareTo(heartbeatInterval) >= 0) {
-            // Timeout is longer than the interval. With the previous system, that would have killed the session when
-            // the timeout was reached. A slow server that managed to return the reply just before the timeout expired
-            // would have delayed subsequent heartbeats. The new system will keep sending heartbeats with the given
-            // interval. Thus we can have timeout / interval heartbeats without reply if we want to approximate the
-            // timeout.
-            double timeoutSec = timeout.getSeconds() + (timeout.getNano() / 1_000_000_000.0);
-            double intervalSec = heartbeatInterval.getSeconds() + (heartbeatInterval.getNano() / 1_000_000_000.0);
-            double multiple = timeoutSec / intervalSec;
-            if (multiple >= Integer.MAX_VALUE - 1) {
-                return Integer.MAX_VALUE;
-            } else {
-                return (int) multiple + 1;
-            }
-        }
-        // Timeout is smaller than the interval. We want to have every heartbeat replied to.
-        return 1;
-        // This is an approximation. If no reply is forthcoming, the session will be killed after the interval. In the
-        // previous system, it would have been killed after the timeout. We _could_ code something to schedule a task
-        // that kills the session after the timeout and cancel that if we get a reply, but it seems a bit pointless.
+        heartbeatMaxNoReply = CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.getRequired(this).intValue();
     }
 
     @Override

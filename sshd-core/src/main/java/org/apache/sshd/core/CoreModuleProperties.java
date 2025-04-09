@@ -138,15 +138,6 @@ public final class CoreModuleProperties {
             = Property.bool("allow-dhg1-kex-fallback", false);
 
     /**
-     * Unused.
-     *
-     * @deprecated since 2.14.0
-     */
-    @Deprecated
-    public static final Property<Duration> KEX_PROPOSAL_SETUP_TIMEOUT
-            = Property.duration("kex-proposal-setup-timeout", Duration.ZERO);
-
-    /**
      * Key used to set the heartbeat interval in milliseconds (0 to disable = default)
      */
     public static final Property<Duration> HEARTBEAT_INTERVAL
@@ -157,16 +148,6 @@ public final class CoreModuleProperties {
      */
     public static final Property<String> HEARTBEAT_REQUEST
             = Property.string("heartbeat-request", "keepalive@sshd.apache.org");
-
-    /**
-     * Key used to indicate that the heartbeat request is also expecting a reply - time in <U>milliseconds</U> to wait
-     * for the reply. If non-positive then no reply is expected (nor requested).
-     *
-     * @deprecated since 2.13.0, use {@link #HEARTBEAT_NO_REPLY_MAX} instead
-     */
-    @Deprecated
-    public static final Property<Duration> HEARTBEAT_REPLY_WAIT
-            = Property.durationSec("heartbeat-reply-wait", Duration.ofMinutes(5));
 
     /**
      * Key to set the maximum number of heartbeat messages to send without having received a reply. If &gt; 0, heartbeat

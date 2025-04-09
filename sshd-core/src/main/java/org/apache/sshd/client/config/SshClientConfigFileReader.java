@@ -42,13 +42,13 @@ public final class SshClientConfigFileReader {
     public static final String REQUEST_TTY_OPTION = "RequestTTY";
 
     public static final Property<Duration> CLIENT_LIVECHECK_INTERVAL_PROP
-            = Property.duration("ClientAliveInterval", Duration.ZERO);
+            = Property.duration("ServerAliveInterval", Duration.ZERO);
 
-    public static final Property<Boolean> CLIENT_LIVECHECK_USE_NULLS = Property.bool("ClientAliveUseNullPackets", false);
+    public static final Property<Boolean> CLIENT_LIVECHECK_USE_NULLS = Property.bool("ServerAliveUseNullPackets", false);
 
-    public static final Property<Duration> CLIENT_LIVECHECK_REPLIES_WAIT
-            = Property.duration("ClientAliveReplyWait", Duration.ZERO);
-    public static final long DEFAULT_LIVECHECK_REPLY_WAIT = 0L;
+    public static final int DEFAULT_LIVECHECK_MISSED_REPLIES_MAX = 3;
+    public static final Property<Integer> CLIENT_LIVECHECK_MISSED_REPLIES_MAX = Property.integer("ServerAliveCountMax",
+            DEFAULT_LIVECHECK_MISSED_REPLIES_MAX);
 
     private SshClientConfigFileReader() {
         throw new UnsupportedOperationException("No instance allowed");
@@ -64,15 +64,15 @@ public final class SshClientConfigFileReader {
             return client;
         }
 
-        if (CLIENT_LIVECHECK_USE_NULLS.getRequired(props)) {
+        if (CLIENT_LIVECHECK_USE_NULLS.getRequired(props).booleanValue()) {
             CommonModuleProperties.SESSION_HEARTBEAT_TYPE.set(client, HeartbeatType.IGNORE);
             CommonModuleProperties.SESSION_HEARTBEAT_INTERVAL.set(client, interval);
         } else {
             CoreModuleProperties.HEARTBEAT_INTERVAL.set(client, interval);
 
-            interval = CLIENT_LIVECHECK_REPLIES_WAIT.getRequired(props);
+            int n = CLIENT_LIVECHECK_MISSED_REPLIES_MAX.getRequired(props);
             if (!GenericUtils.isNegativeOrNull(interval)) {
-                CoreModuleProperties.HEARTBEAT_REPLY_WAIT.set(client, interval);
+                CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.set(client, n);
             }
         }
 
