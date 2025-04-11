@@ -487,7 +487,7 @@ public class ProxyTest extends BaseTestSupport {
         String result;
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         ByteArrayOutputStream errors = new ByteArrayOutputStream();
-        session.executeRemoteCommand(command, out, errors, StandardCharsets.UTF_8);
+        session.executeRemoteCommand(command, out, errors, StandardCharsets.UTF_8, 0L);
         result = out.toString();
         assertEquals(command, result);
     }
