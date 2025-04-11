@@ -17,4 +17,4 @@ Version 3 includes all the features and bug fixes of version 2, including the [l
 ## New Features
 
 * Random padding on SSH packets as suggested by [RFC 4253, section 6](https://datatracker.ietf.org/doc/html/rfc4253#section-6).
-* New event callback `SessionListener.sessionStarting()`. See the [filter documentation](./docs/technical/filters.md). `SessionLIstener.sessionEstablished()` was removed; it was called from the constructor of `AbstractSession` at a time when the object was not yet fully initialized.
+* New event callback `SessionListener.sessionStarting()`. See the [filter documentation](./docs/technical/filters.md). `SessionListener.sessionEstablished()` was removed; it was called from the constructor of `AbstractSession` at a time when the object was not yet fully initialized.

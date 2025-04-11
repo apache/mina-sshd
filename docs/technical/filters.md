@@ -23,7 +23,7 @@ SSH connections were handled in this one big messy class. An incoming message wo
 from the I/O transport directly to the session; where it would be decrypted, decompressed, and
 then handled. Outgoing messages (from either user authentication, or from the connection service,
 or also messages sent directly by the `AbstractSession` itself) would all go through
-`AbstractSession.write()`, and the session would compress and encrypt them before handing handing
+`AbstractSession.write()`, and the session would compress and encrypt them before handing
 them off to the I/O transport for sending over the socket.
 
 The session also dealt with all the intricacies of performing key exchanges. All this got more
