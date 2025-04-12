@@ -36,6 +36,7 @@
 * [GH-690](https://github.com/apache/mina-sshd/issues/690) Handle append mode for buggy SFTP v3 servers
 * [GH-700](https://github.com/apache/mina-sshd/issues/700) Fix race in `AbstractCloseable.doCloseImmediately()`
 * [GH-709](https://github.com/apache/mina-sshd/issues/709) `AbstractChannel`: Handle keep-alive channel messages sent by an old OpenSSH server
+* [GH-727](https://github.com/apache/mina-sshd/issues/727) Supply default port 22 for proxy jump hosts for which there is no `HostConfigEntry`
 
 
 * [SSHD-1343](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-1343) Correct documentation in `ChannelDataReceiver`
