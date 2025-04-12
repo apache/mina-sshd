@@ -43,6 +43,7 @@ import org.apache.sshd.client.channel.ChannelExec;
 import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
+import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
@@ -77,12 +78,16 @@ import org.apache.sshd.core.CoreModuleProperties;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractClientSession extends AbstractSession implements ClientSession {
+
+    public static final AttributeKey<HostConfigEntry> HOST_CONFIG_ENTRY = new AttributeKey<>();
+
     protected final boolean sendImmediateClientIdentification;
     protected final boolean sendImmediateKexInit;
 
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
     private final AttributeRepository connectionContext;
+    private final HostConfigEntry hostConfig;
 
     private PublicKey serverKey;
     private ServerKeyVerifier serverKeyVerifier;
@@ -105,6 +110,12 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
         connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
+        hostConfig = connectionContext.getAttribute(HOST_CONFIG_ENTRY);
+    }
+
+    @Override
+    public HostConfigEntry getHostConfigEntry() {
+        return hostConfig;
     }
 
     @Override

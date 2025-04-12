@@ -47,6 +47,7 @@ import org.apache.sshd.client.channel.ChannelShell;
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
@@ -105,6 +106,13 @@ public interface ClientSession
      * @return The original requested address
      */
     SocketAddress getConnectAddress();
+
+    /**
+     * Retrieves the {@link HostConfigEntry} that was used to create this session.
+     *
+     * @return the {@link HostConfigEntry}; or {@code null} if none
+     */
+    HostConfigEntry getHostConfigEntry();
 
     /**
      * @return The &quot;context&quot; data provided when session connection was established - {@code null} if none.

@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.HashMap;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -38,6 +39,7 @@ import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.client.session.ClientSessionImpl;
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.channel.ChannelListener;
@@ -306,7 +308,10 @@ class ClientAuthenticationManagerTest extends BaseTestSupport {
     }
 
     private ClientSession createMockClientSession(ClientFactoryManager client) throws Exception {
-        return new ClientSessionImpl(client, Mockito.mock(IoSession.class)) {
+        IoSession ioSession = Mockito.mock(IoSession.class);
+        Mockito.when(ioSession.getAttribute(AttributeRepository.class))
+                .thenReturn(AttributeRepository.ofAttributesMap(new HashMap<>()));
+        return new ClientSessionImpl(client, ioSession) {
 
             @Override
             protected void initializeKeyExchangePhase() throws Exception {

@@ -34,9 +34,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
@@ -647,10 +651,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
 
+        Map<AttributeRepository.AttributeKey<?>, Object> sessionAttributes = new HashMap<>();
+        sessionAttributes.put(AbstractClientSession.HOST_CONFIG_ENTRY, hostConfig);
+        AttributeRepository sessionContext = AttributeRepository.ofAttributesMap(sessionAttributes);
+        if (context != null) {
+            sessionContext = new ShadowingAttributeRepository(sessionContext, context);
+        }
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
                 connectFuture, username, targetAddress, identities, hostConfig);
-        IoConnectFuture connectingFuture = connector.connect(targetAddress, context, localAddress);
+        IoConnectFuture connectingFuture = connector.connect(targetAddress, sessionContext, localAddress);
         connectFuture.addListener(c -> {
             if (c.isCanceled()) {
                 connectingFuture.cancel();
@@ -1055,5 +1065,45 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         }
 
         return client;
+    }
+
+    protected static class ShadowingAttributeRepository implements AttributeRepository {
+
+        private final AttributeRepository shadow;
+
+        private final AttributeRepository parent;
+
+        public ShadowingAttributeRepository(AttributeRepository shadow, AttributeRepository parent) {
+            this.shadow = Objects.requireNonNull(shadow);
+            this.parent = Objects.requireNonNull(parent);
+        }
+
+        @Override
+        public int getAttributesCount() {
+            return attributeKeys().size();
+        }
+
+        @Override
+        public <T> T getAttribute(AttributeKey<T> key) {
+            if (shadow.attributeKeys().contains(Objects.requireNonNull(key))) {
+                return shadow.getAttribute(key);
+            }
+            return parent.getAttribute(key);
+        }
+
+        @Override
+        public Collection<AttributeKey<?>> attributeKeys() {
+            Set<AttributeKey<?>> keys = new HashSet<>(shadow.attributeKeys());
+            keys.addAll(parent.attributeKeys());
+            return keys;
+        }
+
+        @Override
+        public <T> T resolveAttribute(AttributeKey<T> key) {
+            if (shadow.attributeKeys().contains(Objects.requireNonNull(key))) {
+                return shadow.getAttribute(key);
+            }
+            return parent.resolveAttribute(key);
+        }
     }
 }

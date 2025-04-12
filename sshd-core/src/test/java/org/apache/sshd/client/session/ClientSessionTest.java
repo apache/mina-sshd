@@ -35,6 +35,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
+import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
@@ -234,18 +235,28 @@ class ClientSessionTest extends BaseTestSupport {
         assertEquals(Integer.toString(expectedErrorCode), actualErrorMessage, "Mismatched captured error code");
     }
 
-    // see SSHD-859
+    // see SSHD-859 and GH-728
     @Test
     void connectionContextPropagation() throws Exception {
-        AttributeRepository expected = AttributeRepository.ofKeyValuePair(
-                new AttributeKey<String>(), getCurrentTestName());
+        String myName = getCurrentTestName();
+        AttributeKey<String> myAttribute = new AttributeKey<String>();
+        AttributeRepository expected = AttributeRepository.ofKeyValuePair(myAttribute, myName);
         AtomicInteger creationCount = new AtomicInteger(0);
         SessionListener listener = new SessionListener() {
             @Override
             public void sessionCreated(Session session) {
-                AttributeRepository actual = ((ClientSession) session).getConnectionContext();
-                assertSame(expected, actual, "Mismatched connection context");
                 creationCount.incrementAndGet();
+                AttributeRepository actual = ((ClientSession) session).getConnectionContext();
+                assertNotNull(actual, "No connection context");
+                String value = actual.getAttribute(myAttribute);
+                assertSame(myName, value, "Mismatched connection context");
+                HostConfigEntry entry1 = actual.getAttribute(AbstractClientSession.HOST_CONFIG_ENTRY);
+                assertNotNull(entry1, "No host config entry");
+                HostConfigEntry entry = ((ClientSession) session).getHostConfigEntry();
+                assertSame(entry1, entry, "Mismatched host config entry");
+                assertEquals(TEST_LOCALHOST, entry.getHostName(), "Unexpeted host name");
+                assertEquals(port, entry.getPort(), "Unexpected port");
+                assertEquals(myName, entry.getUsername(), "Unexpected user name");
             }
         };
 
