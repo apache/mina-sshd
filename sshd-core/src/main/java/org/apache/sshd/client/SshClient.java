@@ -67,6 +67,8 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.future.ConnectFuture;
 import org.apache.sshd.client.future.DefaultConnectFuture;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.apache.sshd.client.proxy.ProxyData;
+import org.apache.sshd.client.proxy.ProxyDataFactory;
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.client.session.ClientConnectionServiceFactory;
 import org.apache.sshd.client.session.ClientSession;
@@ -187,6 +189,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     protected SessionFactory sessionFactory;
     protected List<UserAuthFactory> userAuthFactories;
 
+    private ProxyDataFactory proxyDataFactory;
     private ServerKeyVerifier serverKeyVerifier;
     private HostConfigEntryResolver hostConfigEntryResolver;
     private ClientIdentityLoader clientIdentityLoader;
@@ -212,6 +215,14 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
 
     public void setSessionFactory(SessionFactory sessionFactory) {
         this.sessionFactory = sessionFactory;
+    }
+
+    public ProxyDataFactory getProxyDataFactory() {
+        return proxyDataFactory;
+    }
+
+    public void setProxyDataFactory(ProxyDataFactory proxyDataFactory) {
+        this.proxyDataFactory = proxyDataFactory;
     }
 
     @Override
@@ -600,7 +611,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                     ExplicitPortForwardingTracker tracker = proxySession
                                             .createLocalPortForwardingTracker(SshdSocketAddress.LOCALHOST_ADDRESS, address);
                                     SshdSocketAddress bound = tracker.getBoundAddress();
-                                    ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(),
+                                    ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(), null,
                                             context, localAddress, keys, hostConfig);
                                     toCancel.set(f4);
                                     if (connectFuture.isCanceled()) {
@@ -637,22 +648,34 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             });
             return connectFuture;
         } else {
-            return doConnect(hostConfig.getUsername(), new InetSocketAddress(host, port),
+            // This is a direct connection to an SSH server. Check whether we have to use a proxy (not an SSH
+            // proxyJump).
+            ProxyDataFactory factory = getProxyDataFactory();
+            ProxyData proxy = factory == null ? null : factory.get(targetAddress);
+            return doConnect(hostConfig.getUsername(), targetAddress, proxy,
                     context, localAddress, keys, hostConfig);
         }
     }
 
     protected ConnectFuture doConnect(
-            String username, SocketAddress targetAddress,
+            String username, InetSocketAddress targetAddress, ProxyData proxy,
             AttributeRepository context, SocketAddress localAddress,
             KeyIdentityProvider identities, HostConfigEntry hostConfig)
             throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
         }
-
         Map<AttributeRepository.AttributeKey<?>, Object> sessionAttributes = new HashMap<>();
         sessionAttributes.put(AbstractClientSession.HOST_CONFIG_ENTRY, hostConfig);
+        InetSocketAddress connectAddress = targetAddress;
+        if (proxy != null) {
+            sessionAttributes.put(AbstractClientSession.PROXY_DATA, proxy);
+            sessionAttributes.put(TARGET_SERVER, new SshdSocketAddress(targetAddress));
+            connectAddress = proxy.getAddress();
+            if (connectAddress.isUnresolved()) {
+                connectAddress = new InetSocketAddress(connectAddress.getHostName(), connectAddress.getPort());
+            }
+        }
         AttributeRepository sessionContext = AttributeRepository.ofAttributesMap(sessionAttributes);
         if (context != null) {
             sessionContext = new ShadowingAttributeRepository(sessionContext, context);
@@ -660,7 +683,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
         SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
                 connectFuture, username, targetAddress, identities, hostConfig);
-        IoConnectFuture connectingFuture = connector.connect(targetAddress, sessionContext, localAddress);
+        IoConnectFuture connectingFuture = connector.connect(connectAddress, sessionContext, localAddress);
         connectFuture.addListener(c -> {
             if (c.isCanceled()) {
                 connectingFuture.cancel();

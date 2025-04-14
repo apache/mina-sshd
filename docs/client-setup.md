@@ -145,7 +145,7 @@ The usual _OpenSSH_ default seems to be 16, but users can ask for more (or less)
 Various discussions on the net seem to indicate that 64 is the value at which many computers start to slow down noticeably, so
 our default limit seems quite suitable (and beyond) for most cases we are likely to encounter "in the wild".
 
-### `UserInteraction`
+### <a id="user-interaction"></a>`UserInteraction`
 
 This interface is required for full support of `keyboard-interactive` authentication protocol as described in [RFC-4252 section 9](https://tools.ietf.org/html/rfc4252#section-9).
 The client can handle a simple password request from the server, but if more complex challenge-response interaction is required, then this interface must be
@@ -233,6 +233,53 @@ client.start();
 client.stop();
 
 ```
+### <a id="proxies"></a>Connecting through a client-side SOCKS5 or HTTP CONNECT proxy
+
+If the client has to go through a proxy (typically to allow outgoing traffic through a firewall) to reach the server,
+`client.connect(...)` relies by default on the standard Java `java.net.ProxySelector` using the system default selector
+`ProxySelector.getDefault()`. If the proxy requires authentication credentials, by default the standard `java.net.Authenticator`
+is used to ask the user if no up-front credentials for the proxy are known.
+
+With `ProxySelector.getDefault()`, the default Java [proxy settings](https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html)
+will be respected. Note that the default proxy selector relies on Java system properties being set (for instance, via
+the `-D` option when the Java application is started). It can be made to pick up the OS default settings using
+`-Djava.net.useSystemProxies=true`.
+
+Apache MINA sshd supports
+* HTTP proxies with anonymous, password, or Kerberos5 (SPNEGO) authentication
+* SOCKS proxies using the SOCKS5 protocol with anonymous, password, or Kerberos5 (GSS-API) authentication
+
+Both the way proxies are selected and the way the user is asked for proxy authentication credentials is configurable.
+
+The `SshClient` can be configured with a custom `ProxyDataFactory` to determine which proxy should be used for connecting
+to which remote server address. This `ProxyData` factory can also supply a-priori known proxy authentication credentials
+(user name and password); if set, those will be used and the user won't be asked for them. The `ProxyDataFactory` can be
+set via `SshClient.setProxyDataFactory()`. This gives user code a way to provide a more flexible proxy selection mechanism
+than the built-in default `ProxySelector`.
+
+The UI interaction with the user to ask for proxy authentication credentials can also be customized via the `UserInteraction`
+interface (see also [above](#user-interaction)). Override method `UserInteraction.getProxyCredentials()` to implement custom
+behavior.
+
+Note that neither SOCKS5 nor HTTP CONNECT have any mechanism to ask repeatedly for authentication credentials. SOCKS
+is even specified to disconnect if the credentials are not correct on the first attempt. HTTP proxies will typically
+close the HTTP connection if authentication is required but the credentials are wrong or missing. (In other words: to
+successfully tunnel through an HTTP proxy that requires authentication, you need to supply correct credentials up front.
+With a SOCKS proxy, the user is asked if there are no up-front known credentials.)
+
+Once the authenticated connection to the proxy is established, the client will then ask the proxy to tunnel to the target
+server. If the proxy grants the request, the SSH connection to the target server will start inside the proxy tunnel.
+
+> Note that a SOCKS or HTTP CONNECT connection to the proxy is not encrypted. This is normally fine, as the proxy will be
+> on the boundary of the same firewalled network the SSH client is in, too. Apache MINA sshd has no built-in support for
+> using TLS for connecting the proxy. Doing so would also result in double encryption on the leg between the SSH client and
+> the proxy: first TLS encryption, and then inside that SSH encryption.
+>
+> If you need to connect to a proxy over TLS, you'll have to implement it yourself. We suggest to use the `sshd-mina` or
+> `sshd-netty` I/O transports as a starting point and change them to include a TLS filter in their low-level filter chain
+> (called "pipeline" in Netty). The `IoConnector.connect()` method could examine the `AttributeRepository context` to figure
+> out whether a TLS/SSL filter should be added: if `context.getAttribute(AbstractClientSession.PROXY_DATA) != null`, a proxy
+> is used.
 
 ## Configuring the protocol exchange phase
 

@@ -352,7 +352,7 @@ public final class CoreModuleProperties {
      * Minimum NIO2 write wait timeout for a single outgoing packet - in milliseconds
      */
     public static final Property<Duration> NIO2_MIN_WRITE_TIMEOUT
-            = Property.duration("nio2-min-write-timeout", Duration.ofSeconds(30L));
+            = Property.duration("nio2-min-write-timeout", Duration.ofSeconds(30));
 
     /**
      * Key used to retrieve the value of the disconnect timeout which is used when a disconnection is attempted. If the

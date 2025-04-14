@@ -152,6 +152,7 @@
                         <exclude>**/OpenSshMlKemTest.java</exclude>
                         <exclude>**/PortForwardingWithOpenSshTest.java</exclude>
                         <exclude>**/StrictKexInteroperabilityTest.java</exclude>
+                        <exclude>**/*IntegrationTest.java</exclude>
                         <!-- reading files from classpath doesn't work correctly w/ reusable test jar -->
                         <exclude>**/OpenSSHCertificateTest.java</exclude>
                     </excludes>

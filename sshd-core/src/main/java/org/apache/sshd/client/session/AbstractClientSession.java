@@ -45,6 +45,8 @@ import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.apache.sshd.client.proxy.ProxyData;
+import org.apache.sshd.client.session.filter.ClientProxyFilter;
 import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedResource;
@@ -81,6 +83,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
 
     public static final AttributeKey<HostConfigEntry> HOST_CONFIG_ENTRY = new AttributeKey<>();
 
+    public static final AttributeKey<ProxyData> PROXY_DATA = new AttributeKey<>();
+
     protected final boolean sendImmediateClientIdentification;
     protected final boolean sendImmediateKexInit;
 
@@ -111,6 +115,20 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         identitiesProvider = AuthenticationIdentitiesProvider.wrapIdentities(identities);
         connectionContext = (AttributeRepository) ioSession.getAttribute(AttributeRepository.class);
         hostConfig = connectionContext.getAttribute(HOST_CONFIG_ENTRY);
+    }
+
+    @Override
+    protected void setupFilterChain() {
+        super.setupFilterChain();
+        ProxyData proxy = connectionContext.getAttribute(PROXY_DATA);
+        SshdSocketAddress targetAddress = connectionContext.getAttribute(ClientSessionCreator.TARGET_SERVER);
+        if (proxy != null) {
+            if (targetAddress == null) {
+                throw new IllegalStateException("Have proxy but no target address");
+            }
+            getFilterChain().addFirst(new ClientProxyFilter(this, proxy, targetAddress.toInetSocketAddress()));
+            setAttribute(ClientSessionCreator.TARGET_SERVER, targetAddress);
+        }
     }
 
     @Override

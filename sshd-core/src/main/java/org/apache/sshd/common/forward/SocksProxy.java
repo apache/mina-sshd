@@ -20,11 +20,14 @@ package org.apache.sshd.common.forward;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.sshd.client.future.OpenFuture;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.channel.LocalWindow;
 import org.apache.sshd.common.channel.StreamingChannel.Streaming;
 import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
@@ -71,9 +74,9 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         Proxy proxy = proxies.get(session);
         if (proxy == null) {
             int version = buffer.getUByte();
-            if (version == 0x04) {
+            if (version == SocksConstants.Socks4.VERSION) {
                 proxy = new Socks4(session);
-            } else if (version == 0x05) {
+            } else if (version == SocksConstants.Socks5.VERSION) {
                 proxy = new Socks5(session);
             } else {
                 throw new IllegalStateException("Unsupported version: " + version);
@@ -91,7 +94,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         session.close(false);
     }
 
-    public abstract static class Proxy implements Closeable {
+    public abstract class Proxy implements Closeable {
+
         protected IoSession session;
         protected TcpipClientChannel channel;
 
@@ -116,7 +120,33 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         }
 
         protected int getUShort(Buffer buffer) {
-            return (getUByte(buffer) << Byte.SIZE) + getUByte(buffer);
+            return buffer.getUShort();
+        }
+
+        protected void sendReply(Buffer message, boolean success, LocalWindow window, long windowSize) {
+            try {
+                session.writeBuffer(message);
+            } catch (IOException e) {
+                log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel,
+                        e.getMessage());
+                if (success) {
+                    service.unregisterChannel(channel);
+                    channel.close(true);
+                }
+                throw new IllegalStateException("Failed to send packet", e);
+            }
+            if (success) {
+                session.resumeRead();
+                // Open the channel window: we're ready to accept data now.
+                try {
+                    window.release(windowSize);
+                } catch (IOException e) {
+                    log.error("Could not open channel window to {} on channel {}: {}", windowSize, channel, e);
+                    service.unregisterChannel(channel);
+                    channel.close(true);
+                    throw new IllegalStateException("Failed to open window", e);
+                }
+            }
         }
     }
 
@@ -133,7 +163,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         protected void onMessage(Buffer buffer) throws IOException {
             if (channel == null) {
                 int cmd = buffer.getUByte();
-                if (cmd != 1) {
+                if (cmd != SocksConstants.Socks4.CMD_CONNECT) {
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
                 int port = getUShort(buffer);
@@ -155,14 +185,18 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 channel.setStreaming(Streaming.Async);
                 session.suspendRead();
                 service.registerChannel(channel);
-                channel.open().addListener(this::onChannelOpened);
+                // Open the channel, but don't accept input data yet!
+                LocalWindow window = channel.getLocalWindow();
+                long windowSize = window.getSize();
+                window.consume(windowSize);
+                channel.open().addListener(f -> onChannelOpened(f, window, windowSize));
             } else {
                 super.onMessage(buffer);
             }
         }
 
         @SuppressWarnings("synthetic-access")
-        protected void onChannelOpened(OpenFuture future) {
+        protected void onChannelOpened(OpenFuture future, LocalWindow window, long windowSize) {
             session.resumeRead();
             Buffer buffer = new ByteArrayBuffer(Long.SIZE, false);
             buffer.putByte((byte) 0x00);
@@ -170,9 +204,9 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             if (t != null) {
                 service.unregisterChannel(channel);
                 channel.close(true);
-                buffer.putByte((byte) 0x5b);
+                buffer.putByte(SocksConstants.Socks4.REPLY_FAILURE);
             } else {
-                buffer.putByte((byte) 0x5a);
+                buffer.putByte(SocksConstants.Socks4.REPLY_SUCCESS);
             }
             buffer.putByte((byte) 0x00);
             buffer.putByte((byte) 0x00);
@@ -180,14 +214,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             buffer.putByte((byte) 0x00);
             buffer.putByte((byte) 0x00);
             buffer.putByte((byte) 0x00);
-            try {
-                session.writeBuffer(buffer);
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                log.error("Failed ({}) to send channel open packet for {}: {}", e.getClass().getSimpleName(), channel,
-                        e.getMessage());
-                throw new IllegalStateException("Failed to send packet", e);
-            }
+            sendReply(buffer, t == null, window, windowSize);
         }
 
         protected String getNTString(Buffer buffer) {
@@ -203,8 +230,8 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
      * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS5">SOCKS5</A>
      */
     public class Socks5 extends Proxy {
+
         private byte[] authMethods;
-        private Buffer response;
 
         public Socks5(IoSession session) {
             super(session);
@@ -223,7 +250,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                     foundNoAuth |= authMethods[i] == 0;
                 }
                 buffer = new ByteArrayBuffer(Byte.SIZE, false);
-                buffer.putByte((byte) 0x05);
+                buffer.putByte(SocksConstants.Socks5.VERSION);
                 buffer.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
                 session.writeBuffer(buffer);
                 if (!foundNoAuth) {
@@ -232,32 +259,29 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                     log.debug("Received socks5 greeting");
                 }
             } else if (channel == null) {
-                response = buffer;
                 int version = getUByte(buffer);
-                if (version != 0x05) {
+                if (version != SocksConstants.Socks5.VERSION) {
                     throw new IllegalStateException("Unexpected version: " + version);
                 }
                 int cmd = buffer.getUByte();
-                if (cmd != 1) { // establish a TCP/IP stream connection
+                if (cmd != SocksConstants.Socks5.CMD_CONNECT) { // establish a TCP/IP stream connection
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
                 int res = buffer.getUByte();
-                if (res != 0) {
-                    if (debugEnabled) {
-                        log.debug("No zero reserved value: {}", res);
-                    }
+                if (res != 0 && debugEnabled) {
+                    log.debug("No zero reserved value: {}", res);
                 }
 
                 int type = buffer.getUByte();
                 String host;
-                if (type == 0x01) {
+                if (type == SocksConstants.Socks5.ADDRESS_IPV4) {
                     host = Integer.toString(getUByte(buffer)) + "."
                            + Integer.toString(getUByte(buffer)) + "."
                            + Integer.toString(getUByte(buffer)) + "."
                            + Integer.toString(getUByte(buffer));
-                } else if (type == 0x03) {
+                } else if (type == SocksConstants.Socks5.ADDRESS_FQDN) {
                     host = getBLString(buffer);
-                } else if (type == 0x04) {
+                } else if (type == SocksConstants.Socks5.ADDRESS_IPV6) {
                     host = Integer.toHexString(getUShort(buffer)) + ":"
                            + Integer.toHexString(getUShort(buffer)) + ":"
                            + Integer.toHexString(getUShort(buffer)) + ":"
@@ -278,7 +302,11 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 channel.setStreaming(Streaming.Async);
                 session.suspendRead();
                 service.registerChannel(channel);
-                channel.open().addListener(this::onChannelOpened);
+                // Open the channel, but don't accept input data yet!
+                LocalWindow window = channel.getLocalWindow();
+                long windowSize = window.getSize();
+                window.consume(windowSize);
+                channel.open().addListener(f -> onChannelOpened(f, window, windowSize));
             } else {
                 if (debugEnabled) {
                     log.debug("Received socks5 connection message");
@@ -288,27 +316,35 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         }
 
         @SuppressWarnings("synthetic-access")
-        protected void onChannelOpened(OpenFuture future) {
-            session.resumeRead();
-            int wpos = response.wpos();
-            response.rpos(0);
-            response.wpos(1);
+        protected void onChannelOpened(OpenFuture future, LocalWindow window, long windowSize) {
+            Buffer response = new ByteArrayBuffer(2);
+            response.putByte(SocksConstants.Socks5.VERSION);
             Throwable t = future.getException();
             if (t != null) {
                 service.unregisterChannel(channel);
                 channel.close(true);
-                response.putByte((byte) 0x01);
+                response.putByte(SocksConstants.Socks5.REPLY_FAILURE);
             } else {
-                response.putByte((byte) 0x00);
+                response.putByte(SocksConstants.Socks5.REPLY_SUCCESS);
             }
-            response.wpos(wpos);
-            try {
-                session.writeBuffer(response);
-            } catch (IOException e) {
-                log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel,
-                        e.getMessage());
-                throw new IllegalStateException("Failed to send packet", e);
+            response.putByte((byte) 0x00); // reserved
+            SocketAddress bound = session.getAcceptanceAddress();
+            if (bound instanceof InetSocketAddress) {
+                byte[] ip = ((InetSocketAddress) bound).getAddress().getAddress();
+                if (ip.length == 4) {
+                    response.putByte(SocksConstants.Socks5.ADDRESS_IPV4);
+                } else {
+                    response.putByte(SocksConstants.Socks5.ADDRESS_IPV6);
+                }
+                response.putRawBytes(ip);
+                response.putShort(((InetSocketAddress) bound).getPort());
+            } else {
+                // Just fill in some dummy values.
+                response.putByte(SocksConstants.Socks5.ADDRESS_IPV4);
+                response.putLong(0);
+                response.putShort(0);
             }
+            sendReply(response, t == null, window, windowSize);
         }
 
         protected String getBLString(Buffer buffer) {

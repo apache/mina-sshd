@@ -272,9 +272,14 @@ class KexOutputHandler implements OutputHandler {
                 //
                 // If so many packets are queued that flushing them triggers another KEX flushing stops
                 // and will be resumed at the end of the new KEX.
-                if (kexDone && log.isDebugEnabled()) {
-                    log.debug("writeOrEnqueue({})[{}]: Queuing packet while flushing", filter.getSession(),
-                            SshConstants.getCommandMessageName(cmd));
+                if (log.isDebugEnabled()) {
+                    if (kexDone) {
+                        log.debug("writeOrEnqueue({})[{}]: Queuing packet while flushing", filter.getSession(),
+                                SshConstants.getCommandMessageName(cmd));
+                    } else {
+                        log.debug("writeOrEnqueue({})[{}]: Queuing packet", filter.getSession(),
+                                SshConstants.getCommandMessageName(cmd));
+                    }
                 }
                 return enqueuePendingPacket(cmd, buffer);
             }

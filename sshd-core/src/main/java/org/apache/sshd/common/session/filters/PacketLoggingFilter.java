@@ -57,7 +57,12 @@ public class PacketLoggingFilter extends IoFilter {
 
             @Override
             public void handleMessage(Buffer message) throws Exception {
-                if (LOG.isTraceEnabled()) {
+                if (LOG.isDebugEnabled()) {
+                    int cmd = message.rawByte(message.rpos()) & 0xFF;
+                    LOG.debug("receivePacket({}) packet #{} command={}[{}] len={}", session, crypt.getLastInputSequenceNumber(),
+                            cmd, SshConstants.getCommandMessageName(cmd), message.available());
+                }
+                if (SIMPLE.isTraceEnabled()) {
                     message.dumpHex(SIMPLE, Level.FINEST,
                             "receivePacket(" + session + ") packet #" + crypt.getLastInputSequenceNumber(), session);
                 }

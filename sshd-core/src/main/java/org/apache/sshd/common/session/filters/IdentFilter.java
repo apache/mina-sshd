@@ -38,12 +38,16 @@ import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A filter for sending the identification string before the first outgoing packet, and for receiving the peer's
  * identification. Once both idents have been sent and received the filter removes itself from the filter chain.
  */
 public class IdentFilter extends IoFilter {
+
+    private static final Logger LOG = LoggerFactory.getLogger(IdentFilter.class);
 
     private static final String CRLF = "\r\n";
 
@@ -114,14 +118,19 @@ public class IdentFilter extends IoFilter {
                 // Just pass on the message.
                 owner().passOn(message);
             } else {
+                int msgSize = message.available();
                 buffer.putBuffer(message);
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("received({}) in {}, now at {}", properties, msgSize, buffer.available());
+                }
                 List<String> lines = identHandler.readIdentification(buffer);
                 haveIdent = !GenericUtils.isEmpty(lines);
                 if (haveIdent) {
-                    listeners.forEach(listener -> listener.ident(true, lines.get(lines.size() - 1)));
-                    buffer.compact();
+                    String ident = lines.get(lines.size() - 1);
+                    listeners.forEach(listener -> listener.ident(true, ident));
                     received.setValue(Boolean.TRUE);
                     if (buffer.available() > 0) {
+                        buffer.compact();
                         owner().passOn(buffer);
                     }
                     readHandler.set(null);
@@ -202,10 +211,13 @@ public class IdentFilter extends IoFilter {
                             result.setValue(msgSent.isWritten() ? Boolean.TRUE : msgSent.getException());
                         });
                     } catch (IOException e) {
+                        LOG.error("sendAfterIdent({}) {}", properties, e);
                         result.setValue(e);
                     }
                 } else {
-                    result.setValue(f.getException());
+                    Throwable t = f.getException();
+                    LOG.error("sendAfterIdent({}) {}", properties, t);
+                    result.setValue(t);
                 }
             });
             return result;
@@ -218,6 +230,9 @@ public class IdentFilter extends IoFilter {
             }
             listeners.forEach(listener -> listener.ident(false, ident.get(ident.size() - 1)));
             String myIdentification = ident.stream().collect(Collectors.joining(CRLF)) + CRLF;
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("getIdent({}) sending ident {}", properties, myIdentification);
+            }
             return new ByteArrayBuffer(myIdentification.getBytes(StandardCharsets.UTF_8));
         }
     }

@@ -18,6 +18,10 @@
  */
 package org.apache.sshd.client.auth.keyboard;
 
+import java.net.Authenticator;
+import java.net.Authenticator.RequestorType;
+import java.net.InetSocketAddress;
+import java.net.PasswordAuthentication;
 import java.security.KeyPair;
 import java.util.List;
 
@@ -149,13 +153,27 @@ public interface UserInteraction {
     String getUpdatedPassword(ClientSession session, String prompt, String lang);
 
     /**
-     * Invoked during password authentication when no more pre-registered passwords are available
+     * Invoked during password authentication when no more pre-registered passwords are available.
      *
      * @param  session   The {@link ClientSession} through which the request was received
      * @return           The password to use - {@code null} signals no more passwords available
      * @throws Exception if failed to handle the request - <B>Note:</B> may cause session termination
      */
     default String resolveAuthPasswordAttempt(ClientSession session) throws Exception {
+        return null;
+    }
+
+    /**
+     * Invoked for proxy authentication using username-password authentication if no credentials are known.
+     *
+     * @param  session The {@link ClientSession} through which the request was received
+     * @return         The {@link PasswordAuthentication}, or {@code null} to cancel the connection
+     */
+    default PasswordAuthentication getProxyCredentials(ClientSession session, InetSocketAddress proxy) {
+        if (isInteractionAllowed(session)) {
+            return Authenticator.requestPasswordAuthentication(proxy.getHostString(), proxy.getAddress(), proxy.getPort(),
+                    "ssh", "Password", "Basic", null, RequestorType.PROXY);
+        }
         return null;
     }
 

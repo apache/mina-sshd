@@ -61,7 +61,7 @@ import org.slf4j.LoggerFactory;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 @TestMethodOrder(MethodName.class)
-class ProxyTest extends BaseTestSupport {
+class ProxyJumpTest extends BaseTestSupport {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -70,7 +70,7 @@ class ProxyTest extends BaseTestSupport {
 
     private ClientSession proxySession;
 
-    ProxyTest() {
+    ProxyJumpTest() {
         super();
     }
 

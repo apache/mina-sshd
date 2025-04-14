@@ -114,11 +114,11 @@ class Sshd1033Test extends BaseTestSupport {
                 if (testLocal) {
                     LOGGER.info("================== Local ==================");
                     try (ExplicitPortForwardingTracker localTracker = session.createLocalPortForwardingTracker(
-                            new SshdSocketAddress("localhost", 8082),
+                            new SshdSocketAddress("localhost", 0),
                             new SshdSocketAddress("test.javastack.org", 80))) {
-                        LOGGER.info("LocalPortForwarding: {} -> {}", localTracker.getLocalAddress(),
+                        SshdSocketAddress localSocketAddress = localTracker.getBoundAddress();
+                        LOGGER.info("LocalPortForwarding: {} -> {}", localSocketAddress,
                                 localTracker.getRemoteAddress());
-                        SshdSocketAddress localSocketAddress = localTracker.getLocalAddress();
                         assertNotNull(localSocketAddress);
                         Proxy proxy = new Proxy(
                                 Proxy.Type.HTTP,
@@ -130,9 +130,9 @@ class Sshd1033Test extends BaseTestSupport {
                 if (testDynamic) {
                     LOGGER.info("================== Dynamic ==================");
                     try (DynamicPortForwardingTracker dynamicTracker = session.createDynamicPortForwardingTracker(
-                            new SshdSocketAddress("localhost", 8000))) {
-                        LOGGER.info("DynamicPortForwarding: {}", dynamicTracker.getLocalAddress());
-                        SshdSocketAddress dynamicSocketAddress = dynamicTracker.getLocalAddress();
+                            new SshdSocketAddress("localhost", 0))) {
+                        SshdSocketAddress dynamicSocketAddress = dynamicTracker.getBoundAddress();
+                        LOGGER.info("DynamicPortForwarding: {}", dynamicSocketAddress);
                         assertNotNull(dynamicSocketAddress);
                         Proxy proxy = new Proxy(
                                 Proxy.Type.SOCKS,

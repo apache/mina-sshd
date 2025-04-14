@@ -32,6 +32,8 @@ import org.apache.sshd.client.kex.DHGClient;
 import org.apache.sshd.client.kex.DHGEXClient;
 import org.apache.sshd.client.keyverifier.AcceptAllServerKeyVerifier;
 import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
+import org.apache.sshd.client.proxy.DefaultProxyDataFactory;
+import org.apache.sshd.client.proxy.ProxyDataFactory;
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.channel.ChannelFactory;
@@ -80,6 +82,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     public static final FilePasswordProvider DEFAULT_FILE_PASSWORD_PROVIDER = FilePasswordProvider.EMPTY;
     public static final KexExtensionHandler DEFAULT_KEX_EXTENSION_HANDLER = DefaultClientKexExtensionHandler.INSTANCE;
 
+    protected ProxyDataFactory proxyDataFactory;
     protected ServerKeyVerifier serverKeyVerifier;
     protected HostConfigEntryResolver hostConfigEntryResolver;
     protected ClientIdentityLoader clientIdentityLoader;
@@ -91,6 +94,11 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     public ClientBuilder serverKeyVerifier(ServerKeyVerifier serverKeyVerifier) {
         this.serverKeyVerifier = serverKeyVerifier;
+        return me();
+    }
+
+    public ClientBuilder proxyDataFactory(ProxyDataFactory proxyDataFactory) {
+        this.proxyDataFactory = proxyDataFactory;
         return me();
     }
 
@@ -137,6 +145,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             globalRequestHandlers = DEFAULT_GLOBAL_REQUEST_HANDLERS;
         }
 
+        if (proxyDataFactory == null) {
+            proxyDataFactory = new DefaultProxyDataFactory();
+        }
+
         if (serverKeyVerifier == null) {
             serverKeyVerifier = DEFAULT_SERVER_KEY_VERIFIER;
         }
@@ -163,6 +175,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     @Override
     public SshClient build(boolean isFillWithDefaultValues) {
         SshClient client = super.build(isFillWithDefaultValues);
+        client.setProxyDataFactory(proxyDataFactory);
         client.setServerKeyVerifier(serverKeyVerifier);
         client.setHostConfigEntryResolver(hostConfigEntryResolver);
         client.setClientIdentityLoader(clientIdentityLoader);

@@ -710,8 +710,8 @@ public class KexFilter extends IoFilter {
         byte[] iC = isServer ? peerData.get() : myData.get();
 
         KeyExchange k = kexFactory.createKeyExchange(session);
-        k.init(vS, vC, iS, iC);
         kex.set(k);
+        k.init(vS, vC, iS, iC);
 
         synchronized (this) {
             myProposalReady = null;
