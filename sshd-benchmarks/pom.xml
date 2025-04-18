@@ -156,6 +156,14 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>com.github.siom79.japicmp</groupId>
+                <artifactId>japicmp-maven-plugin</artifactId>
+                <version>${japicmp.version}</version>
+                <configuration>
+                    <skip>true</skip>
+                </configuration>
+            </plugin>
             <!-- Don't install or deploy this. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

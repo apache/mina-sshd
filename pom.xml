@@ -71,6 +71,7 @@
     </scm>
 
     <properties>
+        <japicmp-sshd-last-release>2.15.0</japicmp-sshd-last-release>
         <minimalJavaBuildVersion>17</minimalJavaBuildVersion>
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
         <minimalMavenBuildVersion>3.9.8</minimalMavenBuildVersion>
@@ -119,7 +120,7 @@
         <plexus.archiver.version>4.10.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>7.12.0</pmd.version>
-
+        <japicmp.version>0.23.1</japicmp.version>
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
 
@@ -404,6 +405,56 @@
                         </plugin>
                     </plugins>
                 </pluginManagement>
+            </build>
+        </profile>
+
+        <profile>
+            <id>japicmp</id>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>com.github.siom79.japicmp</groupId>
+                        <artifactId>japicmp-maven-plugin</artifactId>
+                        <version>${japicmp.version}</version>
+                        <configuration>
+                            <oldVersion>
+                                <dependency>
+                                    <groupId>${project.groupId}</groupId>
+                                    <artifactId>${project.artifactId}</artifactId>
+                                    <version>${japicmp-sshd-last-release}</version>
+                                </dependency>
+                            </oldVersion>
+                            <newVersion>
+                                <file>
+                                    <path>${project.build.directory}/${project.artifactId}-${project.version}.jar</path>
+                                </file>
+                            </newVersion>
+                            <parameter>
+                                <onlyModified>true</onlyModified>
+                                <accessModifier>protected</accessModifier>
+                                <breakBuildOnModifications>false</breakBuildOnModifications>
+                                <breakBuildOnBinaryIncompatibleModifications>false</breakBuildOnBinaryIncompatibleModifications>
+                                <onlyBinaryIncompatible>false</onlyBinaryIncompatible>
+                                <includeSynthetic>false</includeSynthetic>
+                                <ignoreMissingClasses>true</ignoreMissingClasses>
+                                <skipHtmlReport>true</skipHtmlReport>
+                                <skipXmlReport>true</skipXmlReport>
+                                <skipDiffReport>true</skipDiffReport>
+                                <reportLinkName>japicmp-${project.artifactId}</reportLinkName>
+                                <markdownTitle>Compatibility Report for ${project.artifactId}</markdownTitle>
+                            </parameter>
+                        </configuration>
+                        <executions>
+                            <execution>
+                                <id>japicmp-${project.artifactId}</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>cmp</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
             </build>
         </profile>
     </profiles>
@@ -1334,6 +1385,7 @@
             </plugin>
         </plugins>
     </build>
+    
     <distributionManagement>
         <repository>
             <id>dummy</id>
@@ -1344,10 +1396,11 @@
 
     <reporting>
        <plugins>
-           <plugin>    <!-- used by PMD to create a source XREF -->
+           <plugin>
+               <!-- used by PMD to create a source XREF -->
                <groupId>org.apache.maven.plugins</groupId>
                <artifactId>maven-jxr-plugin</artifactId>
-               <version>3.4.0</version>
+               <version>3.6.0</version>
            </plugin>
        </plugins>
     </reporting>
@@ -1369,5 +1422,6 @@
         <module>sshd-cli</module>
         <module>sshd-osgi</module>
         <module>assembly</module>
+        <module>sshd-site</module>
     </modules>
 </project>

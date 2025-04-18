@@ -77,6 +77,9 @@ jobs:
             echo "**** Skipping deployment because not a snapshot version: $PROJECT_VERSION" 1>&2
             echo "SKIP_DEPLOYMENT=true" >> "$GITHUB_ENV"
           }
+          if [[ "$PROJECT_VERSION" =~ ^3\.[0-9]+\.[0-9]+-M[1-9]$ ]]; then
+            echo "DEPLOY_WEBSITE=true" >> "$GITHUB_ENV"
+          fi
 
       - name: Check HEAD is current
         # Must be quoted, ! is special in yaml
@@ -104,3 +107,11 @@ jobs:
         # accidental release deployments as an additional safety measure. The snapshot
         # repo from the Apache parent POM is not overridden.
         run: mvn -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd
+
+      - name: Build and deploy web site
+        if: env.DEPLOY_WEBSITE
+        run: |
+          git config --global user.name '${{ github.actor }}'
+          git config --global user.email '41898282+${{ github.actor }}@users.noreply.github.com'
+          mvn -B --no-transfer-progress -DskipTests -Pjapicmp clean install
+          mvn scm-publish:publish-scm -rf :sshd-site
