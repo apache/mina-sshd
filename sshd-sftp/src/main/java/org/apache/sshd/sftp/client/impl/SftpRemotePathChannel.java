@@ -365,7 +365,7 @@ public class SftpRemotePathChannel extends FileChannel {
             beginBlocking("transferTo");
 
             try (SftpInputStreamAsync input = new SftpInputStreamAsync(
-                    (AbstractSftpClient) sftp, copySize, position, count, getRemotePath(), handle, false)) {
+                    (AbstractSftpClient) sftp, copySize, position, position + count, getRemotePath(), handle, false)) {
                 totalRead = input.transferTo(count, target);
                 eof = input.isEof();
                 completed = true;

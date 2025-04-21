@@ -82,6 +82,7 @@ import org.apache.sshd.common.Closeable;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
@@ -756,6 +757,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         HostConfigEntry entry = resolver.resolveEffectiveHost(host, port, localAddress, username, null, context);
         if (entry == null) {
             // generate a synthetic entry
+            if (port <= 0) {
+                port = SshConstants.DEFAULT_PORT;
+            }
             if (log.isDebugEnabled()) {
                 log.debug("connect({}@{}:{}) no overrides", username, host, port);
             }

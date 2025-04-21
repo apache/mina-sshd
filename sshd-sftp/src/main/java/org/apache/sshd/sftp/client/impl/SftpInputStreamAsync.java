@@ -241,8 +241,9 @@ public class SftpInputStreamAsync extends InputStreamWithChannel implements Sftp
                 return;
             }
             // Beyond the expected file size we do single sequential requests; no ahead of time requests.
-            // Hence the requestOffset is always just beyond the current buffer.
-            requestOffset = clientOffset + buffer.available();
+            // Hence the requestOffset is always just beyond the current buffer. If the initial position
+            // is beyond the file size, buffer may still be null here.
+            requestOffset = clientOffset + (buffer != null ? buffer.available() : 0);
         }
         while (pendingReads.size() < Math.max(1, windowSize / bufferSize)) {
             Buffer buf = session.createBuffer(SshConstants.SSH_MSG_CHANNEL_DATA,

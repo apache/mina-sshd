@@ -57,6 +57,7 @@ import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Random;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -690,6 +691,41 @@ class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
         assertArrayEquals(expected, actual, "Mismatched persisted data");
         actual = Files.readAllBytes(lclFile2);
         assertArrayEquals(expected, actual, "Mismatched copied data");
+    }
+
+    @Test
+    void fileCopyInChunks() throws IOException {
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Files.createDirectories(lclSftp);
+
+        Path lclFile = lclSftp.resolve(getCurrentTestName() + ".txt");
+        Files.deleteIfExists(lclFile);
+        Path lclFile2 = lclSftp.resolve(getCurrentTestName() + ".txt2");
+        Files.deleteIfExists(lclFile2);
+        byte[] expected = new byte[256 * 1024 + 200];
+        Random rnd = new Random();
+        rnd.nextBytes(expected);
+        Files.write(lclFile, expected);
+        try (FileSystem fs = FileSystems.newFileSystem(createDefaultFileSystemURI(), Collections.emptyMap())) {
+            Path parentPath = targetPath.getParent();
+            Path remotePath = fs.getPath(CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, lclFile));
+
+            try (FileChannel sourceChannel = FileChannel.open(remotePath, StandardOpenOption.READ);
+                 FileChannel targetChannel = FileChannel.open(lclFile2, StandardOpenOption.CREATE, StandardOpenOption.WRITE,
+                         StandardOpenOption.TRUNCATE_EXISTING)) {
+
+                long totalBytes = sourceChannel.size();
+                long copiedBytes = 0L;
+
+                while (copiedBytes < totalBytes) {
+                    copiedBytes += sourceChannel.transferTo(targetChannel.position(), /* count = */ 1024, targetChannel);
+                }
+            }
+            byte[] actual = Files.readAllBytes(lclFile2);
+            assertArrayEquals(expected, actual, "Mismatched read data");
+        }
     }
 
     @Test
