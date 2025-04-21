@@ -11,6 +11,8 @@ github:
     issues: true
   dependabot_alerts:  true
   dependabot_updates: true
+  ghp_branch: gh-pages
+  ghp_path: /
 
 notifications:
   commits:      commits@mina.apache.org
