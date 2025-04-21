@@ -126,6 +126,8 @@
 
         <dependency.download.silent>true</dependency.download.silent>
         <bnd.extraImports />
+        <github.actor />
+        <github.token />
     </properties>
 
     <profiles>
@@ -1070,6 +1072,14 @@
                         <staticGroups>java.,javax.,org.w3c.,org.xml.,junit.</staticGroups>
                     </configuration>
                 </plugin>
+                <plugin>
+                    <groupId>org.apache.maven.plugins</groupId>
+                    <artifactId>maven-scm-publish-plugin</artifactId>
+                    <configuration>
+                        <scmBranch>gh-pages</scmBranch>
+                        <content>${project.build.directory}/staging/sshd-site</content>
+                    </configuration>
+                </plugin>
             </plugins>
         </pluginManagement>
 
@@ -1387,6 +1397,10 @@
     </build>
     
     <distributionManagement>
+        <site>
+            <id>github</id>
+            <url>scm:git:https://${github.actor}:${github.token}@github.com/apache/mina-sshd.git</url>
+        </site>
         <repository>
             <id>dummy</id>
             <name>Dummy to avoid accidental deploys</name>

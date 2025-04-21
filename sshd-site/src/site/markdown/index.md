@@ -31,6 +31,6 @@ still lives directly in the git repository and can be viewed as rendered web pag
 Release 3.0.0 will be a new major release and will contain many breaking API changes.
 It will not be API-compatible with the 2.X releases. There are
 [`japicmp`](https://siom79.github.io/japicmp) reports about the API changes available
-here; see the menu on the left. (Most of the API changes affect only the `protected` API,
+here; see the menu on the left. Most of the API changes affect only the `protected` API,
 i.e., the API for subclassing. But there are also changes in the `public` API that may
 affect user code.

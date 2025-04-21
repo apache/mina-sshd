@@ -27,11 +27,13 @@
     <artifactId>sshd-site</artifactId>
     <name>Apache Mina SSHD :: Site</name>
     <description>Build a small development website containing the japicmp reports.</description>
+    <url>https://apache.github.io/mina-sshd</url>
     <packaging>pom</packaging>
     <inceptionYear>2025</inceptionYear>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <maven.build.timestamp.format>yyyy-MM-dd'T'HH:mm:ss'Z'</maven.build.timestamp.format>
     </properties>
 
     <build>
@@ -128,6 +130,10 @@
                     <plugin>
                         <groupId>org.apache.maven.plugins</groupId>
                         <artifactId>maven-site-plugin</artifactId>
+                        <configuration>
+                            <!-- We deploy using maven-scm-publish-plugin in the GitHub workflow. -->
+                            <skipDeploy>true</skipDeploy>
+                        </configuration>
                         <executions>
                             <!-- Assemble the site -->
                             <execution>
@@ -138,6 +144,11 @@
                                 </goals>
                                 <configuration>
                                     <siteDirectory>${project.build.directory}/src/site</siteDirectory>
+                                    <generateReports>false</generateReports>
+                                    <!--
+                                        Don't use the static, "reproducible builds" timestamp.
+                                    -->
+                                    <outputTimestamp>${maven.build.timestamp}</outputTimestamp>
                                 </configuration>
                             </execution>
                             <!-- And finally stage it -->
@@ -181,11 +192,4 @@
         </plugins>
     </reporting>
 
-    <distributionManagement>
-        <site>
-            <id>devwebsite</id>
-            <url>scm:git:ssh://git@github.com/apache/mina-sshd.git</url>
-        </site>
-    </distributionManagement>
-    
 </project>
