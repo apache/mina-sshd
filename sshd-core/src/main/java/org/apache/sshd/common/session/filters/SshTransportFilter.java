@@ -80,10 +80,6 @@ public class SshTransportFilter extends IoFilter {
 
         filters.addLast(new PacketLoggingFilter(session, cryptFilter));
 
-        DelayKexInitFilter delayKexFilter = new DelayKexInitFilter();
-        delayKexFilter.setSession(session);
-        filters.addLast(delayKexFilter);
-
         filters.addLast(new InjectIgnoreFilter(session, random));
 
         kexFilter = new KexFilter(session, random, cryptFilter, compressionFilter, events, proposer, checker);

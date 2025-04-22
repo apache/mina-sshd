@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -143,6 +144,8 @@ public class KexFilter extends IoFilter {
     private final AtomicReference<byte[]> sessionId = new AtomicReference<>();
 
     private final CopyOnWriteArrayList<KexListener> listeners = new CopyOnWriteArrayList<>();
+
+    private final AtomicBoolean firstKex = new AtomicBoolean();
 
     private final AtomicReference<KexState> kexState = new AtomicReference<>(KexState.DONE);
 
@@ -278,19 +281,18 @@ public class KexFilter extends IoFilter {
     }
 
     public Map<KexProposalOption, String> getNegotiated() {
-        return Collections.unmodifiableMap(negotiated.get());
+        Map<KexProposalOption, String> result = negotiated.get();
+        return result == null ? null : Collections.unmodifiableMap(result);
     }
 
     public Map<KexProposalOption, String> getClientProposal() {
-        return session.isServerSession()
-                ? Collections.unmodifiableMap(peerProposal.get())
-                : Collections.unmodifiableMap(myProposal.get());
+        Map<KexProposalOption, String> result = session.isServerSession() ? peerProposal.get() : myProposal.get();
+        return result == null ? null : Collections.unmodifiableMap(result);
     }
 
     public Map<KexProposalOption, String> getServerProposal() {
-        return session.isServerSession()
-                ? Collections.unmodifiableMap(myProposal.get())
-                : Collections.unmodifiableMap(peerProposal.get());
+        Map<KexProposalOption, String> result = session.isServerSession() ? myProposal.get() : peerProposal.get();
+        return result == null ? null : Collections.unmodifiableMap(result);
     }
 
     public void setClientIdent(String ident) {
@@ -1061,6 +1063,16 @@ public class KexFilter extends IoFilter {
     }
 
     public KeyExchangeFuture startKex() throws Exception {
+        DefaultKeyExchangeFuture result = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
+        if (firstKex.compareAndSet(false, true) && !session.isServerSession()
+                && !CoreModuleProperties.SEND_IMMEDIATE_KEXINIT.getRequired(session).booleanValue()) {
+            // We're a client, and we're supposed to wait for the server's proposal. Just trigger sending the SSH
+            // protocol ident, but don't do anything else. When we get the server's KEX-INIT, we'll evaluate and send
+            // our proposal, then do the negotiation.
+            owner().send(-1, null);
+            result.setValue(Boolean.FALSE);
+            return result;
+        }
         boolean start = output.updateState(() -> {
             if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
                 output.initNewKeyExchange();
@@ -1068,7 +1080,6 @@ public class KexFilter extends IoFilter {
             }
             return false;
         });
-        DefaultKeyExchangeFuture result = new DefaultKeyExchangeFuture(session.toString(), session.getFutureLock());
         if (start) {
             listeners.forEach(listener -> listener.event(true));
             kexFuture.set(result);

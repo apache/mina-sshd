@@ -101,6 +101,8 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.io.IoReadFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.kex.KexProposalOption;
+import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.ConnectionService;
@@ -741,6 +743,32 @@ public class ClientTest extends BaseTestSupport {
         }
 
         assertNull(clientSessionHolder.get(), "Session closure not signalled");
+    }
+
+    @Test
+    void delayedKexInit() throws Exception {
+        CoreModuleProperties.SEND_IMMEDIATE_KEXINIT.set(client, false);
+        AtomicReference<String> serverId = new AtomicReference<>();
+        AtomicReference<Map<KexProposalOption, String>> serverProposal = new AtomicReference<>();
+        client.setKexExtensionHandler(new DefaultClientKexExtensionHandler() {
+
+            @Override
+            public void handleKexInitProposal(Session session, boolean initiator, Map<KexProposalOption, String> proposal)
+                    throws Exception {
+                serverId.set(session.getServerVersion());
+                serverProposal.set(session.getServerKexProposals());
+                super.handleKexInitProposal(session, initiator, proposal);
+            }
+        });
+        client.start();
+        try (ClientSession session = client.connect("user1", TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT).getSession()) {
+            session.addPasswordIdentity("user1");
+            session.auth().verify(AUTH_TIMEOUT);
+        } finally {
+            client.stop();
+        }
+        assertNotNull(serverId.get());
+        assertNotNull(serverProposal.get());
     }
 
     @Test

@@ -150,7 +150,7 @@ chain should not be modified anymore. Adding filters to or removing filters from
 are coming in or going out would be very tricky to get right without race conditions.
 
 If there are filters that should not be active after some time, they can set their incoming or outgoing
-handlers to `null` (use an `AtomicReference`).- An example would be the aforementioned proxy filter: once the
+handlers to `null` (use an `AtomicReference`). An example would be the aforementioned proxy filter: once the
 proxy tunnel is established (or the HAproxy protocol header has been received), such a proxy filter will
 not do anything anymore but pass on messages. Such a filter can then set its handlers to `null`. The filter
 chain will skip any filter that has a `null` handler for the direction a particular message is going.
@@ -180,9 +180,8 @@ server's messages:
 * `CoreModuleProperties.SEND_IMMEDIATE_IDENTIFICATION`: by default `true`. If `false`, the client sends its SSH
 protocol version only after it has received the server's. This is implemented transparently in `IdentFilter`.
 * `CoreModuleProperties.SEND_IMMEDIATE_KEXINIT`: by default `true`. If `false`, the client sends its `SSH_MSG_KEXINIT`
-only after it has received the server's. This is handled in a special `DelayKexFilter` that sits below the
-`KexFilter` and that is omitted on purpose from the above diagrams since it is a really special special case
-and including it would only have confused the presentation.
+only after it has received the server's. The client thus has a chance to adapt its own proposal depending on
+the server's ident and key exchange proposal.
 
 These two options were introduced long ago to handle connecting to old SSH servers. In SSH version 1, the
 server sent its protocol version string first, and the client always came second. In SSH version 2, the
