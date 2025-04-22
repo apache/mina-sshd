@@ -79,8 +79,10 @@ public class HAProxyProtocolFilter extends IoFilter {
             } else {
                 buffer.putBuffer(message);
                 if (handler.acceptServerProxyMetadata(session, buffer)) {
-                    buffer.compact();
-                    owner().passOn(buffer);
+                    if (buffer.available() > 0) {
+                        buffer.compact();
+                        owner().passOn(buffer);
+                    }
                     input.set(null);
                     buffer = null;
                 }
