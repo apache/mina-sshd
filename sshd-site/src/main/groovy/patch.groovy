@@ -39,3 +39,12 @@ names.sort().each() { name ->
 }
 
 site.text = siteContent
+
+reports.each() { file ->
+  def name = file.name
+  if (name.startsWith("japicmp-")) {
+    log.info("Removing generation timestamp from ${name}")
+    def content = file.text
+    file.text = content.replaceFirst("___\\R\\R\\*Generated on[^\n\r]*", "")
+  }
+}
