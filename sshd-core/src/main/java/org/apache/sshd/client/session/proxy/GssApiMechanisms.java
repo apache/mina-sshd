@@ -25,7 +25,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
@@ -51,8 +50,7 @@ public final class GssApiMechanisms {
     private static final Object LOCK = new Object();
 
     /**
-     * The {@link AtomicBoolean} is set to {@code true} when the mechanism could be initialized successfully at least
-     * once.
+     * The {@link Boolean} is set to {@code true} when the mechanism could be initialized successfully at least once.
      */
     private static Map<Oid, Boolean> supportedMechanisms;
 
