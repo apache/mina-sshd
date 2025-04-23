@@ -23,12 +23,14 @@ import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.channels.UnsupportedAddressTypeException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.text.MessageFormat;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -82,6 +84,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.ServiceFactory;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.channel.ChannelFactory;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.FilePasswordProviderManager;
@@ -629,7 +632,12 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                 }
                             } else {
                                 proxySession.close(true);
-                                connectFuture.setException(f3.getException());
+                                // Record at which proxy we could not log in
+                                SshException ex = new SshException(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
+                                        MessageFormat.format("Cannot log in at {0}:{1}", jump.getHost(),
+                                                Integer.toString(jump.getPort())),
+                                        f3.getException());
+                                connectFuture.setException(ex);
                             }
                         });
                     } catch (IOException e) {
@@ -722,17 +730,26 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         if (GenericUtils.isEmpty(proxyJump)) {
             return jumps;
         }
-        String[] hops = GenericUtils.split(proxyJump, ',');
+        String trimmed = proxyJump.trim();
+        if ("none".equals(trimmed)) {
+            return jumps;
+        }
+        String[] hops = GenericUtils.split(trimmed, ',');
         for (String hop : hops) {
             String h = hop.trim();
             if (h.isEmpty()) {
                 throw new IllegalArgumentException("Empty proxy jump in list: " + proxyJump);
             }
             URI uri = URI.create(h.contains("://") ? h : "ssh://" + h);
-            if (GenericUtils.isNotEmpty(uri.getScheme()) && !"ssh".equals(uri.getScheme())) {
-                throw new IllegalArgumentException("Unsupported scheme for proxy jump: " + hop);
+            if (!"ssh".equals(uri.getScheme())) {
+                throw new IllegalArgumentException("Invalid proxy jump: " + hop,
+                        new URISyntaxException(hop, "Scheme must be 'ssh', was '" + uri.getScheme() + '\''));
             }
             String host = uri.getHost();
+            if (GenericUtils.isEmpty(host) || !GenericUtils.isEmpty(uri.getPath())) {
+                throw new IllegalArgumentException("Invalid proxy jump: " + hop,
+                        new URISyntaxException(hop, "Must have a host and no path"));
+            }
             int port = uri.getPort();
             String userInfo = uri.getUserInfo();
             HostConfigEntry entry = resolveHost(userInfo, host, port, context, null);

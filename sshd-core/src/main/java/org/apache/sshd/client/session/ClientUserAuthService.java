@@ -82,6 +82,27 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
                 clientSession.getUserAuthFactories(), "No user auth factories for %s", s);
         clientMethods = new ArrayList<>();
 
+        clientSession.resetAuthTimeout();
+    }
+
+    @Override
+    public ClientSession getSession() {
+        return getClientSession();
+    }
+
+    @Override
+    public ClientSession getClientSession() {
+        return clientSession;
+    }
+
+    @Override
+    public Map<String, Object> getProperties() {
+        return properties;
+    }
+
+    @Override
+    public void start() {
+        ClientSession s = getClientSession();
         String prefs = CoreModuleProperties.PREFERRED_AUTHS.getOrNull(s);
         boolean debugEnabled = log.isDebugEnabled();
         if (GenericUtils.isEmpty(prefs)) {
@@ -109,26 +130,6 @@ public class ClientUserAuthService extends AbstractCloseable implements Service,
             log.debug("ClientUserAuthService({}) client methods: {}", s, clientMethods);
         }
 
-        clientSession.resetAuthTimeout();
-    }
-
-    @Override
-    public ClientSession getSession() {
-        return getClientSession();
-    }
-
-    @Override
-    public ClientSession getClientSession() {
-        return clientSession;
-    }
-
-    @Override
-    public Map<String, Object> getProperties() {
-        return properties;
-    }
-
-    @Override
-    public void start() {
         Runnable initial;
         synchronized (initLock) {
             started = true;
