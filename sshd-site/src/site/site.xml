@@ -40,7 +40,10 @@ limitations under the License.
 
 	<body>
 		<head>
-			<![CDATA[<link rel="stylesheet" href="./css/custom.css" />]]>
+			<![CDATA[
+    <link rel="stylesheet" href="./css/custom.css" />
+    <script src="./js/detailopener.js"></script>
+]]>
 		</head>
 
 		<breadcrumbs>
