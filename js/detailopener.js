@@ -21,9 +21,9 @@ const openDetails = (link) => {
   let detail = link.closest('details');
   while (detail) {
     detail.open = true;
-    const parent = detail.parentNode;
-	if (parent) {
-      detail = parent.closest('details');
+    detail = detail.parentNode;
+	if (detail) {
+      detail = detail.closest('details');
     }
   }
 };
