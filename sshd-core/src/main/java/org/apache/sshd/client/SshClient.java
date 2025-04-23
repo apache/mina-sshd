@@ -56,7 +56,6 @@ import org.apache.sshd.client.auth.password.PasswordAuthenticationReporter;
 import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
-import org.apache.sshd.client.auth.pubkey.UserAuthPublicKey;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
@@ -561,15 +560,9 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             AttributeRepository context, SocketAddress localAddress)
             throws IOException {
         Objects.requireNonNull(hostConfig, "No host configuration");
-        String host = ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
+        ValidateUtils.checkNotNullAndNotEmpty(hostConfig.getHostName(), "No target host");
         int port = hostConfig.getPort();
         ValidateUtils.checkTrue(port > 0, "Invalid port: %d", port);
-        Collection<String> hostIds = hostConfig.getIdentities();
-        Collection<PathResource> idFiles = GenericUtils.stream(hostIds)
-                .map(Paths::get)
-                .map(PathResource::new)
-                .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
-        KeyIdentityProvider keys = preloadClientIdentities(idFiles);
         String username = hostConfig.getUsername();
         InetSocketAddress targetAddress = new InetSocketAddress(hostConfig.getHostName(), hostConfig.getPort());
         if (GenericUtils.isNotEmpty(jumps)) {
@@ -613,7 +606,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                                             .createLocalPortForwardingTracker(SshdSocketAddress.LOCALHOST_ADDRESS, address);
                                     SshdSocketAddress bound = tracker.getBoundAddress();
                                     ConnectFuture f4 = doConnect(hostConfig.getUsername(), bound.toInetSocketAddress(), null,
-                                            context, localAddress, keys, hostConfig);
+                                            context, localAddress, hostConfig);
                                     toCancel.set(f4);
                                     if (connectFuture.isCanceled()) {
                                         f4.cancel();
@@ -654,14 +647,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             ProxyDataFactory factory = getProxyDataFactory();
             ProxyData proxy = factory == null ? null : factory.get(targetAddress);
             return doConnect(hostConfig.getUsername(), targetAddress, proxy,
-                    context, localAddress, keys, hostConfig);
+                    context, localAddress, hostConfig);
         }
     }
 
     protected ConnectFuture doConnect(
             String username, InetSocketAddress targetAddress, ProxyData proxy,
-            AttributeRepository context, SocketAddress localAddress,
-            KeyIdentityProvider identities, HostConfigEntry hostConfig)
+            AttributeRepository context, SocketAddress localAddress, HostConfigEntry hostConfig)
             throws IOException {
         if (connector == null) {
             throw new IllegalStateException("SshClient not started. Please call start() method before connecting to a server");
@@ -682,8 +674,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
             sessionContext = new ShadowingAttributeRepository(sessionContext, context);
         }
         ConnectFuture connectFuture = new DefaultConnectFuture(username + "@" + targetAddress, null);
-        SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(
-                connectFuture, username, targetAddress, identities, hostConfig);
+        SshFutureListener<IoConnectFuture> listener = createConnectCompletionListener(connectFuture, username, targetAddress);
         IoConnectFuture connectingFuture = connector.connect(connectAddress, sessionContext, localAddress);
         connectFuture.addListener(c -> {
             if (c.isCanceled()) {
@@ -779,20 +770,8 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
         return entry;
     }
 
-    protected KeyIdentityProvider preloadClientIdentities(
-            Collection<? extends NamedResource> locations)
-            throws IOException {
-        return GenericUtils.isEmpty(locations)
-                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
-                : ClientIdentityLoader.asKeyIdentityProvider(
-                        Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"),
-                        locations, getFilePasswordProvider(),
-                        CoreModuleProperties.IGNORE_INVALID_IDENTITIES.getRequired(this));
-    }
-
     protected SshFutureListener<IoConnectFuture> createConnectCompletionListener(
-            ConnectFuture connectFuture, String username, SocketAddress address,
-            KeyIdentityProvider identities, HostConfigEntry hostConfig) {
+            ConnectFuture connectFuture, String username, SocketAddress address) {
         return new SshFutureListener<IoConnectFuture>() {
             @Override
             @SuppressWarnings("synthetic-access")
@@ -815,7 +794,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 } else {
                     IoSession ioSession = future.getSession();
                     try {
-                        onConnectOperationComplete(ioSession, connectFuture, username, address, identities, hostConfig);
+                        onConnectOperationComplete(ioSession, connectFuture, username, address);
                     } catch (IOException | GeneralSecurityException | RuntimeException e) {
                         warn("operationComplete({}@{}) failed ({}) to signal completion of session={}: {}",
                                 username, address, e.getClass().getSimpleName(), ioSession, e.getMessage(), e);
@@ -834,24 +813,13 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     }
 
     protected void onConnectOperationComplete(
-            IoSession ioSession, ConnectFuture connectFuture, String username,
-            SocketAddress address, KeyIdentityProvider identities, HostConfigEntry hostConfig)
+            IoSession ioSession, ConnectFuture connectFuture, String username, SocketAddress address)
             throws IOException, GeneralSecurityException {
         AbstractClientSession session = (AbstractClientSession) AbstractSession.getSession(ioSession);
         session.setUsername(username);
         session.setConnectAddress(address);
-        boolean useDefaultIdentities = !hostConfig.isIdentitiesOnly();
-        session.setAttribute(UserAuthPublicKey.USE_DEFAULT_IDENTITIES, Boolean.valueOf(useDefaultIdentities));
-        String identityAgent = hostConfig.getProperty(HostConfigEntry.IDENTITY_AGENT);
-        session.setAttribute(UserAuthPublicKey.IDENTITY_AGENT, identityAgent == null ? "" : identityAgent);
 
-        if (useDefaultIdentities) {
-            setupDefaultSessionIdentities(session, identities);
-        } else if (identities == null) {
-            session.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
-        } else {
-            session.setKeyIdentityProvider(ensureFilePasswordProvider(identities));
-        }
+        configure(session);
 
         connectFuture.setSession(session);
         if (session != connectFuture.getSession()) {
@@ -865,6 +833,40 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
                 }
             }
         }
+    }
+
+    protected void configure(ClientSession session) throws IOException, GeneralSecurityException {
+        setSessionKeyIdentities(session);
+    }
+
+    protected void setSessionKeyIdentities(ClientSession session)
+            throws IOException, GeneralSecurityException {
+        HostConfigEntry hostConfig = session.getHostConfigEntry();
+        KeyIdentityProvider fromHostConfig = getKeyIdentities(hostConfig);
+        if (!hostConfig.isIdentitiesOnly()) {
+            setupDefaultSessionIdentities(session, fromHostConfig);
+        } else if (fromHostConfig == null) {
+            session.setKeyIdentityProvider(KeyIdentityProvider.EMPTY_KEYS_PROVIDER);
+        } else {
+            session.setKeyIdentityProvider(ensureFilePasswordProvider(fromHostConfig));
+        }
+    }
+
+    protected KeyIdentityProvider getKeyIdentities(HostConfigEntry hostConfig) {
+        Collection<String> hostIds = hostConfig.getIdentities();
+        Collection<PathResource> idFiles = GenericUtils.stream(hostIds)
+                .map(Paths::get)
+                .map(PathResource::new)
+                .collect(Collectors.toCollection(() -> new ArrayList<>(hostIds.size())));
+        return preloadClientIdentities(idFiles);
+    }
+
+    protected KeyIdentityProvider preloadClientIdentities(Collection<? extends NamedResource> locations) {
+        return GenericUtils.isEmpty(locations)
+                ? KeyIdentityProvider.EMPTY_KEYS_PROVIDER
+                : ClientIdentityLoader.asKeyIdentityProvider(
+                        Objects.requireNonNull(getClientIdentityLoader(), "No ClientIdentityLoader"), locations,
+                        getFilePasswordProvider(), CoreModuleProperties.IGNORE_INVALID_IDENTITIES.getRequired(this));
     }
 
     /**
