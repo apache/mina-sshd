@@ -35,10 +35,18 @@ def warning_class = "alert-warning"
 def warning_img = "<svg class='${warning_class}' viewBox='0 0 16 16' version='1.1' width='16' height='16'><path d='M6.457 1.047c.659-1.234 2.427-1.234 3.086 0l6.082 11.378A1.75 1.75 0 0 1 14.082 15H1.918a1.75 1.75 0 0 1-1.543-2.575Zm1.763.707a.25.25 0 0 0-.44 0L1.698 13.132a.25.25 0 0 0 .22.368h12.164a.25.25 0 0 0 .22-.368Zm.53 3.996v2.5a.75.75 0 0 1-1.5 0v-2.5a.75.75 0 0 1 1.5 0ZM9 11a1 1 0 1 1-2 0 1 1 0 0 1 2 0Z' /></svg>"
 
 def replace(text, mark, css, img, label) {
-    return text.replaceAll("<blockquote>(\\R|\\S)*<p>\\Q${mark}\\E", "<blockquote class='${css}'><p class='${css}'>${img}${label}")
+    return text.replaceAll("<blockquote>(\\R|\\s)*<p>\\Q${mark}\\E", "<blockquote class='${css}'><p class='${css}'>${img}${label}")
 }
 
 def reports = new File("${project.build.directory}/site").listFiles()
+
+def findAnchors(text) {
+  def set = [] as Set
+  text.findAll("<a\\s+id=\"user-content-([\\w.]+)\"") { match, pkg ->
+    set.add(pkg)
+  }
+  return set
+}
 
 reports.each() { file ->
   def name = file.name
@@ -50,6 +58,16 @@ reports.each() { file ->
     content = replace(content, "[!NOTE]", note_class, note_img, "Note")
     content = replace(content, "[!TIP]", tip_class, tip_img, "Tip")
     content = replace(content, "[!WARNING]", warning_class, warning_img, "Warning")
+    log.info("Fixing links in ${name}")
+    def anchors = findAnchors(content)
+    content = content.replaceAll(/href="#null" title="([\w.]+)"/, { all, pkg ->
+      def hash = pkg.toLowerCase()
+      if (anchors.contains(hash)) {
+        return "href=\"#user-content-${hash}\" title=\"${pkg}\""
+      } else {
+        return all
+      }
+    })
     file.text = content
   }
 }
