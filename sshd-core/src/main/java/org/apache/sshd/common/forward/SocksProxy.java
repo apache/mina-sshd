@@ -288,8 +288,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 service.registerChannel(channel);
                 // Open the channel, but don't accept input data yet!
                 LocalWindow window = channel.getLocalWindow();
-                long windowSize = window.getSize();
-                window.consume(windowSize);
+                long windowSize = window.consumeAll();
                 channel.open().addListener(f -> onChannelOpened(f, window, windowSize));
             } else {
                 if (debugEnabled) {

@@ -140,6 +140,21 @@ public abstract class Window extends AbstractLoggingBean implements ChannelHolde
      */
     public abstract long consume(long len) throws IOException;
 
+    /**
+     * Consume all bytes from the window.
+     *
+     * @return the number of bytes consumed
+     */
+    public long consumeAll() {
+        checkInitialized("consumeAll");
+        synchronized (lock) {
+            long current = size;
+            size = 0;
+            // No need to notify(): anyone waiting is waiting for > 0 anyway.
+            return current;
+        }
+    }
+
     protected void updateSize(long size) {
         BufferUtils.validateUint32Value(size, "Invalid updated size: %d", size);
         this.size = size;
