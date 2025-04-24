@@ -70,15 +70,6 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
     }
 
     @Override
-    public SkED25519PublicKey clonePublicKey(SkED25519PublicKey key) {
-        if (key == null) {
-            return null;
-        }
-
-        return new SkED25519PublicKey(key.getAppName(), key.isNoTouchRequired(), key.getDelegatePublicKey());
-    }
-
-    @Override
     public String encodePublicKey(OutputStream s, SkED25519PublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
         KeyEntryResolver.encodeString(s, KEY_TYPE);
@@ -86,11 +77,6 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
         KeyEntryResolver.writeRLEBytes(s, seed);
         KeyEntryResolver.encodeString(s, key.getAppName());
         return KEY_TYPE;
-    }
-
-    @Override
-    public PrivateKey clonePrivateKey(PrivateKey key) {
-        throw new UnsupportedOperationException("Private key operations are not supported for security keys.");
     }
 
     @Override

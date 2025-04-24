@@ -24,13 +24,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.DSAParams;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
-import java.security.spec.DSAPrivateKeySpec;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
@@ -82,34 +80,6 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
         KeyEntryResolver.encodeBigInt(s, key.getY());
 
         return KeyPairProvider.SSH_DSS;
-    }
-
-    @Override
-    public DSAPublicKey clonePublicKey(DSAPublicKey key) throws GeneralSecurityException {
-        if (key == null) {
-            return null;
-        }
-
-        DSAParams params = key.getParams();
-        if (params == null) {
-            throw new InvalidKeyException("Missing parameters in key");
-        }
-
-        return generatePublicKey(new DSAPublicKeySpec(key.getY(), params.getP(), params.getQ(), params.getG()));
-    }
-
-    @Override
-    public DSAPrivateKey clonePrivateKey(DSAPrivateKey key) throws GeneralSecurityException {
-        if (key == null) {
-            return null;
-        }
-
-        DSAParams params = key.getParams();
-        if (params == null) {
-            throw new InvalidKeyException("Missing parameters in key");
-        }
-
-        return generatePrivateKey(new DSAPrivateKeySpec(key.getX(), params.getP(), params.getQ(), params.getG()));
     }
 
     @Override

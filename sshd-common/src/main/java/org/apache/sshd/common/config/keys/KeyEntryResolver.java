@@ -27,7 +27,6 @@ import java.math.BigInteger;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -56,66 +55,6 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
         gen.initialize(keySize);
         return gen.generateKeyPair();
     }
-
-    /**
-     * @param  kp                       The {@link KeyPair} to be cloned - ignored if {@code null}
-     * @return                          A cloned pair (or {@code null} if no original pair)
-     * @throws GeneralSecurityException If failed to clone - e.g., provided key pair does not contain keys of the
-     *                                  expected type
-     * @see                             #getPublicKeyType()
-     * @see                             #getPrivateKeyType()
-     */
-    default KeyPair cloneKeyPair(KeyPair kp) throws GeneralSecurityException {
-        if (kp == null) {
-            return null;
-        }
-
-        PUB pubCloned = null;
-        PublicKey pubOriginal = kp.getPublic();
-        Class<PUB> pubExpected = getPublicKeyType();
-        if (pubOriginal != null) {
-            Class<?> orgType = pubOriginal.getClass();
-            if (!pubExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched public key types: expected="
-                                              + pubExpected.getSimpleName()
-                                              + ", actual=" + orgType.getSimpleName());
-            }
-
-            PUB castPub = pubExpected.cast(pubOriginal);
-            pubCloned = clonePublicKey(castPub);
-        }
-
-        PRV prvCloned = null;
-        PrivateKey prvOriginal = kp.getPrivate();
-        Class<PRV> prvExpected = getPrivateKeyType();
-        if (prvOriginal != null) {
-            Class<?> orgType = prvOriginal.getClass();
-            if (!prvExpected.isAssignableFrom(orgType)) {
-                throw new InvalidKeyException("Mismatched private key types: expected="
-                                              + prvExpected.getSimpleName()
-                                              + ", actual=" + orgType.getSimpleName());
-            }
-
-            PRV castPrv = prvExpected.cast(prvOriginal);
-            prvCloned = clonePrivateKey(castPrv);
-        }
-
-        return new KeyPair(pubCloned, prvCloned);
-    }
-
-    /**
-     * @param  key                      The {@link PublicKey} to clone - ignored if {@code null}
-     * @return                          The cloned key (or {@code null} if no original key)
-     * @throws GeneralSecurityException If failed to clone the key
-     */
-    PUB clonePublicKey(PUB key) throws GeneralSecurityException;
-
-    /**
-     * @param  key                      The {@link PrivateKey} to clone - ignored if {@code null}
-     * @return                          The cloned key (or {@code null} if no original key)
-     * @throws GeneralSecurityException If failed to clone the key
-     */
-    PRV clonePrivateKey(PRV key) throws GeneralSecurityException;
 
     /**
      * @return                          A {@link KeyPairGenerator} suitable for this decoder

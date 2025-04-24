@@ -68,27 +68,11 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
     }
 
     @Override
-    public SkEcdsaPublicKey clonePublicKey(SkEcdsaPublicKey key) throws GeneralSecurityException {
-        if (key == null) {
-            return null;
-        }
-
-        return new SkEcdsaPublicKey(
-                key.getAppName(), key.isNoTouchRequired(),
-                ECDSAPublicKeyEntryDecoder.INSTANCE.clonePublicKey(key.getDelegatePublicKey()));
-    }
-
-    @Override
     public String encodePublicKey(OutputStream s, SkEcdsaPublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
         ECDSAPublicKeyEntryDecoder.encodePublicKey(s, KEY_TYPE, ECCurves.nistp256, key.getDelegatePublicKey().getW());
         KeyEntryResolver.encodeString(s, key.getAppName());
         return KEY_TYPE;
-    }
-
-    @Override
-    public PrivateKey clonePrivateKey(PrivateKey key) {
-        throw new UnsupportedOperationException("Private key operations are not supported for security keys.");
     }
 
     @Override

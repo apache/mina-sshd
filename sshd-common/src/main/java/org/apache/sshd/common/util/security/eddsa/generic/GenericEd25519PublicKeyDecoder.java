@@ -51,24 +51,6 @@ public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends P
     }
 
     @Override
-    public PUB clonePublicKey(PUB key) throws GeneralSecurityException {
-        if (key == null) {
-            return null;
-        } else {
-            return generatePublicKey(edDSASupport.createPublicKeySpec(key));
-        }
-    }
-
-    @Override
-    public PRV clonePrivateKey(PRV key) throws GeneralSecurityException {
-        if (key == null) {
-            return null;
-        } else {
-            return generatePrivateKey(edDSASupport.createPrivateKeySpec(key));
-        }
-    }
-
-    @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
         return SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
     }

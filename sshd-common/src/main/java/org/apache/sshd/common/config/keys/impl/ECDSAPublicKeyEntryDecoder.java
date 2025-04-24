@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -32,7 +31,6 @@ import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
-import java.security.spec.ECPrivateKeySpec;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Map;
@@ -105,42 +103,6 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
         ECParameterSpec paramSpec = curve.getParameters();
         return generatePublicKey(new ECPublicKeySpec(w, paramSpec));
-    }
-
-    @Override
-    public ECPublicKey clonePublicKey(ECPublicKey key) throws GeneralSecurityException {
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
-        }
-
-        if (key == null) {
-            return null;
-        }
-
-        ECParameterSpec params = key.getParams();
-        if (params == null) {
-            throw new InvalidKeyException("Missing parameters in key");
-        }
-
-        return generatePublicKey(new ECPublicKeySpec(key.getW(), params));
-    }
-
-    @Override
-    public ECPrivateKey clonePrivateKey(ECPrivateKey key) throws GeneralSecurityException {
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
-        }
-
-        if (key == null) {
-            return null;
-        }
-
-        ECParameterSpec params = key.getParams();
-        if (params == null) {
-            throw new InvalidKeyException("Missing parameters in key");
-        }
-
-        return generatePrivateKey(new ECPrivateKeySpec(key.getS(), params));
     }
 
     @Override

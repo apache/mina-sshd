@@ -19,8 +19,6 @@
 
 package org.apache.sshd.common.config.keys.impl;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -86,23 +84,6 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
         s.write(buffer.getCompactData());
 
         return key.getKeyType();
-    }
-
-    @Override
-    public OpenSshCertificate clonePublicKey(OpenSshCertificate key) throws GeneralSecurityException {
-        try (ByteArrayOutputStream outStream = new ByteArrayOutputStream()) {
-            String keyType = encodePublicKey(outStream, key);
-            try (InputStream inStream = new ByteArrayInputStream(outStream.toByteArray())) {
-                return decodePublicKey(null, keyType, inStream, null);
-            }
-        } catch (IOException e) {
-            throw new GeneralSecurityException("Unable to clone key ID=" + key.getId(), e);
-        }
-    }
-
-    @Override
-    public PrivateKey clonePrivateKey(PrivateKey key) {
-        throw new UnsupportedOperationException("Private key operations are not supported for certificates.");
     }
 
     @Override

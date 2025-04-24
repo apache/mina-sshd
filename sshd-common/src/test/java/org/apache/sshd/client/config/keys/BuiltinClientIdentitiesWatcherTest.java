@@ -64,11 +64,14 @@ class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
         super();
     }
 
+    private KeyPair duplicate(KeyPair pair) {
+        return new KeyPair(pair.getPublic(), pair.getPrivate());
+    }
+
     @Test
     void multipleFilesWatch() throws Exception {
         KeyPair identity = CommonTestSupportUtils.getFirstKeyPair(createTestHostKeyProvider());
-        String keyType
-                = ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(identity), "Cannot determine identity key type");
+        ValidateUtils.checkNotNullAndNotEmpty(KeyUtils.getKeyType(identity), "Cannot determine identity key type");
 
         Path dir = assertHierarchyTargetFolderExists(getTempTargetRelativeFile(getClass().getSimpleName()));
         Map<BuiltinIdentities, Path> locationsMap = new EnumMap<>(BuiltinIdentities.class);
@@ -77,7 +80,7 @@ class BuiltinClientIdentitiesWatcherTest extends JUnitTestSupport {
             Path idFile = dir.resolve(ClientIdentity.getIdentityFileName(id));
             Files.deleteIfExists(idFile);
             assertNull(locationsMap.put(id, idFile), "Multiple file mappings for " + id);
-            assertNull(idsMap.put(id, KeyUtils.cloneKeyPair(keyType, identity)), "Multiple identity mappings for " + id);
+            assertNull(idsMap.put(id, duplicate(identity)), "Multiple identity mappings for " + id);
         }
 
         ClientIdentityLoader loader = new ClientIdentityLoader() {

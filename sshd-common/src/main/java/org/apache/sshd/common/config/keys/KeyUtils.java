@@ -362,24 +362,6 @@ public final class KeyUtils {
     }
 
     /**
-     * Performs a deep-clone of the original {@link KeyPair} - i.e., creates <U>new</U> public/private keys that are
-     * clones of the original one
-     *
-     * @param  keyType                  The key type - {@code OpenSSH} name - e.g., {@code ssh-rsa, ssh-dss}
-     * @param  kp                       The {@link KeyPair} to clone - ignored if {@code null}
-     * @return                          The cloned instance
-     * @throws GeneralSecurityException If failed to clone the pair
-     */
-    public static KeyPair cloneKeyPair(String keyType, KeyPair kp) throws GeneralSecurityException {
-        PublicKeyEntryDecoder<?, ?> decoder = getPublicKeyEntryDecoder(keyType);
-        if (decoder == null) {
-            throw new InvalidKeySpecException("No decoder for key type=" + keyType);
-        }
-
-        return decoder.cloneKeyPair(kp);
-    }
-
-    /**
      * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes()
      * supports}
      *
