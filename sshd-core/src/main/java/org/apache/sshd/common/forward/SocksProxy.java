@@ -115,14 +115,6 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             }
         }
 
-        protected int getUByte(Buffer buffer) {
-            return buffer.getUByte();
-        }
-
-        protected int getUShort(Buffer buffer) {
-            return buffer.getUShort();
-        }
-
         protected void sendReply(Buffer message, boolean success, LocalWindow window, long windowSize) {
             try {
                 session.writeBuffer(message);
@@ -166,11 +158,9 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 if (cmd != SocksConstants.Socks4.CMD_CONNECT) {
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
-                int port = getUShort(buffer);
-                String host = Integer.toString(getUByte(buffer)) + "."
-                              + Integer.toString(getUByte(buffer)) + "."
-                              + Integer.toString(getUByte(buffer)) + "."
-                              + Integer.toString(getUByte(buffer));
+                int port = buffer.getUShort();
+                String host = Integer.toString(buffer.getUByte()) + "." + Integer.toString(buffer.getUByte()) + "."
+                              + Integer.toString(buffer.getUByte()) + "." + Integer.toString(buffer.getUByte());
                 String userId = getNTString(buffer);
                 // Socks4a
                 if (host.startsWith("0.0.0.")) {
@@ -219,7 +209,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         protected String getNTString(Buffer buffer) {
             StringBuilder sb = new StringBuilder();
-            for (char c = (char) getUByte(buffer); c != '\0'; c = (char) getUByte(buffer)) {
+            for (char c = (char) buffer.getUByte(); c != '\0'; c = (char) buffer.getUByte()) {
                 sb.append(c);
             }
             return sb.toString();
@@ -242,7 +232,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         protected void onMessage(Buffer buffer) throws IOException {
             boolean debugEnabled = log.isDebugEnabled();
             if (authMethods == null) {
-                int nbAuthMethods = getUByte(buffer);
+                int nbAuthMethods = buffer.getUByte();
                 authMethods = new byte[nbAuthMethods];
                 buffer.getRawBytes(authMethods);
                 boolean foundNoAuth = false;
@@ -259,7 +249,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                     log.debug("Received socks5 greeting");
                 }
             } else if (channel == null) {
-                int version = getUByte(buffer);
+                int version = buffer.getUByte();
                 if (version != SocksConstants.Socks5.VERSION) {
                     throw new IllegalStateException("Unexpected version: " + version);
                 }
@@ -275,25 +265,19 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 int type = buffer.getUByte();
                 String host;
                 if (type == SocksConstants.Socks5.ADDRESS_IPV4) {
-                    host = Integer.toString(getUByte(buffer)) + "."
-                           + Integer.toString(getUByte(buffer)) + "."
-                           + Integer.toString(getUByte(buffer)) + "."
-                           + Integer.toString(getUByte(buffer));
+                    host = Integer.toString(buffer.getUByte()) + "." + Integer.toString(buffer.getUByte()) + "."
+                           + Integer.toString(buffer.getUByte()) + "." + Integer.toString(buffer.getUByte());
                 } else if (type == SocksConstants.Socks5.ADDRESS_FQDN) {
                     host = getBLString(buffer);
                 } else if (type == SocksConstants.Socks5.ADDRESS_IPV6) {
-                    host = Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer));
+                    host = Integer.toHexString(buffer.getUShort()) + ":" + Integer.toHexString(buffer.getUShort()) + ":"
+                           + Integer.toHexString(buffer.getUShort()) + ":" + Integer.toHexString(buffer.getUShort()) + ":"
+                           + Integer.toHexString(buffer.getUShort()) + ":" + Integer.toHexString(buffer.getUShort()) + ":"
+                           + Integer.toHexString(buffer.getUShort()) + ":" + Integer.toHexString(buffer.getUShort());
                 } else {
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }
-                int port = getUShort(buffer);
+                int port = buffer.getUShort();
                 if (debugEnabled) {
                     log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
@@ -348,10 +332,10 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         }
 
         protected String getBLString(Buffer buffer) {
-            int length = getUByte(buffer);
+            int length = buffer.getUByte();
             StringBuilder sb = new StringBuilder(length);
             for (int i = 0; i < length; i++) {
-                sb.append((char) getUByte(buffer));
+                sb.append((char) buffer.getUByte());
             }
             return sb.toString();
         }
