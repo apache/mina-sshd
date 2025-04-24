@@ -32,7 +32,6 @@ import java.nio.file.OpenOption;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
-import java.security.spec.InvalidKeySpecException;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -90,19 +89,7 @@ public class AuthorizedKeyEntry extends PublicKeyEntry {
         }
     }
 
-    /**
-     * @param  session                  The {@link SessionContext} for invoking this load command - may be {@code null}
-     *                                  if not invoked within a session context (e.g., offline tool or session unknown).
-     * @param  fallbackResolver         The {@link PublicKeyEntryResolver} to consult if none of the built-in ones can
-     *                                  be used. If {@code null} and no built-in resolver can be used then an
-     *                                  {@link InvalidKeySpecException} is thrown.
-     * @return                          The resolved {@link PublicKey} - or {@code null} if could not be resolved.
-     *                                  <B>Note:</B> may be called only after key type and data bytes have been set or
-     *                                  exception(s) may be thrown
-     * @throws IOException              If failed to decode the key
-     * @throws GeneralSecurityException If failed to generate the key
-     * @see                             PublicKeyEntry#resolvePublicKey(SessionContext, Map, PublicKeyEntryResolver)
-     */
+    @Override
     public PublicKey resolvePublicKey(
             SessionContext session, PublicKeyEntryResolver fallbackResolver)
             throws IOException, GeneralSecurityException {

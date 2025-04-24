@@ -35,7 +35,6 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.sshd.common.config.ConfigFileReaderSupport;
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
@@ -69,7 +68,7 @@ public class KnownHostEntry extends HostPatternsHolder {
 
     private String line;
     private String marker;
-    private AuthorizedKeyEntry keyEntry;
+    private PublicKeyEntry keyEntry;
     private KnownHostHashValue hashedEntry;
 
     public KnownHostEntry() {
@@ -102,11 +101,11 @@ public class KnownHostEntry extends HostPatternsHolder {
         this.marker = marker;
     }
 
-    public AuthorizedKeyEntry getKeyEntry() {
+    public PublicKeyEntry getKeyEntry() {
         return keyEntry;
     }
 
-    public void setKeyEntry(AuthorizedKeyEntry keyEntry) {
+    public void setKeyEntry(PublicKeyEntry keyEntry) {
         this.keyEntry = keyEntry;
     }
 
@@ -252,7 +251,7 @@ public class KnownHostEntry extends HostPatternsHolder {
             entry.setHashedEntry(null);
             entry.setPatterns(parsePatterns(GenericUtils.split(hostPattern, ',')));
         }
-        AuthorizedKeyEntry key = PublicKeyEntry.parsePublicKeyEntry(new AuthorizedKeyEntry(),
+        PublicKeyEntry key = PublicKeyEntry.parsePublicKeyEntry(
                 ValidateUtils.checkNotNullAndNotEmpty(line, "No valid key entry recovered from line=%s", data));
         entry.setKeyEntry(key);
         return entry;

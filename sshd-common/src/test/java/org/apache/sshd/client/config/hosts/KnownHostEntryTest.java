@@ -22,7 +22,6 @@ import java.io.StringReader;
 import java.security.PublicKey;
 import java.util.List;
 
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.config.keys.UnsupportedSshPublicKey;
@@ -42,7 +41,7 @@ class KnownHostEntryTest extends JUnitTestSupport {
         assertNotNull(entries);
         assertEquals(1, entries.size());
         KnownHostEntry entry = entries.get(0);
-        AuthorizedKeyEntry keyEntry = entry.getKeyEntry();
+        PublicKeyEntry keyEntry = entry.getKeyEntry();
         assertNotNull(keyEntry);
         assertEquals("ssh-ed448", keyEntry.getKeyType());
         PublicKey pk = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.UNSUPPORTED);

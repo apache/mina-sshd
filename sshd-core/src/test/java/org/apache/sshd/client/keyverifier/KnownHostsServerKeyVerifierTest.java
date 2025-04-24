@@ -45,7 +45,6 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.SshConstants;
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
@@ -89,9 +88,9 @@ public class KnownHostsServerKeyVerifierTest extends BaseTestSupport {
         // Cannot use forEach because of the potential IOException/GeneralSecurityException being thrown
         for (Map.Entry<SshdSocketAddress, List<KnownHostEntry>> entry : hostsEntries.entrySet()) {
             for (KnownHostEntry knownHostEntry : entry.getValue()) {
-                AuthorizedKeyEntry authEntry
+                PublicKeyEntry authEntry
                         = ValidateUtils.checkNotNull(knownHostEntry.getKeyEntry(), "No key extracted from %s", entry.getKey());
-                PublicKey key = authEntry.resolvePublicKey(null, Collections.emptyMap(), PublicKeyEntryResolver.FAILING);
+                PublicKey key = authEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
                 HOST_KEYS.computeIfAbsent(entry.getKey(), k -> new ArrayList<>()).add(key);
             }
         }

@@ -29,8 +29,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.client.config.hosts.KnownHostEntry;
 import org.apache.sshd.client.session.ClientSession;
-import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.config.keys.UnsupportedSshPublicKey;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
@@ -64,7 +64,7 @@ class KnownHostsUnsupportedKeysTest extends JUnitTestSupport {
         Files.write(knownHosts, lines);
         KnownHostsServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(RejectAllServerKeyVerifier.INSTANCE, knownHosts);
         KnownHostEntry knownHost = KnownHostEntry.parseKnownHostEntry(lines.get(1));
-        AuthorizedKeyEntry keyEntry = knownHost.getKeyEntry();
+        PublicKeyEntry keyEntry = knownHost.getKeyEntry();
         assertNotNull(keyEntry);
         PublicKey key = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
         assertTrue(invokeVerifier(verifier, new SshdSocketAddress("127.0.0.1", 2222), key));
@@ -101,7 +101,7 @@ class KnownHostsUnsupportedKeysTest extends JUnitTestSupport {
         assertNotNull(newEntries);
         assertEquals(2, newEntries.size());
         KnownHostEntry knownHost = newEntries.get(1);
-        AuthorizedKeyEntry keyEntry = knownHost.getKeyEntry();
+        PublicKeyEntry keyEntry = knownHost.getKeyEntry();
         assertNotNull(keyEntry);
         PublicKey key = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
         assertTrue(KeyUtils.compareKeys(newKey, key));

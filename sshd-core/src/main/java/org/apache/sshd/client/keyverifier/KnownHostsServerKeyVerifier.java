@@ -255,7 +255,7 @@ public class KnownHostsServerKeyVerifier
             return null;
         }
 
-        AuthorizedKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
+        PublicKeyEntry authEntry = ValidateUtils.checkNotNull(entry.getKeyEntry(), "No key extracted from %s", entry);
         PublicKey key = authEntry.resolvePublicKey(session, resolver);
         if (log.isDebugEnabled()) {
             log.debug("resolveHostKey({}) loaded {}-{}", entry, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
