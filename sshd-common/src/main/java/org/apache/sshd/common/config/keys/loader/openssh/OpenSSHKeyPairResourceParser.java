@@ -36,7 +36,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -82,8 +81,6 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     private static final byte[] AUTH_MAGIC_BYTES = AUTH_MAGIC.getBytes(StandardCharsets.UTF_8);
     private static final Map<String, PrivateKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
             = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-    private static final Map<Class<?>, PrivateKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP = new HashMap<>();
 
     static {
         registerPrivateKeyEntryDecoder(OpenSSHRSAPrivateKeyDecoder.INSTANCE);
@@ -279,7 +276,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
 
             if (traceEnabled) {
                 log.trace("extractKeyPairs({}) add private key #{}: {} {}",
-                        resourceKey, keyIndex, prvType, prvData.getValue());
+                        resourceKey, keyIndex, prvType, prvData == null ? "" : prvData.getValue());
             }
             keyPairs.add(new KeyPair(pubKey, prvKey));
         }
@@ -345,22 +342,11 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     public static void registerPrivateKeyEntryDecoder(PrivateKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
-        Class<?> pubType = Objects.requireNonNull(decoder.getPublicKeyType(), "No public key type declared");
-        Class<?> prvType = Objects.requireNonNull(decoder.getPrivateKeyType(), "No private key type declared");
-        synchronized (BY_KEY_CLASS_DECODERS_MAP) {
-            BY_KEY_CLASS_DECODERS_MAP.put(pubType, decoder);
-            BY_KEY_CLASS_DECODERS_MAP.put(prvType, decoder);
-        }
-
         Collection<String> names
                 = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key type");
         synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            for (String n : names) {
-                PrivateKeyEntryDecoder<?, ?> prev = BY_KEY_TYPE_DECODERS_MAP.put(n, decoder);
-                if (prev != null) {
-                    // noinspection UnnecessaryContinue
-                    continue; // debug breakpoint
-                }
+            for (String keyType : names) {
+                BY_KEY_TYPE_DECODERS_MAP.put(keyType, decoder);
             }
         }
     }
@@ -409,35 +395,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         if (key == null) {
             return null;
         } else {
-            return getPrivateKeyEntryDecoder(key.getClass());
+            return getPrivateKeyEntryDecoder(KeyUtils.getKeyType(key));
         }
-    }
-
-    /**
-     * @param  keyType The key {@link Class} - ignored if {@code null} or not a {@link Key} compatible type
-     * @return         The registered {@link PrivateKeyEntryDecoder} or {code null} if no match found
-     */
-    public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(Class<?> keyType) {
-        if ((keyType == null) || (!Key.class.isAssignableFrom(keyType))) {
-            return null;
-        }
-
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            PrivateKeyEntryDecoder<?, ?> decoder = BY_KEY_CLASS_DECODERS_MAP.get(keyType);
-            if (decoder != null) {
-                return decoder;
-            }
-
-            // in case it is a derived class
-            for (PrivateKeyEntryDecoder<?, ?> dec : BY_KEY_CLASS_DECODERS_MAP.values()) {
-                Class<?> pubType = dec.getPublicKeyType();
-                Class<?> prvType = dec.getPrivateKeyType();
-                if (pubType.isAssignableFrom(keyType) || prvType.isAssignableFrom(keyType)) {
-                    return dec;
-                }
-            }
-        }
-
-        return null;
     }
 }

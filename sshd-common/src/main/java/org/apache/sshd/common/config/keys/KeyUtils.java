@@ -54,7 +54,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
@@ -146,10 +145,6 @@ public final class KeyUtils {
 
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
             = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-
-    // order matters here, when, for example, SkED25519PublicKeyEntryDecoder is used, it registers the PrivateKey
-    // type as java.security.PrivateKey, and all PrivateKey types are assignable to this, so it must be consulted last
-    private static final Map<Class<?>, PublicKeyEntryDecoder<?, ?>> BY_KEY_CLASS_DECODERS_MAP = new LinkedHashMap<>();
 
     private static final Map<String, String> KEY_TYPE_ALIASES
             = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
@@ -355,7 +350,7 @@ public final class KeyUtils {
      * @return                          A {@link KeyPair} of the specified type and size
      * @throws GeneralSecurityException If failed to generate the key pair
      * @see                             #getPublicKeyEntryDecoder(String)
-     * @see                             PublicKeyEntryDecoder#generateKeyPair(int)
+     * @see                             PublicKeyEntryDecoder<?, ?>#generateKeyPair(int)
      */
     public static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
         PublicKeyEntryDecoder<?, ?> decoder = getPublicKeyEntryDecoder(keyType);
@@ -385,88 +380,33 @@ public final class KeyUtils {
     }
 
     /**
-     * @param  decoder                  The decoder to register
-     * @throws IllegalArgumentException if no decoder or not key type or no supported names for the decoder
-     * @see                             PublicKeyEntryDecoder#getPublicKeyType()
-     * @see                             PublicKeyEntryDecoder#getSupportedKeyTypes()
+     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes()
+     * supports}
+     *
+     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder<?, ?> decoder} to register
+     * @see           #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder<?, ?>)
      */
     public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
-        Class<?> pubType = Objects.requireNonNull(decoder.getPublicKeyType(), "No public key type declared");
-        Class<?> prvType = Objects.requireNonNull(decoder.getPrivateKeyType(), "No private key type declared");
-        synchronized (BY_KEY_CLASS_DECODERS_MAP) {
-            BY_KEY_CLASS_DECODERS_MAP.put(pubType, decoder);
-            BY_KEY_CLASS_DECODERS_MAP.put(prvType, decoder);
-        }
-
-        registerPublicKeyEntryDecoderKeyTypes(decoder);
-    }
-
-    /**
-     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedKeyTypes()
-     * supports}
-     *
-     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
-     * @see           #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder)
-     */
-    public static void registerPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
-        Objects.requireNonNull(decoder, "No decoder specified");
-
         Collection<String> names
                 = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key types");
-        for (String n : names) {
-            PublicKeyEntryDecoder<?, ?> prev = registerPublicKeyEntryDecoderForKeyType(n, decoder);
-            if (prev != null) {
-                // noinspection UnnecessaryContinue
-                continue; // debug breakpoint
+        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
+            for (String keyType : names) {
+                BY_KEY_TYPE_DECODERS_MAP.put(keyType, decoder);
             }
         }
     }
 
     /**
-     * @param  keyType The key (never {@code null}/empty) key type
-     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
-     * @return         The previously registered decoder for this key type - {@code null} if none
-     */
-    public static PublicKeyEntryDecoder<?, ?> registerPublicKeyEntryDecoderForKeyType(
-            String keyType, PublicKeyEntryDecoder<?, ?> decoder) {
-        keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
-        Objects.requireNonNull(decoder, "No decoder specified");
-
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            return BY_KEY_TYPE_DECODERS_MAP.put(keyType, decoder);
-        }
-    }
-
-    /**
-     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
-     * @return         The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     *                 out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
-     * @see            #unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder)
-     */
-    public static NavigableSet<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
-        Objects.requireNonNull(decoder, "No decoder specified");
-
-        Class<?> pubType = Objects.requireNonNull(decoder.getPublicKeyType(), "No public key type declared");
-        Class<?> prvType = Objects.requireNonNull(decoder.getPrivateKeyType(), "No private key type declared");
-        synchronized (BY_KEY_CLASS_DECODERS_MAP) {
-            BY_KEY_CLASS_DECODERS_MAP.remove(pubType);
-            BY_KEY_CLASS_DECODERS_MAP.remove(prvType);
-        }
-
-        return unregisterPublicKeyEntryDecoderKeyTypes(decoder);
-    }
-
-    /**
      * Unregisters the specified decoder for all the types it supports
      *
-     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
+     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder<?, ?> decoder} to unregister
      * @return         The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     *                 out of all the {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
+     *                 out of all the {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes() supported} ones.
      * @see            #unregisterPublicKeyEntryDecoderForKeyType(String)
      */
-    public static NavigableSet<String> unregisterPublicKeyEntryDecoderKeyTypes(PublicKeyEntryDecoder<?, ?> decoder) {
+    public static NavigableSet<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(
@@ -495,8 +435,8 @@ public final class KeyUtils {
      * Unregister the decoder registered for the specified key type
      *
      * @param  keyType The key (never {@code null}/empty) key type
-     * @return         The unregistered {@link PublicKeyEntryDecoder} - {@code null} if none registered for this key
-     *                 type
+     * @return         The unregistered {@link PublicKeyEntryDecoder<?, ?>} - {@code null} if none registered for this
+     *                 key type
      */
     public static PublicKeyEntryDecoder<?, ?> unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
@@ -509,7 +449,7 @@ public final class KeyUtils {
     /**
      * @param  keyType The {@code OpenSSH} key type string - e.g., {@code ssh-rsa, ssh-dss} - ignored if
      *                 {@code null}/empty
-     * @return         The registered {@link PublicKeyEntryDecoder} or {code null} if not found
+     * @return         The registered {@link PublicKeyEntryDecoder<?, ?>} or {code null} if not found
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
@@ -523,8 +463,8 @@ public final class KeyUtils {
 
     /**
      * @param  kp The {@link KeyPair} to examine - ignored if {@code null}
-     * @return    The matching {@link PublicKeyEntryDecoder} provided <U>both</U> the public and private keys have the
-     *            same decoder - {@code null} if no match found
+     * @return    The matching {@link PublicKeyEntryDecoder<?, ?>} provided <U>both</U> the public and private keys have
+     *            the same decoder - {@code null} if no match found
      * @see       #getPublicKeyEntryDecoder(Key)
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(KeyPair kp) {
@@ -543,43 +483,15 @@ public final class KeyUtils {
 
     /**
      * @param  key The {@link Key} (public or private) - ignored if {@code null}
-     * @return     The registered {@link PublicKeyEntryDecoder} for this key or {code null} if no match found
+     * @return     The registered {@link PublicKeyEntryDecoder<?, ?>} for this key or {code null} if no match found
      * @see        #getPublicKeyEntryDecoder(Class)
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Key key) {
         if (key == null) {
             return null;
         } else {
-            return getPublicKeyEntryDecoder(key.getClass());
+            return getPublicKeyEntryDecoder(KeyUtils.getKeyType(key));
         }
-    }
-
-    /**
-     * @param  keyType The key {@link Class} - ignored if {@code null} or not a {@link Key} compatible type
-     * @return         The registered {@link PublicKeyEntryDecoder} or {code null} if no match found
-     */
-    public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Class<?> keyType) {
-        if ((keyType == null) || (!Key.class.isAssignableFrom(keyType))) {
-            return null;
-        }
-
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            PublicKeyEntryDecoder<?, ?> decoder = BY_KEY_CLASS_DECODERS_MAP.get(keyType);
-            if (decoder != null) {
-                return decoder;
-            }
-
-            // in case it is a derived class
-            for (PublicKeyEntryDecoder<?, ?> dec : BY_KEY_CLASS_DECODERS_MAP.values()) {
-                Class<?> pubType = dec.getPublicKeyType();
-                Class<?> prvType = dec.getPrivateKeyType();
-                if (pubType.isAssignableFrom(keyType) || prvType.isAssignableFrom(keyType)) {
-                    return dec;
-                }
-            }
-        }
-
-        return null;
     }
 
     /**
@@ -837,7 +749,7 @@ public final class KeyUtils {
     /**
      * @param  kp a key pair - ignored if {@code null}. If the private key is non-{@code null} then it is used to
      *            determine the type, otherwise the public one is used.
-     * @return    the key type or {@code null} if cannot determine it
+     * @return    the SSH key type or {@code null} if cannot determine it
      * @see       #getKeyType(Key)
      */
     public static String getKeyType(KeyPair kp) {
@@ -854,7 +766,7 @@ public final class KeyUtils {
 
     /**
      * @param  key a public or private key
-     * @return     the key type or {@code null} if cannot determine it
+     * @return     the SSH key type or {@code null} if cannot determine it
      */
     public static String getKeyType(Key key) {
         if (key == null) {

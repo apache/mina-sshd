@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.config.keys;
 
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.time.Instant;
 import java.util.Arrays;
@@ -37,7 +36,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <a href= "https://cvsweb.openbsd.org/src/usr.bin/ssh/PROTOCOL.certkeys?annotate=HEAD">PROTOCOL.certkeys</a>
  */
-public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
+public interface OpenSshCertificate extends SshPublicKey {
 
     /**
      * {@link OpenSshCertificate}s have a type indicating whether the certificate if for a host key (certifying a host
