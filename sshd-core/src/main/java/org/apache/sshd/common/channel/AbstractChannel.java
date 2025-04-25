@@ -49,6 +49,7 @@ import org.apache.sshd.common.future.CloseFuture;
 import org.apache.sshd.common.future.DefaultCloseFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.io.DefaultIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
@@ -102,15 +103,6 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     protected final AtomicBoolean initialized = new AtomicBoolean(false);
     protected final AtomicBoolean eofReceived = new AtomicBoolean(false);
 
-    /**
-     * Obsolete and unused; present only for API backwards compatibility. Use {@link #isEofSent()} to determine whether
-     * EOF is already sent on this channel, and {@link #sendEof()} to send EOF. The latter will return {@code null} if
-     * EOF already was sent.
-     *
-     * @deprecated since 2.10.1
-     */
-    @Deprecated
-    protected final AtomicBoolean eofSent = new AtomicBoolean(false);
     protected final AtomicBoolean unregisterSignaled = new AtomicBoolean(false);
     protected final AtomicBoolean closeSignaled = new AtomicBoolean(false);
     protected AtomicReference<GracefulState> gracefulState = new AtomicReference<>(GracefulState.Opened);
@@ -555,11 +547,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
         try {
             IoWriteFuture eofPrevention = AbstractIoWriteFuture.fulfilled(getChannelId(), futureLock);
-            if (eofFuture.compareAndSet(null, eofPrevention)) {
-                if (debugEnabled) {
-                    log.debug("handleClose({}) prevent sending EOF", this);
-                }
-                eofSent.set(true); // Just for API backwards compatibility
+            if (eofFuture.compareAndSet(null, eofPrevention) && debugEnabled) {
+                log.debug("handleClose({}) prevent sending EOF", this);
             }
 
             if (gracefulState.compareAndSet(GracefulState.Opened, GracefulState.CloseReceived)) {
@@ -967,16 +956,13 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             return null;
         }
 
-        AbstractIoWriteFuture eofWritten = new AbstractIoWriteFuture(getChannelId(), futureLock) {
-            // Nothin extra
-        };
+        DefaultIoWriteFuture eofWritten = new DefaultIoWriteFuture(getChannelId(), futureLock);
         if (!eofFuture.compareAndSet(null, eofWritten)) {
             if (log.isDebugEnabled()) {
                 log.debug("sendEof({}) already sent (state={})", this, channelState);
             }
             return null;
         }
-        eofSent.set(true);// Just for API backwards compatibility
 
         if (log.isDebugEnabled()) {
             log.debug("sendEof({}) SSH_MSG_CHANNEL_EOF (state={})", this, channelState);

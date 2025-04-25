@@ -94,28 +94,6 @@ public interface SftpFileSystemClientSessionInitializer {
      * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method in order to create the
      * {@link SftpFileSystem} once session has been authenticated.
      *
-     * @param      provider         The {@link SftpFileSystemProvider} instance requesting the session
-     * @param      context          The initialization {@link SftpFileSystemInitializationContext}
-     * @param      session          The authenticated {@link ClientSession}
-     * @param      selector         The <U>resolved</U> {@link SftpVersionSelector} to use
-     * @param      errorDataHandler The {@link SftpErrorDataHandler} to handle incoming data through the error stream -
-     *                              if {@code null} the data is silently ignored
-     * @return                      The created {@link SftpFileSystem}
-     * @throws     IOException      If failed to create the file-system
-     * @deprecated                  since 2.10.1
-     */
-    @Deprecated
-    default SftpFileSystem createSftpFileSystem(
-            SftpFileSystemProvider provider, SftpFileSystemInitializationContext context, ClientSession session,
-            SftpVersionSelector selector, SftpErrorDataHandler errorDataHandler)
-            throws IOException {
-        return createSftpFileSystem(provider, context, x -> session, selector, errorDataHandler);
-    }
-
-    /**
-     * Invoked by the {@link SftpFileSystemProvider#newFileSystem(java.net.URI, Map)} method in order to create the
-     * {@link SftpFileSystem} once session has been authenticated.
-     *
      * @param  provider         The {@link SftpFileSystemProvider} instance requesting the session
      * @param  context          The initialization {@link SftpFileSystemInitializationContext}
      * @param  sessionProvider  A factory for authenticated {@link ClientSession}s

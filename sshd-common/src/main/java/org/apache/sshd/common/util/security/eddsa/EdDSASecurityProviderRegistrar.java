@@ -46,12 +46,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
 
     @Override
     public boolean isEnabled() {
-        if (SecurityUtils.isFipsMode() || !super.isEnabled()) {
-            return false;
-        }
-
-        // For backward compatibility
-        return this.getBooleanProperty(SecurityUtils.EDDSA_SUPPORTED_PROP, true);
+        return !SecurityUtils.isFipsMode() && super.isEnabled();
     }
 
     @Override

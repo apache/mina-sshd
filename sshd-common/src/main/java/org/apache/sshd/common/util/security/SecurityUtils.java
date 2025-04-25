@@ -142,29 +142,11 @@ public final class SecurityUtils {
                     "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
 
     /**
-     * System property used to control whether to automatically register the {@code Bouncyastle} JCE provider
-     *
-     * @deprecated Please use &quot;org.apache.sshd.security.provider.BC.enabled&quot;
-     */
-    @Deprecated
-    public static final String REGISTER_BOUNCY_CASTLE_PROP = "org.apache.sshd.registerBouncyCastle";
-
-    /**
      * System property used to control whether Elliptic Curves are supported or not. If not set then the support is
      * auto-detected. <B>Note:</B> if set to {@code true} it is up to the user to make sure that indeed there is a
      * provider for them
      */
     public static final String ECC_SUPPORTED_PROP = "org.apache.sshd.eccSupport";
-
-    /**
-     * System property used to decide whether EDDSA curves are supported or not (in addition or even in spite of
-     * {@link #isEDDSACurveSupported()}). If not set or set to {@code true}, then the existence of the optional support
-     * classes determines the support.
-     *
-     * @deprecated Please use &quot;org.apache.sshd.security.provider.EdDSA.enabled&qupt;
-     */
-    @Deprecated
-    public static final String EDDSA_SUPPORTED_PROP = "org.apache.sshd.eddsaSupport";
 
     public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
 

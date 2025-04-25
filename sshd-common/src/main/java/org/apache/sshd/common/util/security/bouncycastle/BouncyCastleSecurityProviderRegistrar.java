@@ -60,16 +60,6 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     }
 
     @Override
-    public boolean isEnabled() {
-        if (!super.isEnabled()) {
-            return false;
-        }
-
-        // For backward compatibility
-        return this.getBooleanProperty(SecurityUtils.REGISTER_BOUNCY_CASTLE_PROP, true);
-    }
-
-    @Override
     public String getProviderName() {
         return providerName;
     }
