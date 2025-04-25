@@ -168,9 +168,6 @@ public final class KeyUtils {
 
     static {
 
-        // order matters here, when, for example, SkED25519PublicKeyEntryDecoder is used, it registers the PrivateKey
-        // type as java.security.PrivateKey, and all PrivateKey types are assignable to this, so it must be consulted last
-
         registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
@@ -181,9 +178,6 @@ public final class KeyUtils {
         if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
         }
-
-        // order matters, these must be last since they register their PrivateKey type as java.security.PrivateKey
-        // there is logical code which discovers a decoder type by instance assignability to this registered type
 
         if (SecurityUtils.isECCSupported()) {
             registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);
@@ -1179,6 +1173,13 @@ public final class KeyUtils {
             }
         } else {
             return chosenAlgorithm;
+        }
+    }
+
+    public static String getSignatureAlgorithm(String chosenAlgorithm) {
+        synchronized (SIGNATURE_ALGORITHM_MAP) {
+            String mapped = SIGNATURE_ALGORITHM_MAP.get(chosenAlgorithm);
+            return mapped == null ? chosenAlgorithm : mapped;
         }
     }
 

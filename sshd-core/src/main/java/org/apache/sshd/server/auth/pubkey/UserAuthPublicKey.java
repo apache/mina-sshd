@@ -182,28 +182,14 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected void verifyCertificateSignature(ServerSession session, OpenSshCertificate cert) throws Exception {
-        PublicKey signatureKey = cert.getCaPubKey();
-        String keyAlg = KeyUtils.getKeyType(signatureKey);
-        String keyId = cert.getId();
-
-        String sigAlg = cert.getSignatureAlgorithm();
-        if (!keyAlg.equals(KeyUtils.getCanonicalKeyType(sigAlg))) {
+        if (!OpenSshCertificate.verifySignature(cert, session.getSignatureFactories())) {
             throw new CertificateException(
-                    "Found invalid signature alg " + sigAlg + " for key ID=" + keyId + " using a " + keyAlg + " CA key");
-        }
-
-        Signature verif = ValidateUtils.checkNotNull(NamedFactory.create(session.getSignatureFactories(), sigAlg),
-                "No CA verifier located for algorithm=%s of key ID=%s", sigAlg, keyId);
-        verif.initVerifier(session, signatureKey);
-        verif.update(session, cert.getMessage());
-
-        if (!verif.verify(session, cert.getSignature())) {
-            throw new CertificateException("CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
+                    "CA signature verification failed for key type=" + cert.getKeyType() + " of key ID=" + cert.getId());
         }
     }
 
     protected void verifyCertificateSources(ServerSession session, OpenSshCertificate cert) throws CertificateException {
-        String allowedSources = cert.getCriticalOptionsMap().get("source-address");
+        String allowedSources = cert.getCriticalOptions().get("source-address");
         if (allowedSources == null) {
             return;
         }

@@ -26,6 +26,8 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.sshd.certificate.OpenSshCertificateBuilder;
 import org.apache.sshd.common.BaseBuilder;
@@ -137,22 +139,23 @@ public class GenerateOpenSSHClientCertificateTest extends BaseTestSupport {
         if (i > 0) {
             signatureAlgorithm = "rsa-sha2-" + caName.substring(i + 5);
         }
+        Map<String, String> options = new HashMap<>();
+        options.put("force-command", "/path/to/script.sh");
+        options.put("source-address", "127.0.0.1/32");
+        options.put("verify-required", null);
+        Map<String, String> extensions = new HashMap<>();
+        extensions.put("no-touch-required", null);
+        extensions.put("permit-X11-forwarding", null);
+        extensions.put("permit-agent-forwarding", null);
+        extensions.put("permit-port-forwarding", null);
+        extensions.put("permit-pty", null);
+        extensions.put("permit-user-rc", null);
         final OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate()
                 .serial(0L)
                 .publicKey(clientPublicKey)
                 .id("user01")
                 .principals(Collections.singletonList("user01"))
-                .criticalOptions(Arrays.asList(
-                        new OpenSshCertificate.CertificateOption("force-command", "/path/to/script.sh"),
-                        new OpenSshCertificate.CertificateOption("source-address", "127.0.0.1/32"),
-                        new OpenSshCertificate.CertificateOption("verify-required")))
-                .extensions(Arrays.asList(
-                        new OpenSshCertificate.CertificateOption("no-touch-required"),
-                        new OpenSshCertificate.CertificateOption("permit-X11-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-agent-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-port-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-pty"),
-                        new OpenSshCertificate.CertificateOption("permit-user-rc")))
+                .criticalOptions(options).extensions(extensions)
                 .sign(caKeypair, signatureAlgorithm);
 
         // encode to ssh public key format

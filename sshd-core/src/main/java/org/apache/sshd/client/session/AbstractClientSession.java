@@ -25,11 +25,13 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.apache.sshd.client.ClientFactoryManager;
@@ -95,7 +97,7 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     // Keep a record of already known and accepted host keys for this session. This enables us to bypass the
     // ServerKeyVerifier if a re-KEX returned the same key, or even a different key it had announced before via the
     // OpenSSH "hostkeys-00@openssh.com" SSH_MSG_GLOBAL_REQUEST.
-    private final Set<String> sessionHostKeys = new HashSet<>();
+    private final Set<String> sessionHostKeys = ConcurrentHashMap.newKeySet();
     private final List<Object> identities = new CopyOnWriteArrayList<>();
     private final AuthenticationIdentitiesProvider identitiesProvider;
     private final AttributeRepository connectionContext;
@@ -175,6 +177,53 @@ public abstract class AbstractClientSession extends AbstractSession implements C
         }
 
         this.serverKey = serverKey;
+    }
+
+    @Override
+    public void registerHostKey(PublicKey hostKey) {
+        if (hostKey instanceof OpenSshCertificate) {
+            OpenSshCertificate cert = (OpenSshCertificate) hostKey;
+            ValidateUtils.checkTrue(OpenSshCertificate.Type.HOST.equals(cert.getType()), "Invalid certificate type");
+            sessionHostKeys.add("@cert-authority " + PublicKeyEntry.toString(cert.getCaPubKey()));
+        } else {
+            ValidateUtils.checkNotNull(hostKey, "Null host key cannot be registered");
+            sessionHostKeys.add(PublicKeyEntry.toString(hostKey));
+        }
+    }
+
+    @Override
+    public Collection<String> getRegisteredHostKeys() {
+        return Collections.unmodifiableSet(sessionHostKeys);
+    }
+
+    @Override
+    protected void checkKeys() throws IOException {
+        PublicKey hostKey = Objects.requireNonNull(getServerKey(), "No server key to verify");
+        String serializedKey;
+        if (hostKey instanceof OpenSshCertificate) {
+            // Expiration etc. has already been checked.
+            serializedKey = "@cert-authority " + PublicKeyEntry.toString(((OpenSshCertificate) hostKey).getCaPubKey());
+        } else {
+            serializedKey = PublicKeyEntry.toString(hostKey);
+        }
+        if (!sessionHostKeys.contains(serializedKey)) {
+            ServerKeyVerifier verifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
+            IoSession networkSession = getIoSession();
+            SocketAddress remoteAddress = networkSession.getRemoteAddress();
+            SshdSocketAddress targetServerAddress = getAttribute(ClientSessionCreator.TARGET_SERVER);
+            if (targetServerAddress != null) {
+                remoteAddress = targetServerAddress.toInetSocketAddress();
+            }
+            boolean verified = verifier.verifyServerKey(this, remoteAddress, hostKey);
+            if (log.isDebugEnabled()) {
+                log.debug("checkKeys({}) key={}-{}, verified={}", this, KeyUtils.getKeyType(hostKey),
+                        KeyUtils.getFingerPrint(hostKey), verified);
+            }
+            if (!verified) {
+                throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE, "Server key did not validate");
+            }
+            sessionHostKeys.add(serializedKey);
+        }
     }
 
     @Override
@@ -525,36 +574,6 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             warn("signalExtraServerVersionInfo({})[{}] failed ({}) to consult interaction: {}",
                     this, version, e.getClass().getSimpleName(), e.getMessage(), e);
             throw new RuntimeSshException(e);
-        }
-    }
-
-    @Override
-    protected void checkKeys() throws IOException {
-        PublicKey hostKey = Objects.requireNonNull(getServerKey(), "No server key to verify");
-        String serializedKey;
-        if (hostKey instanceof OpenSshCertificate) {
-            // Expiration etc. has already been checked.
-            serializedKey = "cert-authority " + PublicKeyEntry.toString(((OpenSshCertificate) hostKey).getCaPubKey());
-        } else {
-            serializedKey = PublicKeyEntry.toString(hostKey);
-        }
-        if (!sessionHostKeys.contains(serializedKey)) {
-            ServerKeyVerifier verifier = Objects.requireNonNull(getServerKeyVerifier(), "No server key verifier");
-            IoSession networkSession = getIoSession();
-            SocketAddress remoteAddress = networkSession.getRemoteAddress();
-            SshdSocketAddress targetServerAddress = getAttribute(ClientSessionCreator.TARGET_SERVER);
-            if (targetServerAddress != null) {
-                remoteAddress = targetServerAddress.toInetSocketAddress();
-            }
-            boolean verified = verifier.verifyServerKey(this, remoteAddress, hostKey);
-            if (log.isDebugEnabled()) {
-                log.debug("checkKeys({}) key={}-{}, verified={}", this, KeyUtils.getKeyType(hostKey),
-                        KeyUtils.getFingerPrint(hostKey), verified);
-            }
-            if (!verified) {
-                throw new SshException(SshConstants.SSH2_DISCONNECT_HOST_KEY_NOT_VERIFIABLE, "Server key did not validate");
-            }
-            sessionHostKeys.add(serializedKey);
         }
     }
 

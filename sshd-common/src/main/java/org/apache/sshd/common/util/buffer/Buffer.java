@@ -49,8 +49,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.function.IntUnaryOperator;
 import java.util.logging.Level;
@@ -371,7 +373,7 @@ public abstract class Buffer implements Readable {
         return GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values);
     }
 
-    public List<OpenSshCertificate.CertificateOption> getCertificateOptions() {
+    public Map<String, String> getCertificateOptions() {
         return getCertificateOptions(StandardCharsets.UTF_8);
     }
 
@@ -390,8 +392,8 @@ public abstract class Buffer implements Readable {
      * @param  charset {@link Charset} to use for converting bytes to characters
      * @return         the parsed result, never {@code null}, but possibly empty
      */
-    public List<OpenSshCertificate.CertificateOption> getCertificateOptions(Charset charset) {
-        List<OpenSshCertificate.CertificateOption> list = new ArrayList<>();
+    public Map<String, String> getCertificateOptions(Charset charset) {
+        Map<String, String> result = new HashMap<>();
 
         if (available() > 0) {
             // pull out entire Certificate Options section
@@ -405,11 +407,11 @@ public abstract class Buffer implements Readable {
                     data = GenericUtils.trimToEmpty(dataBuffer.getString(charset));
                     data = data.length() > 0 ? data : null;
                 }
-                list.add(new OpenSshCertificate.CertificateOption(name, data));
+                result.put(name, data);
             }
         }
 
-        return list;
+        return result;
     }
 
     /**
@@ -841,7 +843,7 @@ public abstract class Buffer implements Readable {
         }
     }
 
-    public void putCertificateOptions(List<OpenSshCertificate.CertificateOption> options) {
+    public void putCertificateOptions(Map<String, String> options) {
         putCertificateOptions(options, StandardCharsets.UTF_8);
     }
 
@@ -860,26 +862,24 @@ public abstract class Buffer implements Readable {
      * @param options to write into the buffer, may be {@code null} or empty but must not contain {@code null} elements
      * @param charset The {@link Charset} to use for string options
      */
-    public void putCertificateOptions(List<OpenSshCertificate.CertificateOption> options, Charset charset) {
-        int numObjects = GenericUtils.size(options);
-
-        if (numObjects <= 0) {
+    public void putCertificateOptions(Map<String, String> options, Charset charset) {
+        if (options == null || options.size() == 0) {
             putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
             return;
         }
 
         ByteArrayBuffer optionBuffer = new ByteArrayBuffer();
 
-        for (OpenSshCertificate.CertificateOption option : options) {
-            optionBuffer.putString(option.getName(), charset);
-            if (GenericUtils.isEmpty(option.getData())) {
+        options.forEach((key, value) -> {
+            optionBuffer.putString(key, charset);
+            if (GenericUtils.isEmpty(value)) {
                 optionBuffer.putBytes(GenericUtils.EMPTY_BYTE_ARRAY);
             } else {
                 ByteArrayBuffer dataBuffer = new ByteArrayBuffer();
-                dataBuffer.putString(option.getData(), charset);
+                dataBuffer.putString(value, charset);
                 optionBuffer.putBytes(dataBuffer.getCompactData());
             }
-        }
+        });
 
         putBytes(optionBuffer.getCompactData());
     }

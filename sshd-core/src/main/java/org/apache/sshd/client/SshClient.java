@@ -59,6 +59,7 @@ import org.apache.sshd.client.auth.password.PasswordIdentityProvider;
 import org.apache.sshd.client.auth.password.UserAuthPasswordFactory;
 import org.apache.sshd.client.auth.pubkey.PublicKeyAuthenticationReporter;
 import org.apache.sshd.client.auth.pubkey.UserAuthPublicKeyFactory;
+import org.apache.sshd.client.config.NewHostKeysHandler;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentity;
@@ -195,6 +196,7 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     private ProxyDataFactory proxyDataFactory;
     private ServerKeyVerifier serverKeyVerifier;
     private HostConfigEntryResolver hostConfigEntryResolver;
+    private NewHostKeysHandler newHostKeysHandler;
     private ClientIdentityLoader clientIdentityLoader;
     private KeyIdentityProvider keyIdentityProvider;
     private PublicKeyAuthenticationReporter publicKeyAuthenticationReporter;
@@ -246,6 +248,16 @@ public class SshClient extends AbstractFactoryManager implements ClientFactoryMa
     @Override
     public void setHostConfigEntryResolver(HostConfigEntryResolver resolver) {
         this.hostConfigEntryResolver = Objects.requireNonNull(resolver, "No host configuration entry resolver");
+    }
+
+    @Override
+    public NewHostKeysHandler getNewHostKeysHandler() {
+        return newHostKeysHandler;
+    }
+
+    @Override
+    public void setNewHostKeysHandler(NewHostKeysHandler handler) {
+        newHostKeysHandler = Objects.requireNonNull(handler, "No handler for new host keys");
     }
 
     @Override

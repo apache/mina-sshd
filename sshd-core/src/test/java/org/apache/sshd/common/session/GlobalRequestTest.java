@@ -268,9 +268,7 @@ class GlobalRequestTest extends BaseTestSupport {
         client.setGlobalRequestHandlers(Collections.singletonList(new OpenSshHostKeysHandler() {
 
             @Override
-            protected Result handleHostKeys(
-                    Session session, Collection<? extends PublicKey> keys, boolean wantReply,
-                    Buffer buffer)
+            protected Result handleHostKeys(Session session, Collection<PublicKey> keys, boolean wantReply, Buffer buffer)
                     throws Exception {
                 ValidateUtils.checkTrue(!wantReply, "Unexpected reply required for the host keys of %s", session);
                 assertFalse(GenericUtils.isEmpty(keys));
@@ -369,9 +367,7 @@ class GlobalRequestTest extends BaseTestSupport {
         client.setGlobalRequestHandlers(Collections.singletonList(new OpenSshHostKeysHandler() {
 
             @Override
-            protected Result handleHostKeys(
-                    Session session, Collection<? extends PublicKey> keys, boolean wantReply,
-                    Buffer buffer)
+            protected Result handleHostKeys(Session session, Collection<PublicKey> keys, boolean wantReply, Buffer buffer)
                     throws Exception {
                 ValidateUtils.checkTrue(!wantReply, "Unexpected reply required for the host keys of %s", session);
                 assertFalse(GenericUtils.isEmpty(keys));

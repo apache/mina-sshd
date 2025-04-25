@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.client;
 
+import org.apache.sshd.client.config.NewHostKeysHandler;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoaderManager;
 import org.apache.sshd.client.session.ClientSessionCreator;
@@ -44,4 +45,8 @@ public interface ClientFactoryManager
     HostConfigEntryResolver getHostConfigEntryResolver();
 
     void setHostConfigEntryResolver(HostConfigEntryResolver resolver);
+
+    NewHostKeysHandler getNewHostKeysHandler();
+
+    void setNewHostKeysHandler(NewHostKeysHandler handler);
 }

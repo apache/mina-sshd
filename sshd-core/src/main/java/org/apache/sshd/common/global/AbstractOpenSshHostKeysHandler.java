@@ -106,7 +106,7 @@ public abstract class AbstractOpenSshHostKeysHandler extends AbstractConnectionS
     }
 
     protected abstract Result handleHostKeys(
-            Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer)
+            Session session, Collection<PublicKey> keys, boolean wantReply, Buffer buffer)
             throws Exception;
 
     @Override

@@ -26,14 +26,12 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.common.BaseBuilder;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
-import org.apache.sshd.common.config.keys.OpenSshCertificate.CertificateOption;
 import org.apache.sshd.common.config.keys.OpenSshCertificate.Type;
 import org.apache.sshd.common.config.keys.OpenSshCertificateImpl;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -112,19 +110,6 @@ public class OpenSshCertificateBuilder {
         return this;
     }
 
-    public OpenSshCertificateBuilder criticalOptions(List<OpenSshCertificate.CertificateOption> criticalOptions) {
-        this.criticalOptions.clear();
-        for (CertificateOption option : criticalOptions) {
-            String key = ValidateUtils.checkNotNullAndNotEmpty(option.getName(), "Critical option name must be set");
-            String value = option.getData();
-            String prev = this.criticalOptions.put(key, value == null ? "" : value);
-            if (prev != null) {
-                throw new IllegalArgumentException("Duplicate certificate option " + key);
-            }
-        }
-        return this;
-    }
-
     public OpenSshCertificateBuilder criticalOptions(Map<String, String> criticalOptions) {
         this.criticalOptions.clear();
         criticalOptions.forEach((k, v) -> {
@@ -137,19 +122,6 @@ public class OpenSshCertificateBuilder {
     public OpenSshCertificateBuilder extension(String name, String data) {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "Extension name must be set");
         this.extensions.put(key, data == null ? "" : data);
-        return this;
-    }
-
-    public OpenSshCertificateBuilder extensions(List<OpenSshCertificate.CertificateOption> extensions) {
-        this.extensions.clear();
-        for (CertificateOption option : extensions) {
-            String key = ValidateUtils.checkNotNullAndNotEmpty(option.getName(), "Extension name must be set");
-            String value = option.getData();
-            String prev = this.extensions.put(key, value == null ? "" : value);
-            if (prev != null) {
-                throw new IllegalArgumentException("Duplicate certificate extension " + key);
-            }
-        }
         return this;
     }
 

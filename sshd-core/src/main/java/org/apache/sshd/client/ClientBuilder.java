@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
 
+import org.apache.sshd.client.config.DefaultNewHostKeysHandler;
+import org.apache.sshd.client.config.NewHostKeysHandler;
 import org.apache.sshd.client.config.hosts.DefaultConfigFileHostEntryResolver;
 import org.apache.sshd.client.config.hosts.HostConfigEntryResolver;
 import org.apache.sshd.client.config.keys.ClientIdentityLoader;
@@ -85,6 +87,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
     protected ProxyDataFactory proxyDataFactory;
     protected ServerKeyVerifier serverKeyVerifier;
     protected HostConfigEntryResolver hostConfigEntryResolver;
+    protected NewHostKeysHandler newHostKeysHandler;
     protected ClientIdentityLoader clientIdentityLoader;
     protected FilePasswordProvider filePasswordProvider;
 
@@ -104,6 +107,11 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
 
     public ClientBuilder hostConfigEntryResolver(HostConfigEntryResolver resolver) {
         this.hostConfigEntryResolver = resolver;
+        return me();
+    }
+
+    public ClientBuilder newHostKeysHandler(NewHostKeysHandler handler) {
+        this.newHostKeysHandler = handler;
         return me();
     }
 
@@ -157,6 +165,10 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
             hostConfigEntryResolver = DEFAULT_HOST_CONFIG_ENTRY_RESOLVER;
         }
 
+        if (newHostKeysHandler == null) {
+            newHostKeysHandler = new DefaultNewHostKeysHandler();
+        }
+
         if (clientIdentityLoader == null) {
             clientIdentityLoader = DEFAULT_CLIENT_IDENTITY_LOADER;
         }
@@ -178,6 +190,7 @@ public class ClientBuilder extends BaseBuilder<SshClient, ClientBuilder> {
         client.setProxyDataFactory(proxyDataFactory);
         client.setServerKeyVerifier(serverKeyVerifier);
         client.setHostConfigEntryResolver(hostConfigEntryResolver);
+        client.setNewHostKeysHandler(newHostKeysHandler);
         client.setClientIdentityLoader(clientIdentityLoader);
         client.setFilePasswordProvider(filePasswordProvider);
         return client;

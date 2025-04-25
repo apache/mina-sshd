@@ -74,7 +74,7 @@ class OpenSshHostKeysHandlerTest extends BaseTestSupport {
                 = new org.apache.sshd.client.global.OpenSshHostKeysHandler() {
                     @Override
                     protected Result handleHostKeys(
-                            Session session, Collection<? extends PublicKey> keys, boolean wantReply,
+                            Session session, Collection<PublicKey> keys, boolean wantReply,
                             Buffer buffer) throws Exception {
                         handlerCalled[0] = true;
                         assertEquals(2, keys.size(), "Unexpected number of keys");
@@ -95,7 +95,7 @@ class OpenSshHostKeysHandlerTest extends BaseTestSupport {
                 = new org.apache.sshd.server.global.OpenSshHostKeysHandler() {
                     @Override
                     protected Result handleHostKeys(
-                            Session session, Collection<? extends PublicKey> keys, boolean wantReply,
+                            Session session, Collection<PublicKey> keys, boolean wantReply,
                             Buffer buffer) throws Exception {
                         handlerCalled[0] = true;
                         return Result.Replied;

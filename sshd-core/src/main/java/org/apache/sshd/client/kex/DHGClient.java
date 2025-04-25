@@ -252,19 +252,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     "KeyExchange signature verification failed, CA expired for key ID=" + keyId);
         }
 
-        String sigAlg = openSshKey.getSignatureAlgorithm();
-        if (!keyAlg.equals(KeyUtils.getCanonicalKeyType(sigAlg))) {
-            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
-                    "Found invalid signature alg " + sigAlg + " for key ID=" + keyId + " using a " + keyAlg + " CA key");
-        }
-
-        Signature verif = ValidateUtils.checkNotNull(
-                NamedFactory.create(session.getSignatureFactories(), sigAlg),
-                "No KeyExchange CA verifier located for algorithm=%s of key ID=%s", sigAlg, keyId);
-        verif.initVerifier(session, signatureKey);
-        verif.update(session, openSshKey.getMessage());
-
-        if (!verif.verify(session, openSshKey.getSignature())) {
+        if (!OpenSshCertificate.verifySignature(openSshKey, session.getSignatureFactories())) {
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
         }
@@ -298,7 +286,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             }
         }
 
-        if (!GenericUtils.isEmpty(openSshKey.getCriticalOptions())) {
+        if (!openSshKey.getCriticalOptions().isEmpty()) {
             // no critical option defined for host keys yet
             throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                     "KeyExchange signature verification failed, unrecognized critical options "

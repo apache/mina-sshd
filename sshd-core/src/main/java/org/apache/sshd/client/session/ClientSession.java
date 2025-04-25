@@ -49,6 +49,7 @@ import org.apache.sshd.client.channel.ClientChannel;
 import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.config.hosts.HostConfigEntry;
 import org.apache.sshd.client.future.AuthFuture;
+import org.apache.sshd.client.keyverifier.ServerKeyVerifier;
 import org.apache.sshd.client.session.forward.DynamicPortForwardingTracker;
 import org.apache.sshd.client.session.forward.ExplicitPortForwardingTracker;
 import org.apache.sshd.common.AttributeRepository;
@@ -132,11 +133,46 @@ public interface ClientSession
     AuthFuture auth() throws IOException;
 
     /**
-     * Retrieves the server's key
+     * Retrieves the server's host key: the one it presented in the last key exchange.
      *
-     * @return The server's {@link PublicKey} - {@code null} if KEX not started or not completed
+     * @return the server's {@link PublicKey}; may be {@code null} if no key exchange has been completed yet
      */
     PublicKey getServerKey();
+
+    /**
+     * Explicitly registers a known host key for the session. Intended to be used if the server announces additional
+     * host keys as part of the OpenSSH "hostkeys-00@openssh.com" extension, but it can also be used to register any
+     * host key at any other time.
+     * <p>
+     * If the server presents a host key that matches any of the ones registered in the session, the key will be
+     * accepted implicitly without consulting the {@link ServerKeyVerifier}.
+     * </p>
+     * <p>
+     * If the {@code hostKey} is a host certificate, the CA key will be registered. When the server presents a
+     * certificate, the certificate will be checked in any case and will be rejected if it is invalid or expired. If it
+     * is valid and not expired, it will be accepted implicitly if its CA key is already registered.
+     * </p>
+     *
+     * @param  hostKey                  the host key to register
+     * @throws IllegalArgumentException if {@code hostKey} is a user certificate
+     */
+    void registerHostKey(PublicKey hostKey);
+
+    /**
+     * Obtains a read-only collection of all currently registered server host keys is OpenSSH format, i.e. key type as a
+     * string, followed by the base64-encoded key, prefixed with "@cert-authority" if it's a CA key.
+     * <p>
+     * For a normal key: "key-type AAAA..."; for a host certificate CA key "@cert-authority key-type AAAA...".
+     * </p>
+     * <p>
+     * Note that this is not <em>quite</em> the format used in a OpenSSH {@code known_hosts} file as there are no host
+     * patterns.
+     * </p>
+     *
+     * @return all currently registered server host keys; never {@code null} but possibly empty, and never containing
+     *         {@code null}
+     */
+    Collection<String> getRegisteredHostKeys();
 
     /**
      * Create a channel of the given type. Same as calling <code>createChannel(type, null)</code>.

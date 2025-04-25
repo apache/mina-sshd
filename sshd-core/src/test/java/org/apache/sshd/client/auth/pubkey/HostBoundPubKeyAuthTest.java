@@ -18,12 +18,18 @@
  */
 package org.apache.sshd.client.auth.pubkey;
 
+import java.security.PublicKey;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.apache.sshd.client.SshClient;
+import org.apache.sshd.client.config.DefaultNewHostKeysHandler;
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
@@ -104,19 +110,38 @@ public class HostBoundPubKeyAuthTest extends BaseTestSupport {
 
     @MethodSource("privateKeyParams")
     @ParameterizedTest(name = "{0}")
-    public void pubkeyAuth(String privateKeyName) throws Exception {
+    void pubkeyAuth(String privateKeyName) throws Exception {
         initHostBoundPubKeyAuthTest(privateKeyName);
         FileKeyPairProvider keyPairProvider = CommonTestSupportUtils.createTestKeyPairProvider(getPrivateKeyResource());
         SshClient client = setupTestClient();
         client.setKeyIdentityProvider(keyPairProvider);
-        client.start();
+        CountDownLatch haveHostKeys = new CountDownLatch(1);
+        client.setNewHostKeysHandler(new DefaultNewHostKeysHandler() {
 
+            @Override
+            public void receiveNewHostKeys(ClientSession session, Collection<PublicKey> hostKeys) {
+                super.receiveNewHostKeys(session, hostKeys);
+                haveHostKeys.countDown();
+            }
+        });
+        client.start();
         Integer actualPort = sshdContainer.getMappedPort(22);
         String actualHost = sshdContainer.getHost();
         try (ClientSession session = client.connect("bob", actualHost, actualPort).verify(CONNECT_TIMEOUT).getSession()) {
             session.auth().verify(AUTH_TIMEOUT);
             assertEquals(Integer.valueOf(0), session.getAttribute(DefaultClientKexExtensionHandler.HOSTBOUND_AUTHENTICATION));
             checkLog(sshdContainer.getLogs());
+            // We know that this OpenSSH generates three server host keys, and it does send the
+            // "hostkeys-00@openssh.com" global request.
+            assertTrue(haveHostKeys.await(CONNECT_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS));
+            Collection<String> knownHostKeys = session.getRegisteredHostKeys();
+            assertNotNull(knownHostKeys);
+            knownHostKeys.forEach(s -> LOG.info("Known host key " + s));
+            assertEquals(3, knownHostKeys.size());
+            PublicKey hostKey = session.getServerKey();
+            assertNotNull(hostKey);
+            String serialized = PublicKeyEntry.toString(hostKey);
+            assertTrue(knownHostKeys.contains(serialized));
         } finally {
             client.stop();
         }

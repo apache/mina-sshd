@@ -20,11 +20,9 @@ package org.apache.sshd.common.config.keys;
 
 import java.security.PublicKey;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
-import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
@@ -116,32 +114,12 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
     }
 
     @Override
-    public List<CertificateOption> getCriticalOptions() {
-        if (criticalOptions == null || criticalOptions.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<CertificateOption> list = new ArrayList<>(criticalOptions.size());
-        criticalOptions.forEach((k, v) -> list.add(new CertificateOption(k, v)));
-        return Collections.unmodifiableList(list);
-    }
-
-    @Override
-    public SortedMap<String, String> getCriticalOptionsMap() {
+    public SortedMap<String, String> getCriticalOptions() {
         return criticalOptions == null ? Collections.emptySortedMap() : Collections.unmodifiableSortedMap(criticalOptions);
     }
 
     @Override
-    public List<CertificateOption> getExtensions() {
-        if (extensions == null || extensions.isEmpty()) {
-            return Collections.emptyList();
-        }
-        List<CertificateOption> list = new ArrayList<>(extensions.size());
-        extensions.forEach((k, v) -> list.add(new CertificateOption(k, v)));
-        return Collections.unmodifiableList(list);
-    }
-
-    @Override
-    public SortedMap<String, String> getExtensionsMap() {
+    public SortedMap<String, String> getExtensions() {
         return extensions == null ? Collections.emptySortedMap() : Collections.unmodifiableSortedMap(extensions);
     }
 
@@ -266,23 +244,6 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
      *
      * @param criticalOptions to set; may be {@code null} or empty to remove all previously set options
      */
-    public void setCriticalOptions(List<CertificateOption> criticalOptions) {
-        if (criticalOptions == null || criticalOptions.isEmpty()) {
-            this.criticalOptions = null;
-        } else {
-            this.criticalOptions = new TreeMap<>();
-            for (CertificateOption option : criticalOptions) {
-                String data = option.getData();
-                this.criticalOptions.put(option.getName(), data == null ? "" : data);
-            }
-        }
-    }
-
-    /**
-     * Sets the critical options of the certificate, overriding any options set earlier.
-     *
-     * @param criticalOptions to set; may be {@code null} or empty to remove all previously set options
-     */
     public void setCriticalOptions(Map<String, String> criticalOptions) {
         if (criticalOptions == null || criticalOptions.isEmpty()) {
             this.criticalOptions = null;
@@ -315,23 +276,6 @@ public class OpenSshCertificateImpl implements OpenSshCertificate {
             criticalOptions = new TreeMap<>();
         }
         return criticalOptions.put(key, value) == null;
-    }
-
-    /**
-     * Sets the extensions of the certificate, overriding any extensions set earlier.
-     *
-     * @param extensions to set; may be {@code null} or empty to remove all previously set extensions
-     */
-    public void setExtensions(List<CertificateOption> extensions) {
-        if (extensions == null || extensions.isEmpty()) {
-            this.extensions = null;
-        } else {
-            this.extensions = new TreeMap<>();
-            for (CertificateOption option : extensions) {
-                String data = option.getData();
-                this.extensions.put(option.getName(), data == null ? "" : data);
-            }
-        }
     }
 
     /**

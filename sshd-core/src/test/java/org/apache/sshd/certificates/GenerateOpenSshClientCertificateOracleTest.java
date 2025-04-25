@@ -25,6 +25,8 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.apache.sshd.certificate.OpenSshCertificateBuilder;
 import org.apache.sshd.common.BaseBuilder;
@@ -114,21 +116,22 @@ class GenerateOpenSshClientCertificateOracleTest extends BaseTestSupport {
 
         final KeyPair caKeypair = keyPairProvider.loadKeys(null).iterator().next();
 
+        Map<String, String> options = new HashMap<>();
+        options.put("source-address", "127.0.0.1/32");
+        options.put("force-command", "/path/to/script.sh");
+        Map<String, String> extensions = new HashMap<>();
+        extensions.put("permit-pty", null);
+        extensions.put("permit-agent-forwarding", null);
+        extensions.put("permit-user-rc", null);
+        extensions.put("permit-port-forwarding", null);
+        extensions.put("permit-X11-forwarding", null);
         final OpenSshCertificate signedCert = OpenSshCertificateBuilder.userCertificate()
                 .serial(0L)
                 .publicKey(clientPublicKey)
                 .id("user01")
                 .principals(Collections.singletonList("user01"))
                 .nonce(oracle.getNonce())
-                .criticalOptions(Arrays.asList(
-                        new OpenSshCertificate.CertificateOption("source-address", "127.0.0.1/32"),
-                        new OpenSshCertificate.CertificateOption("force-command", "/path/to/script.sh")))
-                .extensions(Arrays.asList(
-                        new OpenSshCertificate.CertificateOption("permit-pty"),
-                        new OpenSshCertificate.CertificateOption("permit-agent-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-user-rc"),
-                        new OpenSshCertificate.CertificateOption("permit-port-forwarding"),
-                        new OpenSshCertificate.CertificateOption("permit-X11-forwarding")))
+                .criticalOptions(options).extensions(extensions)
                 .sign(caKeypair, params.algorithm);
 
         // Check that they both validate

@@ -24,10 +24,11 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 import java.util.SortedMap;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.sshd.common.NamedFactory;
+import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.util.ValidateUtils;
 
 /**
@@ -147,32 +148,16 @@ public interface OpenSshCertificate extends SshPublicKey {
     /**
      * Retrieves the critical options set in the certificate.
      *
-     * @return the critical options as an unmodifiable list, never {@code null} but possibly empty
-     * @see    #getCriticalOptionsMap()
-     */
-    List<CertificateOption> getCriticalOptions();
-
-    /**
-     * Retrieves the critical options set in the certificate.
-     *
      * @return the critical options as an unmodifiable map, never {@code null} but possibly empty
      */
-    SortedMap<String, String> getCriticalOptionsMap();
-
-    /**
-     * Retrieves the extensions set in the certificate.
-     *
-     * @return the extensions as an unmodifiable list, never {@code null} but possibly empty
-     * @see    #getExtensionsMap()
-     */
-    List<CertificateOption> getExtensions();
+    SortedMap<String, String> getCriticalOptions();
 
     /**
      * Retrieves the extensions set in the certificate.
      *
      * @return the extensions as an unmodifiable map, never {@code null} but possibly empty
      */
-    SortedMap<String, String> getExtensionsMap();
+    SortedMap<String, String> getExtensions();
 
     /**
      * Retrieves the "reserved" field of the certificate. OpenSSH currently doesn't use it and ignores it.
@@ -244,86 +229,32 @@ public interface OpenSshCertificate extends SshPublicKey {
     }
 
     /**
-     * Certificate Options are a set of bytes that is
+     * Verifies the signature of the certificate.
      *
-     * <pre>
-     * [overall length][name(string)][[length of buffer][[length of string][data(string)]]]...
-     * </pre>
-     * <p>
-     * Where each Certificate Option is encoded as a name (string) and data (string packed in a buffer). The entire name
-     * (string) + data (buffer) are added as bytes (which will get a length prefix).
-     * </p>
-     *
-     * @see <a href=
-     *      "https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys#L221-L319">PROTOCOL.certkeys</a>
+     * @param  cert               {@link OpenSshCertificate} to verify
+     * @param  signatureFactories Available signature factories for the signature verification
+     * @return                    {@code true} if the signature verifies, {@code false} otherwise
+     * @throws Exception          if the signature verifier reports an error
      */
-    class CertificateOption {
-
-        private final String name;
-        private final String data;
-
-        /**
-         * Creates a new {@link CertificateOption} with the given name and data.
-         *
-         * @param name of the option; must be neither {@code null} nor empty
-         * @param data for the option; may be {@code null} or empty
-         */
-        public CertificateOption(String name, String data) {
-            this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "CertificateOption name must be set");
-            this.data = data;
+    static boolean verifySignature(OpenSshCertificate cert, List<NamedFactory<Signature>> signatureFactories)
+            throws Exception {
+        PublicKey signatureKey = cert.getCaPubKey();
+        if (signatureKey instanceof OpenSshCertificate || cert.getCertPubKey() instanceof OpenSshCertificate) {
+            // OpenSSH certificates do not allow certificate chains.
+            return false;
         }
-
-        /**
-         * Creates a new {@link CertificateOption} with a name without data.
-         *
-         * @param name of the option; must be neither {@code null} nor empty
-         */
-        public CertificateOption(String name) {
-            this(name, null);
+        String keyAlg = KeyUtils.getKeyType(signatureKey);
+        String sigAlg = cert.getSignatureAlgorithm();
+        if (!keyAlg.equals(KeyUtils.getCanonicalKeyType(sigAlg))) {
+            return false;
         }
-
-        /**
-         * Retrieves the name.
-         *
-         * @return the name, never {@code null}
-         */
-        public final String getName() {
-            return name;
+        Signature verifier = NamedFactory.create(signatureFactories, sigAlg);
+        if (verifier == null) {
+            return false;
         }
+        verifier.initVerifier(null, signatureKey);
+        verifier.update(null, cert.getMessage());
 
-        /**
-         * Retrieves the data.
-         *
-         * @return the data, may be{@code null} or empty
-         */
-        public final String getData() {
-            return data;
-        }
-
-        @Override
-        public String toString() {
-            return "CertificateOption{name='" + name + "', data='" + data + "'}";
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (obj == null) {
-                return false;
-            }
-            if (obj == this) {
-                return true;
-            }
-            if (getClass() != obj.getClass()) {
-                return false;
-            }
-
-            CertificateOption other = (CertificateOption) obj;
-            return Objects.equals(name, other.name) && Objects.equals(data, other.data);
-        }
-
-        @Override
-        public int hashCode() {
-            return Objects.hash(name, data);
-        }
+        return verifier.verify(null, cert.getSignature());
     }
 }

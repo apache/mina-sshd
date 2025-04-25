@@ -355,7 +355,7 @@ public final class GenericUtils {
     }
 
     public static boolean isEmpty(Collection<?> c) {
-        return size(c) <= 0;
+        return c == null || c.isEmpty();
     }
 
     public static boolean isNotEmpty(Collection<?> c) {

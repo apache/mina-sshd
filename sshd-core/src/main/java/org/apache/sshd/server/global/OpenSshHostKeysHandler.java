@@ -30,7 +30,9 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.global.AbstractOpenSshHostKeysHandler;
+import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
@@ -86,7 +88,7 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
 
     @Override
     protected Result handleHostKeys(
-            Session session, Collection<? extends PublicKey> keys, boolean wantReply, Buffer buffer)
+            Session session, Collection<PublicKey> keys, boolean wantReply, Buffer buffer)
             throws Exception {
         // according to the specification there MUST be reply required by the server
         ValidateUtils.checkTrue(wantReply, "No reply required for host keys of %s", session);
@@ -107,11 +109,26 @@ public class OpenSshHostKeysHandler extends AbstractOpenSshHostKeysHandler imple
         KeyPairProvider kpp = Objects.requireNonNull(
                 ((ServerSession) session).getKeyPairProvider(), "No server keys provider");
         for (PublicKey k : keys) {
-            String keyType = KeyUtils.getKeyType(k);
+            PublicKey signingKey = k;
+            if (k instanceof OpenSshCertificate) {
+                signingKey = ((OpenSshCertificate) k).getCertPubKey();
+            }
+            String keyType = KeyUtils.getKeyType(signingKey);
+            String algo = keyType;
+            // RSA is special...
+            if (KeyPairProvider.SSH_RSA.equals(algo)) {
+                // If a RSA host key was negotiated in KEX, use the signature algorithm from there:
+                String negotiated = session.getKexNegotiationResult().get(KexProposalOption.ALGORITHMS);
+                String canonical = KeyUtils.getCanonicalKeyType(negotiated);
+                if (KeyPairProvider.SSH_RSA.equals(canonical) || KeyPairProvider.SSH_RSA_CERT.equals(canonical)) {
+                    algo = KeyUtils.getSignatureAlgorithm(negotiated);
+                } else {
+                    algo = KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS;
+                }
+            }
+
             Signature verifier = ValidateUtils.checkNotNull(
-                    NamedFactory.create(factories, keyType),
-                    "No signer could be located for key type=%s",
-                    keyType);
+                    NamedFactory.create(factories, algo), "No signer could be located for key type=%s, algo=%s", keyType, algo);
 
             KeyPair kp;
             try {
