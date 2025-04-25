@@ -13,6 +13,10 @@ Version 3 includes all the features and bug fixes of version 2, including the [l
 * The `AbstractSession` has been completely refactored. Most of its code has been moved out of this class into separate filters in a filter chain. For details, see the [technical documentation](./docs/technical/filters.md).
 * Handling of global requests has been moved from `AbstractSession` to the `ConnectionService`.
 * KEX temporarily closes `RemoteWindow`s, preventing data to be written in that way until KEX is over. Version 2 blocked threads in a different, more convoluted, and fragile way.
+* Deprecated API has been removed.
+    * System property "org.apache.sshd.registerBouncyCastle" is gone; use "org.apache.sshd.security.provider.BC.enabled" instead.
+    * System property "org.apache.sshd.eddsaSupport" is gone; use "org.apache.sshd.security.provider.EdDSA.enabled" instead. (This property applies only to the `net.i2p` ed25519 provider.)
+* Method `KeyUtils.cloneKeyPair()` has been removed. It was never used inside Apache MINA sshd. If you need to duplicate an existing `KeyPar`, use `Key.getEncoded()` on the keys and then re-create a duplicate key using an `X509EncodedKeySpec` for the public key or a `PKCS8EncodedKeySpec` for the private key.
 
 ## New Features
 
