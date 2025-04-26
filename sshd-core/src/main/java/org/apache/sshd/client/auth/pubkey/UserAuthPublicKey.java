@@ -25,12 +25,12 @@ import java.security.KeyPair;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Deque;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.sshd.client.auth.AbstractUserAuth;
 import org.apache.sshd.client.auth.keyboard.UserInteraction;
@@ -175,7 +175,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
             if (currentAlgorithm == null) {
                 String keyType = KeyUtils.getKeyType(pubKey);
-                Set<String> aliases = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+                Set<String> aliases = new HashSet<>();
                 aliases.addAll(KeyUtils.getAllEquivalentKeyTypes(keyType));
                 aliases.add(keyType);
                 List<NamedFactory<Signature>> existingFactories = null;
@@ -441,7 +441,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new RuntimeSshException(e);
         }
 
-        String signatureAlgo = KeyUtils.getSignatureAlgorithm(algo, key);
+        String signatureAlgo = KeyUtils.getSignatureAlgorithm(algo);
 
         if (log.isTraceEnabled()) {
             log.trace("appendSignature({})[{}] name={}, key type={}, fingerprint={} - verification data={}",

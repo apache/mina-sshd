@@ -38,12 +38,11 @@ import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
-import java.util.TreeSet;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.OsUtils;
@@ -553,7 +552,7 @@ class RootedFileSystemProviderTest extends AssertableFile {
 
         public Path createFile(Path source) throws InvalidPathException, IOException {
             try (FileChannel fc = fileSystem.provider().newFileChannel(source,
-                    new TreeSet<>(Arrays.asList(StandardOpenOption.CREATE, StandardOpenOption.WRITE)))) {
+                    EnumSet.of(StandardOpenOption.CREATE, StandardOpenOption.WRITE))) {
                 byte[] randomBytes = new byte[1000];
                 new Random().nextBytes(randomBytes);
                 fc.write(ByteBuffer.wrap(randomBytes));

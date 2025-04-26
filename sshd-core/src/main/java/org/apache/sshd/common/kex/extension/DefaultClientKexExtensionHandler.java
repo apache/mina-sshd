@@ -22,10 +22,10 @@ package org.apache.sshd.common.kex.extension;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.TreeSet;
 
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
@@ -113,7 +113,7 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
                         session, clientAlgorithms);
             }
             List<NamedFactory<Signature>> unknown = new ArrayList<>();
-            Set<String> known = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
+            Set<String> known = new HashSet<>();
             known.addAll(serverAlgorithms);
             for (Iterator<NamedFactory<Signature>> i = clientAlgorithms.iterator(); i.hasNext();) {
                 NamedFactory<Signature> algo = i.next();

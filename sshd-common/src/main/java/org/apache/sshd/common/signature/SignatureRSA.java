@@ -23,8 +23,7 @@ import java.security.PublicKey;
 import java.security.interfaces.RSAKey;
 import java.util.Collections;
 import java.util.Map;
-import java.util.NavigableSet;
-import java.util.TreeSet;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -40,12 +39,12 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @see    <A HREF="https://tools.ietf.org/html/rfc4253#section-6.6">RFC4253 section 6.6</A>
  */
 public abstract class SignatureRSA extends AbstractSignature {
-    public static final NavigableSet<String> SUPPORTED_KEY_TYPES = Collections.unmodifiableNavigableSet(
+    public static final Set<String> SUPPORTED_KEY_TYPES = Collections.unmodifiableSet(
             Stream.of(
                     KeyPairProvider.SSH_RSA,
                     KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
                     KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS)
-                    .collect(Collectors.toCollection(() -> new TreeSet<>(String.CASE_INSENSITIVE_ORDER))));
+                    .collect(Collectors.toSet()));
 
     private int verifierSignatureSize = -1;
 

@@ -56,11 +56,9 @@ import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.Set;
-import java.util.TreeMap;
-import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Factory;
@@ -80,7 +78,6 @@ import org.apache.sshd.common.digest.DigestUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
-import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -144,15 +141,15 @@ public final class KeyUtils {
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
     private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
-            = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+            = new ConcurrentHashMap<>();
 
     private static final Map<String, String> KEY_TYPE_ALIASES
-            = NavigableMapBuilder.<String, String> builder(String.CASE_INSENSITIVE_ORDER)
+            = MapBuilder.<String, String> builder()
                     .put(RSA_SHA256_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
                     .put(RSA_SHA512_KEY_TYPE_ALIAS, KeyPairProvider.SSH_RSA)
                     .put(RSA_SHA256_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
                     .put(RSA_SHA512_CERT_TYPE_ALIAS, KeyPairProvider.SSH_RSA_CERT)
-                    .build();
+                    .immutable();
 
     private static final Map<String, String> SIGNATURE_ALGORITHM_MAP
             = MapBuilder.<String, String> builder()
@@ -164,7 +161,7 @@ public final class KeyUtils {
                     .put(KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT, KeyPairProvider.ECDSA_SHA2_NISTP256)
                     .put(KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT, KeyPairProvider.ECDSA_SHA2_NISTP384)
                     .put(KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT, KeyPairProvider.ECDSA_SHA2_NISTP521)
-                    .build();
+                    .immutable();
 
     static {
 
@@ -367,10 +364,8 @@ public final class KeyUtils {
 
         Collection<String> names
                 = ValidateUtils.checkNotNullAndNotEmpty(decoder.getSupportedKeyTypes(), "No supported key types");
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            for (String keyType : names) {
-                BY_KEY_TYPE_DECODERS_MAP.put(keyType, decoder);
-            }
+        for (String keyType : names) {
+            BY_KEY_TYPE_DECODERS_MAP.put(keyType, decoder);
         }
     }
 
@@ -378,32 +373,22 @@ public final class KeyUtils {
      * Unregisters the specified decoder for all the types it supports
      *
      * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder<?, ?> decoder} to unregister
-     * @return         The case <U>insensitive</U> {@link NavigableSet} of all the effectively un-registered key types
-     *                 out of all the {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes() supported} ones.
+     * @return         {@link Set} of all the effectively un-registered key types out of all the
+     *                 {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes() supported} ones.
      * @see            #unregisterPublicKeyEntryDecoderForKeyType(String)
      */
-    public static NavigableSet<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
+    public static Set<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(
                 decoder.getSupportedKeyTypes(), "No supported key types");
-        NavigableSet<String> removed = Collections.emptyNavigableSet();
+        Set<String> removed = new HashSet<>();
         for (String n : names) {
             PublicKeyEntryDecoder<?, ?> prev = unregisterPublicKeyEntryDecoderForKeyType(n);
-            if (prev == null) {
-                continue;
-            }
-
-            if (removed.isEmpty()) {
-                removed = new TreeSet<>(String.CASE_INSENSITIVE_ORDER);
-            }
-
-            if (!removed.add(n)) {
-                // noinspection UnnecessaryContinue
-                continue; // debug breakpoint
+            if (prev != null) {
+                removed.add(n);
             }
         }
-
         return removed;
     }
 
@@ -416,10 +401,7 @@ public final class KeyUtils {
      */
     public static PublicKeyEntryDecoder<?, ?> unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
-
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            return BY_KEY_TYPE_DECODERS_MAP.remove(keyType);
-        }
+        return BY_KEY_TYPE_DECODERS_MAP.remove(keyType);
     }
 
     /**
@@ -431,10 +413,7 @@ public final class KeyUtils {
         if (GenericUtils.isEmpty(keyType)) {
             return null;
         }
-
-        synchronized (BY_KEY_TYPE_DECODERS_MAP) {
-            return BY_KEY_TYPE_DECODERS_MAP.get(keyType);
-        }
+        return BY_KEY_TYPE_DECODERS_MAP.get(keyType);
     }
 
     /**
@@ -465,9 +444,8 @@ public final class KeyUtils {
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Key key) {
         if (key == null) {
             return null;
-        } else {
-            return getPublicKeyEntryDecoder(KeyUtils.getKeyType(key));
         }
+        return getPublicKeyEntryDecoder(KeyUtils.getKeyType(key));
     }
 
     /**
@@ -783,13 +761,11 @@ public final class KeyUtils {
         String canonicalName = getCanonicalKeyType(keyType);
         List<String> equivalents = new ArrayList<>();
         equivalents.add(canonicalName);
-        synchronized (KEY_TYPE_ALIASES) {
-            for (Map.Entry<String, String> ae : KEY_TYPE_ALIASES.entrySet()) {
-                String alias = ae.getKey();
-                String name = ae.getValue();
-                if (canonicalName.equalsIgnoreCase(name)) {
-                    equivalents.add(alias);
-                }
+        for (Map.Entry<String, String> ae : KEY_TYPE_ALIASES.entrySet()) {
+            String alias = ae.getKey();
+            String name = ae.getValue();
+            if (canonicalName.equalsIgnoreCase(name)) {
+                equivalents.add(alias);
             }
         }
 
@@ -806,73 +782,11 @@ public final class KeyUtils {
         if (GenericUtils.isEmpty(keyType)) {
             return keyType;
         }
-
-        String canonicalName;
-        synchronized (KEY_TYPE_ALIASES) {
-            canonicalName = KEY_TYPE_ALIASES.get(keyType);
-        }
-
+        String canonicalName = KEY_TYPE_ALIASES.get(keyType);
         if (GenericUtils.isEmpty(canonicalName)) {
             return keyType;
         }
-
         return canonicalName;
-    }
-
-    /**
-     * @return A case insensitive {@link NavigableSet} of the currently registered key type &quot;aliases&quot;.
-     * @see    #getCanonicalKeyType(String)
-     */
-    public static NavigableSet<String> getRegisteredKeyTypeAliases() {
-        synchronized (KEY_TYPE_ALIASES) {
-            return KEY_TYPE_ALIASES.isEmpty()
-                    ? Collections.emptyNavigableSet()
-                    : GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, KEY_TYPE_ALIASES.keySet());
-        }
-    }
-
-    /**
-     * Registers a collection of aliases to a canonical key type
-     *
-     * @param  keyType The (never {@code null}/empty) canonical name
-     * @param  aliases The (never {@code null}/empty) aliases
-     * @return         A {@link List} of the replaced aliases - empty if no previous aliases for the canonical name
-     */
-    public static List<String> registerCanonicalKeyTypes(String keyType, Collection<String> aliases) {
-        ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type value");
-        ValidateUtils.checkNotNullAndNotEmpty(aliases, "No aliases provided");
-
-        List<String> replaced = Collections.emptyList();
-        synchronized (KEY_TYPE_ALIASES) {
-            for (String a : aliases) {
-                ValidateUtils.checkNotNullAndNotEmpty(a, "Null/empty alias registration for %s", keyType);
-                String prev = KEY_TYPE_ALIASES.put(a, keyType);
-                if (GenericUtils.isEmpty(prev)) {
-                    continue;
-                }
-
-                if (replaced.isEmpty()) {
-                    replaced = new ArrayList<>();
-                }
-                replaced.add(prev);
-            }
-        }
-
-        return replaced;
-    }
-
-    /**
-     * @param  alias The alias to unregister (ignored if {@code null}/empty)
-     * @return       The associated canonical key type - {@code null} if alias not registered
-     */
-    public static String unregisterCanonicalKeyTypeAlias(String alias) {
-        if (GenericUtils.isEmpty(alias)) {
-            return alias;
-        }
-
-        synchronized (KEY_TYPE_ALIASES) {
-            return KEY_TYPE_ALIASES.remove(alias);
-        }
     }
 
     /**
@@ -941,10 +855,8 @@ public final class KeyUtils {
             return true;
         } else if ((k1 == null) || (k2 == null)) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return compareKeys(k1.getPublic(), k2.getPublic())
-                    && compareKeys(k1.getPrivate(), k2.getPrivate());
         }
+        return compareKeys(k1.getPublic(), k2.getPublic()) && compareKeys(k1.getPrivate(), k2.getPrivate());
     }
 
     public static boolean compareKeys(PublicKey k1, PublicKey k2) {
@@ -969,9 +881,8 @@ public final class KeyUtils {
             return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));
         } else if ((k1 instanceof OpenSshCertificate) && (k2 instanceof OpenSshCertificate)) {
             return compareOpenSSHCertificateKeys(OpenSshCertificate.class.cast(k1), OpenSshCertificate.class.cast(k2));
-        } else {
-            return false; // either key is null or not of same class
         }
+        return false; // either key is null or not of same class
     }
 
     public static PublicKey recoverPublicKey(PrivateKey key) throws GeneralSecurityException {
@@ -981,9 +892,8 @@ public final class KeyUtils {
             return recoverDSAPublicKey((DSAPrivateKey) key);
         } else if ((key != null) && SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
             return SecurityUtils.recoverEDDSAPublicKey(key);
-        } else {
-            return null;
         }
+        return null;
     }
 
     public static boolean compareKeys(PrivateKey k1, PrivateKey k2) {
@@ -996,9 +906,8 @@ public final class KeyUtils {
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
                 && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
-        } else {
-            return false; // either key is null or not of same class
         }
+        return false; // either key is null or not of same class
     }
 
     public static boolean compareRSAKeys(RSAPublicKey k1, RSAPublicKey k2) {
@@ -1006,10 +915,9 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getPublicExponent(), k2.getPublicExponent())
-                    && Objects.equals(k1.getModulus(), k2.getModulus());
         }
+        return Objects.equals(k1.getPublicExponent(), k2.getPublicExponent())
+                && Objects.equals(k1.getModulus(), k2.getModulus());
     }
 
     public static boolean compareRSAKeys(RSAPrivateKey k1, RSAPrivateKey k2) {
@@ -1017,10 +925,9 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getModulus(), k2.getModulus())
-                    && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
         }
+        return Objects.equals(k1.getModulus(), k2.getModulus())
+                && Objects.equals(k1.getPrivateExponent(), k2.getPrivateExponent());
     }
 
     public static boolean compareOpenSSHCertificateKeys(OpenSshCertificate k1, OpenSshCertificate k2) {
@@ -1028,11 +935,9 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered above
-        } else {
-            return Objects.equals(k1.getSerial(), k2.getSerial())
-                    && Arrays.equals(k1.getSignature(), k2.getSignature())
-                    && compareKeys(k1.getCertPubKey(), k2.getCertPubKey());
         }
+        return Objects.equals(k1.getSerial(), k2.getSerial()) && Arrays.equals(k1.getSignature(), k2.getSignature())
+                && compareKeys(k1.getCertPubKey(), k2.getCertPubKey());
     }
 
     public static RSAPublicKey recoverRSAPublicKey(RSAPrivateKey privateKey) throws GeneralSecurityException {
@@ -1064,10 +969,8 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getY(), k2.getY())
-                    && compareDSAParams(k1.getParams(), k2.getParams());
         }
+        return Objects.equals(k1.getY(), k2.getY()) && compareDSAParams(k1.getParams(), k2.getParams());
     }
 
     public static boolean compareDSAKeys(DSAPrivateKey k1, DSAPrivateKey k2) {
@@ -1075,10 +978,8 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getX(), k2.getX())
-                    && compareDSAParams(k1.getParams(), k2.getParams());
         }
+        return Objects.equals(k1.getX(), k2.getX()) && compareDSAParams(k1.getParams(), k2.getParams());
     }
 
     public static boolean compareDSAParams(DSAParams p1, DSAParams p2) {
@@ -1086,11 +987,9 @@ public final class KeyUtils {
             return true;
         } else if (p1 == null || p2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(p1.getG(), p2.getG())
-                    && Objects.equals(p1.getP(), p2.getP())
-                    && Objects.equals(p1.getQ(), p2.getQ());
         }
+        return Objects.equals(p1.getG(), p2.getG()) && Objects.equals(p1.getP(), p2.getP())
+                && Objects.equals(p1.getQ(), p2.getQ());
     }
 
     // based on code from
@@ -1111,10 +1010,8 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getS(), k2.getS())
-                    && compareECParams(k1.getParams(), k2.getParams());
         }
+        return Objects.equals(k1.getS(), k2.getS()) && compareECParams(k1.getParams(), k2.getParams());
     }
 
     public static boolean compareECKeys(ECPublicKey k1, ECPublicKey k2) {
@@ -1122,10 +1019,8 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getW(), k2.getW())
-                    && compareECParams(k1.getParams(), k2.getParams());
         }
+        return Objects.equals(k1.getW(), k2.getW()) && compareECParams(k1.getParams(), k2.getParams());
     }
 
     public static boolean compareECParams(ECParameterSpec s1, ECParameterSpec s2) {
@@ -1133,12 +1028,9 @@ public final class KeyUtils {
             return true;
         } else if (s1 == null || s2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(s1.getOrder(), s2.getOrder())
-                    && (s1.getCofactor() == s2.getCofactor())
-                    && Objects.equals(s1.getGenerator(), s2.getGenerator())
-                    && Objects.equals(s1.getCurve(), s2.getCurve());
         }
+        return Objects.equals(s1.getOrder(), s2.getOrder()) && (s1.getCofactor() == s2.getCofactor())
+                && Objects.equals(s1.getGenerator(), s2.getGenerator()) && Objects.equals(s1.getCurve(), s2.getCurve());
     }
 
     public static boolean compareSkEcdsaKeys(SkEcdsaPublicKey k1, SkEcdsaPublicKey k2) {
@@ -1146,11 +1038,10 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getAppName(), k2.getAppName())
-                    && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
-                    && compareECKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
         }
+        return Objects.equals(k1.getAppName(), k2.getAppName())
+                && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
+                && compareECKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
     }
 
     public static boolean compareSkEd25519Keys(SkED25519PublicKey k1, SkED25519PublicKey k2) {
@@ -1158,34 +1049,18 @@ public final class KeyUtils {
             return true;
         } else if (k1 == null || k2 == null) {
             return false; // both null is covered by Objects#equals
-        } else {
-            return Objects.equals(k1.getAppName(), k2.getAppName())
-                    && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
-                    && SecurityUtils.compareEDDSAPPublicKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
         }
-    }
-
-    public static String getSignatureAlgorithm(String chosenAlgorithm, PublicKey key) {
-        // check key as we know only certificates require a mapped signature algorithm currently
-        if (key instanceof OpenSshCertificate) {
-            synchronized (SIGNATURE_ALGORITHM_MAP) {
-                return SIGNATURE_ALGORITHM_MAP.get(chosenAlgorithm);
-            }
-        } else {
-            return chosenAlgorithm;
-        }
+        return Objects.equals(k1.getAppName(), k2.getAppName())
+                && Objects.equals(k1.isNoTouchRequired(), k2.isNoTouchRequired())
+                && SecurityUtils.compareEDDSAPPublicKeys(k1.getDelegatePublicKey(), k2.getDelegatePublicKey());
     }
 
     public static String getSignatureAlgorithm(String chosenAlgorithm) {
-        synchronized (SIGNATURE_ALGORITHM_MAP) {
-            String mapped = SIGNATURE_ALGORITHM_MAP.get(chosenAlgorithm);
-            return mapped == null ? chosenAlgorithm : mapped;
-        }
+        String mapped = SIGNATURE_ALGORITHM_MAP.get(chosenAlgorithm);
+        return mapped == null ? chosenAlgorithm : mapped;
     }
 
     public static boolean isCertificateAlgorithm(String algorithm) {
-        synchronized (SIGNATURE_ALGORITHM_MAP) {
-            return SIGNATURE_ALGORITHM_MAP.containsKey(algorithm);
-        }
+        return SIGNATURE_ALGORITHM_MAP.containsKey(algorithm);
     }
 }
