@@ -18,13 +18,11 @@
  */
 package org.apache.sshd.common.util.threads;
 
-import java.security.AccessController;
-import java.security.PrivilegedActionException;
-import java.security.PrivilegedExceptionAction;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.common.util.security.PrivilegedOperations;
 
 /**
  * Default {@link ThreadFactory} used by {@link ThreadUtils} to create thread pools if user did provide one
@@ -37,8 +35,8 @@ public class SshdThreadFactory extends AbstractLoggingBean implements ThreadFact
     private final String namePrefix;
 
     public SshdThreadFactory(String name) {
-        SecurityManager s = System.getSecurityManager();
-        group = (s != null) ? s.getThreadGroup() : Thread.currentThread().getThreadGroup();
+        ThreadGroup sg = PrivilegedOperations.getPrivilegedThreadGroup();
+        group = (sg != null) ? sg : Thread.currentThread().getThreadGroup();
         String effectiveName = name.replace(' ', '-');
         namePrefix = "sshd-" + effectiveName + "-thread-";
     }
@@ -48,14 +46,10 @@ public class SshdThreadFactory extends AbstractLoggingBean implements ThreadFact
         Thread t;
         try {
             // see SSHD-668
-            if (System.getSecurityManager() != null) {
-                t = AccessController.doPrivileged((PrivilegedExceptionAction<Thread>) () -> new Thread(
-                        group, r, namePrefix + threadNumber.getAndIncrement(), 0));
-            } else {
-                t = new Thread(group, r, namePrefix + threadNumber.getAndIncrement(), 0);
-            }
-        } catch (PrivilegedActionException e) {
-            Exception err = e.getException();
+            t = PrivilegedOperations.doPrivilegedConditional(() -> new Thread(
+                    group, r, namePrefix + threadNumber.getAndIncrement(), 0));
+        } catch (PrivilegedOperations.PrivilegeException e) {
+            Throwable err = e.getCause();
             if (err instanceof RuntimeException) {
                 throw (RuntimeException) err;
             }

@@ -19,8 +19,8 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.nio.channels.CompletionHandler;
-import java.security.AccessController;
-import java.security.PrivilegedAction;
+
+import org.apache.sshd.common.util.security.PrivilegedOperations;
 
 /**
  * @param  <V> Result type
@@ -34,18 +34,12 @@ public abstract class Nio2CompletionHandler<V, A> implements CompletionHandler<V
 
     @Override
     public void completed(V result, A attachment) {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-            onCompleted(result, attachment);
-            return null;
-        });
+        PrivilegedOperations.doPrivileged(() -> onCompleted(result, attachment));
     }
 
     @Override
     public void failed(Throwable exc, A attachment) {
-        AccessController.doPrivileged((PrivilegedAction<Object>) () -> {
-            onFailed(exc, attachment);
-            return null;
-        });
+        PrivilegedOperations.doPrivileged(() -> onFailed(exc, attachment));
     }
 
     protected abstract void onCompleted(V result, A attachment);
