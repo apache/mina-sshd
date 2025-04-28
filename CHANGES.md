@@ -8,6 +8,10 @@
 
 Version 3 includes all the features and bug fixes of version 2, including the [latest ones](https://github.com/apache/mina-sshd/blob/master/CHANGES.md#planned-for-next-version).
 
+## Bug fixes
+
+* [GH-622](https://github.com/apache/mina-sshd/issues/622) Handle quoted values in `HostConfigEntry`.
+
 ## Major Code Re-factoring
 
 * The `AbstractSession` has been completely refactored. Most of its code has been moved out of this class into separate filters in a filter chain. For details, see the [technical documentation](./docs/technical/filters.md).
@@ -17,6 +21,7 @@ Version 3 includes all the features and bug fixes of version 2, including the [l
     * System property "org.apache.sshd.registerBouncyCastle" is gone; use "org.apache.sshd.security.provider.BC.enabled" instead.
     * System property "org.apache.sshd.eddsaSupport" is gone; use "org.apache.sshd.security.provider.EdDSA.enabled" instead. (This property applies only to the `net.i2p` ed25519 provider.)
 * Method `KeyUtils.cloneKeyPair()` has been removed. It was never used inside Apache MINA sshd. If you need to duplicate an existing `KeyPar`, use `Key.getEncoded()` on the keys and then re-create a duplicate key using an `X509EncodedKeySpec` for the public key or a `PKCS8EncodedKeySpec` for the private key.
+* `HostConfigEntry` has been changed to be more compliant with OpenSSH, and handles quoted values now. It also has a new method `getValues(key)` to get all the values of a key that can have multiple values, either because it may have multiple space-separated values (such as `UserKnownHostsFile`) or because it appears several times and does not follow the "first match wins" rule (such as `IdentityFile` or `CertificateFile`). Note that some keys have values that are comma-separated lists of items; such lists are a single value and must be split by user code (as in version 2).
 
 ## New Features
 
