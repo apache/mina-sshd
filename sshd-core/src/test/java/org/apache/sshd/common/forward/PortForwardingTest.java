@@ -840,14 +840,23 @@ class PortForwardingTest extends BaseTestSupport {
         List<String> allAddresses = getHostAddresses();
         log.info("{} - test on addresses={}", getCurrentTestName(), allAddresses);
 
+        Assumptions.assumeTrue(allAddresses.size() > 1, "Test makes only sense with at least 2 IP addresses");
+        // Create multiple local forwardings on the same port, but different network interfaces
         try (ClientSession session = createNativeSession(null)) {
             List<ExplicitPortForwardingTracker> trackers = new ArrayList<>();
             try {
+                int port = 0;
                 for (String host : allAddresses) {
                     ExplicitPortForwardingTracker tracker = session.createLocalPortForwardingTracker(
-                            new SshdSocketAddress(host, 8080),
+                            new SshdSocketAddress(host, port),
                             new SshdSocketAddress("test.javastack.org", 80));
                     SshdSocketAddress boundAddress = tracker.getBoundAddress();
+                    if (port == 0) {
+                        port = boundAddress.getPort();
+                        assertNotEquals(0, port);
+                    } else {
+                        assertEquals(port, boundAddress.getPort());
+                    }
                     log.info("{} - test for binding={}", getCurrentTestName(), boundAddress);
                     testRemoteURL(new Proxy(Proxy.Type.HTTP, boundAddress.toInetSocketAddress()),
                             "http://test.javastack.org/");
@@ -864,11 +873,15 @@ class PortForwardingTest extends BaseTestSupport {
         Enumeration<NetworkInterface> eni = NetworkInterface.getNetworkInterfaces();
         while (eni.hasMoreElements()) {
             NetworkInterface networkInterface = eni.nextElement();
-            Enumeration<InetAddress> eia = networkInterface.getInetAddresses();
-            while (eia.hasMoreElements()) {
-                InetAddress ia = eia.nextElement();
-                if (ia instanceof Inet4Address) {
-                    addresses.add(ia.getHostAddress());
+            if (networkInterface.isUp()) {
+                // TODO: if a VPN tunnel exists, we may get a tunnel address, but that will work
+                // only inside that VPN. How could we recognize and exclude such tunnel interfaces?
+                Enumeration<InetAddress> eia = networkInterface.getInetAddresses();
+                while (eia.hasMoreElements()) {
+                    InetAddress ia = eia.nextElement();
+                    if (ia instanceof Inet4Address) {
+                        addresses.add(ia.getHostAddress());
+                    }
                 }
             }
         }

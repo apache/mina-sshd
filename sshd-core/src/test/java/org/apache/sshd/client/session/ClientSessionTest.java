@@ -23,9 +23,11 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.SocketTimeoutException;
 import java.nio.charset.StandardCharsets;
 import java.rmi.RemoteException;
 import java.rmi.ServerException;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -233,6 +235,68 @@ class ClientSessionTest extends BaseTestSupport {
         }
 
         assertEquals(Integer.toString(expectedErrorCode), actualErrorMessage, "Mismatched captured error code");
+    }
+
+    @Test
+    void executeCommandMethodWithConfigurableTimeout() throws Exception {
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        String expectedResponse = getCurrentTestName() + "-RSP";
+        Duration timeout = Duration.ofMillis(10000L);
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
+
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
+                OutputStream stdout = getOutputStream();
+                Thread.sleep(500L);
+                stdout.write(expectedResponse.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                cmdProcessed = true;
+                return false;
+            }
+        });
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            // NOTE !!! The LF is only because we are using a buffered reader on the server end to read the command
+            String actualResponse = session.executeRemoteCommand(expectedCommand + "\n", timeout);
+            assertEquals(expectedResponse, actualResponse, "Mismatched command response");
+        }
+    }
+
+    @Test
+    void exceptionThrownOnExecuteCommandTimeout() throws Exception {
+        String expectedCommand = getCurrentTestName() + "-CMD";
+        Duration timeout = Duration.ofMillis(500L);
+
+        sshd.setCommandFactory((session, command) -> new CommandExecutionHelper(command) {
+            private boolean cmdProcessed;
+
+            @Override
+            protected boolean handleCommandLine(String command) throws Exception {
+                assertEquals(expectedCommand, command, "Mismatched incoming command");
+                assertFalse(cmdProcessed, "Duplicated command call");
+                Thread.sleep(timeout.plusMillis(200L).toMillis());
+                OutputStream stdout = getOutputStream();
+                stdout.write(command.getBytes(StandardCharsets.US_ASCII));
+                stdout.flush();
+                cmdProcessed = true;
+                return false;
+            }
+        });
+
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            assertThrows(SocketTimeoutException.class, () -> session.executeRemoteCommand(expectedCommand + "\n", timeout));
+        }
     }
 
     // see SSHD-859 and GH-728
