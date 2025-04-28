@@ -66,18 +66,16 @@ class ConfigFileHostEntryResolverTest extends JUnitTestSupport {
             assertEquals("foo", resolved.getHostName());
             assertEquals(22, resolved.getPort());
             assertEquals("testuser", resolved.getUsername());
-            String prop = resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
+            List<String> prop = resolved.getValues(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP);
             assertNotNull(prop);
-            assertFalse(prop.contains("~"));
-            String[] split = prop.split(",");
-            assertEquals(4, split.length);
+            assertEquals(4, prop.size());
             Collection<String> identities = resolved.getIdentities();
             assertEquals(4, identities.size());
             int i = 0;
             for (String id : identities) {
                 assertFalse(id.contains("~"));
                 assertTrue(id.endsWith("testuser.key" + i));
-                assertEquals(split[i], id);
+                assertEquals(prop.get(i), id);
                 i++;
             }
         }

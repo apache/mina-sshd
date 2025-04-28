@@ -38,11 +38,11 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
-import java.util.NavigableSet;
 import java.util.Objects;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.apache.sshd.common.SshConstants;
@@ -51,6 +51,7 @@ import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -80,7 +81,17 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     public static final String USER_CONFIG_PROP = "User";
     public static final String PROXY_JUMP_CONFIG_PROP = "ProxyJump";
     public static final String IDENTITY_FILE_CONFIG_PROP = "IdentityFile";
-    public static final String CERTIFICATE_FILE_CONFIG_PROP = "CertificateFile";  // currently not handled
+    public static final String CERTIFICATE_FILE_CONFIG_PROP = "CertificateFile";
+    public static final String LOCAL_FORWARD_CONFIG_PROP = "LocalForward";
+    public static final String REMOTE_FORWARD_CONFIG_PROP = "RemoteForward";
+    public static final String SEND_ENV_CONFIG_PROP = "SendEnv";
+    public static final String SET_ENV_CONFIG_PROP = "SetEnv";
+    public static final String PUBKEY_ACCEPTED_ALGORITHMS_CONFIG_PROP = "PubkeyAcceptedAlgorithms";
+    public static final String ADD_KEYS_TO_AGENT_CONFIG_PROP = "AddKeysToAgent";
+    public static final String CANONICAL_DOMAINS_CONFIG_PROP = "CanonicalDomains";
+    public static final String GLOBAL_KNOWN_HOSTS_CONFIG_PROP = "GlobalKnownHostsFile";
+    public static final String USER_KNOWN_HOSTS_CONFIG_PROP = "UserKnownHostsFile";
+
     /**
      * Use only the identities specified in the host entry (if any)
      */
@@ -105,14 +116,6 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     public static final String IDENTITY_AGENT = "IdentityAgent";
 
-    /**
-     * A case <U>insensitive</U> {@link NavigableSet} of the properties that receive special handling
-     */
-    public static final NavigableSet<String> EXPLICIT_PROPERTIES = Collections.unmodifiableNavigableSet(
-            GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
-                    HOST_CONFIG_PROP, HOST_NAME_CONFIG_PROP, PORT_CONFIG_PROP,
-                    USER_CONFIG_PROP, IDENTITY_FILE_CONFIG_PROP, EXCLUSIVE_IDENTITIES_CONFIG_PROP));
-
     public static final String MULTI_VALUE_SEPARATORS = " ,";
 
     public static final char PATH_MACRO_CHAR = '%';
@@ -124,6 +127,40 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     // Extra - not part of the standard
     public static final char REMOTE_PORT_MACRO = 'p';
 
+    /**
+     * Unmodifiable set of OpenSSH config file keys that can be specified multiple times building up a list. All other
+     * keys follow a "first match wins" rule.
+     */
+    public static final Set<String> ADDITIVE_KEYS = Collections
+            .unmodifiableSet(GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, //
+                    CERTIFICATE_FILE_CONFIG_PROP, //
+                    IDENTITY_FILE_CONFIG_PROP, //
+                    LOCAL_FORWARD_CONFIG_PROP, //
+                    REMOTE_FORWARD_CONFIG_PROP, //
+                    SEND_ENV_CONFIG_PROP, //
+                    SET_ENV_CONFIG_PROP));
+
+    /**
+     * Unmodifiable set of OpenSSH config file keys that take a whitespace-separated list of values.
+     */
+    public static final Set<String> LIST_KEYS = Collections
+            .unmodifiableSet(GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER, //
+                    ADD_KEYS_TO_AGENT_CONFIG_PROP, //
+                    CANONICAL_DOMAINS_CONFIG_PROP, //
+                    GLOBAL_KNOWN_HOSTS_CONFIG_PROP, //
+                    SEND_ENV_CONFIG_PROP, //
+                    SET_ENV_CONFIG_PROP, //
+                    USER_KNOWN_HOSTS_CONFIG_PROP));
+
+    /**
+     * A modifiable map of config key aliases, mapping aliases to a canonical name. Keys are aliases, values are the
+     * canonical names.
+     */
+    public static final Map<String, String> KEY_ALIASES = NavigableMapBuilder
+            .<String, String> builder(String.CASE_INSENSITIVE_ORDER)
+            .put("PubkeyAcceptedKeyTypes", PUBKEY_ACCEPTED_ALGORITHMS_CONFIG_PROP) //
+            .concurrent();
+
     private static final class LazyDefaultConfigFileHolder {
         private static final Path CONFIG_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_CONFIG_FILENAME);
 
@@ -132,18 +169,9 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
     }
 
-    // TODO: A better approach would be to only store "host" and the properties map. Accessors can read/write the properties map.
-    // TODO: Map property key to generic object. Any code that calls getProperties() would need to be updated.
-    protected String host;
-    protected String hostName;
-    protected int port;
-    protected String username;
-    protected String proxyJump;
-    protected Boolean exclusiveIdentites;
+    protected String hostPatterns;
 
-    // TODO: OpenSSH ignores duplicates. Ignoring them here (via a set) would complicate keeping the map entry in sync.
-    protected final Collection<String> identities = new ArrayList<>();
-    protected final Map<String, String> properties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+    protected final Map<String, List<String>> properties = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     public HostConfigEntry() {
         super();
@@ -168,56 +196,32 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @param that The HostConfigEntry to merge.
      */
     public void collate(HostConfigEntry that) {
-        if (hostName == null || hostName.isEmpty()) {
-            hostName = that.hostName;  // It doesn't matter whether that host is defined or not, since ours is not.
+        if (that == null) {
+            return;
         }
-
-        if (port <= 0) {
-            port = that.port;
-        }
-
-        if (username == null || username.isEmpty()) {
-            username = that.username;
-        }
-
-        if (proxyJump == null || proxyJump.isEmpty()) {
-            proxyJump = that.proxyJump;
-        }
-
-        if (exclusiveIdentites == null) {
-            exclusiveIdentites = that.exclusiveIdentites;
-        }
-
-        identities.addAll(that.identities);
-
-        for (Entry<String, String> e : that.properties.entrySet()) {
-            String key = e.getKey();
-            String value = e.getValue();
-            if (properties.containsKey(key)) {
-                if (key.equalsIgnoreCase(IDENTITY_FILE_CONFIG_PROP) || key.equalsIgnoreCase(CERTIFICATE_FILE_CONFIG_PROP)) {
-                    properties.put(key, properties.get(key) + "," + value);
-                }
-                // else ignore, since our value takes precedence over that
-            } else {  // key is not present in our properties
-                properties.put(key, value);
+        that.properties.forEach((k, l) -> {
+            if (ADDITIVE_KEYS.contains(k)) {
+                properties.computeIfAbsent(k, x -> new ArrayList<>()).addAll(l);
+            } else if (!properties.containsKey(k)) {
+                properties.put(k, new ArrayList<>(l));
             }
-        }
+        });
     }
 
     /**
      * @return The <U>pattern(s)</U> represented by this entry
      */
     public String getHost() {
-        return host;
+        return hostPatterns;
     }
 
     public void setHost(String host) {
-        this.host = host;
+        this.hostPatterns = host;
         setPatterns(parsePatterns(parseConfigValue(host)));
     }
 
     public void setHost(Collection<String> patterns) {
-        this.host = GenericUtils.join(ValidateUtils.checkNotNullAndNotEmpty(patterns, "No patterns"), ',');
+        this.hostPatterns = GenericUtils.join(ValidateUtils.checkNotNullAndNotEmpty(patterns, "No patterns"), ',');
         setPatterns(parsePatterns(patterns));
     }
 
@@ -225,11 +229,10 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return The effective host name to connect to if the pattern matches
      */
     public String getHostName() {
-        return hostName;
+        return getProperty(HOST_NAME_CONFIG_PROP);
     }
 
     public void setHostName(String hostName) {
-        this.hostName = hostName;
         setProperty(HOST_NAME_CONFIG_PROP, hostName);
     }
 
@@ -237,15 +240,18 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return A port override - if positive
      */
     public int getPort() {
-        return port;
+        String value = getProperty(PORT_CONFIG_PROP);
+        if (value == null) {
+            return -1;
+        }
+        return Integer.valueOf(value);
     }
 
     public void setPort(int port) {
-        this.port = port;
         if (port <= 0) {
             properties.remove(PORT_CONFIG_PROP);
         } else {
-            setProperty(PORT_CONFIG_PROP, String.valueOf(port));
+            setProperty(PORT_CONFIG_PROP, Integer.toString(port));
         }
     }
 
@@ -254,12 +260,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      */
     @Override
     public String getUsername() {
-        return username;
+        return getProperty(USER_CONFIG_PROP);
     }
 
     @Override
     public void setUsername(String username) {
-        this.username = username;
         setProperty(USER_CONFIG_PROP, username);
     }
 
@@ -267,19 +272,19 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return the host to use as a proxy
      */
     public String getProxyJump() {
-        return proxyJump;
+        return getProperty(PROXY_JUMP_CONFIG_PROP);
     }
 
     public void setProxyJump(String proxyJump) {
-        this.proxyJump = proxyJump;
         setProperty(PROXY_JUMP_CONFIG_PROP, proxyJump);
     }
 
     /**
-     * @return The current identities file paths - may be {@code null}/empty
+     * @return The current identities file paths; may be empty
      */
     public Collection<String> getIdentities() {
-        return identities;
+        List<String> identities = properties.get(IDENTITY_FILE_CONFIG_PROP);
+        return identities == null ? Collections.emptyList() : identities;
     }
 
     /**
@@ -295,13 +300,11 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @param id The identity path to add - never {@code null}
      */
     public void addIdentity(String id) {
-        String path = ValidateUtils.hasContent(id, "No identity provided");
-        identities.add(path);
-        appendPropertyValue(IDENTITY_FILE_CONFIG_PROP, id);
+        ValidateUtils.hasContent(id, "No identity provided");
+        setProperty(IDENTITY_FILE_CONFIG_PROP, id);
     }
 
     public void setIdentities(Collection<String> identities) {
-        this.identities.clear();
         properties.remove(IDENTITY_FILE_CONFIG_PROP);
         if (identities != null) {
             identities.forEach(this::addIdentity);
@@ -312,26 +315,49 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @return {@code true} if must use only the identities in this entry
      */
     public boolean isIdentitiesOnly() {
-        return (exclusiveIdentites == null) ? DEFAULT_EXCLUSIVE_IDENTITIES : exclusiveIdentites;
+        return ConfigFileReaderSupport.parseBooleanValue(getProperty(EXCLUSIVE_IDENTITIES_CONFIG_PROP));
     }
 
     public void setIdentitiesOnly(boolean identitiesOnly) {
-        exclusiveIdentites = identitiesOnly;
-        setProperty(EXCLUSIVE_IDENTITIES_CONFIG_PROP, Boolean.toString(identitiesOnly));
+        setProperty(EXCLUSIVE_IDENTITIES_CONFIG_PROP, ConfigFileReaderSupport.yesNoValueOf(identitiesOnly));
     }
 
     /**
-     * @return A {@link Map} of extra properties that have been read - may be {@code null}/empty, or even contain some
-     *         values that have been parsed and set as members of the entry (e.g., host, port, etc.). <B>Note:</B>
-     *         multi-valued keys use a comma-separated list of values
+     * Retrieves the raw {@link Map} of properties.
      */
-    public Map<String, String> getProperties() {
+    public Map<String, List<String>> getProperties() {
         return properties;
     }
 
+    public void clear() {
+        properties.clear();
+        hostPatterns = null;
+        setPatterns(new LinkedList<>());
+    }
+
     /**
-     * @param  name Property name - never {@code null}/empty
-     * @return      Property value or {@code null} if no such property
+     * Retrieves all the values of a property. If the property an {@link #ADDITIVE_KEYS additive} or {@link #LIST_KEYS
+     * list-valued} property, the result may contain more than one value.
+     *
+     * @param  name of the property to get the values of; must not be {@code null} or empty
+     * @return      the values, as an unmodifiable list, may be {@code null}
+     */
+    public List<String> getValues(String name) {
+        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
+        String alias = KEY_ALIASES.get(key);
+        if (alias != null) {
+            key = alias;
+        }
+        List<String> values = properties.get(key);
+        return values == null ? null : Collections.unmodifiableList(values);
+    }
+
+    /**
+     * Retrieves the single value of a property. If called for an {@link #ADDITIVE_KEYS additive} or {@link #LIST_KEYS
+     * list-valued} key that has several values, only the first one is returned.
+     *
+     * @param  name of the property to get the values of; must not be {@code null} or empty
+     * @return      the property value or {@code null} if not set
      * @see         #getProperty(String, String)
      */
     public String getProperty(String name) {
@@ -339,139 +365,84 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
     }
 
     /**
-     * @param  name         Property name - never {@code null}/empty
-     * @param  defaultValue Default value to return if no such property
-     * @return              The property value or the default one if no such property
+     * Retrieves the single value of a property. If called for an {@link #ADDITIVE_KEYS additive} or {@link #LIST_KEYS
+     * list-valued} key that has several values, only the first one is returned. If the property is not set, returns the
+     * given {@code defaultValue}.
+     *
+     * @param  name         of the property to get the values of; must not be {@code null} or empty
+     * @param  defaultValue value to return if not set, may be {@code null}
+     * @return              the property value or {@code defaultValue} if not set
      */
     public String getProperty(String name, String defaultValue) {
-        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        Map<String, String> props = getProperties();
-        if (MapEntryUtils.isEmpty(props)) {
+        List<String> values = getValues(name);
+        if (values == null || values.isEmpty()) {
             return defaultValue;
         }
-
-        String value = props.get(key);
-        if (GenericUtils.isEmpty(value)) {
-            return defaultValue;
-        } else {
-            return value;
-        }
+        return values.get(0);
     }
 
     /**
-     * @param name     Property name - never {@code null}/empty
-     * @param valsList The available values for the property
-     * @see            #HOST_NAME_CONFIG_PROP
-     * @see            #PORT_CONFIG_PROP
-     * @see            #USER_CONFIG_PROP
-     * @see            #IDENTITY_FILE_CONFIG_PROP
+     * Sets or replaces the property value. If the {@code value} is {@code null} or empty, the property is removed.
+     * Otherwise, if it's a {@link #ADDITIVE_KEYS additive} property, the new value is added to any previously added
+     * values. Otherwise, the existing value is replaced by the new value.
+     *
+     * @param name  of the property to set the value; must not be {@code null} or empty
+     * @param value to set; if {@code null} or empty, the property is removed
      */
-    public void processProperty(String name, Collection<String> valsList) {
-        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        String joinedValue = GenericUtils.join(valsList, ',');
-
-        if (HOST_NAME_CONFIG_PROP.equalsIgnoreCase(key)) {
-            ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target hosts N/A: %s", joinedValue);
-            setHostName(joinedValue);
-        } else if (PORT_CONFIG_PROP.equalsIgnoreCase(key)) {
-            ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target ports N/A: %s", joinedValue);
-            int newValue = Integer.parseInt(joinedValue);
-            ValidateUtils.checkTrue(newValue > 0, "Bad new port value: %d", newValue);
-            setPort(newValue);
-        } else if (USER_CONFIG_PROP.equalsIgnoreCase(key)) {
-            ValidateUtils.checkTrue(GenericUtils.size(valsList) == 1, "Multiple target users N/A: %s", joinedValue);
-            setUsername(joinedValue);
-        } else if (IDENTITY_FILE_CONFIG_PROP.equalsIgnoreCase(key)) {
-            ValidateUtils.checkTrue(GenericUtils.size(valsList) > 0, "No identity files specified");
-            for (String id : valsList) {
-                addIdentity(id);
+    public void setProperty(String name, String value) {
+        if (GenericUtils.isEmpty(value)) {
+            removeProperty(name);
+        } else {
+            String key = toKey(name);
+            List<String> values = properties.computeIfAbsent(key, k -> new ArrayList<>());
+            if (!ADDITIVE_KEYS.contains(key)) {
+                values.clear();
             }
-        } else if (EXCLUSIVE_IDENTITIES_CONFIG_PROP.equalsIgnoreCase(key)) {
-            setIdentitiesOnly(
-                    ConfigFileReaderSupport.parseBooleanValue(
-                            ValidateUtils.checkNotNullAndNotEmpty(joinedValue, "No identities option value")));
-        } else if (PROXY_JUMP_CONFIG_PROP.equalsIgnoreCase(key)) {
-            setProxyJump(joinedValue);
-        } else if (CERTIFICATE_FILE_CONFIG_PROP.equalsIgnoreCase(key)) {
-            appendPropertyValue(key, joinedValue);
+            values.add(value);
+        }
+    }
+
+    /**
+     * Sets or replaces the property value. If the {@code value} is {@code null} or empty, the property is removed.
+     * Otherwise, the existing value is replaced by the new value.
+     *
+     * @param name  of the property to set the value; must not be {@code null} or empty
+     * @param value to set; if {@code null} or empty, the property is removed
+     */
+    public void setProperty(String name, List<String> value) {
+        if (GenericUtils.isEmpty(value)) {
+            removeProperty(name);
         } else {
-            properties.put(key, joinedValue);  // Default is to overwrite any previous value. Only identities
+            String key = toKey(name);
+            List<String> values = properties.computeIfAbsent(key, k -> new ArrayList<>());
+            values.clear();
+            values.addAll(value);
         }
     }
 
     /**
-     * Appends a value using a <U>comma</U> to an existing one. If no previous value then same as calling
-     * {@link #setProperty(String, String)}.
+     * Removes a property.
      *
-     * @param  name  Property name - never {@code null}/empty
-     * @param  value The value to be appended - ignored if {@code null}/empty
-     * @return       The value <U>before</U> appending - {@code null} if no previous value
-     */
-    public String appendPropertyValue(String name, String value) {
-        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        String curVal = getProperty(key);
-        if (GenericUtils.isEmpty(value)) {
-            return curVal;
-        }
-
-        if (GenericUtils.isEmpty(curVal)) {
-            return setProperty(key, value);
-        }
-
-        return setProperty(key, curVal + ',' + value);
-    }
-
-    /**
-     * Sets / Replaces the property value
-     *
-     * @param  name  Property name - never {@code null}/empty
-     * @param  value Property value - if {@code null}/empty then {@link #removeProperty(String)} is called
-     * @return       The previous property value - {@code null} if no such name
-     */
-    public String setProperty(String name, String value) {
-        if (GenericUtils.isEmpty(value)) {
-            return removeProperty(name);
-        }
-        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        return properties.put(key, value);
-    }
-
-    /**
      * @param  name Property name - never {@code null}/empty
      * @return      The removed property value - {@code null} if no such property name
      */
-    public String removeProperty(String name) {
-        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        Map<String, String> props = getProperties();
-        if (MapEntryUtils.isEmpty(props)) {
-            return null;
-        } else {
-            return props.remove(key);
-        }
+    public List<String> removeProperty(String name) {
+        return properties.remove(toKey(name));
     }
 
     /**
-     * @param properties The properties to set - if {@code null} then an empty map is effectively set. <B>Note:</B> it
-     *                   is highly recommended to use a <U>case insensitive</U> key mapper.
+     * Writes a string representation with each property on a line to the given {@link Appendable}, using
+     * {@link System#lineSeparator()} to end each line.
+     *
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The {@link Appendable} to write to
+     * @return             {@code sb}
+     * @throws IOException
      */
-    public void setProperties(Map<String, String> properties) {
-        this.properties.clear();
-        if (properties != null) {
-            this.properties.putAll(properties);
-        }
-    }
-
     public <A extends Appendable> A append(A sb) throws IOException {
-        sb.append(HOST_CONFIG_PROP).append(' ').append(ValidateUtils.checkNotNullAndNotEmpty(getHost(), "No host pattern"))
+        sb.append(HOST_CONFIG_PROP).append(' ') //
+                .append(ValidateUtils.checkNotNullAndNotEmpty(getHost(), "No host pattern"))
                 .append(IoUtils.EOL);
-        appendNonEmptyProperty(sb, HOST_NAME_CONFIG_PROP, getHostName());
-        appendNonEmptyPort(sb, PORT_CONFIG_PROP, getPort());
-        appendNonEmptyProperty(sb, USER_CONFIG_PROP, getUsername());
-        appendNonEmptyValues(sb, IDENTITY_FILE_CONFIG_PROP, getIdentities());
-        if (exclusiveIdentites != null) {
-            appendNonEmptyProperty(sb, EXCLUSIVE_IDENTITIES_CONFIG_PROP,
-                    ConfigFileReaderSupport.yesNoValueOf(exclusiveIdentites));
-        }
         appendNonEmptyProperties(sb, getProperties());
         return sb;
     }
@@ -481,44 +452,40 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         return getHost() + ": " + getUsername() + "@" + getHostName() + ":" + getPort();
     }
 
-    /**
-     * @param  <A>         The {@link Appendable} type
-     * @param  sb          The target appender
-     * @param  name        The property name - never {@code null}/empty
-     * @param  port        The port value - ignored if non-positive
-     * @return             The target appender after having appended (or not) the value
-     * @throws IOException If failed to append the requested data
-     * @see                #appendNonEmptyProperty(Appendable, String, Object)
-     */
-    public static <A extends Appendable> A appendNonEmptyPort(A sb, String name, int port) throws IOException {
-        return appendNonEmptyProperty(sb, name, (port > 0) ? Integer.toString(port) : null);
+    private static String toKey(String name) {
+        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
+        String alias = KEY_ALIASES.get(key);
+        return alias != null ? alias : key;
     }
 
     /**
-     * Appends the extra properties - while skipping the {@link #EXPLICIT_PROPERTIES} ones
+     * Appends the properties.
      *
      * @param  <A>         The {@link Appendable} type
      * @param  sb          The target appender
      * @param  props       The {@link Map} of properties - ignored if {@code null}/empty
-     * @return             The target appender after having appended (or not) the value
-     * @throws IOException If failed to append the requested data
+     * @return             the target appender
+     * @throws IOException
      * @see                #appendNonEmptyProperty(Appendable, String, Object)
      */
-    public static <A extends Appendable> A appendNonEmptyProperties(A sb, Map<String, ?> props) throws IOException {
+    public static <A extends Appendable> A appendNonEmptyProperties(A sb, Map<String, List<String>> props) throws IOException {
         if (MapEntryUtils.isEmpty(props)) {
             return sb;
         }
 
-        // Cannot use forEach because of the IOException being thrown by appendNonEmptyProperty
-        for (Map.Entry<String, ?> pe : props.entrySet()) {
-            String name = pe.getKey();
-            if (EXPLICIT_PROPERTIES.contains(name)) {
+        appendNonEmptyProperty(sb, HOST_NAME_CONFIG_PROP, props.get(HOST_NAME_CONFIG_PROP));
+        appendNonEmptyProperty(sb, PORT_CONFIG_PROP, props.get(PORT_CONFIG_PROP));
+        appendNonEmptyProperty(sb, USER_CONFIG_PROP, props.get(USER_CONFIG_PROP));
+
+        for (Map.Entry<String, List<String>> entry : props.entrySet()) {
+            String key = entry.getKey();
+            if (HOST_NAME_CONFIG_PROP.equalsIgnoreCase(key) //
+                    || PORT_CONFIG_PROP.equalsIgnoreCase(key) //
+                    || USER_CONFIG_PROP.equalsIgnoreCase(key)) {
                 continue;
             }
-
-            appendNonEmptyProperty(sb, name, pe.getValue());
+            appendNonEmptyProperty(sb, key, entry.getValue());
         }
-
         return sb;
     }
 
@@ -530,46 +497,62 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      *                     the value contains any commas, they are assumed to indicate a multi-valued property which is
      *                     broken down to <U>individual</U> lines - one per value.
      * @return             The target appender after having appended (or not) the value
-     * @throws IOException If failed to append the requested data
+     * @throws IOException
      * @see                #appendNonEmptyValues(Appendable, String, Object...)
      */
-    public static <A extends Appendable> A appendNonEmptyProperty(A sb, String name, Object value) throws IOException {
-        String s = Objects.toString(value, null);
-        String[] vals = GenericUtils.split(s, ',');
-        return appendNonEmptyValues(sb, name, (Object[]) vals);
+    public static <A extends Appendable> A appendNonEmptyProperty(A sb, String name, List<String> value) throws IOException {
+        String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
+        String alias = KEY_ALIASES.get(key);
+        if (alias != null) {
+            key = alias;
+        }
+        if (ADDITIVE_KEYS.contains(key)) {
+            // Write multiple lines
+            for (String s : value) {
+                if (!GenericUtils.isEmpty(s)) {
+                    sb.append("    ").append(key).append(' ');
+                    if (LOCAL_FORWARD_CONFIG_PROP.equalsIgnoreCase(key) || REMOTE_FORWARD_CONFIG_PROP.equalsIgnoreCase(key)) {
+                        String[] parts = s.split(" ", 2);
+                        appendValue(sb, parts[0]);
+                        if (parts.length > 1) {
+                            sb.append(' ');
+                            appendValue(sb, parts[1]);
+                        }
+                    } else {
+                        appendValue(sb, s);
+                    }
+                    sb.append(IoUtils.EOL);
+                }
+            }
+        } else {
+            sb.append("    ").append(key).append(' ');
+            for (String s : value) {
+                if (!GenericUtils.isEmpty(s)) {
+                    appendValue(sb, s);
+                }
+            }
+            sb.append(IoUtils.EOL);
+        }
+        return sb;
     }
 
-    /**
-     * @param  <A>         The {@link Appendable} type
-     * @param  sb          The target appender
-     * @param  name        The property name - never {@code null}/empty
-     * @param  values      The values to be added - one per line - ignored if {@code null}/empty
-     * @return             The target appender after having appended (or not) the value
-     * @throws IOException If failed to append the requested data
-     * @see                #appendNonEmptyValues(Appendable, String, Collection)
-     */
-    public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Object... values) throws IOException {
-        return appendNonEmptyValues(sb, name, GenericUtils.isEmpty(values) ? Collections.emptyList() : Arrays.asList(values));
-    }
-
-    /**
-     * @param  <A>         The {@link Appendable} type
-     * @param  sb          The target appender
-     * @param  name        The property name - never {@code null}/empty
-     * @param  values      The values to be added - one per line - ignored if {@code null}/empty
-     * @return             The target appender after having appended (or not) the value
-     * @throws IOException If failed to append the requested data
-     */
-    public static <A extends Appendable> A appendNonEmptyValues(A sb, String name, Collection<?> values) throws IOException {
-        String k = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");
-        if (GenericUtils.isEmpty(values)) {
+    public static <A extends Appendable> A appendValue(A sb, String value) throws IOException {
+        if (value.indexOf(' ') < 0 && value.indexOf('\\') < 0) {
+            sb.append(value);
             return sb;
         }
-
-        for (Object v : values) {
-            sb.append("    ").append(k).append(' ').append(Objects.toString(v)).append(IoUtils.EOL);
+        sb.append('"');
+        int i = 0;
+        int end = value.length();
+        while (i < end) {
+            char ch = value.charAt(i++);
+            if (ch == '"' || ch == '\\') {
+                sb.append('\\').append(ch);
+            } else {
+                sb.append(ch);
+            }
         }
-
+        sb.append('"');
         return sb;
     }
 
@@ -667,15 +650,13 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                     }
                 }
                 // Same for CertificateFile
-                String certificateFiles = entry.getProperty(CERTIFICATE_FILE_CONFIG_PROP);
+                List<String> certificateFiles = entry.getValues(CERTIFICATE_FILE_CONFIG_PROP);
                 if (!GenericUtils.isEmpty(certificateFiles)) {
                     entry.removeProperty(CERTIFICATE_FILE_CONFIG_PROP);
-                    String[] split = certificateFiles.split(",");
-                    List<String> resolved = new ArrayList<>(split.length);
-                    for (String raw : split) {
-                        resolved.add(resolveIdentityFilePath(raw, entry.getHostName(), entry.getPort(), entry.getUsername()));
+                    for (String raw : certificateFiles) {
+                        entry.setProperty(CERTIFICATE_FILE_CONFIG_PROP,
+                                resolveIdentityFilePath(raw, entry.getHostName(), entry.getPort(), entry.getUsername()));
                     }
-                    entry.processProperty(CERTIFICATE_FILE_CONFIG_PROP, resolved);
                 }
                 return entry;
             };
@@ -721,48 +702,29 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         int lineNumber = 1;
         for (String line = rdr.readLine(); line != null; line = rdr.readLine(), lineNumber++) {
             line = GenericUtils.replaceWhitespaceAndTrim(line);
-            if (GenericUtils.isEmpty(line)) {
+            if (GenericUtils.isEmpty(line) || line.charAt(0) == ConfigFileReaderSupport.COMMENT_CHAR) {
                 continue;
             }
-
-            // Strip off comments
-            int pos = line.indexOf(ConfigFileReaderSupport.COMMENT_CHAR);
-            if (pos == 0) {
+            String[] parts = line.split(" *[= ]", 2);
+            String keyword = parts[0].trim();
+            if (keyword.isEmpty()) {
                 continue;
             }
-            if (pos > 0) {
-                line = line.substring(0, pos);
-                line = line.trim();
+            int i = keyword.indexOf(ConfigFileReaderSupport.COMMENT_CHAR);
+            if (i >= 0) {
+                keyword = keyword.substring(0, i);
             }
-
-            /*
-             * Some options use '=' as delimiter, others use ' '
-             * TODO: This version treats '=' as taking precedence, but that means '=' can't show up
-             * in a file name. A better approach is to break the line into tokens, possibly quoted,
-             * then detect '='.
-             */
-            String key;
-            String value;
-            List<String> valsList;
-            pos = line.indexOf('=');
-            if (pos > 0) {
-                key = line.substring(0, pos).trim();
-                value = line.substring(pos + 1);
-                valsList = new ArrayList<>(1);
-                valsList.add(value);
-            } else {
-                pos = line.indexOf(' ');
-                if (pos < 0) {
-                    throw new StreamCorruptedException("No configuration value delimiter at line " + lineNumber + ": " + line);
-                }
-                key = line.substring(0, pos);
-                value = line.substring(pos + 1);
-                valsList = GenericUtils.filterToNotBlank(parseConfigValue(value));
+            if (keyword.isEmpty()) {
+                continue;
             }
-
+            List<String> values = null;
+            String rest = (i < 0 && parts.length > 1) ? parts[1].trim() : "";
+            if (!rest.isEmpty()) {
+                values = parseList(rest);
+            }
             // Detect transition to new entry.
-            if (HOST_CONFIG_PROP.equalsIgnoreCase(key)) {
-                if (GenericUtils.isEmpty(valsList)) {
+            if (HOST_CONFIG_PROP.equalsIgnoreCase(keyword)) {
+                if (GenericUtils.isEmpty(values)) {
                     throw new StreamCorruptedException("Missing host pattern(s) at line " + lineNumber + ": " + line);
                 }
 
@@ -770,24 +732,138 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                     entries.add(curEntry);
                 }
                 curEntry = new HostConfigEntry();
-                curEntry.setHost(valsList);
-            } else if (MATCH_CONFIG_PROP.equalsIgnoreCase(key)) {
+                curEntry.setHost(values);
+                continue;
+            } else if (MATCH_CONFIG_PROP.equalsIgnoreCase(keyword)) {
                 throw new StreamCorruptedException("Currently not able to process Match sections");
             } else if (curEntry == null) {
                 // Properties that occur before the first Host or Match keyword are a kind of global entry.
                 curEntry = new HostConfigEntry();
                 curEntry.setHost(Collections.singletonList(ALL_HOSTS_PATTERN));
             }
-
-            String joinedValue = GenericUtils.join(valsList, ',');
-            curEntry.appendPropertyValue(key, joinedValue);
-            curEntry.processProperty(key, valsList);
+            if (values != null && !values.isEmpty()) {
+                if (LIST_KEYS.contains(keyword)) {
+                    if (ADDITIVE_KEYS.contains(keyword)) {
+                        for (String value : values) {
+                            curEntry.setProperty(keyword, value);
+                        }
+                    } else {
+                        curEntry.setProperty(keyword, values);
+                    }
+                } else if (LOCAL_FORWARD_CONFIG_PROP.equalsIgnoreCase(keyword)
+                        || REMOTE_FORWARD_CONFIG_PROP.equalsIgnoreCase(keyword)) {
+                    String value = values.get(0);
+                    if (values.size() > 1) {
+                        value += ' ' + values.get(1);
+                    }
+                    curEntry.setProperty(keyword, value);
+                } else {
+                    curEntry.setProperty(keyword, values.get(0));
+                }
+            }
         }
 
         if (curEntry != null) {
             entries.add(curEntry);
         }
         return entries;
+    }
+
+    /**
+     * Splits the argument into a list of whitespace-separated elements. Elements containing whitespace must be quoted
+     * and will be de-quoted. Backslash-escapes are handled for quotes and blanks.
+     *
+     * @param  argument argument part of the configuration line as read from the config file
+     * @return          a {@link List} of elements, possibly empty and possibly containing empty elements, but not
+     *                  containing {@code null}
+     */
+    public static List<String> parseList(String argument) {
+        List<String> result = new ArrayList<>();
+        int start = 0;
+        int length = argument.length();
+        while (start < length) {
+            // Skip whitespace
+            char ch = argument.charAt(start);
+            if (Character.isWhitespace(ch)) {
+                start++;
+            } else if (ch == '#') {
+                break; // Comment start
+            } else {
+                // Parse one token now.
+                start = parseToken(argument, start, length, result);
+            }
+        }
+        return result;
+    }
+
+    /**
+     * Parses a token up to the next whitespace not inside a string quoted by single or double quotes. Inside a string,
+     * quotes can be escaped by backslash characters. Outside of a string, "\ " can be used to include a space in a
+     * token; inside a string "\ " is taken literally as '\' followed by ' '.
+     *
+     * @param  argument to parse the token out of
+     * @param  from     index at the beginning of the token
+     * @param  to       index one after the last character to look at
+     * @param  result   a list collecting tokens to which the parsed token is added
+     * @return          the index after the token
+     */
+    public static int parseToken(String argument, int from, int to, List<String> result) {
+        if (from >= to) {
+            return from;
+        }
+        // Not quoted: consume up to the next un-escaped space or comment character. OpenSSH recognizes the backslash as
+        // an escape character for backslashes and single or double quotes. A quoted part is delimited by non-escaped
+        // single or double quotes. Outside of a quoted part, the backslash also escapes a blank.
+        StringBuilder b = new StringBuilder();
+        int i = from;
+        boolean escaped = false; // true if the last character was a backslash.
+        char quote = 0;
+        while (i < to) {
+            char ch = argument.charAt(i++);
+            if (ch == '\'' || ch == '"') {
+                if (escaped) {
+                    b.append(ch);
+                    escaped = false;
+                } else if (quote == ch) {
+                    quote = 0;
+                } else if (quote == 0) {
+                    quote = ch;
+                } else {
+                    b.append(ch);
+                }
+            } else if (ch == '#') {
+                if (quote == 0) {
+                    break;
+                }
+                b.append(ch);
+            } else if (ch == ' ') {
+                if (quote == 0 && !escaped) {
+                    break;
+                } else if (quote != 0 && escaped) {
+                    b.append('\\');
+                }
+                b.append(ch);
+                escaped = false;
+            } else if (ch == '\\') {
+                if (escaped) {
+                    b.append(ch);
+                }
+                escaped = !escaped;
+            } else {
+                if (escaped) {
+                    b.append('\\');
+                    escaped = false;
+                }
+                b.append(ch);
+            }
+        }
+        if (escaped) {
+            b.append('\\');
+        }
+        if (b.length() > 0) {
+            result.add(b.toString());
+        }
+        return i;
     }
 
     public static void writeHostConfigEntries(
@@ -811,47 +887,33 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
     }
 
+    /**
+     * Writes all given entries to the given {@link Appendable}.
+     *
+     * @param  <A>         The {@link Appendable} type
+     * @param  sb          The {@link Appendable} to write to
+     * @param  entries     the entries to write
+     * @return             {@code sb}
+     * @throws IOException
+     */
     public static <A extends Appendable> A appendHostConfigEntries(A sb, Collection<? extends HostConfigEntry> entries)
             throws IOException {
-        if (GenericUtils.isEmpty(entries)) {
-            return sb;
+        if (!GenericUtils.isEmpty(entries)) {
+            for (HostConfigEntry entry : entries) {
+                entry.append(sb);
+            }
         }
-
-        for (HostConfigEntry entry : entries) {
-            entry.append(sb);
-        }
-
         return sb;
     }
 
     /**
-     * Checks if this is a multi-value - allow space and comma
+     * Parses a host config value in a list of whitespace-separated elements, handling OpenSSH-style quoting.
      *
-     * @todo         Handle quote marks.
      * @param  value The value - ignored if {@code null}/empty (after trimming)
      * @return       A {@link List} of the encountered values
      */
     public static List<String> parseConfigValue(String value) {
-        String s = GenericUtils.replaceWhitespaceAndTrim(value);
-        if (GenericUtils.isEmpty(s)) {
-            return Collections.emptyList();
-        }
-
-        for (int index = 0; index < MULTI_VALUE_SEPARATORS.length(); index++) {
-            char sep = MULTI_VALUE_SEPARATORS.charAt(index);
-            int pos = s.indexOf(sep);
-            if (pos >= 0) {
-                String[] vals = GenericUtils.split(s, sep);
-                if (GenericUtils.isEmpty(vals)) {
-                    return Collections.emptyList();
-                } else {
-                    return Arrays.asList(vals);
-                }
-            }
-        }
-
-        // this point is reached if no separators found
-        return Collections.singletonList(s);
+        return parseList(GenericUtils.replaceWhitespaceAndTrim(value));
     }
 
     // The file name may use the tilde syntax to refer to a user’s home directory or one of the following escape

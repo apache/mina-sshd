@@ -20,11 +20,14 @@
 package org.apache.sshd.client.config.hosts;
 
 import java.io.IOException;
+import java.io.Reader;
+import java.io.StringReader;
 import java.net.URI;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -55,7 +58,7 @@ class HostConfigEntryTest extends JUnitTestSupport {
     @Test
     void setTwice() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo", "foo.example.com", 22, "test");
-        entry.setProperties(null);
+        entry.clear();
         entry.setHost("bar");
         entry.setHostName("bar.example.com");
         entry.setPort(2022);
@@ -108,6 +111,33 @@ class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
+    void quotedIdentityFile() throws Exception {
+        String entry = "Host foo\n" //
+                       + "HostName foo.example.com\n" //
+                       + "User test\n" //
+                       + "IdentityFile ~/.ssh/id1\n" //
+                       + "IdentityFile \"~/.ssh/id2\"\n" //
+                       + "IdentityFile '~/.ssh/id3'\n";
+        try (Reader r = new StringReader(entry)) {
+            List<HostConfigEntry> loaded = HostConfigEntry.readHostConfigEntries(r, true);
+            assertNotNull(loaded);
+            assertEquals(1, loaded.size());
+            HostConfigEntry h = loaded.get(0);
+            assertNotNull(h);
+            assertEquals("foo", h.getHost());
+            assertEquals("foo.example.com", h.getHostName());
+            assertEquals(-1, h.getPort());
+            Collection<String> identities = h.getIdentities();
+            assertNotNull(identities);
+            assertEquals(3, identities.size());
+            Iterator<String> i = identities.iterator();
+            assertEquals("~/.ssh/id1", i.next());
+            assertEquals("~/.ssh/id2", i.next());
+            assertEquals("~/.ssh/id3", i.next());
+        }
+    }
+
+    @Test
     void coalescing() throws Exception {
         HostConfigEntry first = new HostConfigEntry();
         first.setHost("foo*");
@@ -155,11 +185,12 @@ class HostConfigEntryTest extends JUnitTestSupport {
         HostConfigEntry resolved = resolver.resolveEffectiveHost("foo", 0, null, "", null, null);
         expect("bar.example.com", 2022, "test1", resolved);
         assertEquals("[xFile, bFile, yFile, dFile]", resolved.getIdentities().toString());
-        assertEquals("xFile,bFile,yFile,dFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
+        assertEquals("xFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
+        assertEquals("[xFile, bFile, yFile, dFile]", resolved.getValues(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP).toString());
         resolved = resolver.resolveEffectiveHost("foo2", 0, null, "", null, null);
         expect("bar.example.com", 2023, "test2", resolved);
         assertEquals("[xFile, dFile]", resolved.getIdentities().toString());
-        assertEquals("xFile,dFile", resolved.getProperty(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP));
+        assertEquals("[xFile, dFile]", resolved.getValues(HostConfigEntry.IDENTITY_FILE_CONFIG_PROP).toString());
     }
 
     // See GH-351

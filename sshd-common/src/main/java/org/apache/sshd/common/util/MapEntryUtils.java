@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.ConcurrentSkipListMap;
 import java.util.function.BinaryOperator;
 import java.util.function.Function;
 import java.util.function.Supplier;
@@ -176,6 +177,10 @@ public final class MapEntryUtils {
 
         public NavigableMap<K, V> build() {
             return get();
+        }
+
+        public NavigableMap<K, V> concurrent() {
+            return new ConcurrentSkipListMap<K, V>(get());
         }
 
         public NavigableMap<K, V> immutable() {
