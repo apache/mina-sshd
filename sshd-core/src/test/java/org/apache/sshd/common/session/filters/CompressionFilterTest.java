@@ -63,8 +63,6 @@ class CompressionFilterTest extends FilterTestSupport {
         filterChain.addLast(crypt);
         filterChain.addLast(filterUnderTest);
         filterChain.addLast(inputs);
-
-        crypt.setRandom(RNG);
     }
 
     private static Stream<Arguments> parameters() {

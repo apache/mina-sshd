@@ -71,7 +71,6 @@ public class SshTransportFilter extends IoFilter {
 
         cryptFilter = new CryptFilter();
         cryptFilter.setSession(session);
-        cryptFilter.setRandom(random);
         filters.addLast(cryptFilter);
 
         compressionFilter = new CompressionFilter();
@@ -80,7 +79,7 @@ public class SshTransportFilter extends IoFilter {
 
         filters.addLast(new PacketLoggingFilter(session, cryptFilter));
 
-        filters.addLast(new InjectIgnoreFilter(session, random));
+        filters.addLast(new InjectIgnoreFilter(session));
 
         kexFilter = new KexFilter(session, random, cryptFilter, compressionFilter, events, proposer, checker);
         filters.addLast(kexFilter);

@@ -47,13 +47,12 @@ public class InjectIgnoreFilter extends IoFilter {
 
     private final PropertyResolver resolver;
 
-    private final Random random;
+    private final Random random = ThreadLocalRandom.INSTANCE;
 
     private final OutputHandler output = new Injector();
 
-    public InjectIgnoreFilter(PropertyResolver resolver, Random random) {
+    public InjectIgnoreFilter(PropertyResolver resolver) {
         this.resolver = Objects.requireNonNull(resolver);
-        this.random = Objects.requireNonNull(random);
     }
 
     @Override

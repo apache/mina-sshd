@@ -26,8 +26,6 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.filter.DefaultFilterChain;
 import org.apache.sshd.common.filter.FilterChain;
-import org.apache.sshd.common.random.JceRandom;
-import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -37,8 +35,6 @@ import org.junit.jupiter.api.Test;
 
 @Tag("NoIoTestCase")
 class InjectIgnoreFilterTest extends FilterTestSupport {
-
-    private static final Random RNG = new JceRandom();
 
     private PropertyResolver resolver;
     private OutgoingSink outputs;
@@ -52,7 +48,7 @@ class InjectIgnoreFilterTest extends FilterTestSupport {
         outputs = new OutgoingSink();
         inputs = new IncomingSink();
         resolver = PropertyResolverUtils.toPropertyResolver(new HashMap<>());
-        filterUnderTest = new InjectIgnoreFilter(resolver, RNG);
+        filterUnderTest = new InjectIgnoreFilter(resolver);
 
         filterChain = new DefaultFilterChain();
         filterChain.addLast(outputs);

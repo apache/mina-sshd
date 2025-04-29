@@ -89,7 +89,7 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
 
     private final CopyOnWriteArrayList<EncryptionListener> listeners = new CopyOnWriteArrayList<>();
 
-    private Random random;
+    private Random random = ThreadLocalRandom.INSTANCE;
 
     private Session session;
 
@@ -453,7 +453,8 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
             int pad = minPadding;
             // For low-level messages, do not add extra padding.
             if (cmd >= SshConstants.SSH_MSG_KEXINIT) {
-                // RFC 4253: variable amounts of random padding may help thwart traffic analysis.
+                // RFC 4253: variable amounts of random padding may help thwart traffic analysis. We don't need a secure
+                // random for this.
                 pad = minPadding + random.random(MAX_PADDING + 1 - minPadding);
             }
             // Now pad is in the range [4..MAX_PADDING]
