@@ -50,9 +50,8 @@ class Ssh2PublicKeyEntryDecoderByKeyTypeTest extends JUnitTestSupport {
         List<String> result = new ArrayList<>();
         result.add(KeyPairProvider.SSH_RSA);
         result.add(KeyPairProvider.SSH_DSS);
-        if (SecurityUtils.isECCSupported()) {
-            result.addAll(ECCurves.KEY_TYPES);
-        }
+        result.addAll(ECCurves.KEY_TYPES);
+
         if (SecurityUtils.isEDDSACurveSupported()) {
             result.add(KeyPairProvider.SSH_ED25519);
         }

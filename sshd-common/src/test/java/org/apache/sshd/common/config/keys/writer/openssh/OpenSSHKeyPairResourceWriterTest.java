@@ -64,20 +64,9 @@ class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
         result.add(new TestData("RSA", 1024, null));
         result.add(new TestData("RSA", 2048, null));
         result.add(new TestData("DSA", 1024, null));
-        if (SecurityUtils.isECCSupported()) {
-            result.add(
-                    new TestData(
-                            "ECDSA", 256,
-                            new ECGenParameterSpec("secp256r1")));
-            result.add(
-                    new TestData(
-                            "ECDSA", 384,
-                            new ECGenParameterSpec("secp384r1")));
-            result.add(
-                    new TestData(
-                            "ECDSA", 521,
-                            new ECGenParameterSpec("secp521r1")));
-        }
+        result.add(new TestData("ECDSA", 256, new ECGenParameterSpec("secp256r1")));
+        result.add(new TestData("ECDSA", 384, new ECGenParameterSpec("secp384r1")));
+        result.add(new TestData("ECDSA", 521, new ECGenParameterSpec("secp521r1")));
         if (SecurityUtils.isEDDSACurveSupported()) {
             // Note: BC also has an EDDSA provider, but that one returns
             // "Ed25519" as algorithm from its keys, while the one in

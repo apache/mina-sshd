@@ -60,7 +60,6 @@ import javax.crypto.spec.DHParameterSpec;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
-import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
@@ -141,13 +140,6 @@ public final class SecurityUtils {
                     "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
                     "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
 
-    /**
-     * System property used to control whether Elliptic Curves are supported or not. If not set then the support is
-     * auto-detected. <B>Note:</B> if set to {@code true} it is up to the user to make sure that indeed there is a
-     * provider for them
-     */
-    public static final String ECC_SUPPORTED_PROP = "org.apache.sshd.eccSupport";
-
     public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
 
     /**
@@ -176,8 +168,6 @@ public final class SecurityUtils {
     private static final AtomicReference<SecurityProviderChoice> DEFAULT_PROVIDER_HOLDER = new AtomicReference<>();
 
     private static final AtomicReference<Boolean> FIPS_MODE = new AtomicReference<>();
-
-    private static Boolean hasEcc;
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -253,30 +243,6 @@ public final class SecurityUtils {
         synchronized (APRIORI_DISABLED_PROVIDERS) {
             return new TreeSet<>(APRIORI_DISABLED_PROVIDERS);
         }
-    }
-
-    /**
-     * @return {@code true} if Elliptic Curve Cryptography is supported
-     * @see    #ECC_SUPPORTED_PROP
-     */
-    public static boolean isECCSupported() {
-        if (hasEcc == null) {
-            String propValue = System.getProperty(ECC_SUPPORTED_PROP);
-            if (GenericUtils.isEmpty(propValue)) {
-                try {
-                    getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
-                    hasEcc = Boolean.TRUE;
-                } catch (Throwable t) {
-                    hasEcc = Boolean.FALSE;
-                }
-            } else {
-                Logger logger = LoggerFactory.getLogger(SecurityUtils.class);
-                logger.info("Override ECC support value: {}", propValue);
-                hasEcc = Boolean.valueOf(propValue);
-            }
-        }
-
-        return hasEcc;
     }
 
     /**

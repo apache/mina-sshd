@@ -52,12 +52,7 @@ public enum BuiltinIdentities implements Identity {
     RSA(Constants.RSA, RSAPublicKey.class, RSAPrivateKey.class, KeyPairProvider.SSH_RSA),
     DSA(Constants.DSA, DSAPublicKey.class, DSAPrivateKey.class, KeyPairProvider.SSH_DSS),
     ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM, ECPublicKey.class, ECPrivateKey.class,
-          ECCurves.VALUES.stream().map(KeyTypeIndicator::getKeyType).collect(Collectors.toList())) {
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
-        }
-    },
+            ECCurves.VALUES.stream().map(KeyTypeIndicator::getKeyType).collect(Collectors.toList())),
     ED25119(Constants.ED25519, SecurityUtils.EDDSA,
             SecurityUtils.getEDDSAPublicKeyType(),
             SecurityUtils.getEDDSAPrivateKeyType(),

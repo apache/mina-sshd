@@ -23,7 +23,6 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
@@ -60,10 +59,6 @@ public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, E
             NamedResource resourceKey, int formatVersion, PuttyKeyReader pubReader, PuttyKeyReader prvReader,
             Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchAlgorithmException("ECC not supported for " + resourceKey);
-        }
-
         String keyType = pubReader.readString();
         ECCurves curve = ECCurves.fromKeyType(keyType);
         if (curve == null) {

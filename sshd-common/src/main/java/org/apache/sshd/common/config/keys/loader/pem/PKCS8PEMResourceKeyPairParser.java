@@ -129,8 +129,7 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
         List<Integer> oidAlgorithm = pkcs8Info.getAlgorithmIdentifier();
         String oid = GenericUtils.join(oidAlgorithm, '.');
         KeyPair kp;
-        if (SecurityUtils.isECCSupported()
-                && ECDSAPEMResourceKeyPairParser.ECDSA_OID.equals(oid)) {
+        if (ECDSAPEMResourceKeyPairParser.ECDSA_OID.equals(oid)) {
             ASN1Object privateKeyBytes = pkcs8Info.getPrivateKeyBytes();
             ASN1Object extraInfo = pkcs8Info.getAlgorithmParameter();
             ASN1Type objType = (extraInfo == null) ? ASN1Type.NULL : extraInfo.getObjType();

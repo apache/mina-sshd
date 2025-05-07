@@ -55,10 +55,8 @@ class KeyRandomArtTest extends JUnitTestSupport {
             params.add(new Object[] { KeyUtils.DSS_ALGORITHM, keySize });
         }
 
-        if (SecurityUtils.isECCSupported()) {
-            for (ECCurves curve : ECCurves.VALUES) {
-                params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
-            }
+        for (ECCurves curve : ECCurves.VALUES) {
+            params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
         }
 
         if (SecurityUtils.isEDDSACurveSupported()) {

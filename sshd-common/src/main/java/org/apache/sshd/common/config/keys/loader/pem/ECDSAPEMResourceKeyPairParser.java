@@ -26,7 +26,6 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
-import java.security.NoSuchProviderException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECPoint;
@@ -104,9 +103,6 @@ public class ECDSAPEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
             throws IOException, GeneralSecurityException {
         ASN1Object sequence = parser.readObject();
         Map.Entry<ECPublicKeySpec, ECPrivateKeySpec> spec = decodeECPrivateKeySpec(curve, sequence);
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
-        }
 
         KeyFactory kf = SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
         ECPublicKey pubKey = (ECPublicKey) kf.generatePublic(spec.getKey());

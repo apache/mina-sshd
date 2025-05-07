@@ -51,7 +51,6 @@ import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * Utilities for working with elliptic curves.
@@ -199,7 +198,7 @@ public enum ECCurves implements KeyTypeIndicator, KeySizeIndicator, NamedResourc
 
     @Override
     public final boolean isSupported() {
-        return SecurityUtils.isECCSupported() && digestFactory.isSupported();
+        return digestFactory.isSupported();
     }
 
     public final ECParameterSpec getParameters() {

@@ -87,17 +87,11 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
         addTests(list, KeyPairProvider.SSH_DSS, BuiltinSignatures.dsa, DSS_SIZES, DSSPublicKeyEntryDecoder.INSTANCE);
         addTests(list, KeyPairProvider.SSH_RSA, BuiltinSignatures.rsa, RSA_SIZES, RSAPublicKeyDecoder.INSTANCE);
 
-        if (SecurityUtils.isECCSupported()) {
-            for (ECCurves curve : ECCurves.VALUES) {
-                BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
-                addTests(list, curve.getName(), factory,
-                        curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
-                        curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
-            }
-        } else {
-            for (String name : ECCurves.NAMES) {
-                addTests(list, name, null, Collections.singletonList(-1), null);
-            }
+        for (ECCurves curve : ECCurves.VALUES) {
+            BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(curve.getKeyType());
+            addTests(list, curve.getName(), factory,
+                    curve.isSupported() ? Collections.singletonList(curve.getKeySize()) : Collections.singletonList(-1),
+                    curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
         }
         addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES,
                 SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);

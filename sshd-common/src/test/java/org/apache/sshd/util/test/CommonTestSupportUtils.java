@@ -611,7 +611,7 @@ public final class CommonTestSupportUtils {
             return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.rsa));
         } else if (privateKey instanceof DSAPrivateKey) {
             return Optional.of(verifySignatureMatch(privateKey, publicKey, BuiltinSignatures.dsa));
-        } else if (SecurityUtils.isECCSupported() && (privateKey instanceof ECKey)) {
+        } else if (privateKey instanceof ECKey) {
             ECCurves curve = ECCurves.fromECKey((ECKey) privateKey);
             ValidateUtils.checkNotNull(curve, "Unsupported EC key: %s", privateKey);
             switch (curve) {

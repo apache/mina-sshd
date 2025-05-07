@@ -558,10 +558,6 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
         } else if (BuiltinIdentities.Constants.DSA.equalsIgnoreCase(keyType)) {
             return Collections.singletonList(KeyUtils.generateKeyPair(KeyPairProvider.SSH_DSS, 512));
         } else if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyType)) {
-            if (!SecurityUtils.isECCSupported()) {
-                throw new NoSuchAlgorithmException("ECC not supported: " + keyType);
-            }
-
             List<KeyPair> kps = new ArrayList<>(ECCurves.NAMES.size());
             for (ECCurves curve : ECCurves.VALUES) {
                 String curveName = curve.getName();

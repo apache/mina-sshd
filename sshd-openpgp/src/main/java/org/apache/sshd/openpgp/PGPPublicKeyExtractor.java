@@ -118,10 +118,6 @@ public interface PGPPublicKeyExtractor {
             throw new InvalidKeySpecException("Not an EC curve OID: " + oid);
         }
 
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
-        }
-
         BigInteger encPoint = bcKey.getEncodedPoint();
         byte[] octets = encPoint.toByteArray();
         ECPoint w;

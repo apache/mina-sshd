@@ -34,12 +34,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-import org.apache.sshd.common.cipher.ECCurves;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.io.input.NoCloseReader;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.config.keys.AuthorizedKeysAuthenticator;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.Tag;
@@ -100,17 +98,10 @@ public abstract class AuthorizedKeysTestSupport extends BaseTestSupport {
 
     public static List<String> loadSupportedKeys(BufferedReader rdr) throws IOException {
         List<String> keyLines = new ArrayList<>();
-        boolean eccSupported = SecurityUtils.isECCSupported();
         for (String l = rdr.readLine(); l != null; l = rdr.readLine()) {
             l = GenericUtils.trimToEmpty(l);
             // filter out empty and comment lines
             if (GenericUtils.isEmpty(l) || (l.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
-                continue;
-            }
-
-            // skip EC keys if ECC not supported
-            if (l.contains(ECCurves.Constants.ECDSA_SHA2_PREFIX) && (!eccSupported)) {
-                System.out.println("Skip (ECC not supported) " + l);
                 continue;
             }
 

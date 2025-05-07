@@ -46,7 +46,6 @@ import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.resource.PathResource;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -109,7 +108,6 @@ class SecurityUtilsTest extends SecurityUtilsTestSupport {
 
     @Test
     void loadUnencryptedECPrivateKey() throws Exception {
-        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "EC not supported");
         for (ECCurves c : ECCurves.VALUES) {
             if (!c.isSupported()) {
                 System.out.println("Skip unsupported curve: " + c.getName());

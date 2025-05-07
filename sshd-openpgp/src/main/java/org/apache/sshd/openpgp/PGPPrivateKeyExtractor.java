@@ -89,10 +89,6 @@ public interface PGPPrivateKeyExtractor {
             return null;
         }
 
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
-        }
-
         ECParameterSpec params = pubKey.getParams();
         BigInteger x = bcKey.getX();
         return generatePrivateKey(KeyUtils.EC_ALGORITHM, ECPrivateKey.class, new ECPrivateKeySpec(x, params));

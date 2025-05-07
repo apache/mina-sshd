@@ -157,21 +157,11 @@ public enum BuiltinSignatures implements SignatureFactory {
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA256();
         }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
-        }
     },
     nistp256_cert(KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT) {
         @Override
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA256();
-        }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
         }
     },
     nistp384(KeyPairProvider.ECDSA_SHA2_NISTP384) {
@@ -179,21 +169,11 @@ public enum BuiltinSignatures implements SignatureFactory {
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA384();
         }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
-        }
     },
     nistp384_cert(KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT) {
         @Override
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA384();
-        }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
         }
     },
     nistp521(KeyPairProvider.ECDSA_SHA2_NISTP521) {
@@ -201,32 +181,17 @@ public enum BuiltinSignatures implements SignatureFactory {
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA521();
         }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
-        }
     },
     nistp521_cert(KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT) {
         @Override
         public Signature create() {
             return new SignatureECDSA.SignatureECDSA521();
         }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
-        }
     },
     sk_ecdsa_sha2_nistp256(SkECDSAPublicKeyEntryDecoder.KEY_TYPE) {
         @Override
         public Signature create() {
             return new SignatureSkECDSA();
-        }
-
-        @Override
-        public boolean isSupported() {
-            return SecurityUtils.isECCSupported();
         }
     },
     ed25519(KeyPairProvider.SSH_ED25519) {

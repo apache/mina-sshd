@@ -27,9 +27,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
-import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -52,7 +50,6 @@ class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}") // see SSHD-934
     void encodeDecodePublicKey(ECCurves curve) throws Exception {
-        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
         int keySize = curve.getKeySize();
         String keyType = curve.getKeyType();
         for (int index = 1; index <= TESTS_COUNT; index++) {

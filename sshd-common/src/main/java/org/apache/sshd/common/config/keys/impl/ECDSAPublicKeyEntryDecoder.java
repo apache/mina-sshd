@@ -26,7 +26,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchProviderException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
@@ -75,10 +74,6 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     }
 
     ECPublicKey decodePublicKey(ECCurves curve, InputStream keyData) throws IOException, GeneralSecurityException {
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
-        }
-
         String keyCurveName = curve.getName();
         // see rfc5656 section 3.1
         String encCurveName = KeyEntryResolver.decodeString(keyData, MAX_CURVE_NAME_LENGTH);
@@ -126,11 +121,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        if (SecurityUtils.isECCSupported()) {
-            return SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
-        } else {
-            throw new NoSuchProviderException("ECC not supported");
-        }
+        return SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
     }
 
     @Override
@@ -147,10 +138,6 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        if (SecurityUtils.isECCSupported()) {
-            return SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
-        } else {
-            throw new NoSuchProviderException("ECC not supported");
-        }
+        return SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
     }
 }

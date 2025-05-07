@@ -43,9 +43,7 @@ public final class PuttyKeyUtils {
         List<PuttyKeyPairResourceParser<?, ?>> parsers = new ArrayList<>();
         parsers.add(RSAPuttyKeyDecoder.INSTANCE);
         parsers.add(DSSPuttyKeyDecoder.INSTANCE);
-        if (SecurityUtils.isECCSupported()) {
-            parsers.add(ECDSAPuttyKeyDecoder.INSTANCE);
-        }
+        parsers.add(ECDSAPuttyKeyDecoder.INSTANCE);
         if (SecurityUtils.isEDDSACurveSupported()) {
             parsers.add(EdDSAPuttyKeyDecoder.INSTANCE);
         }

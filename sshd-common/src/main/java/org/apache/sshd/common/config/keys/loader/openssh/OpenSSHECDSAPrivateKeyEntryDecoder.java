@@ -27,7 +27,6 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchProviderException;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
@@ -62,10 +61,6 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
         ECCurves curve = ECCurves.fromKeyType(keyType);
         if (curve == null) {
             throw new InvalidKeySpecException("Not an EC curve name: " + keyType);
-        }
-
-        if (!SecurityUtils.isECCSupported()) {
-            throw new NoSuchProviderException("ECC not supported");
         }
 
         String keyCurveName = curve.getName();
@@ -111,11 +106,7 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        if (SecurityUtils.isECCSupported()) {
-            return SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
-        } else {
-            throw new NoSuchProviderException("ECC not supported");
-        }
+        return SecurityUtils.getKeyFactory(KeyUtils.EC_ALGORITHM);
     }
 
     @Override
@@ -132,10 +123,6 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        if (SecurityUtils.isECCSupported()) {
-            return SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
-        } else {
-            throw new NoSuchProviderException("ECC not supported");
-        }
+        return SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
     }
 }

@@ -63,15 +63,13 @@ class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         for (Integer ks : DSS_SIZES) {
             params.add(new Object[] { KeyUtils.DSS_ALGORITHM, ks });
         }
-        if (SecurityUtils.isECCSupported()) {
-            for (ECCurves curve : ECCurves.VALUES) {
-                if (!curve.isSupported()) {
-                    outputDebugMessage("Skip unsupported curve=%s", curve);
-                    continue;
-                }
-
-                params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
+        for (ECCurves curve : ECCurves.VALUES) {
+            if (!curve.isSupported()) {
+                outputDebugMessage("Skip unsupported curve=%s", curve);
+                continue;
             }
+
+            params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
         }
         if (SecurityUtils.isEDDSACurveSupported()) {
             params.add(new Object[] { SecurityUtils.EDDSA, 0 });

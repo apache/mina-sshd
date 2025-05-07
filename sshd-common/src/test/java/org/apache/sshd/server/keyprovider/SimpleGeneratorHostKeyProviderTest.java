@@ -61,7 +61,6 @@ class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
     @Test
     void eCnistp256() throws IOException, GeneralSecurityException {
         Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
-        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
         Assumptions.assumeTrue(ECCurves.nistp256.isSupported(), ECCurves.nistp256 + " N/A");
         testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP256, -1,
                 new ECGenParameterSpec("prime256v1"));
@@ -70,7 +69,6 @@ class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
     @Test
     void eCnistp384() throws IOException, GeneralSecurityException {
         Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
-        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
         Assumptions.assumeTrue(ECCurves.nistp384.isSupported(), ECCurves.nistp384 + " N/A");
         testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP384, -1,
                 new ECGenParameterSpec("P-384"));
@@ -79,7 +77,6 @@ class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
     @Test
     void eCnistp521() throws IOException, GeneralSecurityException {
         Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BouncyCastle not registered");
-        Assumptions.assumeTrue(SecurityUtils.isECCSupported(), "ECC not supported");
         Assumptions.assumeTrue(ECCurves.nistp521.isSupported(), ECCurves.nistp521 + " N/A");
         testSimpleGeneratorHostKeyProvider(KeyUtils.EC_ALGORITHM, KeyPairProvider.ECDSA_SHA2_NISTP521, -1,
                 new ECGenParameterSpec("P-521"));

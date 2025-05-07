@@ -169,16 +169,14 @@ public final class KeyUtils {
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
 
-        if (SecurityUtils.isECCSupported()) {
-            registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
-        }
+        registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
+
         if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
         }
 
-        if (SecurityUtils.isECCSupported()) {
-            registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);
-        }
+        registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);
+
         if (SecurityUtils.isEDDSACurveSupported()) {
             registerPublicKeyEntryDecoder(SkED25519PublicKeyEntryDecoder.INSTANCE);
         }
