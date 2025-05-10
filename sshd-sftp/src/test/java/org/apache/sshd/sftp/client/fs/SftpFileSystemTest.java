@@ -532,8 +532,11 @@ public class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                     String longName = entry.getLongFilename();
                     assertNotNull(longName);
                     items.add(longName);
-                    assertFalse(longName.contains("OWNER@"));
-                    assertFalse(longName.contains("GROUP@"));
+                    if (!OsUtils.isWin32()) {
+                        // On Windows we have no owner/group...
+                        assertFalse(longName.contains("OWNER@"));
+                        assertFalse(longName.contains("GROUP@"));
+                    }
                     String[] parts = longName.split("\\s+");
                     assertTrue(parts.length > 4);
                     long size = Long.parseLong(parts[4]);
