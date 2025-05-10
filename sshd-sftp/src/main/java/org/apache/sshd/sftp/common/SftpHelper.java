@@ -239,7 +239,7 @@ public final class SftpHelper {
         FileTime lastModifiedTime = (FileTime) attributes.get(IoUtils.LASTMOD_TIME_VIEW_ATTR);
         FileTime lastAccessTime = (FileTime) attributes.get(IoUtils.LASTACC_TIME_VIEW_ATTR);
         Map<?, ?> extensions = (Map<?, ?>) attributes.get(IoUtils.EXTENDED_VIEW_ATTR);
-        int flags = ((isReg || isLnk) && (size != null) ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
+        int flags = (size != null ? SftpConstants.SSH_FILEXFER_ATTR_SIZE : 0)
                     | (attributes.containsKey(IoUtils.USERID_VIEW_ATTR) && attributes.containsKey(IoUtils.GROUPID_VIEW_ATTR)
                             ? SftpConstants.SSH_FILEXFER_ATTR_UIDGID : 0)
                     | ((perms != null) ? SftpConstants.SSH_FILEXFER_ATTR_PERMISSIONS : 0)
@@ -627,20 +627,19 @@ public final class SftpHelper {
      * @return          {@code attrs}
      */
     public static Attributes complete(Attributes attrs, String longName) {
-        if (longName == null || longName.isEmpty()) {
-            return attrs;
-        }
-        if (attrs.getType() == SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN //
-                && (attrs.getPermissions() & SftpConstants.S_IFMT) == 0 //
-                && isUnixPermissions(longName)) {
-            // Some SFTP v3 servers do not send the file type flags in the permissions. The draft RFC does not
-            // explicitly say they should be included... if we have a longname, it's SFTP v3, and it should start
-            // with the permissions string as in POSIX/Linux "ls -l". The first character determines the file type.
-            int type = fileTypeFromChar(longName.charAt(0));
-            if (type != SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN) {
-                attrs.setType(type);
-                attrs.setPermissions(attrs.getPermissions() | fileTypeToPermission(type));
+        if (!GenericUtils.isEmpty(longName)) {
+            if (attrs.getType() == SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN //
+                    && (attrs.getPermissions() & SftpConstants.S_IFMT) == 0 //
+                    && isUnixPermissions(longName)) {
+                // Some SFTP v3 servers do not send the file type flags in the permissions. The draft RFC does not
+                // explicitly say they should be included... The first character determines the file type.
+                int type = fileTypeFromChar(longName.charAt(0));
+                if (type != SftpConstants.SSH_FILEXFER_TYPE_UNKNOWN) {
+                    attrs.setType(type);
+                    attrs.setPermissions(attrs.getPermissions() | fileTypeToPermission(type));
+                }
             }
+            attrs.setLongName(longName);
         }
         return attrs;
     }

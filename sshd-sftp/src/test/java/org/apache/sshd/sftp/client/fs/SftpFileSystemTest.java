@@ -68,6 +68,7 @@ import org.apache.sshd.common.channel.ChannelListener;
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.MapBuilder;
@@ -94,6 +95,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -456,6 +459,125 @@ class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             LOG.info("{}: average directory listing times: direct {}ms; indirect {}ms", getCurrentTestName(),
                     directTime / maxRepeats, indirectTime / maxRepeats);
         } finally {
+            if (secondHop != null) {
+                secondHop.close();
+            }
+            if (intermediary != null) {
+                intermediary.stop(true);
+            }
+        }
+    }
+
+    @ParameterizedTest(name = "Versions:{0}/{1}")
+    @CsvSource({ SftpConstants.SFTP_V3 + "," + SftpConstants.SFTP_V3, SftpConstants.SFTP_V3 + "," + SftpConstants.SFTP_V6 })
+    void fileSystemListDirIndirectVersion(int intermediaryVersion, int upstreamVersion) throws Exception {
+        SessionListener upstreamSelector = new SessionListener() {
+            @Override
+            public void sessionCreated(Session session) {
+                SftpModuleProperties.SFTP_VERSION.set(session, upstreamVersion);
+            }
+        };
+        sshd.addSessionListener(upstreamSelector);
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) NamedResource.findByName(SftpConstants.SFTP_SUBSYSTEM_NAME,
+                String.CASE_INSENSITIVE_ORDER, sshd.getSubsystemFactories());
+        AtomicInteger readDirCount = new AtomicInteger();
+        factory.addSftpEventListener(new SftpEventListener() {
+            @Override
+            public void received(ServerSession session, int type, int id) throws IOException {
+                if (type == SftpConstants.SSH_FXP_READDIR) {
+                    readDirCount.getAndIncrement();
+                }
+            }
+        });
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        CommonTestSupportUtils.deleteRecursive(lclSftp);
+
+        FileSystem secondHop = FileSystems.newFileSystem(createDefaultFileSystemURI(), defaultOptions());
+        assertTrue(secondHop instanceof SftpFileSystem, "Not an SftpFileSystem");
+        SshServer intermediary = createIntermediaryServer(secondHop);
+        intermediary.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionCreated(Session session) {
+                SftpModuleProperties.SFTP_VERSION.set(session, intermediaryVersion);
+            }
+        });
+
+        try (FileSystem fs = FileSystems.newFileSystem(
+                createFileSystemURI(getCurrentTestName(), intermediary.getPort(), Collections.emptyMap()), defaultOptions())) {
+            assertTrue(fs instanceof SftpFileSystem, "Not an SftpFileSystem");
+
+            Path parentPath = targetPath.getParent();
+            Path clientFolder = lclSftp.resolve("client");
+            assertHierarchyTargetFolderExists(clientFolder);
+            // Create files
+            final int numberOfFiles = 200;
+            for (int i = 1; i <= numberOfFiles; i++) {
+                Path localFile = clientFolder.resolve("file" + i + ".txt");
+                Files.createFile(localFile);
+            }
+            String remDirPath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, clientFolder);
+            Path remoteDir = fs.getPath(remDirPath);
+            assertHierarchyTargetFolderExists(remoteDir);
+
+            SftpPath sftpPath = (SftpPath) remoteDir;
+
+            // Read from the intermediary server
+            List<String> items = new ArrayList<>();
+            try (SftpClient client = sftpPath.getFileSystem().getClient(); CloseableHandle dir = client.openDir(remDirPath)) {
+                for (SftpClient.DirEntry entry : client.listDir(dir)) {
+                    assertNotNull(entry);
+                    String longName = entry.getLongFilename();
+                    assertNotNull(longName);
+                    items.add(longName);
+                    if (!OsUtils.isWin32()) {
+                        // On Windows we have no owner/group...
+                        assertFalse(longName.contains("OWNER@"));
+                        assertFalse(longName.contains("GROUP@"));
+                    }
+                    String[] parts = longName.split("\\s+");
+                    assertTrue(parts.length > 4);
+                    long size = Long.parseLong(parts[4]);
+                    long attrSize = entry.getAttributes().getSize();
+                    assertEquals(size, attrSize);
+                }
+            }
+            assertEquals(numberOfFiles + 2, items.size()); // . and ..
+            assertTrue(readDirCount.get() > 0, "Upstream server not called");
+
+            // Read directly from the upstream server
+            if (upstreamVersion == SftpConstants.SFTP_V3) {
+                List<String> upstreamItems = new ArrayList<>();
+                try (SftpClient client = ((SftpFileSystem) secondHop).getClient();
+                     CloseableHandle dir = client.openDir(remDirPath)) {
+                    for (SftpClient.DirEntry entry : client.listDir(dir)) {
+                        assertNotNull(entry);
+                        String longName = entry.getLongFilename();
+                        upstreamItems.add(longName);
+                        String[] parts = longName.split("\\s+");
+                        assertTrue(parts.length > 4);
+                        long size = Long.parseLong(parts[4]);
+                        long attrSize = entry.getAttributes().getSize();
+                        assertEquals(size, attrSize);
+                    }
+                }
+                assertEquals(numberOfFiles + 2, upstreamItems.size()); // . and ..
+                assertEquals(items.toString(), upstreamItems.toString());
+            } else {
+                int i = 0;
+                try (SftpClient client = ((SftpFileSystem) secondHop).getClient();
+                     CloseableHandle dir = client.openDir(remDirPath)) {
+                    for (SftpClient.DirEntry entry : client.listDir(dir)) {
+                        i++;
+                        assertNotNull(entry);
+                        assertNull(entry.getLongFilename());
+                    }
+                }
+                assertEquals(numberOfFiles + 2, i); // . and ..
+            }
+        } finally {
+            sshd.removeSessionListener(upstreamSelector);
             if (secondHop != null) {
                 secondHop.close();
             }

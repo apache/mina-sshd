@@ -65,6 +65,7 @@ import java.util.TreeSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.IntUnaryOperator;
+import java.util.function.Predicate;
 
 import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.NamedFactory;
@@ -2239,33 +2240,52 @@ public abstract class AbstractSftpSubsystemHelper
                 this, dir.getFile(), SftpConstants.SSH_FXP_READDIR, "", followLinks);
         int nb = 0;
         Map<String, Path> entries = new TreeMap<>(Comparator.naturalOrder());
-        while ((dir.isSendDot() || dir.isSendDotDot() || dir.hasNext()) && (buffer.wpos() < maxSize)) {
-            if (dir.isSendDot()) {
-                writeDirEntry(id, dir, entries, buffer, nb, dir.getFile(), ".", options);
-                dir.markDotSent(); // do not send it again
-            } else if (dir.isSendDotDot()) {
-                Path dirPath = dir.getFile();
-                Path parentPath = dirPath.getParent();
-                if (parentPath != null) {
-                    writeDirEntry(id, dir, entries, buffer, nb, parentPath, "..", options);
-                }
-                dir.markDotDotSent(); // do not send it again
-            } else {
-                Path f = dir.next();
-                String shortName = getShortName(f);
-                if (f instanceof WithFileAttributes) {
-                    SftpClient.Attributes attributes = ((WithFileAttributes) f).getAttributes();
-                    if (attributes != null) {
-                        entries.put(shortName, f);
-                        writeDirEntry(session, id, buffer, nb, f, shortName, attributes);
-                        nb++;
-                        continue;
-                    }
-                }
-                writeDirEntry(id, dir, entries, buffer, nb, f, shortName, options);
+        Predicate<DirectoryHandle> hasMore = d -> {
+            if (d.isWithDots()) {
+                return d.hasNext();
             }
-
-            nb++;
+            return d.isSendDot() || d.isSendDotDot() || d.hasNext();
+        };
+        while (hasMore.test(dir) && buffer.wpos() < maxSize) {
+            if (!dir.isWithDots()) {
+                if (dir.isSendDot()) {
+                    writeDirEntry(id, dir, entries, buffer, nb++, dir.getFile(), ".", options);
+                    dir.markDotSent(); // do not send it again
+                    continue;
+                } else if (dir.isSendDotDot()) {
+                    Path dirPath = dir.getFile();
+                    Path parentPath = dirPath.getParent();
+                    if (parentPath != null) {
+                        writeDirEntry(id, dir, entries, buffer, nb++, parentPath, "..", options);
+                    }
+                    dir.markDotDotSent(); // do not send it again
+                    continue;
+                }
+            }
+            Path f = dir.next();
+            String shortName = f.getFileName().toString();
+            if (".".equals(shortName)) {
+                if (!dir.isSendDot()) {
+                    continue;
+                }
+                dir.markDotSent();
+            } else if ("..".equals(shortName)) {
+                if (!dir.isSendDotDot()) {
+                    continue;
+                }
+                dir.markDotDotSent();
+            } else {
+                shortName = getShortName(f);
+            }
+            if (f instanceof WithFileAttributes) {
+                SftpClient.Attributes attributes = ((WithFileAttributes) f).getAttributes();
+                if (attributes != null) {
+                    entries.put(shortName, f);
+                    writeDirEntry(session, id, buffer, nb++, f, shortName, attributes);
+                    continue;
+                }
+            }
+            writeDirEntry(id, dir, entries, buffer, nb++, f, shortName, options);
         }
 
         SftpEventListener listener = getSftpEventListenerProxy();
@@ -2283,7 +2303,10 @@ public abstract class AbstractSftpSubsystemHelper
         accessor.putRemoteFileName(this, f, buffer, shortName, true);
 
         if (version == SftpConstants.SFTP_V3) {
-            String longName = getLongName(f, shortName, attributes);
+            String longName = attributes.longName();
+            if (GenericUtils.isEmpty(longName)) {
+                longName = getLongName(f, shortName, attributes);
+            }
             accessor.putRemoteFileName(this, f, buffer, longName, false);
 
             if (log.isTraceEnabled()) {

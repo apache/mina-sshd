@@ -30,6 +30,7 @@ import java.util.NoSuchElementException;
 import java.util.Objects;
 
 import org.apache.sshd.sftp.client.SftpClient;
+import org.apache.sshd.sftp.client.fs.impl.SftpUtils;
 
 /**
  * Implements and {@link Iterator} of {@link SftpPath}-s returned by a {@link DirectoryStream#iterator()} method.
@@ -44,6 +45,7 @@ public class SftpPathIterator implements Iterator<Path> {
 
     private final SftpPath path;
     private DirectoryStream.Filter<? super Path> filter;
+    private boolean withDots;
 
     public SftpPathIterator(SftpPath path, Iterable<? extends SftpClient.DirEntry> iter) {
         this(path, iter, null);
@@ -62,7 +64,10 @@ public class SftpPathIterator implements Iterator<Path> {
                             DirectoryStream.Filter<? super Path> filter) {
         this.path = Objects.requireNonNull(path, "No root path provided");
         this.filter = filter;
-
+        this.withDots = Boolean.TRUE.equals(SftpUtils.DIRECTORY_WITH_DOTS.get());
+        if (withDots) {
+            SftpUtils.DIRECTORY_WITH_DOTS.set(null);
+        }
         it = iter;
         curEntry = nextEntry(path, filter);
     }
@@ -109,22 +114,25 @@ public class SftpPathIterator implements Iterator<Path> {
         while ((it != null) && it.hasNext()) {
             SftpClient.DirEntry entry = it.next();
             String name = entry.getFilename();
-            if (".".equals(name) && (!dotIgnored)) {
-                dotIgnored = true;
-            } else if ("..".equals(name) && (!dotdotIgnored)) {
-                dotdotIgnored = true;
-            } else {
-                SftpPath candidate = root.resolve(entry.getFilename());
-                if (candidate instanceof WithFileAttributeCache) {
-                    ((WithFileAttributeCache) candidate).setAttributes(entry.getAttributes());
+            if (!withDots) {
+                if (".".equals(name) && !dotIgnored) {
+                    dotIgnored = true;
+                    continue;
+                } else if ("..".equals(name) && !dotdotIgnored) {
+                    dotdotIgnored = true;
+                    continue;
                 }
-                try {
-                    if ((selector == null) || selector.accept(candidate)) {
-                        return candidate;
-                    }
-                } catch (IOException e) {
-                    throw new DirectoryIteratorException(e);
+            }
+            SftpPath candidate = root.resolve(name);
+            if (candidate instanceof WithFileAttributeCache) {
+                ((WithFileAttributeCache) candidate).setAttributes(entry.getAttributes());
+            }
+            try {
+                if ((selector == null) || selector.accept(candidate)) {
+                    return candidate;
                 }
+            } catch (IOException e) {
+                throw new DirectoryIteratorException(e);
             }
         }
 
