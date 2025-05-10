@@ -222,6 +222,7 @@ public interface SftpClient extends SubsystemClient {
         private FileTime modifyTime;
         private List<AclEntry> acl;
         private Map<String, byte[]> extensions = Collections.emptyMap();
+        private String longName;
 
         public Attributes() {
             super();
@@ -456,12 +457,20 @@ public interface SftpClient extends SubsystemClient {
             return !isRegularFile() && !isDirectory() && !isSymbolicLink();
         }
 
+        public String longName() {
+            return longName;
+        }
+
+        public void setLongName(String longName) {
+            this.longName = longName;
+        }
+
         @Override
         public String toString() {
             return "type=" + getType() + ";size=" + getSize() + ";uid=" + getUserId() + ";gid=" + getGroupId() + ";perms=0x"
                    + Integer.toHexString(getPermissions()) + ";flags=" + getFlags() + ";owner=" + getOwner() + ";group="
                    + getGroup() + ";aTime=" + getAccessTime() + ";cTime=" + getCreateTime() + ";mTime=" + getModifyTime()
-                   + ";extensions=" + getExtensions().keySet();
+                   + ";longName=" + longName + ";extensions=" + getExtensions().keySet();
         }
     }
 

@@ -23,10 +23,15 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Path;
 import java.util.Iterator;
 
+import org.apache.sshd.sftp.client.fs.impl.SftpUtils;
+
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class DirectoryHandle extends Handle implements Iterator<Path> {
+
+    private final boolean withDots;
+
     private boolean done;
     private boolean sendDotDot = true;
     private boolean sendDot = true;
@@ -39,8 +44,19 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
 
         SftpFileSystemAccessor accessor = subsystem.getFileSystemAccessor();
         signalHandleOpening();
-        ds = accessor.openDirectory(subsystem, this, dir, handle);
-
+        // If the file system itself is a SftpFileSystem, then we do actually get "." and ".." entries from the upstream server.
+        // In that case we want the DirectoryStream to report them so that we can have the attributes directly.
+        SftpUtils.DIRECTORY_WITH_DOTS.set(Boolean.TRUE);
+        boolean haveDots = false;
+        try {
+            ds = accessor.openDirectory(subsystem, this, dir, handle);
+            // A non-Sftp file system won't know about this ThreadLocal, and will thus not change it. Our SftpFileSystem
+            // resets the value to null, if it can deliver "." and ".." entries.
+            haveDots = SftpUtils.DIRECTORY_WITH_DOTS.get() == null;
+        } finally {
+            SftpUtils.DIRECTORY_WITH_DOTS.remove();
+        }
+        withDots = haveDots;
         Path parent = dir.getParent();
         if (parent == null) {
             sendDotDot = false; // if no parent then no need to send ".."
@@ -53,6 +69,10 @@ public class DirectoryHandle extends Handle implements Iterator<Path> {
             close();
             throw e;
         }
+    }
+
+    public boolean isWithDots() {
+        return withDots;
     }
 
     public boolean isDone() {
