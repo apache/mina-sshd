@@ -273,21 +273,14 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
     }
 
     private void startAuth() throws Exception {
-        Buffer buffer = null;
-        try {
-            authenticator.setParams(null);
-            authenticator.start();
-            buffer = authenticator.getToken();
-            if (buffer == null) {
-                throw new IOException("No data for authenticating at proxy " + proxyAddress);
-            }
-            state = ProtocolState.AUTHENTICATING;
-            write(buffer);
-        } finally {
-            if (buffer != null) {
-                buffer.clear(true);
-            }
+        authenticator.setParams(null);
+        authenticator.start();
+        Buffer buffer = authenticator.getToken();
+        if (buffer == null) {
+            throw new IOException("No data for authenticating at proxy " + proxyAddress);
         }
+        state = ProtocolState.AUTHENTICATING;
+        write(buffer).addListener(f -> buffer.clear(true));
     }
 
     private void authStep(Buffer input) throws Exception {
