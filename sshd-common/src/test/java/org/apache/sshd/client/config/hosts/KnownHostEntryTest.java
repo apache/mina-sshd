@@ -51,4 +51,23 @@ class KnownHostEntryTest extends JUnitTestSupport {
         assertEquals("ssh-ed448 AAAAC3NzaC1lZDI1NTE5AAAAIPu6ntmyfSOkqLl3qPxD5XxwW7OONwwSG3KO+TGn+PFu",
                 PublicKeyEntry.toString(sshKey));
     }
+
+    @Test
+    void testMultipleHosts() throws Exception {
+        List<KnownHostEntry> entries = KnownHostEntry.readKnownHostEntries(new StringReader(
+                "[host1.local]:2222,[host2.local]:1222 ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIHROxqPSxyzx9goyWfPYydyTLnjk2ggI/14YwYimjkbd"),
+                true);
+        assertNotNull(entries);
+        assertEquals(1, entries.size());
+        KnownHostEntry entry = entries.get(0);
+        PublicKeyEntry keyEntry = entry.getKeyEntry();
+        assertNotNull(keyEntry);
+        assertEquals("ssh-ed25519", keyEntry.getKeyType());
+        assertTrue(entry.isHostMatch("host1.local", 2222));
+        assertFalse(entry.isHostMatch("host1.local", 1222));
+        assertFalse(entry.isHostMatch("host1.local", 22));
+        assertTrue(entry.isHostMatch("host2.local", 1222));
+        assertFalse(entry.isHostMatch("host2.local", 2222));
+        assertFalse(entry.isHostMatch("host1.local", 22));
+    }
 }

@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>sshd-openpgp</artifactId>
-    <name>Apache Mina SSHD :: OpenPGP key files support utilities</name>
+    <name>Apache Mina SSHD :: OpenPGP key files utilities</name>
     <packaging>jar</packaging>
     <inceptionYear>2018</inceptionYear>
 

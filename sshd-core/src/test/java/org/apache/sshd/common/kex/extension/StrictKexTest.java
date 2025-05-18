@@ -47,7 +47,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * succeed even if there are spurious messages.
  * <p>
  * The other part of "strict KEX" is resetting the message sequence numbers after KEX. This is not tested here but in
- * the {@link StrictKexInteroperabilityTest}, which runs an Apache MINA sshd client against OpenSSH servers that have or
+ * the {@code StrictKexInteroperabilityTest}, which runs an Apache MINA sshd client against OpenSSH servers that have or
  * do not have the "strict KEX" extension. If the sequence number handling was wrong, those tests would fail.
  * </p>
  *

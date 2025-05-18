@@ -27,7 +27,7 @@
     </parent>
 
     <artifactId>sshd-putty</artifactId>
-    <name>Apache Mina SSHD :: Putty key files support utilities</name>
+    <name>Apache Mina SSHD :: Putty key files utilities</name>
     <packaging>jar</packaging>
     <inceptionYear>2018</inceptionYear>
 

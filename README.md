@@ -73,6 +73,10 @@ implementation of the logging API can be selected from the many existing adaptor
 * *sshd-benchmarks* - contains some JMH benchmarks for SSH operations. The benchmarks are intended to be run by developers locally;
 the artifact is not part of the binary distribution, and is not deployed to any maven repository.
 
+* *sshd-site* - prepares the [development web site](https://apache.github.io/mina-sshd).
+
+* *sshd-test* - contains integration tests using testcontainers. These tests are skipped if no docker engine is running. The bundle is neither installed nor deployed.
+
 # [Optional dependencies](./docs/dependencies.md)
 
 # Quick reference

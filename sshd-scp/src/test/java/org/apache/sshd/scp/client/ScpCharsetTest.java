@@ -31,7 +31,6 @@ import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpException;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
@@ -45,14 +44,13 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 /**
- * Tests transferring a file named "äöü.txt" via SCP from a container that uses ISO-8859-15 as locale. The UTF-8 and
- * IOS-8859-15 encodings of these characters are different, so the file should not be found when the command is sent as
+ * Tests transferring a file named "äöü.txt" via SCP from a container that uses ISO-8859-1 as locale. The UTF-8 and
+ * IOS-8859-1 encodings of these characters are different, so the file should not be found when the command is sent as
  * UTF-8, but should be found when sent as ISO-8859-1.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Tag("ContainerTestCase")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class ScpCharsetTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScpCharsetTest.class);
@@ -61,14 +59,13 @@ class ScpCharsetTest extends BaseTestSupport {
 
     @Container
     GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
-            // Alpine would be smaller and start faster, but it has no locales.
-            .withDockerfileFromBuilder(builder -> builder.from("ubuntu:20.04") //
-                    .run("apt-get update && apt-get install -y locales openssh-server") //
-                    .run("mkdir -p /run/sshd") // sshd need a privilege separation directory
-                    .run("locale-gen en_US.ISO-8859-15") // Add a non-UTF-8 locale
-                    .run("useradd -ms /bin/bash bob") // Add a user
-                    .run("mkdir -p /home/bob/.ssh") // Create the SSH config directory
-                    .entryPoint("/entrypoint.sh") // Prepare environment, set locale, and launch
+            .withDockerfileFromBuilder(builder -> builder.from("alpine:3.21") //
+                    .env("MUSL_LOCPATH", "/usr/share/i18n/locales/musl") // Install locales
+                    .run("apk --update add musl-locales openssh-server openssh") // ... and OpenSSH (client for scp)
+                    .run("ssh-keygen -A") // Generate multiple host keys
+                    .run("adduser -D bob") // Add a user
+                    .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
+                    .entryPoint("/entrypoint.sh") // Prepare environment, set locale to en_US.ISO8859-1, and launch
                     .build())) //
             .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_RESOURCES + "/bob_key.pub"),
                     "/home/bob/.ssh/authorized_keys")
@@ -76,7 +73,8 @@ class ScpCharsetTest extends BaseTestSupport {
             .withCopyFileToContainer(
                     MountableFile.forClasspathResource(TEST_RESOURCES + "/entrypoint.sh", 0x1ff),
                     "/entrypoint.sh")
-            .waitingFor(Wait.forLogMessage(".*Server listening on :: port 22.*\\n", 1)).withExposedPorts(22) //
+            .waitingFor(Wait.forLogMessage(".*Server listening on.*port 22.*\\n", 1)) //
+            .withExposedPorts(22) //
             .withLogConsumer(new Slf4jLogConsumer(LOG));
 
     @TempDir
@@ -115,7 +113,7 @@ class ScpCharsetTest extends BaseTestSupport {
                 } catch (NoSuchFileException | FileNotFoundException | ScpException e) {
                     LOG.info("Expected failure for UTF-8 äöü: {}", e.toString());
                 }
-                // But this should work: (The container uses ISO-8859-15, but the only difference is the Euro sign.)
+                // But this should work:
                 ScpModuleProperties.SCP_OUTGOING_ENCODING.set(session, StandardCharsets.ISO_8859_1);
                 scpClient.download("äöü.txt", file2.getAbsolutePath());
                 assertEquals("test2\n",

@@ -46,6 +46,7 @@
                 <include>sshd-openpgp/src/test/resources/**/*</include>
                 <include>sshd-core/src/test/resources/org/apache/sshd/client/opensshcerts/**/*</include>
                 <include>sshd-benchmarks/src/main/resources/org/apache/sshd/**/*</include>
+                <include>sshd-test/src/test/resources/**/*</include>
             </includes>
             <excludes>
                 <exclude>**/eclipse-classes/**</exclude>
