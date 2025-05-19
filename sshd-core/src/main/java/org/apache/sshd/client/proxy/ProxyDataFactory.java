@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 /**
  * A factory for obtaining {@link ProxyData} to connect through some proxy.
  */
+@FunctionalInterface
 public interface ProxyDataFactory {
 
     /**

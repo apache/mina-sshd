@@ -52,6 +52,9 @@ public class ProxyData {
      * @param proxyPassword to use for log-in to the proxy, may be {@code null}
      */
     public ProxyData(Proxy proxy, String proxyUser, char[] proxyPassword) {
+        if (Proxy.Type.DIRECT.equals(proxy.type())) {
+            throw new IllegalArgumentException("Proxy is direct");
+        }
         if (!(proxy.address() instanceof InetSocketAddress)) {
             throw new IllegalArgumentException("Proxy does not have an InetSocketAddress");
         }
