@@ -22,7 +22,6 @@ package org.apache.sshd.common.util.buffer.keys;
 import java.security.GeneralSecurityException;
 import java.security.PublicKey;
 
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -44,6 +43,6 @@ public class SkED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParse
         // the end
         PublicKey publicKey = ED25519BufferPublicKeyParser.INSTANCE.getRawPublicKey(KeyPairProvider.SSH_ED25519, buffer);
         String appName = buffer.getString();
-        return new SkED25519PublicKey(appName, false, (EdDSAPublicKey) publicKey);
+        return new SkED25519PublicKey(appName, false, publicKey);
     }
 }

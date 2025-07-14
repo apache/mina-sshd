@@ -39,6 +39,8 @@
 * [GH-727](https://github.com/apache/mina-sshd/issues/727) Supply default port 22 for proxy jump hosts for which there is no `HostConfigEntry`
 * [GH-733](https://github.com/apache/mina-sshd/issues/733) Fix `SftpRemotePathChannel.transferTo()` (avoid NPE)
 * [GH-751](https://github.com/apache/mina-sshd/issues/751) Fix SFTP v3 "long name" if SFTP server uses an `SftpFileSystem` to another server
+* [GH-767](https://github.com/apache/mina-sshd/issues/767) Remove dependency on net.i2p.crypto in `SkED25519PublicKey`
+* [GH-771](https://github.com/apache/mina-sshd/issues/771) Remove dependency on net.i2p.crypto in `EdDSAPuttyKeyDecoder`
 * [GH-774](https://github.com/apache/mina-sshd/issues/774) Fix `WritePendingException` in SFTP file copy
 
 
@@ -55,8 +57,8 @@
 
 ## Potential Compatibility Issues
 
-Client-side KEX: we've changed the default of the setting `CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE` from `false` to `true`.
-A client will newly abort an SSH connection if the server presents an invalid OpenSSH host certificate as host key.
+* Client-side KEX: we've changed the default of the setting `CoreModuleProperties.ABORT_ON_INVALID_CERTIFICATE` from `false` to `true`. A client will newly abort an SSH connection if the server presents an invalid OpenSSH host certificate as host key.
+* [GH-767](https://github.com/apache/mina-sshd/issues/767) and [GH-771](https://github.com/apache/mina-sshd/issues/771) cause API changes in classes `SkED25519PublicKey` and `EdDSAPuttyKeyDecoder`. Both changes are unlikely to be noticed in user code since user code normally doesn't need to use either class.
 
 ## Major Code Re-factoring
 

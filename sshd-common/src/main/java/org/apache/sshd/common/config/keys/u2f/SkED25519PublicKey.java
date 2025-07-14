@@ -18,24 +18,29 @@
  */
 package org.apache.sshd.common.config.keys.u2f;
 
+import java.security.PublicKey;
 import java.util.Objects;
 
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.util.ValidateUtils;
 
-public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> {
+public class SkED25519PublicKey implements SecurityKeyPublicKey<PublicKey> {
 
     public static final String ALGORITHM = "ED25519-SK";
 
-    private static final long serialVersionUID = 4587115316266869640L;
+    private static final long serialVersionUID = -3947776805731312115L;
 
     private final String appName;
     private final boolean noTouchRequired;
-    private final EdDSAPublicKey delegatePublicKey;
+    private final PublicKey delegatePublicKey;
 
-    public SkED25519PublicKey(String appName, boolean noTouchRequired, EdDSAPublicKey delegatePublicKey) {
+    public SkED25519PublicKey(String appName, boolean noTouchRequired, PublicKey delegatePublicKey) {
         this.appName = appName;
         this.noTouchRequired = noTouchRequired;
+        ValidateUtils.checkTrue(KeyPairProvider.SSH_ED25519.equals(KeyUtils.getKeyType(delegatePublicKey)),
+                "Key is not an ed25519 key");
         this.delegatePublicKey = delegatePublicKey;
     }
 
@@ -70,7 +75,7 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<EdDSAPublicKey> 
     }
 
     @Override
-    public EdDSAPublicKey getDelegatePublicKey() {
+    public PublicKey getDelegatePublicKey() {
         return delegatePublicKey;
     }
 
