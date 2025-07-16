@@ -1499,10 +1499,15 @@ public class SftpFileSystemProvider extends FileSystemProvider {
      * @see        #getFileSystemIdentifier(String, int, String)
      */
     public static String getFileSystemIdentifier(URI uri) {
-        String userInfo = ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
-        String[] ui = GenericUtils.split(userInfo, ':');
-        ValidateUtils.checkTrue(GenericUtils.length(ui) == 2, "Invalid user info: %s", userInfo);
-        return getFileSystemIdentifier(uri.getHost(), uri.getPort(), ui[0]);
+        String host = ValidateUtils.checkNotNullAndNotEmpty(uri.getHost(), "Host not provided");
+        int port = uri.getPort();
+        if (port <= 0) {
+            port = SshConstants.DEFAULT_PORT;
+        }
+        ValidateUtils.checkNotNullAndNotEmpty(uri.getUserInfo(), "UserInfo not provided");
+        BasicCredentialsProvider credentials = parseCredentials(uri);
+        ValidateUtils.checkState(credentials != null, "No credentials provided");
+        return getFileSystemIdentifier(host, port, credentials.getUsername());
     }
 
     /**
