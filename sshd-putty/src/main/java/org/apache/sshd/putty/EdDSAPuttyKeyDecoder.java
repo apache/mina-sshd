@@ -42,7 +42,9 @@ public class EdDSAPuttyKeyDecoder<PUB extends PublicKey, PRIV extends PrivateKey
     public static final EdDSAPuttyKeyDecoder INSTANCE = new EdDSAPuttyKeyDecoder();
 
     public EdDSAPuttyKeyDecoder() {
-        super((Class<PUB>) SecurityUtils.getEdDSASupport().get().getEDDSAPublicKeyType(), (Class<PRIV>) SecurityUtils.getEdDSASupport().get().getEDDSAPrivateKeyType(), Collections.singletonList(KeyPairProvider.SSH_ED25519));
+        super((Class<PUB>) SecurityUtils.getEdDSASupport().get().getEDDSAPublicKeyType(),
+              (Class<PRIV>) SecurityUtils.getEdDSASupport().get().getEDDSAPrivateKeyType(),
+              Collections.singletonList(KeyPairProvider.SSH_ED25519));
     }
 
     @Override
