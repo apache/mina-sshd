@@ -75,12 +75,12 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     }
 
     @Override
-    public Class<? extends PublicKey> getEDDSAPublicKeyType() {
+    public Class<EdDSAPublicKey> getEDDSAPublicKeyType() {
         return EdDSAPublicKey.class;
     }
 
     @Override
-    public Class<? extends PrivateKey> getEDDSAPrivateKeyType() {
+    public Class<EdDSAPrivateKey> getEDDSAPrivateKeyType() {
         return EdDSAPrivateKey.class;
     }
 

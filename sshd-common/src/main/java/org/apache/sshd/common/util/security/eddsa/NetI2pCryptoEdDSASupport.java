@@ -64,13 +64,13 @@ public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     }
 
     @Override
-    public Class<? extends PublicKey> getEDDSAPublicKeyType() {
-        return EdDSASecurityProviderUtils.getEDDSAPublicKeyType();
+    public Class<EdDSAPublicKey> getEDDSAPublicKeyType() {
+        return EdDSAPublicKey.class;
     }
 
     @Override
-    public Class<? extends PrivateKey> getEDDSAPrivateKeyType() {
-        return EdDSASecurityProviderUtils.getEDDSAPrivateKeyType();
+    public Class<EdDSAPrivateKey> getEDDSAPrivateKeyType() {
+        return EdDSAPrivateKey.class;
     }
 
     @Override
