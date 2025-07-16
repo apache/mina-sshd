@@ -29,23 +29,20 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Map;
 
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderUtils;
 
 /**
  * TODO Add javadoc
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey, EdDSAPrivateKey> {
+public class EdDSAPuttyKeyDecoder<PUB extends PublicKey, PRIV extends PrivateKey> extends AbstractPuttyKeyDecoder<PUB, PRIV> {
     public static final EdDSAPuttyKeyDecoder INSTANCE = new EdDSAPuttyKeyDecoder();
 
     public EdDSAPuttyKeyDecoder() {
-        super(EdDSAPublicKey.class, EdDSAPrivateKey.class, Collections.singletonList(KeyPairProvider.SSH_ED25519));
+        super((Class<PUB>) SecurityUtils.getEdDSASupport().get().getEDDSAPublicKeyType(), (Class<PRIV>) SecurityUtils.getEdDSASupport().get().getEDDSAPrivateKeyType(), Collections.singletonList(KeyPairProvider.SSH_ED25519));
     }
 
     @Override
@@ -63,9 +60,9 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<EdDSAPublicKey
         }
 
         byte[] seed = pubReader.read(Short.MAX_VALUE); // reasonable max. allowed size
-        PublicKey pubKey = EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
+        PublicKey pubKey = SecurityUtils.getEdDSASupport().get().generateEDDSAPublicKey(seed);
         seed = prvReader.read(Short.MAX_VALUE); // reasonable max. allowed size
-        PrivateKey prvKey = EdDSASecurityProviderUtils.generateEDDSAPrivateKey(seed);
+        PrivateKey prvKey = SecurityUtils.getEdDSASupport().get().generateEDDSAPrivateKey(seed);
         return Collections.singletonList(new KeyPair(pubKey, prvKey));
     }
 }
