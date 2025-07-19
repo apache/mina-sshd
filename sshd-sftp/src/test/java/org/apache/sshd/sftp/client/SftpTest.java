@@ -397,6 +397,46 @@ public class SftpTest extends AbstractSftpClientTestSupport {
     }
 
     @MethodSource("getParameters")
+    @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}") // see GH-774
+    public void copyByReadWrite(int handleSize) throws Exception {
+        initSftpTest(handleSize);
+        Path targetPath = detectTargetFolder();
+        Path parentPath = targetPath.getParent();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath, SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName(),
+                getCurrentTestName());
+        Path testFile = assertHierarchyTargetFolderExists(lclSftp).resolve("file.bin");
+        // Size matters; with only 1MB GH-774 is not reproducible. Probably the size needs to be larger than the channel
+        // window (2MB by default).
+        byte[] expected = new byte[8 * 1024 * 1024];
+
+        Factory<? extends Random> factory = sshd.getRandomFactory();
+        Random rnd = factory.create();
+        rnd.fill(expected);
+        Files.write(testFile, expected);
+
+        String file = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            try (InputStream in = sftp.read(file);
+                 OutputStream out = sftp.write(file + ".new", SftpClient.OpenMode.Create, SftpClient.OpenMode.Write)) {
+                IoUtils.copy(in, out);
+            }
+            byte[] actual;
+            try (InputStream in = sftp.read(file + ".new");
+                 ByteArrayOutputStream buf = new ByteArrayOutputStream(expected.length)) {
+                byte[] data = new byte[4096];
+                for (int n = 0; n >= 0;) {
+                    n = in.read(data, 0, data.length);
+                    if (n > 0) {
+                        buf.write(data, 0, n);
+                    }
+                }
+                actual = buf.toByteArray();
+            }
+            assertArrayEquals(expected, actual);
+        }
+    }
+
+    @MethodSource("getParameters")
     @ParameterizedTest(name = "FILE_HANDLE_SIZE {0}")
     public void emptyFileDownload(int handleSize) throws Exception {
         initSftpTest(handleSize);

@@ -81,6 +81,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final NavigableMap<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
     private Charset nameDecodingCharset;
+    private SftpMessage lastMessage;
 
     /**
      * @param  clientSession          The {@link ClientSession}
@@ -166,6 +167,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if (isOpen()) {
             this.channel.close(false);
         }
+        lastMessage = null;
     }
 
     /**
@@ -270,8 +272,12 @@ public class DefaultSftpClient extends AbstractSftpClient {
     @Override
     public int send(int cmd, Buffer buffer) throws IOException {
         SftpMessage msg = write(cmd, buffer);
-        msg.waitUntilSent();
-        return msg.getId();
+        try {
+            msg.waitUntilSent();
+            return msg.getId();
+        } finally {
+            lastMessage = null;
+        }
     }
 
     @Override
@@ -305,9 +311,13 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         ClientChannel clientChannel = getClientChannel();
         IoOutputStream asyncIn = clientChannel.getAsyncIn();
+        if (lastMessage != null) {
+            lastMessage.waitUntilSent();
+        }
         IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
         Duration sendTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
-        return new SftpMessage(id, writeFuture, sendTimeout);
+        lastMessage = new SftpMessage(id, writeFuture, sendTimeout);
+        return lastMessage;
     }
 
     @Override

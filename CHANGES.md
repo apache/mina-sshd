@@ -39,6 +39,7 @@
 * [GH-727](https://github.com/apache/mina-sshd/issues/727) Supply default port 22 for proxy jump hosts for which there is no `HostConfigEntry`
 * [GH-733](https://github.com/apache/mina-sshd/issues/733) Fix `SftpRemotePathChannel.transferTo()` (avoid NPE)
 * [GH-751](https://github.com/apache/mina-sshd/issues/751) Fix SFTP v3 "long name" if SFTP server uses an `SftpFileSystem` to another server
+* [GH-774](https://github.com/apache/mina-sshd/issues/774) Fix `WritePendingException` in SFTP file copy
 
 
 * [SSHD-1343](https://issues.apache.org/jira/projects/SSHD/issues/SSHD-1343) Correct documentation in `ChannelDataReceiver`
