@@ -64,7 +64,7 @@ class KnownHostsCertificateTest extends BaseTestSupport {
     private KeyPair caKey;
 
     @BeforeAll
-    private static void setupClientAndServer() throws Exception {
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(KnownHostsCertificateTest.class);
         sshd.start();
         port = sshd.getPort();
