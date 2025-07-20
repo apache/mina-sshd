@@ -30,6 +30,7 @@ import org.apache.sshd.common.Factory;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,10 +39,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.Assert.assertArrayEquals;
-
 @Testcontainers(disabledWithoutDocker = true)
-class OpenSshTest {
+class OpenSshTest extends JUnitTestSupport {
 
     private static final String RESOURCES = "/" + OpenSshTest.class.getPackage().getName().replace('.', '/');
 
