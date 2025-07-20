@@ -108,12 +108,12 @@ public interface EdDSASupport<PUB extends PublicKey, PRV extends PrivateKey> {
     /**
      * @return the public key class type associated with the security provider.
      */
-    Class<? extends PublicKey> getEDDSAPublicKeyType();
+    Class<PUB> getEDDSAPublicKeyType();
 
     /**
      * @return the private key class type associated with the security provider.
      */
-    Class<? extends PrivateKey> getEDDSAPrivateKeyType();
+    Class<PRV> getEDDSAPrivateKeyType();
 
     /**
      * @param  k1 the first key

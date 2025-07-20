@@ -114,12 +114,12 @@
         <mockito.version>4.11.0</mockito.version>
         <bytebuddy.version>1.17.5</bytebuddy.version>
         <testcontainers.version>1.21.0</testcontainers.version>
-        <grpc.version>1.72.0</grpc.version> <!-- Used only in tests -->
+        <grpc.version>1.73.0</grpc.version> <!-- Used only in tests -->
 
         <maven.archiver.version>3.6.3</maven.archiver.version>
         <plexus.archiver.version>4.10.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>7.13.0</pmd.version>
+        <pmd.version>7.14.0</pmd.version>
         <japicmp.version>0.23.1</japicmp.version>
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -559,7 +559,7 @@
             <dependency>
                 <groupId>com.github.mwiede</groupId>
                 <artifactId>jsch</artifactId>
-                <version>0.2.26</version>
+                <version>2.27.2</version>
             </dependency>
 
                 <!-- Transitive dependencies by various 3rd party packages -->
@@ -703,7 +703,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>5.12.2</version>
+                <version>5.13.3</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -984,7 +984,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.26.0</version>
+                   <version>3.27.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>

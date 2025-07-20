@@ -71,7 +71,7 @@ class AuthorizedKeysCertificateTest extends BaseTestSupport {
     private OpenSshCertificate userCert;
 
     @BeforeAll
-    private static void setupClientAndServer() throws Exception {
+    static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(AuthorizedKeysCertificateTest.class);
         sshd.start();
         port = sshd.getPort();
