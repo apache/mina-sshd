@@ -40,6 +40,7 @@
 * [GH-727](https://github.com/apache/mina-sshd/issues/727) Supply default port 22 for proxy jump hosts for which there is no `HostConfigEntry`
 * [GH-733](https://github.com/apache/mina-sshd/issues/733) Fix `SftpRemotePathChannel.transferTo()` (avoid NPE)
 * [GH-751](https://github.com/apache/mina-sshd/issues/751) Fix SFTP v3 "long name" if SFTP server uses an `SftpFileSystem` to another server
+* [GH-754](https://github.com/apache/mina-sshd/issues/754) `DefaultFowarder` must not be closed after a bind error
 * [GH-767](https://github.com/apache/mina-sshd/issues/767) Remove dependency on net.i2p.crypto in `SkED25519PublicKey`
 * [GH-771](https://github.com/apache/mina-sshd/issues/771) Remove dependency on net.i2p.crypto in `EdDSAPuttyKeyDecoder`
 * [GH-774](https://github.com/apache/mina-sshd/issues/774) Fix `WritePendingException` in SFTP file copy
