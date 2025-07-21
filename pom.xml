@@ -97,7 +97,7 @@
         <ant.build.javac.target>${javac.target}</ant.build.javac.target>
 
         <groovy.version>4.0.17</groovy.version>
-        <bouncycastle.version>1.80</bouncycastle.version>
+        <bouncycastle.version>1.81</bouncycastle.version>
             <!-- NOTE: upgrading slf4j beyond this version causes
             
             Execution verify-style of goal org.apache.maven.plugins:maven-checkstyle-plugin:3.1.2:check failed.: NullPointerException
