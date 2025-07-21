@@ -95,6 +95,9 @@ public final class SshConstants {
     public static final byte SSH_MSG_CHANNEL_SUCCESS = 99;
     public static final byte SSH_MSG_CHANNEL_FAILURE = 100;
 
+    public static final byte SSH_MSG_PING = (byte) 192;
+    public static final byte SSH_MSG_PONG = (byte) 193;
+
     //
     // Disconnect error codes
     //
