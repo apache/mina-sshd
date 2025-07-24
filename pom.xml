@@ -88,7 +88,7 @@
         <maven.compiler.source>${javac.source}</maven.compiler.source>
         <ant.version>1.10.15</ant.version>
         <ant.build.javac.source>${javac.source}</ant.build.javac.source>
-        <build-helper-maven-plugin.version>3.6.0</build-helper-maven-plugin.version>
+        <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
 
         <javac.target>${javac.source}</javac.target>
         <required.java.version>[${javac.target},)</required.java.version>
