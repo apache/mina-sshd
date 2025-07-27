@@ -262,6 +262,7 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                 if (timeout > 0L) {
                     long now = System.currentTimeMillis();
                     long usedTime = now - startTime;
+                    remWait = timeout - usedTime;
                     if ((usedTime >= timeout) || (remWait <= 0L)) {
                         if (traceEnabled) {
                             log.trace("waitFor({}) call timeout {}/{} for mask={}: {}",
@@ -289,14 +290,6 @@ public abstract class AbstractClientChannel extends AbstractChannel implements C
                     long nanoDuration = nanoEnd - nanoStart;
                     if (traceEnabled) {
                         log.trace("waitFor({}) lock notified on channel after {} nanos", this, nanoDuration);
-                    }
-
-                    if (timeout > 0L) {
-                        long waitDuration = TimeUnit.MILLISECONDS.convert(nanoDuration, TimeUnit.NANOSECONDS);
-                        if (waitDuration <= 0L) {
-                            waitDuration = 123L;
-                        }
-                        remWait -= waitDuration;
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
