@@ -82,27 +82,27 @@ public class GitPackCommand extends AbstractGitCommand {
 
             Path rootDir = resolveRootDirectory(command, args);
             RepositoryCache.FileKey key = RepositoryCache.FileKey.lenient(rootDir.toFile(), FS.DETECTED);
-            Repository db = key.open(true /* must exist */);
-            String subCommand = args[0];
-            if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
-                UploadPack uploadPack = new UploadPack(db);
-                packConfiguration.configureUploadPack(getSession(), uploadPack);
-                Environment environment = getEnvironment();
-                Map<String, String> envVars = environment.getEnv();
-                String protocol = MapEntryUtils.isEmpty(envVars)
-                        ? null : envVars.get(GitProtocolConstants.PROTOCOL_ENVIRONMENT_VARIABLE);
-                if (GenericUtils.isNotBlank(protocol)) {
-                    uploadPack.setExtraParameters(Collections.singleton(protocol));
+            try (Repository db = key.open(true /* must exist */)) {
+                String subCommand = args[0];
+                if (RemoteConfig.DEFAULT_UPLOAD_PACK.equals(subCommand)) {
+                    UploadPack uploadPack = new UploadPack(db);
+                    packConfiguration.configureUploadPack(getSession(), uploadPack);
+                    Environment environment = getEnvironment();
+                    Map<String, String> envVars = environment.getEnv();
+                    String protocol = MapEntryUtils.isEmpty(envVars)
+                            ? null : envVars.get(GitProtocolConstants.PROTOCOL_ENVIRONMENT_VARIABLE);
+                    if (GenericUtils.isNotBlank(protocol)) {
+                        uploadPack.setExtraParameters(Collections.singleton(protocol));
+                    }
+                    uploadPack.upload(getInputStream(), getOutputStream(), getErrorStream());
+                } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(subCommand)) {
+                    ReceivePack receivePack = new ReceivePack(db);
+                    packConfiguration.configureReceivePack(getSession(), receivePack);
+                    receivePack.receive(getInputStream(), getOutputStream(), getErrorStream());
+                } else {
+                    throw new IllegalArgumentException("Unknown git command: " + command);
                 }
-                uploadPack.upload(getInputStream(), getOutputStream(), getErrorStream());
-            } else if (RemoteConfig.DEFAULT_RECEIVE_PACK.equals(subCommand)) {
-                ReceivePack receivePack = new ReceivePack(db);
-                packConfiguration.configureReceivePack(getSession(), receivePack);
-                receivePack.receive(getInputStream(), getOutputStream(), getErrorStream());
-            } else {
-                throw new IllegalArgumentException("Unknown git command: " + command);
             }
-
             onExit(0);
         } catch (Throwable t) {
             onExit(-1, t.getClass().getSimpleName());
