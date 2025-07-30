@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -266,6 +265,7 @@ public class ClientSessionImpl extends AbstractClientSession {
                 if (timeout > 0L) {
                     long now = System.currentTimeMillis();
                     long usedTime = now - startTime;
+                    remWait = timeout - usedTime;
                     if ((usedTime >= timeout) || (remWait <= 0L)) {
                         if (traceEnabled) {
                             log.trace("waitFor({}) call timeout {}/{} for mask={}: {}",
@@ -293,14 +293,6 @@ public class ClientSessionImpl extends AbstractClientSession {
                     long nanoDuration = nanoEnd - nanoStart;
                     if (traceEnabled) {
                         log.trace("waitFor({}) Lock notified after {} nanos", this, nanoDuration);
-                    }
-
-                    if (timeout > 0L) {
-                        long waitDuration = TimeUnit.MILLISECONDS.convert(nanoDuration, TimeUnit.NANOSECONDS);
-                        if (waitDuration <= 0L) {
-                            waitDuration = 123L;
-                        }
-                        remWait -= waitDuration;
                     }
                 } catch (InterruptedException e) {
                     long nanoEnd = System.nanoTime();
