@@ -71,6 +71,7 @@ import org.apache.sshd.common.io.IoOutputStream;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.ProxyUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -696,6 +697,27 @@ class PortForwardingTest extends BaseTestSupport {
 
             SshdSocketAddress bound2 = session.startLocalPortForwarding(local, remote);
             session.stopLocalPortForwarding(bound2);
+        }
+    }
+
+    @Test // GH-754 : forwarder should _not_ be closed after bind error
+    void localForwardingNativeError() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "Privileged port can be bound on Windows");
+        try (ClientSession session = createNativeSession(null)) {
+            // Use a privileged port to provoke an exception
+            SshdSocketAddress local = new SshdSocketAddress(TEST_LOCALHOST, 22);
+            SshdSocketAddress remote = new SshdSocketAddress(TEST_LOCALHOST, echoPort);
+            try {
+                SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
+                // If we get here, we have a problem
+                session.stopLocalPortForwarding(bound);
+                fail("Expected an exception (privileged port)");
+            } catch (IOException e) {
+                local = new SshdSocketAddress("", 0);
+                SshdSocketAddress bound = session.startLocalPortForwarding(local, remote);
+                assertNotNull(bound);
+                session.stopLocalPortForwarding(bound);
+            }
         }
     }
 

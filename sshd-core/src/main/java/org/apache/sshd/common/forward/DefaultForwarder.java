@@ -746,31 +746,23 @@ public class DefaultForwarder
             throws IOException {
         // TODO find a better way to determine the resulting bind address - what if multi-threaded calls...
         Collection<SocketAddress> before = acceptor.getBoundAddresses();
-        try {
-            InetSocketAddress bindAddress = address.toInetSocketAddress();
-            acceptor.bind(bindAddress);
+        InetSocketAddress bindAddress = address.toInetSocketAddress();
+        acceptor.bind(bindAddress);
 
-            Collection<SocketAddress> after = acceptor.getBoundAddresses();
-            if (GenericUtils.size(after) > 0) {
-                after.removeAll(before);
-            }
-            if (GenericUtils.isEmpty(after)) {
-                throw new IOException("Error binding to " + address + "[" + bindAddress + "]: no local addresses bound");
-            }
-
-            if (after.size() > 1) {
-                throw new IOException("Multiple local addresses have been bound for " + address + "[" + bindAddress + "]");
-            }
-
-            InetSocketAddress boundAddress = (InetSocketAddress) GenericUtils.head(after);
-            return boundAddress;
-        } catch (IOException bindErr) {
-            Collection<SocketAddress> after = acceptor.getBoundAddresses();
-            if (GenericUtils.isEmpty(after)) {
-                close();
-            }
-            throw bindErr;
+        Collection<SocketAddress> after = acceptor.getBoundAddresses();
+        if (GenericUtils.size(after) > 0) {
+            after.removeAll(before);
         }
+        if (GenericUtils.isEmpty(after)) {
+            throw new IOException("Error binding to " + address + "[" + bindAddress + "]: no local addresses bound");
+        }
+
+        if (after.size() > 1) {
+            throw new IOException("Multiple local addresses have been bound for " + address + "[" + bindAddress + "]");
+        }
+
+        InetSocketAddress boundAddress = (InetSocketAddress) GenericUtils.head(after);
+        return boundAddress;
     }
 
     @Override
