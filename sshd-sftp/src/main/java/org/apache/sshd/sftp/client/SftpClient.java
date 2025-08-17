@@ -1021,7 +1021,7 @@ public interface SftpClient extends SubsystemClient {
      *                     limit of 256kB. If zero, a default buffer size is chosen depending on the peer's channel
      *                     packet size; so typically about 32kB.
      * @param  path        The remote file path
-     * @param  mode        The remote file {@link OpenMode}s
+     * @param  modes       The remote file {@link OpenMode}s
      * @throws IOException if data cannot be read, or cannot be written
      */
     default void put(Path localFile, int bufferSize, String path, Collection<OpenMode> modes) throws IOException {
@@ -1038,7 +1038,7 @@ public interface SftpClient extends SubsystemClient {
      *                     limit of 256kB. If zero, a default buffer size is chosen depending on the peer's channel
      *                     packet size; so typically about 32kB.
      * @param  path        The remote file path
-     * @param  mode        The remote file {@link OpenMode}s
+     * @param  modes       The remote file {@link OpenMode}s
      * @throws IOException if data cannot be read, or cannot be written
      */
     void put(InputStream stream, int bufferSize, String path, Collection<OpenMode> modes) throws IOException;

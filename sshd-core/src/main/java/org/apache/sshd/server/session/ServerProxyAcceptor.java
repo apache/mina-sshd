@@ -23,7 +23,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
  * Provides a way to implement proxied connections where some metadata about the client is sent <U>before</U> the actual
- * SSH protocol is executed - e.g., the <A HREF=@http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt">PROXY
+ * SSH protocol is executed - e.g., the <A HREF="http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt">PROXY
  * protocol</A>.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>

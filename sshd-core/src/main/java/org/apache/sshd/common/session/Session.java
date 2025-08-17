@@ -224,11 +224,11 @@ public interface Session
      * {@link Buffer} to the given {@link ReplyHandler}, which may execute in a different thread.
      *
      * <dl>
-     * <dt>want-reply == true && replyHandler != null</dt>
+     * <dt>want-reply == true &amp;&amp; replyHandler != null</dt>
      * <dd>The returned future is fulfilled with {@code null} when the request was sent, or with an exception if the
      * request could not be sent. The {@code replyHandler} is invoked once the reply is received, with the SSH reply
      * code and the data received.</dd>
-     * <dt>want-reply == true && replyHandler == null</dt>
+     * <dt>want-reply == true &amp;&amp; replyHandler == null</dt>
      * <dd>The returned future is fulfilled with an exception if the request could not be sent, or a failure reply was
      * received. If a success reply was received, the future is fulfilled with the received data buffer.</dd>
      * <dt>want-reply == false</dt>

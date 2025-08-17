@@ -113,10 +113,6 @@ public final class GenericUtils {
      * @param  with String to replace with
      * @param  max  maximum number of values to replace, or <code>-1</code> if no maximum
      * @return      the text with any replacements processed
-     * @author      Arnout J. Kuiper <a href="mailto:ajkuiper@wxs.nl">ajkuiper@wxs.nl</a>
-     * @author      Magesh Umasankar
-     * @author      <a href="mailto:bruce@callenish.com">Bruce Atherton</a>
-     * @author      <a href="mailto:levylambert@tiscali-dsl.de">Antoine Levy-Lambert</a>
      */
     @SuppressWarnings("PMD.AssignmentInOperand")
     public static String replace(String text, String repl, String with, int max) {

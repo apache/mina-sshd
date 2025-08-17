@@ -23,7 +23,7 @@ import org.apache.sshd.core.CoreModuleProperties;
 
 /**
  * Provides a way to implement proxied connections where some metadata about the client is sent <U>before</U> the actual
- * SSH protocol is executed - e.g., the <A HREF=@http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt">PROXY
+ * SSH protocol is executed - e.g., the <A HREF="http://www.haproxy.org/download/1.6/doc/proxy-protocol.txt">PROXY
  * protocol</A>. The implementor should use the {@code IoSession#write(Buffer)} method to send any packets with the
  * meta-data.
  *
