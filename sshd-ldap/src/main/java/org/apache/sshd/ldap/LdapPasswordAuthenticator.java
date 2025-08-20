@@ -34,8 +34,8 @@ import org.apache.sshd.server.session.ServerSession;
  * <LI>Comparing the provided password with the one stored in LDAP. In this case, the bind DN and password patterns can
  * be either empty (if anonymous access allowed) or can contain the administrative username / password required to run
  * the LDAP query. The search filter pattern should be set to require a match for <U>both</U> the username and password
- * - e.g., <code>&quot;(&(user={0})(password={1}))&quot;</code>. The set default
- * ({@link #DEFAULT_SEARCH_FILTER_PATTERN}) uses the most commonly encountered attributes names for this purpose.</LI>
+ * - e.g., <code>"(&amp;(user={0})(password={1}))"</code>. The set default ({@link #DEFAULT_SEARCH_FILTER_PATTERN}) uses
+ * the most commonly encountered attributes names for this purpose.</LI>
  * </P>
  *
  * <P>
@@ -43,7 +43,7 @@ import org.apache.sshd.server.session.ServerSession;
  * be considered a successful authentication. In this case, the bind DN and password patterns should be set up to
  * generate the correct credentials - the default is to &quot;echo&quot; the provided username and password as-is. E.g.,
  * if the username is always the alias part of a known e-mail, the bind DN should be set to
- * <code>&quot;{0}@my.domain.com&quot;</code>.</LI>
+ * <code>"{0}@my.domain.com"</code>.</LI>
  * </P>
  * </OL>
  *

@@ -121,8 +121,8 @@ public final class SecurityUtils {
 
     /**
      * The min. key size value used for testing whether Diffie-Hellman Group Exchange is supported or not. According to
-     * <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A> section 3: &quot;Servers and clients SHOULD support
-     * groups with a modulus length of k bits, where 1024 <= k <= 8192&quot;. </code>
+     * <A HREF="https://tools.ietf.org/html/rfc4419">RFC 4419</A> section 3: <em>Servers and clients SHOULD support
+     * groups with a modulus length of k bits, where 1024 &lt;= k &lt;= 8192.</em>
      *
      * <B>Note: this has been amended by <A HREF="https://tools.ietf.org/html/rfc8270">RFC 8270</A>
      */

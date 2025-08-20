@@ -36,7 +36,7 @@ import org.apache.sshd.common.util.GenericUtils;
 public interface PasswordIdentityProvider {
 
     /**
-     * An &quot;empty&quot implementation of {@link PasswordIdentityProvider} that returns an empty group of passwords
+     * An empty implementation of {@link PasswordIdentityProvider} that returns an empty group of passwords.
      */
     PasswordIdentityProvider EMPTY_PASSWORDS_PROVIDER = new PasswordIdentityProvider() {
         @Override

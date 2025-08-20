@@ -64,13 +64,13 @@ public interface BufferPublicKeyParser<PUB extends PublicKey> {
                     SkED25519BufferPublicKeyParser.INSTANCE));
 
     /**
-     * @param  keyType The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
+     * @param  keyType The key type - e.g., "ssh-rsa", "ssh-dss", etc
      * @return         {@code true} if this key type is supported by the parser
      */
     boolean isKeyTypeSupported(String keyType);
 
     /**
-     * @param  keyType                  The key type - e.g., &quot;ssh-rsa&quot, &quot;ssh-dss&quot;
+     * @param  keyType                  The key type - e.g., "ssh-rsa", "ssh-dss", etc
      * @param  buffer                   The {@link Buffer} containing the encoded raw public key
      * @return                          The decoded {@link PublicKey}
      * @throws GeneralSecurityException If failed to generate the key

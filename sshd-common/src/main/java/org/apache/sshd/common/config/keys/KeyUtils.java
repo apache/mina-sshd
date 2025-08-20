@@ -630,8 +630,8 @@ public final class KeyUtils {
      * @param  expected The expected fingerprint if {@code null} or empty then returns a failure with the default
      *                  fingerprint.
      * @param  key      the {@link PublicKey} - if {@code null} then returns null.
-     * @return          SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
-     *                  {@code null} if no key.
+     * @return          SimpleImmutableEntry&lt;Boolean, String> - key is success indicator, value is actual
+     *                  fingerprint, {@code null} if no key.
      * @see             #getDefaultFingerPrintFactory()
      * @see             #checkFingerPrint(String, Factory, PublicKey)
      */
@@ -644,8 +644,8 @@ public final class KeyUtils {
      *                  fingerprint.
      * @param  f        The {@link Factory} to be used to generate the default {@link Digest} for the key
      * @param  key      the {@link PublicKey} - if {@code null} then returns null.
-     * @return          SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
-     *                  {@code null} if no key.
+     * @return          SimpleImmutableEntry&lt;Boolean, String> - key is success indicator, value is actual
+     *                  fingerprint, {@code null} if no key.
      */
     public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(
             String expected, Factory<? extends Digest> f, PublicKey key) {
@@ -657,8 +657,8 @@ public final class KeyUtils {
      *                  fingerprint.
      * @param  d        The {@link Digest} to be used to generate the default fingerprint for the key
      * @param  key      the {@link PublicKey} - if {@code null} then returns null.
-     * @return          SimpleImmutableEntry<Boolean, String> - key is success indicator, value is actual fingerprint,
-     *                  {@code null} if no key.
+     * @return          SimpleImmutableEntry&lt;Boolean, String> - key is success indicator, value is actual
+     *                  fingerprint, {@code null} if no key.
      */
     public static SimpleImmutableEntry<Boolean, String> checkFingerPrint(String expected, Digest d, PublicKey key) {
         if (key == null) {

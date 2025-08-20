@@ -37,26 +37,26 @@ public final class OsUtils {
 
     /**
      * Property that can be used to override the reported value from {@link #getCurrentUser()}. If not set then
-     * &quot;user.name&quot; system property is used
+     * "user.name" system property is used.
      */
     public static final String CURRENT_USER_OVERRIDE_PROP = "org.apache.sshd.currentUser";
 
     /**
      * Property that can be used to override the reported value from {@link #getJavaVersion()}. If not set then
-     * &quot;java.version&quot; system property is used
+     * "java.version" system property is used.
      */
     public static final String JAVA_VERSION_OVERRIDE_PROP = "org.apache.sshd.javaVersion";
 
     /**
-     * Property that can be used to override the reported value from {@link #isWin32()}. If not set then
-     * &quot;os.name&quot; system property is used
+     * Property that can be used to override the reported value from {@link #isWin32()}. If not set then "os.name"
+     * system property is used.
      */
     public static final String OS_TYPE_OVERRIDE_PROP = "org.apache.sshd.osType";
 
     /**
      * Property that can be used to override the reported value from {@link #isAndroid()}. If not set then
      * {@link #ANDROID_DETECTION_PROPERTIES} are used to determine its value. Otherwise, it must contain the string
-     * &quot;android&quot; (case-insensitive)
+     * "android" (case-insensitive).
      *
      * @see #ANDROID_PROPERTY_VALUE_MATCHER
      */
@@ -65,7 +65,7 @@ public final class OsUtils {
     /**
      * Property that can be used to override the reported value from {@link #isDalvikMachine()}. If not set then
      * {@link #DALVIK_DETECTION_PROPERTIES} are used to determine its value. Otherwise, it must contain the string
-     * &quot;dalvik&quot; (case-insensitive)
+     * "dalvik" (case-insensitive).
      */
     public static final String DALVIK_MACHINE_OVERRIDE_PROP = "org.apache.sshd.dalvikMachine";
 
@@ -335,7 +335,7 @@ public final class OsUtils {
     }
 
     /**
-     * Remove {@code Windows} domain and/or group prefix as well as &quot;(User);&quot suffix
+     * Remove {@code Windows} domain and/or group prefix as well as "(User)" suffix
      *
      * @param  user The original username - ignored if {@code null}/empty
      * @return      The canonical user - unchanged if {@code Unix} O/S
