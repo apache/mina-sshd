@@ -251,6 +251,8 @@ public final class CoreModuleProperties {
     public static final Property<Boolean> REQUEST_SUBSYSTEM_REPLY
             = Property.bool("channel-subsystem-want-reply", true);
 
+    public static final Property<Boolean> MESSAGE_SSH_IGNORE_FLAG
+            = Property.bool("message-ssh-ignore-flag", true);
     public static final Property<Integer> PROP_DHGEX_CLIENT_MIN_KEY
             = Property.integer("dhgex-client-min");
 

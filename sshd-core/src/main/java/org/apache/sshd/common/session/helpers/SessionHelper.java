@@ -403,7 +403,12 @@ public abstract class SessionHelper extends AbstractKexFactoryManager implements
             }
             return;
         }
-        resetIdleTimeout();
+        if (log.isTraceEnabled()) {
+            log.trace("MESSAGE_SSH_IGNORE_FLAG: {}", CoreModuleProperties.MESSAGE_SSH_IGNORE_FLAG.getRequired(getFactoryManager()));
+        }
+        if (CoreModuleProperties.MESSAGE_SSH_IGNORE_FLAG.getRequired(getFactoryManager())) {
+            resetIdleTimeout();
+        }
         doInvokeIgnoreMessageHandler(buffer);
     }
 
