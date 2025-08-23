@@ -31,7 +31,6 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,8 +47,7 @@ import org.testcontainers.utility.MountableFile;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Tag("ContainerTestCase")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 class OpenSshMlKemTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenSshMlKemTest.class);

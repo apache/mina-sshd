@@ -28,7 +28,6 @@ import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -41,8 +40,7 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-@Tag("ContainerTestCase")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public class HostBoundPubKeyAuthTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(HostBoundPubKeyAuthTest.class);

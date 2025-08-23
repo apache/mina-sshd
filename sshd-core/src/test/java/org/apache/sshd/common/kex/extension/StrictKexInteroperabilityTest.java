@@ -36,7 +36,6 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -45,9 +44,8 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
-
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests to ensure that an Apache MINA sshd client can talk to OpenSSH servers with or without "strict KEX". This
@@ -57,7 +55,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://github.com/apache/mina-sshd/issues/445">Terrapin Mitigation: &quot;strict-kex&quot;</A>
  */
-@Tag("ContainerTestCase")
+@Testcontainers(disabledWithoutDocker = true)
 public class StrictKexInteroperabilityTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(StrictKexInteroperabilityTest.class);

@@ -31,7 +31,6 @@ import org.apache.sshd.scp.ScpModuleProperties;
 import org.apache.sshd.scp.common.ScpException;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.slf4j.Logger;
@@ -44,9 +43,6 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-
 /**
  * Tests transferring a file named "äöü.txt" via SCP from a container that uses ISO-8859-15 as locale. The UTF-8 and
  * IOS-8859-15 encodings of these characters are different, so the file should not be found when the command is sent as
@@ -54,8 +50,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Tag("ContainerTestCase")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public class ScpCharsetTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(ScpCharsetTest.class);

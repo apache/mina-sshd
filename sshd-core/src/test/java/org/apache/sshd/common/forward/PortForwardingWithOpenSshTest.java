@@ -43,21 +43,17 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
+import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
-
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Test setup: run a gRPC server on localhost; run an Apache MINA sshd server on localhost. Run an OpenSSH client in a
@@ -79,7 +75,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1055">SSHD-1055</a>
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
  */
-@Tag("ContainerTestCase")
+@Testcontainers(disabledWithoutDocker = true)
 public class PortForwardingWithOpenSshTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(PortForwardingWithOpenSshTest.class);
@@ -201,7 +197,7 @@ public class PortForwardingWithOpenSshTest extends BaseTestSupport {
                 .waitingFor(Wait.forLogMessage(".*forwarding_success.*\n", 1))
                 .withLogConsumer(new Slf4jLogConsumer(LOG));
         try {
-            Testcontainers.exposeHostPorts(sshPort, gRpcPort);
+            org.testcontainers.Testcontainers.exposeHostPorts(sshPort, gRpcPort);
             sshdContainer.start();
             forwardingSetup.await();
             assertTrue(forwardedPort > 0, "Server should listen on port");

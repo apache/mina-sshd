@@ -29,6 +29,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
+import java.util.Objects;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
@@ -50,10 +51,6 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
-import org.testcontainers.shaded.com.google.common.base.Objects;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @TestMethodOrder(MethodName.class)
 public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
@@ -118,7 +115,7 @@ public class SftpExtensionsTest extends AbstractSftpClientTestSupport {
                         SftpSubsystemProxy subsystem,
                         Path file, int flags, NavigableMap<String, Object> attrs, LinkOption... options)
                         throws IOException {
-                    if (Objects.equal(file, localFile)) {
+                    if (Objects.equals(file, localFile)) {
                         @SuppressWarnings("unchecked")
                         Map<String, Object> extra = (Map<String, Object>) attrs.get(IoUtils.EXTENDED_VIEW_ATTR);
                         if (MapEntryUtils.isEmpty(extra)) {

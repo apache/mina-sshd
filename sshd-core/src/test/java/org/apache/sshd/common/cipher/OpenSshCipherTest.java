@@ -33,7 +33,6 @@ import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.slf4j.Logger;
@@ -46,15 +45,12 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Test ciphers against OpenSSH. Force resetting ciphers every time to verify that they are res-initialized correctly.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Tag("ContainerTestCase")
-@Testcontainers
+@Testcontainers(disabledWithoutDocker = true)
 public class OpenSshCipherTest extends BaseTestSupport {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenSshCipherTest.class);
