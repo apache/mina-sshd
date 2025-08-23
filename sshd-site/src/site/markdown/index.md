@@ -25,7 +25,7 @@ Apache MINA sshd is a pure Java library for client- and server-side SSH.
 * For now, [technical documentation](https://github.com/apache/mina-sshd/blob/master/README.md)
 still lives directly in the git repository and can be viewed as rendered web pages in GitHub.
 * Technical information on the development of release 3.0.0 is available in branch `dev_3.0`:
-    * [Changes since 2.15.0](https://github.com/apache/mina-sshd/blob/dev_3.0/CHANGES.md)
+    * [Changes since 2.16.0](https://github.com/apache/mina-sshd/blob/dev_3.0/CHANGES.md)
     * [Technical documentation](https://github.com/apache/mina-sshd/tree/dev_3.0/docs/technical)
 
 Release 3.0.0 will be a new major release and will contain many breaking API changes.
