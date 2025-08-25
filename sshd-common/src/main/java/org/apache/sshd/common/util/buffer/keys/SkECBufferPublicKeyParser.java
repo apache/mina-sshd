@@ -43,6 +43,6 @@ public class SkECBufferPublicKeyParser extends AbstractBufferPublicKeyParser<SkE
         // with an appname on the end
         ECPublicKey ecPublicKey = ECBufferPublicKeyParser.INSTANCE.getRawPublicKey(ECCurves.nistp256.getKeyType(), buffer);
         String appName = buffer.getString();
-        return new SkEcdsaPublicKey(appName, false, ecPublicKey);
+        return new SkEcdsaPublicKey(appName, false, false, ecPublicKey);
     }
 }
