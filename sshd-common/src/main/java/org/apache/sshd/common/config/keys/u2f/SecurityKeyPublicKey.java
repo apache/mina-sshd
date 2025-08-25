@@ -23,9 +23,12 @@ import java.security.PublicKey;
 import org.apache.sshd.common.config.keys.SshPublicKey;
 
 public interface SecurityKeyPublicKey<K extends PublicKey> extends SshPublicKey {
+
     String getAppName();
 
     boolean isNoTouchRequired();
+
+    boolean isVerifyRequired();
 
     K getDelegatePublicKey();
 }

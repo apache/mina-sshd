@@ -29,6 +29,8 @@
 
 ## Bug Fixes
 
+* [GH-807](https://github.com/apache/mina-sshd/issues/807) Handle "verified" flag for sk-* keys
+
 ## New Features
 
 ## Potential Compatibility Issues

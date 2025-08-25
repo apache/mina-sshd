@@ -51,6 +51,7 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
     public static final SkED25519PublicKeyEntryDecoder INSTANCE = new SkED25519PublicKeyEntryDecoder();
 
     private static final String NO_TOUCH_REQUIRED_HEADER = "no-touch-required";
+    private static final String VERIFY_REQUIRED_HEADER = "verify-required";
 
     public SkED25519PublicKeyEntryDecoder() {
         super(SkED25519PublicKey.class, PrivateKey.class, Collections.singleton(KEY_TYPE));
@@ -65,10 +66,11 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
         }
 
         boolean noTouchRequired = parseBooleanHeader(headers, NO_TOUCH_REQUIRED_HEADER, false);
+        boolean verifyRequired = parseBooleanHeader(headers, VERIFY_REQUIRED_HEADER, false);
         PublicKey pk = SecurityUtils.getEDDSAPublicKeyEntryDecoder().decodePublicKey(session, KeyPairProvider.SSH_ED25519,
                 keyData, headers);
         String appName = KeyEntryResolver.decodeString(keyData, MAX_APP_NAME_LENGTH);
-        return new SkED25519PublicKey(appName, noTouchRequired, pk);
+        return new SkED25519PublicKey(appName, noTouchRequired, verifyRequired, pk);
     }
 
     @Override
@@ -77,7 +79,8 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
             return null;
         }
 
-        return new SkED25519PublicKey(key.getAppName(), key.isNoTouchRequired(), key.getDelegatePublicKey());
+        return new SkED25519PublicKey(key.getAppName(), key.isNoTouchRequired(), key.isVerifyRequired(),
+                key.getDelegatePublicKey());
     }
 
     @Override
