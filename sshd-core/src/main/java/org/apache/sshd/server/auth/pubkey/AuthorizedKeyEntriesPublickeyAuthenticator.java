@@ -61,8 +61,7 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
         } else {
             resolvedKeys = new HashMap<>(numEntries);
             for (AuthorizedKeyEntry e : entries) {
-                Map<String, String> headers = e.getLoginOptions();
-                PublicKey k = e.resolvePublicKey(session, headers, fallbackResolver);
+                PublicKey k = e.resolvePublicKey(session, Collections.emptyMap(), fallbackResolver);
                 if (k != null) {
                     resolvedKeys.put(e, k);
                 }

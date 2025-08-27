@@ -23,6 +23,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SignatureException;
 
 import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.session.SessionContext;
@@ -30,7 +31,10 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 public abstract class AbstractSecurityKeySignature implements Signature {
-    private static final int FLAG_USER_PRESENCE = 0x01;
+
+    private static final int FLAG_USER_PRESENCE = 1 << 0;
+
+    private static final int FLAG_VERIFIED = 1 << 2;
 
     private final String keyType;
     private SecurityKeyPublicKey<?> publicKey;
@@ -76,13 +80,16 @@ public abstract class AbstractSecurityKeySignature implements Signature {
         byte flags = data.getByte();
         long counter = data.getUInt();
 
-        // Return false if we don't understand the flags
-        if ((flags & ~FLAG_USER_PRESENCE) != 0) {
-            return false;
-        }
         // Check user-presence flag is present if required by the public key
         if ((flags & FLAG_USER_PRESENCE) != FLAG_USER_PRESENCE && !publicKey.isNoTouchRequired()) {
             return false;
+        }
+        if ((flags & FLAG_VERIFIED) != FLAG_VERIFIED && publicKey.isVerifyRequired()) {
+            return false;
+        }
+
+        if (data.available() > 0) {
+            throw new SignatureException("Unexpected trailing data in signature");
         }
 
         // Re-encode signature in a format to match the delegate

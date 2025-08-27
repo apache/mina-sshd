@@ -31,8 +31,11 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
+import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.net.InetAddressRange;
 import org.apache.sshd.common.signature.Signature;
 import org.apache.sshd.common.signature.SignatureFactoriesManager;
@@ -126,14 +129,16 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             log.debug("doAuth({}@{}) verify key type={}, factories={}, fingerprint={}",
                     username, session, alg, NamedResource.getNames(factories), KeyUtils.getFingerPrint(key));
         }
-        Signature verifier = ValidateUtils.checkNotNull(
+        final Signature verifier = ValidateUtils.checkNotNull(
                 NamedFactory.create(factories, alg),
                 "No verifier located for algorithm=%s",
                 alg);
-        verifier.initVerifier(session, verifyKey);
         buffer.wpos(oldLim);
 
-        byte[] sig = hasSig ? buffer.getBytes() : null;
+        final byte[] sig = hasSig ? buffer.getBytes() : null;
+        if (buffer.available() > 0) {
+            throw new SignatureException("Unexpected trailing data after signature");
+        }
         PublickeyAuthenticator authenticator = session.getPublickeyAuthenticator();
         if (authenticator == null) {
             if (debugEnabled) {
@@ -167,6 +172,15 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             return null;
         }
 
+        if (verifyKey instanceof SecurityKeyPublicKey<?>) {
+            AuthorizedKeyEntry entry = session.getAttribute(AuthorizedKeyEntriesPublickeyAuthenticator.AUTHORIZED_KEY);
+            if (entry != null) {
+                // Use the key including the options defined in the entry.
+                verifyKey = entry.resolvePublicKey(session, entry.getLoginOptions(), PublicKeyEntryResolver.FAILING);
+            }
+        }
+        verifier.initVerifier(session, verifyKey);
+
         buffer.rpos(oldPos);
         buffer.wpos(oldPos + 4 + len);
         if (!verifySignature(session, username, alg, key, buffer, verifier, sig)) {
@@ -182,7 +196,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
     }
 
     protected void verifyCertificateSignature(ServerSession session, OpenSshCertificate cert) throws Exception {
-        if (!OpenSshCertificate.verifySignature(cert, session.getSignatureFactories())) {
+        if (!OpenSshCertificate.verifySignature(cert, SignatureFactoriesManager.resolveSignatureFactories(this, session))) {
             throw new CertificateException(
                     "CA signature verification failed for key type=" + cert.getKeyType() + " of key ID=" + cert.getId());
         }

@@ -48,6 +48,7 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
     public static final SkECDSAPublicKeyEntryDecoder INSTANCE = new SkECDSAPublicKeyEntryDecoder();
 
     private static final String NO_TOUCH_REQUIRED_HEADER = "no-touch-required";
+    private static final String VERIFY_REQUIRED_HEADER = "verify-required";
 
     public SkECDSAPublicKeyEntryDecoder() {
         super(SkEcdsaPublicKey.class, PrivateKey.class, Collections.singleton(KEY_TYPE));
@@ -62,9 +63,10 @@ public class SkECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<
         }
 
         boolean noTouchRequired = parseBooleanHeader(headers, NO_TOUCH_REQUIRED_HEADER, false);
+        boolean verifyRequired = parseBooleanHeader(headers, VERIFY_REQUIRED_HEADER, false);
         ECPublicKey ecPublicKey = ECDSAPublicKeyEntryDecoder.INSTANCE.decodePublicKey(ECCurves.nistp256, keyData);
         String appName = KeyEntryResolver.decodeString(keyData, MAX_APP_NAME_LENGTH);
-        return new SkEcdsaPublicKey(appName, noTouchRequired, ecPublicKey);
+        return new SkEcdsaPublicKey(appName, noTouchRequired, verifyRequired, ecPublicKey);
     }
 
     @Override

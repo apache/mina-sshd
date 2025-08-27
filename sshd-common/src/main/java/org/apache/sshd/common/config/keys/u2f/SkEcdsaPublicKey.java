@@ -31,11 +31,26 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
 
     private final String appName;
     private final boolean noTouchRequired;
+    private final boolean verifyRequired;
     private final ECPublicKey delegatePublicKey;
 
+    /**
+     * Creates a new instance.
+     *
+     * @param      appName           application name
+     * @param      noTouchRequired   whether the "no-touch-required" flag was present in authorized_keys
+     * @param      delegatePublicKey the underlying real public key
+     * @deprecated                   use {@link #SkEcdsaPublicKey(String, boolean, boolean, ECPublicKey)} instead
+     */
+    @Deprecated
     public SkEcdsaPublicKey(String appName, boolean noTouchRequired, ECPublicKey delegatePublicKey) {
+        this(appName, noTouchRequired, false, delegatePublicKey);
+    }
+
+    public SkEcdsaPublicKey(String appName, boolean noTouchRequired, boolean verifyRequired, ECPublicKey delegatePublicKey) {
         this.appName = appName;
         this.noTouchRequired = noTouchRequired;
+        this.verifyRequired = verifyRequired;
         this.delegatePublicKey = delegatePublicKey;
     }
 
@@ -70,6 +85,11 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
     }
 
     @Override
+    public boolean isVerifyRequired() {
+        return verifyRequired;
+    }
+
+    @Override
     public ECPublicKey getDelegatePublicKey() {
         return delegatePublicKey;
     }
@@ -79,6 +99,7 @@ public class SkEcdsaPublicKey implements SecurityKeyPublicKey<ECPublicKey> {
         return getClass().getSimpleName()
                + "[appName=" + getAppName()
                + ", noTouchRequired=" + isNoTouchRequired()
+               + ", verifyRequired=" + isVerifyRequired()
                + ", delegatePublicKey=" + getDelegatePublicKey()
                + "]";
     }

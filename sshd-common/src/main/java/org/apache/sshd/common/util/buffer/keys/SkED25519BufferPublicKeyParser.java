@@ -43,6 +43,6 @@ public class SkED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParse
         // the end
         PublicKey publicKey = ED25519BufferPublicKeyParser.INSTANCE.getRawPublicKey(KeyPairProvider.SSH_ED25519, buffer);
         String appName = buffer.getString();
-        return new SkED25519PublicKey(appName, false, publicKey);
+        return new SkED25519PublicKey(appName, false, false, publicKey);
     }
 }
