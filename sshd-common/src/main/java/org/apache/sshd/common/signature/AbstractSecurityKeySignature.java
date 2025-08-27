@@ -23,6 +23,7 @@ import java.security.GeneralSecurityException;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SignatureException;
 
 import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.session.SessionContext;
@@ -85,6 +86,10 @@ public abstract class AbstractSecurityKeySignature implements Signature {
         }
         if ((flags & FLAG_VERIFIED) != FLAG_VERIFIED && publicKey.isVerifyRequired()) {
             return false;
+        }
+
+        if (data.available() > 0) {
+            throw new SignatureException("Unexpected trailing data in signature");
         }
 
         // Re-encode signature in a format to match the delegate
