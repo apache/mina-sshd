@@ -30,7 +30,7 @@
 ## Bug Fixes
 
 * [GH-807](https://github.com/apache/mina-sshd/issues/807) Handle "verified" flag for sk-* keys
-* [GH-809](https://github.com/apache/mina-sshd/pulls/809) Fix server-side authentication for FIDO/U2F sk-* keys with flags in `authorized_keys`
+* [GH-809](https://github.com/apache/mina-sshd/pull/809) Fix server-side authentication for FIDO/U2F sk-* keys with flags in `authorized_keys`
 
 ## New Features
 
