@@ -25,6 +25,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 public class SkED25519PublicKey implements SecurityKeyPublicKey<PublicKey> {
 
@@ -111,7 +112,7 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<PublicKey> {
 
     @Override
     public int hashCode() {
-        return Objects.hash(appName, noTouchRequired, delegatePublicKey);
+        return Objects.hash(appName, noTouchRequired, verifyRequired, delegatePublicKey);
     }
 
     @Override
@@ -129,7 +130,8 @@ public class SkED25519PublicKey implements SecurityKeyPublicKey<PublicKey> {
         SkED25519PublicKey other = (SkED25519PublicKey) obj;
         return Objects.equals(this.appName, other.appName)
                 && this.noTouchRequired == other.noTouchRequired
-                && Objects.equals(this.delegatePublicKey, other.delegatePublicKey);
+                && this.verifyRequired == other.verifyRequired
+                && SecurityUtils.compareEDDSAPPublicKeys(this.delegatePublicKey, other.delegatePublicKey);
     }
 
 }
