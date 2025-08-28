@@ -34,3 +34,22 @@ It will not be API-compatible with the 2.X releases. There are
 here; see the menu on the left. Most of the API changes affect only the `protected` API,
 i.e., the API for subclassing. But there are also changes in the `public` API that may
 affect user code.
+
+## Roadmap
+
+We cannot give a definitive roadmap with milestone dates. All development is done by
+volunteers in their free time and resources are limited.
+
+But we can give you a rough outline of what we want to do:
+
+* **3.0.0-M1**: Rework of the SSH transport protocol as a filter chain. The main user-visible new feature is support for client-side proxies.
+
+Further possible milestones (the order might change, though):
+
+* Some rework of handling of private/public keys. No new feature planned, it's necessary clean-up that will require some public API changes.
+* Resolve the split packages between `sshd-common` and `sshd-core`.
+* Support Java native ed25519 on Java >= 15. This may result in a multi-release JAR artifact.
+* Some refactoring of SFTP code; current code has shortcomings regarding SFTP file systems.
+* Anything else we stumble upon and that we cannot fix reasonably without breaking API.
+
+We reserve the right to make arbitrary API changes between M-releases.
