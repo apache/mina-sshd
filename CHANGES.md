@@ -24,7 +24,7 @@ Version 3 includes all the features and bug fixes of version 2, including the [l
 * `HostConfigEntry` has been changed to be more compliant with OpenSSH, and handles quoted values now. It also has a new method `getValues(key)` to get all the values of a key that can have multiple values, either because it may have multiple space-separated values (such as `UserKnownHostsFile`) or because it appears several times and does not follow the "first match wins" rule (such as `IdentityFile` or `CertificateFile`). Note that some keys have values that are comma-separated lists of items; such lists are a single value and must be split by user code (as in version 2).
 * Integration tests using docker containers have been moved out of bundle `sshd-core` into a new bundle `sshd-test`, and are run now also with the MINA and the netty transports.
 * All docker tests have been changed to be skipped if no docker engine is running. If a docker engine _is_ running, they will newly also be run on Windows. (Previously, they were disabled unconditionally on Windows because the Windows runners in CI don't have docker support.)
-    * This was back-ported to version 2.170.0-SNAPSHOT on the master branch.
+    * This was back-ported to version 2.17.0-SNAPSHOT on the master branch.
 
 ## New Features
 
