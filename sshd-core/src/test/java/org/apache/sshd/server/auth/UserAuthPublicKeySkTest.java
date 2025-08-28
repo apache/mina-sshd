@@ -72,7 +72,7 @@ class UserAuthPublicKeySkTest extends BaseTestSupport {
         // Determine expected outcome
         boolean expectSuccess = true;
         if ((flagsOnSig & 1) == 0 && (authFlags & 1) == 0) {
-            // Incoming key/signature doesn't have "user presence" flag but auth requires is (no-touch-required not set)
+            // Incoming key/signature doesn't have "user presence" flag but auth requires it (no-touch-required not set)
             expectSuccess = false;
         }
         if ((authFlags & 4) != 0 && (flagsOnSig & 4) == 0) {
@@ -81,8 +81,7 @@ class UserAuthPublicKeySkTest extends BaseTestSupport {
         }
 
         // Generate a "fake" SK EC key. "Fake" because we actually use a normal EC key as basis, so that we have the
-        // private key
-        // and can generate a signature.
+        // private key and can generate a signature.
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator("EC");
         generator.initialize(256);
         KeyPair pair = generator.generateKeyPair();
@@ -144,7 +143,7 @@ class UserAuthPublicKeySkTest extends BaseTestSupport {
 
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private MockSession createSession() throws Exception {
-        // Create a mock ServerSession. We can't simple mock the server session since the authenticator might want to
+        // Create a mock ServerSession. We can't simply mock the server session since the authenticator might want to
         // set an attribute on it.
         ServerFactoryManager manager = Mockito.mock(ServerFactoryManager.class);
         Factory<? extends Random> randomFactory = new SingletonRandomFactory(JceRandomFactory.INSTANCE);
