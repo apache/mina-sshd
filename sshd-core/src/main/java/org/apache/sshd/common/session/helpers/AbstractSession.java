@@ -392,7 +392,6 @@ public abstract class AbstractSession extends SessionHelper {
      * @param  buffer    The {@link Buffer} containing the packet - it may be re-used to generate the response once
      *                   request has been decoded
      * @throws Exception if an exception occurs while handling this packet.
-     * @see              #doHandleMessage(Buffer)
      */
     protected void handleMessage(Buffer buffer) throws Exception {
         int cmd = buffer.getUByte();

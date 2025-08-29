@@ -388,7 +388,6 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     /**
      * @param  key The {@link Key} (public or private) - ignored if {@code null}
      * @return     The registered {@link PrivateKeyEntryDecoder} for this key or {code null} if no match found
-     * @see        #getPrivateKeyEntryDecoder(Class)
      */
     public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(Key key) {
         if (key == null) {

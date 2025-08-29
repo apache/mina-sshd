@@ -466,7 +466,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      * @param  props       The {@link Map} of properties - ignored if {@code null}/empty
      * @return             the target appender
      * @throws IOException
-     * @see                #appendNonEmptyProperty(Appendable, String, Object)
+     * @see                {@link #appendNonEmptyProperty(Appendable, String, List)}
      */
     public static <A extends Appendable> A appendNonEmptyProperties(A sb, Map<String, List<String>> props) throws IOException {
         if (MapEntryUtils.isEmpty(props)) {
@@ -498,7 +498,7 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
      *                     broken down to <U>individual</U> lines - one per value.
      * @return             The target appender after having appended (or not) the value
      * @throws IOException
-     * @see                #appendNonEmptyValues(Appendable, String, Object...)
+     * @see                {@link #appendNonEmptyProperties(Appendable, Map)}
      */
     public static <A extends Appendable> A appendNonEmptyProperty(A sb, String name, List<String> value) throws IOException {
         String key = ValidateUtils.checkNotNullAndNotEmpty(name, "No property name");

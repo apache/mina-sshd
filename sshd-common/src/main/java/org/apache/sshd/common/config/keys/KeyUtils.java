@@ -355,7 +355,6 @@ public final class KeyUtils {
      * supports}
      *
      * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder<?, ?> decoder} to register
-     * @see           #registerPublicKeyEntryDecoderForKeyType(String, PublicKeyEntryDecoder<?, ?>)
      */
     public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
@@ -437,7 +436,6 @@ public final class KeyUtils {
     /**
      * @param  key The {@link Key} (public or private) - ignored if {@code null}
      * @return     The registered {@link PublicKeyEntryDecoder<?, ?>} for this key or {code null} if no match found
-     * @see        #getPublicKeyEntryDecoder(Class)
      */
     public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Key key) {
         if (key == null) {

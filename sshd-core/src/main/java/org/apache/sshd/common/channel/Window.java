@@ -79,7 +79,7 @@ public abstract class Window extends AbstractLoggingBean implements ChannelHolde
      *
      * <pre>
      * long toConsume = ...;
-     * if (toConsume < window.getSize()) {
+     * if (toConsume &lt; window.getSize()) {
      *   window.consume(toConsume); // Might throw an exception if some other thread consumed some space already
      * }
      * </pre>
