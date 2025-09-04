@@ -67,8 +67,8 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
     // - 1 byte padding count
     // - 1 byte payload
     // - 4 bytes padding
-    // Since all ciphers, including the none cipher, have a block size of 8, we need to have
-    // at least 8 bytes if the length itself is not encrypted, or 12 if it is. (Even if a
+    // Since all ciphers, including the none cipher, have a block size of at least 8, we need to
+    // have at least 8 bytes if the length itself is not encrypted, or 12 if it is. (Even if a
     // zero-length payload was allowed, it would be 8 or 12.) So in practice the minimum length
     // is 8 bytes.
     private static final int MIN_PACKET_LENGTH = 8;
@@ -445,17 +445,25 @@ public class CryptFilter extends IoFilter implements CryptStatisticsProvider {
             }
             // RFC 4253: at least 4, at most 255 bytes.
             int minPadding = 4;
+            int maxPadding = MAX_PADDING;
             // Minor layering break here: always pad messages that might carry user passwords with at least 64 bytes
             // to prevent that traffic analysis might make guesses about password lengths.
             if (cmd >= SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST && cmd <= SshConstants.SSH_MSG_USERAUTH_GSSAPI_MIC) {
                 minPadding = 64; // Must be smaller than MAX_PADDING, of course
+            } else if (payloadLength < 16) {
+                // For very small data packets (such as single keystrokes) ensure that we don't grow too much.
+                // 16 is a bit arbitrary; a single keystroke in an interactive session is 10 bytes (SSH_MSG_CHANNEL_DATA
+                // + channel id + data length + 1 byte data), and so are the messages from the "ping@openssh.com"
+                // extension used for keystroke obfuscation (SSH_MSG_PING + data length + "PING!").
+                maxPadding = 64;
             }
             int pad = minPadding;
             // For low-level messages, do not add extra padding.
             if (cmd >= SshConstants.SSH_MSG_KEXINIT) {
                 // RFC 4253: variable amounts of random padding may help thwart traffic analysis. We don't need a secure
-                // random for this.
-                pad = minPadding + random.random(MAX_PADDING + 1 - minPadding);
+                // random for this. Note that the padding can only randomize message size on the wire in quanta of
+                // blockSize. It's a bit unclear how effective this may be against traffic analysis.
+                pad = minPadding + random.random(maxPadding + 1 - minPadding);
             }
             // Now pad is in the range [4..MAX_PADDING]
             int totalLength = toEncrypt + pad;
