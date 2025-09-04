@@ -807,8 +807,9 @@ public final class KeyUtils {
             if (curve != null) {
                 return curve.getKeySize();
             }
-        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
-            return SecurityUtils.getEDDSAKeySize(key);
+        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())
+                || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm())) {
+            return 256;
         }
 
         return -1;
@@ -886,7 +887,8 @@ public final class KeyUtils {
             return recoverRSAPublicKey((RSAPrivateKey) key);
         } else if (key instanceof DSAPrivateKey) {
             return recoverDSAPublicKey((DSAPrivateKey) key);
-        } else if ((key != null) && SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())) {
+        } else if ((key != null) && (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())
+                || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm()))) {
             return SecurityUtils.recoverEDDSAPublicKey(key);
         }
         return null;
@@ -901,6 +903,9 @@ public final class KeyUtils {
             return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
         } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
                 && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
+            return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
+        } else if ((k1 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k1.getAlgorithm()) && (k2 != null)
+                && SecurityUtils.ED25519.equalsIgnoreCase(k2.getAlgorithm())) {
             return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
         }
         return false; // either key is null or not of same class

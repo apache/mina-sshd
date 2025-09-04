@@ -55,9 +55,9 @@ public class Ed25519PEMResourceKeyParser extends GenericEd25519PEMResourceKeyPar
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " provider not supported");
         }
 
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(EdDSASecurityProviderUtils.CURVE_ED25519_SHA512);
+        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(SecurityUtils.ED25519);
         EdDSAPrivateKeySpec keySpec = new EdDSAPrivateKeySpec(seed, params);
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
+        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
         return EdDSAPrivateKey.class.cast(factory.generatePrivate(keySpec));
     }
 }

@@ -18,16 +18,35 @@
  */
 package org.apache.sshd.common.util.security.eddsa;
 
-import net.i2p.crypto.eddsa.EdDSAEngine;
-import org.apache.sshd.common.util.security.eddsa.generic.GenericSignatureEd25519;
+import java.util.Map;
+
+import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.signature.AbstractSignature;
+import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * An implementation of {@link GenericSignatureEd25519} tied to the {@code net.i2p.crypto} EdDSA security provider.
+ * An ed25519 signature.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SignatureEd25519 extends GenericSignatureEd25519 {
+public class SignatureEd25519 extends AbstractSignature {
+
     public SignatureEd25519() {
-        super(EdDSAEngine.SIGNATURE_ALGORITHM);
+        super(SecurityUtils.ED25519, KeyPairProvider.SSH_ED25519);
+    }
+
+    @Override
+    public boolean verify(SessionContext session, byte[] sig) throws Exception {
+        byte[] data = sig;
+        Map.Entry<String, byte[]> encoding = extractEncodedSignature(data, KeyPairProvider.SSH_ED25519::equalsIgnoreCase);
+        if (encoding != null) {
+            String keyType = encoding.getKey();
+            ValidateUtils.checkTrue(KeyPairProvider.SSH_ED25519.equals(keyType), "Mismatched key type: %s", keyType);
+            data = encoding.getValue();
+        }
+
+        return doVerify(data);
     }
 }

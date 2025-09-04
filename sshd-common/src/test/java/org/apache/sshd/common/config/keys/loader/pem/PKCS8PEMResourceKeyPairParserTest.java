@@ -72,7 +72,7 @@ class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
             params.add(new Object[] { KeyUtils.EC_ALGORITHM, curve.getKeySize() });
         }
         if (SecurityUtils.isEDDSACurveSupported()) {
-            params.add(new Object[] { SecurityUtils.EDDSA, 0 });
+            params.add(new Object[] { SecurityUtils.ED25519, 0 });
         }
         return params;
     }
@@ -149,7 +149,7 @@ class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         // https://github.com/bcgit/bc-java/issues/1238#issuecomment-1263162809 and has a
         // different password. Unknown how it was generated; openssl always writes the
         // RFC 5958 EncryptedPrivateKeyInfo.
-        String password = "eddsa".equalsIgnoreCase(algorithm) ? "Vjvyhfngz0MCUs$kwOF0" : "test";
+        String password = "ed25519".equalsIgnoreCase(algorithm) ? "Vjvyhfngz0MCUs$kwOF0" : "test";
         Collection<KeyPair> pairs = PEMResourceParserUtils.PROXY.loadKeyPairs(null, url, (s, r, i) -> password);
         assertEquals(1, GenericUtils.size(pairs), "Mismatched extract keys count");
         validateKeyPairSignable(algorithm + "/" + keySize, GenericUtils.head(pairs));

@@ -32,6 +32,7 @@ import java.util.Map;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
  * TODO Add javadoc
@@ -60,9 +61,9 @@ public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder {
         }
 
         byte[] seed = pubReader.read(Short.MAX_VALUE); // reasonable max. allowed size
-        PublicKey pubKey = SecurityUtils.getEdDSASupport().get().generateEDDSAPublicKey(seed);
+        PublicKey pubKey = EdDSAUtils.getPublicKey(seed);
         seed = prvReader.read(Short.MAX_VALUE); // reasonable max. allowed size
-        PrivateKey prvKey = SecurityUtils.getEdDSASupport().get().generateEDDSAPrivateKey(seed);
+        PrivateKey prvKey = EdDSAUtils.getPrivateKey(seed);
         return Collections.singletonList(new KeyPair(pubKey, prvKey));
     }
 }

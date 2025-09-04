@@ -32,23 +32,20 @@ import net.i2p.crypto.eddsa.EdDSAEngine;
 import net.i2p.crypto.eddsa.EdDSAKey;
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSANamedCurveTable;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class EdDSASecurityProviderUtils {
     // See EdDSANamedCurveTable
-    public static final String CURVE_ED25519_SHA512 = "Ed25519";
     public static final int KEY_SIZE = EdDSASupport.KEY_SIZE;
 
     private EdDSASecurityProviderUtils() {
@@ -94,21 +91,13 @@ public final class EdDSASecurityProviderUtils {
 
         EdDSAPrivateKey prvKey = (EdDSAPrivateKey) key;
         EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(prvKey.getAbyte(), prvKey.getParams());
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
+        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
         return EdDSAPublicKey.class.cast(factory.generatePublic(keySpec));
     }
 
     public static org.apache.sshd.common.signature.Signature getEDDSASignature() {
         ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
         return new SignatureEd25519();
-    }
-
-    public static boolean isEDDSAKeyFactoryAlgorithm(String algorithm) {
-        return SecurityUtils.EDDSA.equalsIgnoreCase(algorithm);
-    }
-
-    public static boolean isEDDSAKeyPairGeneratorAlgorithm(String algorithm) {
-        return SecurityUtils.EDDSA.equalsIgnoreCase(algorithm);
     }
 
     public static PublicKeyEntryDecoder getEDDSAPublicKeyEntryDecoder() {
@@ -157,10 +146,7 @@ public final class EdDSASecurityProviderUtils {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " not supported");
         }
 
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(CURVE_ED25519_SHA512);
-        EdDSAPublicKeySpec keySpec = new EdDSAPublicKeySpec(seed, params);
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
-        return factory.generatePublic(keySpec);
+        return EdDSAUtils.getPublicKey(seed);
     }
 
     public static PrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException {
@@ -168,25 +154,6 @@ public final class EdDSASecurityProviderUtils {
             throw new NoSuchAlgorithmException(SecurityUtils.EDDSA + " not supported");
         }
 
-        EdDSAParameterSpec params = EdDSANamedCurveTable.getByName(CURVE_ED25519_SHA512);
-        EdDSAPrivateKeySpec keySpec = new EdDSAPrivateKeySpec(seed, params);
-        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
-        return factory.generatePrivate(keySpec);
-    }
-
-    public static <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key) {
-        ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
-        EdDSAPublicKey edKey = ValidateUtils.checkInstanceOf(key, EdDSAPublicKey.class, "Not an EDDSA public key: %s", key);
-        byte[] seed = Ed25519PublicKeyDecoder.getSeedValue(edKey);
-        ValidateUtils.checkNotNull(seed, "No seed extracted from key: %s", edKey.getA());
-        buffer.putBytes(seed);
-        return buffer;
-    }
-
-    public static <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey) {
-        ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
-        ValidateUtils.checkInstanceOf(pubKey, EdDSAPublicKey.class, "Not an EDDSA public key: %s", pubKey);
-        ValidateUtils.checkInstanceOf(prvKey, EdDSAPrivateKey.class, "Not an EDDSA private key: %s", prvKey);
-        throw new UnsupportedOperationException("Full SSHD-440 implementation N/A");
+        return EdDSAUtils.getPrivateKey(seed);
     }
 }

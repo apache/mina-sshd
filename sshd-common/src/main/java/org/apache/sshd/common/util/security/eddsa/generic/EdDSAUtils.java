@@ -19,7 +19,9 @@
 package org.apache.sshd.common.util.security.eddsa.generic;
 
 import java.io.IOException;
+import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.KeySpec;
@@ -28,10 +30,11 @@ import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
 
 import org.apache.sshd.common.util.io.der.DERParser;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
- * Utilities to extract the raw key bytes from ed25519 or ed448 public keys, in a manner that is independent of the
- * actual concrete key implementation classes.
+ * Utilities to extract the raw key bytes from ed25519 or ed448 keys or to construct such keys from the raw key bytes,
+ * in a manner that is independent of the actual concrete key implementation classes.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -103,18 +106,19 @@ public final class EdDSAUtils {
     /**
      * Retrieves the raw key bytes from an ed25519 or ed448 {@link PublicKey}.
      *
-     * @param  key                 {@link PublicKey} to get the bytes of
-     * @return                     the raw key bytes
-     * @throws InvalidKeyException if the key is not an ed25519 or ed448 key, or if it doesn't use X.509 encoding
+     * @param  key                      {@link PublicKey} to get the bytes of
+     * @return                          the raw key bytes
+     * @throws IllegalArgumentException if the key is not an ed25519 or ed448 key, or if it doesn't use X.509 encoding
      */
-    public static byte[] getBytes(PublicKey key) throws InvalidKeyException {
+    public static byte[] getBytes(PublicKey key) throws IllegalArgumentException {
         // Extract the public key bytes from the X.509 encoding (last n bytes, depending on the OID).
         if (!"X.509".equalsIgnoreCase(key.getFormat())) {
-            throw new InvalidKeyException("Cannot extract public key bytes from a non-X.509 encoding");
+            throw new IllegalArgumentException("Cannot extract public key bytes from a non-X.509 encoding");
         }
         byte[] encoded = key.getEncoded();
         if (encoded == null) {
-            throw new InvalidKeyException("Public key " + key.getClass().getCanonicalName() + " does not support encoding");
+            throw new IllegalArgumentException(
+                    "Public key " + key.getClass().getCanonicalName() + " does not support encoding");
         }
         int n;
         if (encoded.length == ED25519_LENGTH + ED25519_X509_PREFIX.length && startsWith(encoded, ED25519_X509_PREFIX)) {
@@ -122,7 +126,7 @@ public final class EdDSAUtils {
         } else if (encoded.length == ED448_LENGTH + ED448_X509_PREFIX.length && startsWith(encoded, ED448_X509_PREFIX)) {
             n = ED448_LENGTH;
         } else {
-            throw new InvalidKeyException("Public key is neither ed25519 nor ed448");
+            throw new IllegalArgumentException("Public key is neither ed25519 nor ed448");
         }
         return Arrays.copyOfRange(encoded, encoded.length - n, encoded.length);
     }
@@ -130,18 +134,19 @@ public final class EdDSAUtils {
     /**
      * Retrieves the raw key bytes from an ed25519 or ed448 {@link PrivateKey}.
      *
-     * @param  key                 {@link PrivateKey} to get the bytes of
-     * @return                     the raw key bytes
-     * @throws InvalidKeyException if the key is not an ed25519 or ed448 key, or if it doesn't use PKCS#8 encoding
+     * @param  key                      {@link PrivateKey} to get the bytes of
+     * @return                          the raw key bytes
+     * @throws IllegalArgumentException if the key is not an ed25519 or ed448 key, or if it doesn't use PKCS#8 encoding
      */
-    public static byte[] getBytes(PrivateKey key) throws InvalidKeyException {
+    public static byte[] getBytes(PrivateKey key) throws IllegalArgumentException {
         // Extract the private key bytes from the PKCS#8 encoding.
         if (!"PKCS#8".equalsIgnoreCase(key.getFormat())) {
-            throw new InvalidKeyException("Cannot extract private key bytes from a non-PKCS#8 encoding");
+            throw new IllegalArgumentException("Cannot extract private key bytes from a non-PKCS#8 encoding");
         }
         byte[] encoded = key.getEncoded();
         if (encoded == null) {
-            throw new InvalidKeyException("Private key " + key.getClass().getCanonicalName() + " does not support encoding");
+            throw new IllegalArgumentException(
+                    "Private key " + key.getClass().getCanonicalName() + " does not support encoding");
         }
         try {
             return asn1Parse(encoded);
@@ -180,13 +185,13 @@ public final class EdDSAUtils {
      * CurvePrivateKey ::= OCTET STRING
      * </pre>
      *
-     * @param  encoded             encoded private key to extract the private key bytes from
-     * @return                     the extracted private key bytes
-     * @throws InvalidKeyException if the private key cannot be extracted
-     * @see                        <a href="https://tools.ietf.org/html/rfc5958">RFC 5958</a>
-     * @see                        <a href="https://tools.ietf.org/html/rfc8410">RFC 8410</a>
+     * @param  encoded                  encoded private key to extract the private key bytes from
+     * @return                          the extracted private key bytes
+     * @throws IllegalArgumentException if the private key cannot be extracted
+     * @see                             <a href="https://tools.ietf.org/html/rfc5958">RFC 5958</a>
+     * @see                             <a href="https://tools.ietf.org/html/rfc8410">RFC 8410</a>
      */
-    private static byte[] asn1Parse(byte[] encoded) throws InvalidKeyException {
+    private static byte[] asn1Parse(byte[] encoded) throws IllegalArgumentException {
         byte[] privateKey = null;
         try (DERParser byteParser = new DERParser(encoded);
              DERParser oneAsymmetricKey = byteParser.readObject().createParser()) {
@@ -199,7 +204,7 @@ public final class EdDSAUtils {
                 } else if (arrayEq(ED448_OID, oid)) {
                     n = ED448_LENGTH;
                 } else {
-                    throw new InvalidKeyException("Private key is neither ed25519 nor ed448");
+                    throw new IllegalArgumentException("Private key is neither ed25519 nor ed448");
                 }
             }
             privateKey = oneAsymmetricKey.readObject().getValue();
@@ -207,7 +212,7 @@ public final class EdDSAUtils {
             return Arrays.copyOfRange(privateKey, privateKey.length - n, privateKey.length);
             // Depending on the version there may be optional stuff following, but we don't care about that.
         } catch (IOException e) {
-            throw new InvalidKeyException("Cannot parse EdDSA private key", e);
+            throw new IllegalArgumentException("Cannot parse EdDSA private key", e);
         } finally {
             if (privateKey != null) {
                 Arrays.fill(privateKey, (byte) 0);
@@ -287,4 +292,64 @@ public final class EdDSAUtils {
         throw new InvalidKeyException("Private key data is neither ed25519 nor ed448");
     }
 
+    /**
+     * Creates a {@link PublicKey} from the raw key bytes of an ed25519 or ed448 key.
+     *
+     * @param  keyData                  the raw key bytes
+     * @return                          the {@link PublicKey}
+     * @throws GeneralSecurityException if the key cannot be created
+     */
+    public static PublicKey getPublicKey(byte[] keyData) throws GeneralSecurityException {
+        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
+        return factory.generatePublic(createPublicKeySpec(keyData));
+    }
+
+    /**
+     * Creates a {@link PrivateKey} from the raw key bytes of an ed25519 or ed448 key.
+     *
+     * @param  keyData                  the raw key bytes
+     * @return                          the {@link PrivateKey}
+     * @throws GeneralSecurityException if the key cannot be created
+     */
+    public static PrivateKey getPrivateKey(byte[] keyData) throws GeneralSecurityException {
+        KeyFactory factory = SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
+        return factory.generatePrivate(createPrivateKeySpec(keyData));
+    }
+
+    /**
+     * Compares two ed25519 or two ed448 {@link PublicKey}s.
+     *
+     * @param  k1                       first {@link PublicKey}
+     * @param  k2                       second {@link PublicKey}
+     * @return                          if the two keys are equal
+     * @throws IllegalArgumentException if one of the keys is neither an ed25519 nor an ed448 key
+     */
+    public static boolean equals(PublicKey k1, PublicKey k2) throws IllegalArgumentException {
+        return arrayEq(getBytes(k1), getBytes(k2));
+    }
+
+    /**
+     * Compares two ed25519 or two ed448 {@link PrivateKey}s.
+     *
+     * @param  k1                       first {@link PrivateKey}
+     * @param  k2                       second {@link PrivateKey}
+     * @return                          if the two keys are equal
+     * @throws IllegalArgumentException if one of the keys is neither an ed25519 nor an ed448 key
+     */
+    public static boolean equals(PrivateKey k1, PrivateKey k2) throws IllegalArgumentException {
+        byte[] k1Data = null;
+        byte[] k2Data = null;
+        try {
+            k1Data = getBytes(k1);
+            k2Data = getBytes(k2);
+            return arrayEq(k1Data, k2Data);
+        } finally {
+            if (k1Data != null) {
+                Arrays.fill(k1Data, (byte) 0);
+            }
+            if (k2Data != null) {
+                Arrays.fill(k2Data, (byte) 0);
+            }
+        }
+    }
 }

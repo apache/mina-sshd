@@ -85,7 +85,7 @@ class SimpleGeneratorHostKeyProviderTest extends JUnitTestSupport {
     @Test
     void edDSA() throws IOException, GeneralSecurityException {
         Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), "EdDSA not supported");
-        testSimpleGeneratorHostKeyProvider(SecurityUtils.EDDSA, KeyPairProvider.SSH_ED25519, -1, null);
+        testSimpleGeneratorHostKeyProvider(SecurityUtils.ED25519, KeyPairProvider.SSH_ED25519, -1, null);
     }
 
     private void testSimpleGeneratorHostKeyProvider(

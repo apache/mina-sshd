@@ -61,7 +61,7 @@ class KeyRandomArtTest extends JUnitTestSupport {
 
         if (SecurityUtils.isEDDSACurveSupported()) {
             for (int keySize : ED25519_SIZES) {
-                params.add(new Object[] { SecurityUtils.EDDSA, keySize });
+                params.add(new Object[] { SecurityUtils.ED25519, keySize });
             }
         }
         return params;
@@ -78,7 +78,12 @@ class KeyRandomArtTest extends JUnitTestSupport {
         KeyPair keyPair = CommonTestSupportUtils.generateKeyPair(algorithm, keySize);
         KEYS.add(keyPair);
         KeyRandomArt art = new KeyRandomArt(keyPair.getPublic());
-        assertEquals(algorithm, art.getAlgorithm(), "Mismatched algorithm");
+        if (SecurityUtils.ED25519.equals(algorithm)) {
+            assertTrue(SecurityUtils.ED25519.equals(art.getAlgorithm()) || SecurityUtils.EDDSA.equals(art.getAlgorithm()),
+                    "Mismatched algorithm");
+        } else {
+            assertEquals(algorithm, art.getAlgorithm(), "Mismatched algorithm");
+        }
         assertEquals(keySize, art.getKeySize(), "Mismatched key size");
 
         String s = art.toString();

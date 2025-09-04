@@ -574,7 +574,7 @@ public class SshKeyScanMain implements Channel, Callable<Void>, ServerKeyVerifie
                 throw new NoSuchAlgorithmException("EDDSA curves not supported: " + keyType);
             }
 
-            KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
+            KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
             return Collections.singletonList(g.generateKeyPair());
         } else {
             throw new InvalidKeySpecException("Unknown key type: " + keyType);

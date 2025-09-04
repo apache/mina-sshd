@@ -85,7 +85,7 @@ class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
             assertNotNull(curve, "No curve for key size=" + keySize);
             expected = KeyUtils.generateKeyPair(curve.getKeyType(), curve.getKeySize());
         } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyType)) {
-            KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
+            KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
             expected = g.generateKeyPair();
         } else {
             throw new InvalidKeyException("Unsupported key type: " + keyType);
@@ -96,7 +96,7 @@ class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
         if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
             keyAlgorithm = KeyUtils.EC_ALGORITHM;
         } else if (BuiltinIdentities.Constants.ED25519.equalsIgnoreCase(keyAlgorithm)) {
-            keyAlgorithm = SecurityUtils.EDDSA;
+            keyAlgorithm = SecurityUtils.ED25519;
         }
 
         Path dir = getTempTargetFolder();

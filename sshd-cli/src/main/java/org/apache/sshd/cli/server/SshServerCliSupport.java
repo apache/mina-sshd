@@ -110,7 +110,7 @@ public abstract class SshServerCliSupport extends CliSupport {
             if (BuiltinIdentities.Constants.ECDSA.equalsIgnoreCase(keyAlgorithm)) {
                 keyAlgorithm = KeyUtils.EC_ALGORITHM;
             } else if (BuiltinIdentities.Constants.ED25519.equals(keyAlgorithm)) {
-                keyAlgorithm = SecurityUtils.EDDSA;
+                keyAlgorithm = SecurityUtils.ED25519;
             }
 
             // force re-generation of host key if not same algorithm

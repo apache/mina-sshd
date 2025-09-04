@@ -44,7 +44,7 @@ public enum BuiltinIdentities implements Identity {
     DSA(Constants.DSA, KeyPairProvider.SSH_DSS),
     ECDSA(Constants.ECDSA, KeyUtils.EC_ALGORITHM,
           ECCurves.VALUES.stream().map(KeyTypeIndicator::getKeyType).collect(Collectors.toList())),
-    ED25119(Constants.ED25519, SecurityUtils.EDDSA, KeyPairProvider.SSH_ED25519) {
+    ED25119(Constants.ED25519, SecurityUtils.ED25519, KeyPairProvider.SSH_ED25519) {
         @Override
         public boolean isSupported() {
             return SecurityUtils.isEDDSACurveSupported();

@@ -236,7 +236,8 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
             } else if (algo.contains("rsa")) {
                 factory = BuiltinSignatures.fromFactoryName(algo);
             }
-        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(pubKey.getAlgorithm())) {
+        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(pubKey.getAlgorithm())
+                || SecurityUtils.ED25519.equalsIgnoreCase(pubKey.getAlgorithm())) {
             factory = BuiltinSignatures.ed25519;
         }
 

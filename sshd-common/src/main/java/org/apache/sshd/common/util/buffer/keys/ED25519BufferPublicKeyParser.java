@@ -25,7 +25,7 @@ import java.security.PublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
  * TODO complete this when SSHD-440 is done
@@ -43,6 +43,6 @@ public class ED25519BufferPublicKeyParser extends AbstractBufferPublicKeyParser<
     public PublicKey getRawPublicKey(String keyType, Buffer buffer) throws GeneralSecurityException {
         ValidateUtils.checkTrue(isKeyTypeSupported(keyType), "Unsupported key type: %s", keyType);
         byte[] seed = buffer.getBytes();
-        return SecurityUtils.generateEDDSAPublicKey(keyType, seed);
+        return EdDSAUtils.getPublicKey(seed);
     }
 }

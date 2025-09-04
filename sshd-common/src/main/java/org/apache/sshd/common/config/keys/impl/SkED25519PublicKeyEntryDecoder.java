@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
-import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -77,12 +76,8 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
         SkED25519PublicKey key = ValidateUtils.checkInstanceOf(k, SkED25519PublicKey.class,
                 "Key must be an SkED25519PublicKey");
         KeyEntryResolver.encodeString(s, KEY_TYPE);
-        try {
-            byte[] keyData = EdDSAUtils.getBytes(key.getDelegatePublicKey());
-            KeyEntryResolver.writeRLEBytes(s, keyData);
-        } catch (InvalidKeyException e) {
-            throw new IOException(e.getMessage(), e);
-        }
+        byte[] keyData = EdDSAUtils.getBytes(key.getDelegatePublicKey());
+        KeyEntryResolver.writeRLEBytes(s, keyData);
         KeyEntryResolver.encodeString(s, key.getAppName());
         return KEY_TYPE;
     }

@@ -24,7 +24,6 @@ import java.security.KeyPairGenerator;
 import java.security.Provider;
 import java.security.Security;
 import java.security.Signature;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -105,12 +104,12 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
 
         if (KeyPairGenerator.class.isAssignableFrom(entityType)
                 || KeyFactory.class.isAssignableFrom(entityType)) {
-            if (Objects.compare(name, SecurityUtils.EDDSA, String.CASE_INSENSITIVE_ORDER) == 0
+            if (SecurityUtils.ED25519.equalsIgnoreCase(name)
                     && SecurityUtils.isNetI2pCryptoEdDSARegistered()) {
                 return false;
             }
         } else if (Signature.class.isAssignableFrom(entityType)) {
-            if (Objects.compare(name, SecurityUtils.CURVE_ED25519_SHA512, String.CASE_INSENSITIVE_ORDER) == 0
+            if (SecurityUtils.ED25519.equalsIgnoreCase(name)
                     && SecurityUtils.isNetI2pCryptoEdDSARegistered()) {
                 return false;
             }

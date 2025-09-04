@@ -27,7 +27,6 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Signature;
 
-import net.i2p.crypto.eddsa.EdDSAEngine;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
@@ -57,7 +56,7 @@ class EDDSAProviderTest extends JUnitTestSupport {
     @BeforeAll
     static void checkProviderSupported() throws GeneralSecurityException {
         Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
-        KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
+        KeyPairGenerator g = SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
         assertNotNull(g, "No generator instance");
 
         keyPair = g.generateKeyPair();
@@ -65,7 +64,8 @@ class EDDSAProviderTest extends JUnitTestSupport {
 
         PublicKey pubKey = keyPair.getPublic();
         assertNotNull(pubKey, "No public key");
-        assertEquals(SecurityUtils.EDDSA, pubKey.getAlgorithm(), "Mismatched public key algorithm");
+        String algo = pubKey.getAlgorithm();
+        assertTrue(SecurityUtils.EDDSA.equals(algo) || SecurityUtils.ED25519.equals(algo), "Mismatched public key algorithm");
         assertEquals(KeyPairProvider.SSH_ED25519, KeyUtils.getKeyType(pubKey), "Mismatched public key type");
 
         PrivateKey prvKey = keyPair.getPrivate();
@@ -76,7 +76,7 @@ class EDDSAProviderTest extends JUnitTestSupport {
 
     @Test
     void signature() throws GeneralSecurityException {
-        Signature s = SecurityUtils.getSignature(EdDSAEngine.SIGNATURE_ALGORITHM);
+        Signature s = SecurityUtils.getSignature(SecurityUtils.ED25519);
         assertNotNull(s, "No signature instance");
         s.initSign(keyPair.getPrivate());
 
@@ -84,7 +84,7 @@ class EDDSAProviderTest extends JUnitTestSupport {
         s.update(data);
         byte[] signed = s.sign();
 
-        s = SecurityUtils.getSignature(EdDSAEngine.SIGNATURE_ALGORITHM);
+        s = SecurityUtils.getSignature(SecurityUtils.ED25519);
         s.initVerify(keyPair.getPublic());
         s.update(data);
         assertTrue(s.verify(signed), "Failed to verify");
@@ -114,7 +114,8 @@ class EDDSAProviderTest extends JUnitTestSupport {
 
     private void testPublicKeyRecovery(PublicKey pubKey) throws IOException, GeneralSecurityException {
         assertNotNull(pubKey, "No public key generated");
-        assertEquals(SecurityUtils.EDDSA, pubKey.getAlgorithm(), "Mismatched public key algorithm");
+        String algo = pubKey.getAlgorithm();
+        assertTrue(SecurityUtils.EDDSA.equals(algo) || SecurityUtils.ED25519.equals(algo), "Mismatched public key algorithm");
 
         ByteArrayBuffer buf = new ByteArrayBuffer();
         buf.putRawPublicKey(pubKey);

@@ -96,10 +96,10 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivate
             }
 
             byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
-            PrivateKey privateKey = edDSASupport.generateEDDSAPrivateKey(sk);
+            PrivateKey privateKey = EdDSAUtils.getPrivateKey(sk);
 
             // we can now verify the generated pk matches the one we read
-            if (!Arrays.equals(edDSASupport.getPublicKeyData(recoverPublicKey(privateKey)), pk)) {
+            if (!Arrays.equals(EdDSAUtils.getBytes(recoverPublicKey(privateKey)), pk)) {
                 throw new InvalidKeyException("The provided pk does NOT match the computed pk for the given sk.");
             }
 
@@ -120,18 +120,24 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivate
         // we are expected to write the following arrays (type:size):
         // [pk:32], [sk:32,pk:32]
 
-        byte[] sk = edDSASupport.getPrivateKeyData(key);
-        byte[] pk = edDSASupport.getPublicKeyData(pubKey);
+        byte[] sk = null;
+        try {
+            byte[] pk = EdDSAUtils.getBytes(pubKey);
+            sk = EdDSAUtils.getBytes(key);
 
-        Objects.requireNonNull(sk, "No seed");
+            Objects.requireNonNull(sk, "No seed");
 
-        byte[] keypair = new byte[KEYPAIR_SIZE];
-        System.arraycopy(sk, 0, keypair, 0, SK_SIZE);
-        System.arraycopy(pk, 0, keypair, SK_SIZE, PK_SIZE);
+            byte[] keypair = new byte[KEYPAIR_SIZE];
+            System.arraycopy(sk, 0, keypair, 0, SK_SIZE);
+            System.arraycopy(pk, 0, keypair, SK_SIZE, PK_SIZE);
 
-        KeyEntryResolver.writeRLEBytes(s, pk);
-        KeyEntryResolver.writeRLEBytes(s, keypair);
-
+            KeyEntryResolver.writeRLEBytes(s, pk);
+            KeyEntryResolver.writeRLEBytes(s, keypair);
+        } finally {
+            if (sk != null) {
+                Arrays.fill(sk, (byte) 0);
+            }
+        }
         return KeyPairProvider.SSH_ED25519;
     }
 
@@ -147,11 +153,11 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivate
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        return SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
+        return SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
     }
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        return SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
+        return SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
     }
 }

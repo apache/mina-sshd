@@ -59,16 +59,10 @@ public interface SecurityEntityFactory<T> {
         if (registrar == null) {
             if ((defaultProvider == null) || (defaultProvider == SecurityProviderChoice.EMPTY)) {
                 return toDefaultFactory(entityType);
-            } else if (defaultProvider.isNamedProviderUsed()) {
-                return toNamedProviderFactory(entityType, defaultProvider.getProviderName());
-            } else {
-                return toProviderInstanceFactory(entityType, defaultProvider.getSecurityProvider());
             }
-        } else if (registrar.isNamedProviderUsed()) {
-            return toNamedProviderFactory(entityType, registrar.getProviderName());
-        } else {
-            return toProviderInstanceFactory(entityType, registrar.getSecurityProvider());
+            return defaultProvider.getFactory(entityType);
         }
+        return registrar.getFactory(entityType);
     }
 
     static <F> SecurityEntityFactory<F> toDefaultFactory(Class<F> entityType)

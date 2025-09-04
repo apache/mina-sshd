@@ -20,17 +20,11 @@
 package org.apache.sshd.common.util.security.eddsa;
 
 import java.security.GeneralSecurityException;
-import java.security.Key;
 import java.security.PrivateKey;
-import java.security.PublicKey;
 
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
-import org.apache.sshd.common.signature.Signature;
-import org.apache.sshd.common.util.buffer.Buffer;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
 public class NetI2pCryptoEdDSASupport implements EdDSASupport {
@@ -50,52 +44,8 @@ public class NetI2pCryptoEdDSASupport implements EdDSASupport {
     }
 
     @Override
-    public Signature getEDDSASigner() {
-        return EdDSASecurityProviderUtils.getEDDSASignature();
-    }
-
-    @Override
-    public int getEDDSAKeySize(Key key) {
-        return EdDSASecurityProviderUtils.getEDDSAKeySize(key);
-    }
-
-    @Override
-    public boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {
-        return EdDSASecurityProviderUtils.compareEDDSAPPublicKeys(k1, k2);
-    }
-
-    @Override
-    public boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2) {
-        return EdDSASecurityProviderUtils.compareEDDSAPrivateKeys(k1, k2);
-    }
-
-    @Override
     public EdDSAPublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
         return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(key);
     }
 
-    @Override
-    public EdDSAPublicKey generateEDDSAPublicKey(byte[] seed) throws GeneralSecurityException {
-        return (EdDSAPublicKey) EdDSASecurityProviderUtils.generateEDDSAPublicKey(seed);
-    }
-
-    @Override
-    public EdDSAPrivateKey generateEDDSAPrivateKey(byte[] seed) throws GeneralSecurityException {
-        return Ed25519PEMResourceKeyParser.generateEdDSAPrivateKey(seed);
-    }
-
-    @Override
-    public <B extends Buffer> B putRawEDDSAPublicKey(B buffer, PublicKey key) {
-        return EdDSASecurityProviderUtils.putRawEDDSAPublicKey(buffer, key);
-    }
-
-    @Override
-    public <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey) {
-        return EdDSASecurityProviderUtils.putEDDSAKeyPair(buffer, pubKey, prvKey);
-    }
-
-    @Override
-    public String getKeyFactoryAlgorithm() {
-        return SecurityUtils.EDDSA;
-    }
 }

@@ -72,6 +72,7 @@ import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages
@@ -1042,8 +1043,8 @@ public abstract class Buffer implements Readable {
             byte[] ecPoint = ECCurves.encodeECPoint(ecKey.getW(), ecParams);
             putString(curve.getName());
             putBytes(ecPoint);
-        } else if (SecurityUtils.EDDSA.equals(key.getAlgorithm()) || SecurityUtils.ED25519.equals(key.getAlgorithm())) {
-            SecurityUtils.putRawEDDSAPublicKey(this, key);
+        } else if (KeyPairProvider.SSH_ED25519.equals(KeyUtils.getKeyType(key))) {
+            putBytes(EdDSAUtils.getBytes(key));
         } else if (key instanceof SecurityKeyPublicKey) {
             putRawPublicKeyBytes(((SecurityKeyPublicKey<?>) key).getDelegatePublicKey());
             putString(((SecurityKeyPublicKey<?>) key).getAppName());
@@ -1122,8 +1123,21 @@ public abstract class Buffer implements Readable {
             putString(curve.getName());
             putBytes(ecPoint);
             putMPInt(ecPriv.getS());
-        } else if (SecurityUtils.EDDSA.equals(pubKey.getAlgorithm())) {
-            SecurityUtils.putEDDSAKeyPair(this, pubKey, prvKey);
+        } else if (KeyPairProvider.SSH_ED25519.equals(KeyUtils.getKeyType(pubKey))) {
+            putString(KeyPairProvider.SSH_ED25519);
+            byte[] skData = null;
+            try {
+                byte[] pkData = EdDSAUtils.getBytes(pubKey);
+                putBytes(pkData);
+                skData = EdDSAUtils.getBytes(prvKey);
+                putUInt(pkData.length + skData.length);
+                putRawBytes(skData);
+                putRawBytes(pkData);
+            } finally {
+                if (skData != null) {
+                    Arrays.fill(skData, (byte) 0);
+                }
+            }
         } else {
             throw new BufferException("Unsupported key pair algorithm: " + pubKey.getAlgorithm());
         }

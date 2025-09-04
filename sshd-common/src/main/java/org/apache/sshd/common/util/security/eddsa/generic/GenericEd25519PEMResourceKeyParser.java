@@ -64,7 +64,7 @@ public class GenericEd25519PEMResourceKeyParser extends AbstractPEMResourceKeyPa
     public static final GenericEd25519PEMResourceKeyParser INSTANCE = new GenericEd25519PEMResourceKeyParser();
 
     public GenericEd25519PEMResourceKeyParser() {
-        super(SecurityUtils.EDDSA, ED25519_OID, BEGINNERS, ENDERS);
+        super(SecurityUtils.ED25519, ED25519_OID, BEGINNERS, ENDERS);
     }
 
     @Override

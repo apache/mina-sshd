@@ -18,16 +18,17 @@
  */
 package org.apache.sshd.common.util.security.eddsa;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.Provider;
 import java.security.Signature;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
+import org.apache.sshd.common.util.security.SecurityEntityFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.threads.ThreadUtils;
@@ -36,6 +37,7 @@ import org.apache.sshd.common.util.threads.ThreadUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegistrar {
+
     public static final String PROVIDER_CLASS = "net.i2p.crypto.eddsa.EdDSASecurityProvider";
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
@@ -73,9 +75,9 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
 
         if (KeyPairGenerator.class.isAssignableFrom(entityType)
                 || KeyFactory.class.isAssignableFrom(entityType)) {
-            return Objects.compare(name, getName(), String.CASE_INSENSITIVE_ORDER) == 0;
+            return SecurityUtils.ED25519.equalsIgnoreCase(name);
         } else if (Signature.class.isAssignableFrom(entityType)) {
-            return Objects.compare(SecurityUtils.CURVE_ED25519_SHA512, name, String.CASE_INSENSITIVE_ORDER) == 0;
+            return SecurityUtils.ED25519.equalsIgnoreCase(name);
         } else {
             return false;
         }
@@ -99,10 +101,67 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     }
 
     @Override
+    public <F> SecurityEntityFactory<F> getFactory(Class<F> entityType) throws ReflectiveOperationException {
+        // Return factories that map the algorithm names to the non-standard ones used by net.i2p.
+        // That way the rest of our code can work with the standard names.
+        if (KeyPairGenerator.class.isAssignableFrom(entityType) || KeyFactory.class.isAssignableFrom(entityType)) {
+            return new DelegatingSecurityEntityFactory<F>(super.getFactory(entityType)) {
+
+                @Override
+                protected String effectiveAlgorithm(String originalAlgorithm) {
+                    if (SecurityUtils.ED25519.equalsIgnoreCase(originalAlgorithm)) {
+                        return "EdDSA";
+                    }
+                    return originalAlgorithm;
+                }
+            };
+        } else if (Signature.class.isAssignableFrom(entityType)) {
+            return new DelegatingSecurityEntityFactory<F>(super.getFactory(entityType)) {
+
+                @Override
+                protected String effectiveAlgorithm(String originalAlgorithm) {
+                    if (SecurityUtils.ED25519.equalsIgnoreCase(originalAlgorithm)) {
+                        return "NONEwithEdDSA";
+                    }
+                    return originalAlgorithm;
+                }
+            };
+        }
+        return super.getFactory(entityType);
+    }
+
+    @Override
     public Optional<EdDSASupport> getEdDSASupport() {
         if (!isSupported()) {
             return Optional.empty();
         }
         return Optional.of(new NetI2pCryptoEdDSASupport());
     }
+
+    private static abstract class DelegatingSecurityEntityFactory<F> implements SecurityEntityFactory<F> {
+
+        private SecurityEntityFactory<F> delegate;
+
+        DelegatingSecurityEntityFactory(SecurityEntityFactory<F> delegate) {
+            this.delegate = delegate;
+        }
+
+        @Override
+        public Class<F> getEntityType() {
+            return delegate.getEntityType();
+        }
+
+        @Override
+        public F getInstance(String algorithm) throws GeneralSecurityException {
+            return delegate.getInstance(effectiveAlgorithm(algorithm));
+        }
+
+        protected abstract String effectiveAlgorithm(String originalAlgorithm);
+
+        @Override
+        public String toString() {
+            return delegate.toString();
+        }
+    }
+
 }

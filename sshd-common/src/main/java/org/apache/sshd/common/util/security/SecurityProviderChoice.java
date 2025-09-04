@@ -71,6 +71,13 @@ public interface SecurityProviderChoice extends NamedResource {
         return getName();
     }
 
+    default <F> SecurityEntityFactory<F> getFactory(Class<F> entityType) throws ReflectiveOperationException {
+        if (isNamedProviderUsed()) {
+            return SecurityEntityFactory.toNamedProviderFactory(entityType, getProviderName());
+        }
+        return SecurityEntityFactory.toProviderInstanceFactory(entityType, getSecurityProvider());
+    }
+
     /**
      * @return The security {@link Provider} to use in case {@link #isNamedProviderUsed()} is {@code false}. Can be
      *         {@code null} if {@link #isNamedProviderUsed()} is {@code true}, but not recommended.

@@ -58,10 +58,10 @@ class EdDSASecurityProviderRegistrarTest extends SecurityProviderRegistrarTestSu
 
     @Test
     void supportedSecurityEntities() {
-        assertSecurityEntitySupportState(getCurrentTestName(), registrarInstance, true, registrarInstance.getName(),
+        assertSecurityEntitySupportState(getCurrentTestName(), registrarInstance, true, SecurityUtils.ED25519,
                 KeyPairGenerator.class, KeyFactory.class);
         assertSecurityEntitySupportState(getCurrentTestName(), registrarInstance, true,
-                SecurityUtils.CURVE_ED25519_SHA512, Signature.class);
+                SecurityUtils.ED25519, Signature.class);
 
         Collection<Class<?>> supported
                 = new HashSet<>(Arrays.asList(KeyPairGenerator.class, KeyFactory.class, Signature.class));

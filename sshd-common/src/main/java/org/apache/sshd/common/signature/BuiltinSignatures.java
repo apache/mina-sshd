@@ -44,6 +44,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.SignatureEd25519;
 
 /**
  * Provides easy access to the currently implemented signatures
@@ -197,7 +198,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     ed25519(KeyPairProvider.SSH_ED25519) {
         @Override
         public Signature create() {
-            return SecurityUtils.getEDDSASigner();
+            return new SignatureEd25519();
         }
 
         @Override
@@ -208,7 +209,7 @@ public enum BuiltinSignatures implements SignatureFactory {
     ed25519_cert(KeyPairProvider.SSH_ED25519_CERT) {
         @Override
         public Signature create() {
-            return SecurityUtils.getEDDSASigner();
+            return new SignatureEd25519();
         }
 
         @Override

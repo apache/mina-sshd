@@ -50,21 +50,20 @@ public class GenericEd25519PublicKeyDecoder extends AbstractPublicKeyEntryDecode
 
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
-        return SecurityUtils.getKeyPairGenerator(SecurityUtils.EDDSA);
+        return SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
     }
 
     @Override
     public String encodePublicKey(OutputStream s, PublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
         KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_ED25519);
-        byte[] seed = edDSASupport.getPublicKeyData(key);
-        KeyEntryResolver.writeRLEBytes(s, seed);
+        KeyEntryResolver.writeRLEBytes(s, EdDSAUtils.getBytes(key));
         return KeyPairProvider.SSH_ED25519;
     }
 
     @Override
     public KeyFactory getKeyFactoryInstance() throws GeneralSecurityException {
-        return SecurityUtils.getKeyFactory(SecurityUtils.EDDSA);
+        return SecurityUtils.getKeyFactory(SecurityUtils.ED25519);
     }
 
     @Override
@@ -72,7 +71,7 @@ public class GenericEd25519PublicKeyDecoder extends AbstractPublicKeyEntryDecode
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         byte[] seed = KeyEntryResolver.readRLEBytes(keyData, MAX_ALLOWED_SEED_LEN);
-        return edDSASupport.generateEDDSAPublicKey(seed);
+        return EdDSAUtils.getPublicKey(seed);
     }
 
 }
