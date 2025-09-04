@@ -100,6 +100,11 @@ class BuiltinIdentitiesTest extends JUnitTestSupport {
     void fromKey(BuiltinIdentities expected) throws GeneralSecurityException {
         Assumptions.assumeTrue(expected.isSupported(), "Unsupported built-in identity");
         KeyPairGenerator gen = SecurityUtils.getKeyPairGenerator(expected.getAlgorithm());
+        if ("EC".equals(expected.getAlgorithm())) {
+            // BC defaults to prime239v1, which is not one of the EC curves supported by SSH.
+            // So force 256 to get the nistp256 curve.
+            gen.initialize(256);
+        }
         KeyPair kp = gen.generateKeyPair();
         outputDebugMessage("Checking built-in identity: %s", expected);
         assertSame(expected, BuiltinIdentities.fromKeyPair(kp), expected + "[pair]");

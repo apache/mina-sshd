@@ -66,11 +66,11 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
     private String keyType;
     private int keySize;
     private boolean supported;
-    private PublicKeyEntryDecoder<?, ?> pubKeyDecoder;
+    private PublicKeyEntryDecoder pubKeyDecoder;
 
     private void initSignatureFactoriesTest(
             String keyType, NamedFactory<Signature> factory,
-            int keySize, boolean supported, PublicKeyEntryDecoder<?, ?> decoder) {
+            int keySize, boolean supported, PublicKeyEntryDecoder decoder) {
         this.keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         if (supported) {
             Objects.requireNonNull(factory, "No signature factory provided");
@@ -100,7 +100,7 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
 
     private static void addTests(
             List<Object[]> list, String keyType, NamedFactory<Signature> factory, Collection<Integer> sizes,
-            PublicKeyEntryDecoder<?, ?> decoder) {
+            PublicKeyEntryDecoder decoder) {
         for (Integer keySize : sizes) {
             list.add(new Object[] { keyType, factory, keySize, decoder != null, decoder });
         }
@@ -154,14 +154,14 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
     @ParameterizedTest(name = "type={0}, size={2}")
     void publicKeyAuth(
             String keyType, NamedFactory<Signature> factory, int keySize, boolean supported,
-            PublicKeyEntryDecoder<?, ?> decoder) throws Exception {
+            PublicKeyEntryDecoder decoder) throws Exception {
         initSignatureFactoriesTest(keyType, factory, keySize, supported, decoder);
         Assumptions.assumeTrue(isSupported());
         testKeyPairProvider(getKeyType(), getKeySize(), pubKeyDecoder, Collections.singletonList(factory));
     }
 
     protected void testKeyPairProvider(
-            String keyName, int keySize, PublicKeyEntryDecoder<?, ?> decoder, List<NamedFactory<Signature>> signatures)
+            String keyName, int keySize, PublicKeyEntryDecoder decoder, List<NamedFactory<Signature>> signatures)
             throws Exception {
         testKeyPairProvider(keyName, () -> {
             try {

@@ -173,7 +173,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     }
 
     @Override
-    public Optional<EdDSASupport<?, ?>> getEdDSASupport() {
+    public Optional<EdDSASupport> getEdDSASupport() {
         if (!isEdDSASupported()) {
             return Optional.empty();
         }

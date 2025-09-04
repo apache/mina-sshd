@@ -49,13 +49,13 @@ abstract class AbstractPuttyTestSupport extends JUnitTestSupport {
     protected KeyPair testDecodeEncryptedPuttyKeyFile(
             String encryptedFile, boolean okIfMissing, String password, String keyType)
             throws IOException, GeneralSecurityException {
-        PuttyKeyPairResourceParser<?, ?> parser = PuttyKeyUtils.BY_KEY_TYPE.get(keyType);
+        PuttyKeyPairResourceParser parser = PuttyKeyUtils.BY_KEY_TYPE.get(keyType);
         assertNotNull(parser, "No parser found for key type=" + keyType);
         return testDecodeEncryptedPuttyKeyFile(encryptedFile, okIfMissing, password, parser, keyType);
     }
 
     protected KeyPair testDecodeEncryptedPuttyKeyFile(
-            String encryptedFile, boolean okIfMissing, String password, PuttyKeyPairResourceParser<?, ?> parser, String keyType)
+            String encryptedFile, boolean okIfMissing, String password, PuttyKeyPairResourceParser parser, String keyType)
             throws IOException, GeneralSecurityException {
         assumeTrue(BuiltinCiphers.aes256cbc.isSupported(), BuiltinCiphers.aes256cbc.getTransformation() + " N/A");
 

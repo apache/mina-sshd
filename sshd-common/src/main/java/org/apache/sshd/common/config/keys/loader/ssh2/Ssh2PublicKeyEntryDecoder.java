@@ -56,7 +56,7 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class Ssh2PublicKeyEntryDecoder
-        implements PublicKeyRawDataDecoder<PublicKey>, PublicKeyEntryResolver,
+        implements PublicKeyRawDataDecoder, PublicKeyEntryResolver,
         PublicKeyRawDataReader<PublicKey>, KeyTypeNamesSupport {
     public static final NavigableSet<String> SUPPORTED_KEY_TYPES = Collections.unmodifiableNavigableSet(
             GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
@@ -119,7 +119,7 @@ public class Ssh2PublicKeyEntryDecoder
     public PublicKey decodePublicKeyByType(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
-        PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
+        PublicKeyEntryDecoder decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
         if (decoder == null) {
             throw new InvalidKeySpecException("No decoder for key type=" + keyType);
         }

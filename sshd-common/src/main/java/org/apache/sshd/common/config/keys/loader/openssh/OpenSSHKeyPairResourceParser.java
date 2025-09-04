@@ -79,7 +79,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     public static final OpenSSHKeyPairResourceParser INSTANCE = new OpenSSHKeyPairResourceParser();
 
     private static final byte[] AUTH_MAGIC_BYTES = AUTH_MAGIC.getBytes(StandardCharsets.UTF_8);
-    private static final Map<String, PrivateKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
+    private static final Map<String, PrivateKeyEntryDecoder> BY_KEY_TYPE_DECODERS_MAP
             = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
 
     static {
@@ -212,7 +212,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
         byte[] keyData = KeyEntryResolver.readRLEBytes(stream, MAX_PUBLIC_KEY_DATA_SIZE);
         try (InputStream bais = new ByteArrayInputStream(keyData)) {
             String keyType = KeyEntryResolver.decodeString(bais, MAX_KEY_TYPE_NAME_LENGTH);
-            PublicKeyEntryDecoder<?, ?> decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
+            PublicKeyEntryDecoder decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
             if (decoder == null) {
                 throw new NoSuchAlgorithmException("Unsupported key type (" + keyType + ") in " + resourceKey);
             }
@@ -295,7 +295,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
                                                + " in " + resourceKey);
         }
 
-        PrivateKeyEntryDecoder<?, ?> decoder = getPrivateKeyEntryDecoder(prvType);
+        PrivateKeyEntryDecoder decoder = getPrivateKeyEntryDecoder(prvType);
         if (decoder == null) {
             throw new NoSuchAlgorithmException("Unsupported key type (" + prvType + ") in " + resourceKey);
         }
@@ -338,7 +338,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
      * @see                             PrivateKeyEntryDecoder#getPublicKeyType()
      * @see                             PrivateKeyEntryDecoder#getSupportedKeyTypes()
      */
-    public static void registerPrivateKeyEntryDecoder(PrivateKeyEntryDecoder<?, ?> decoder) {
+    public static void registerPrivateKeyEntryDecoder(PrivateKeyEntryDecoder decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names
@@ -355,7 +355,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
      *                 {@code null}/empty
      * @return         The registered {@link PrivateKeyEntryDecoder} or {code null} if not found
      */
-    public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(String keyType) {
+    public static PrivateKeyEntryDecoder getPrivateKeyEntryDecoder(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
             return null;
         }
@@ -371,13 +371,13 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
      *            same decoder - {@code null} if no match found
      * @see       #getPrivateKeyEntryDecoder(Key)
      */
-    public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(KeyPair kp) {
+    public static PrivateKeyEntryDecoder getPrivateKeyEntryDecoder(KeyPair kp) {
         if (kp == null) {
             return null;
         }
 
-        PrivateKeyEntryDecoder<?, ?> d1 = getPrivateKeyEntryDecoder(kp.getPublic());
-        PrivateKeyEntryDecoder<?, ?> d2 = getPrivateKeyEntryDecoder(kp.getPrivate());
+        PrivateKeyEntryDecoder d1 = getPrivateKeyEntryDecoder(kp.getPublic());
+        PrivateKeyEntryDecoder d2 = getPrivateKeyEntryDecoder(kp.getPrivate());
         if (d1 == d2) {
             return d1;
         } else {
@@ -389,7 +389,7 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
      * @param  key The {@link Key} (public or private) - ignored if {@code null}
      * @return     The registered {@link PrivateKeyEntryDecoder} for this key or {code null} if no match found
      */
-    public static PrivateKeyEntryDecoder<?, ?> getPrivateKeyEntryDecoder(Key key) {
+    public static PrivateKeyEntryDecoder getPrivateKeyEntryDecoder(Key key) {
         if (key == null) {
             return null;
         } else {

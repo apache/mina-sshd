@@ -18,9 +18,16 @@
  */
 package org.apache.sshd.common.util.security.eddsa.generic;
 
+import java.io.IOException;
 import java.security.InvalidKeyException;
+import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.spec.KeySpec;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+
+import org.apache.sshd.common.util.io.der.DERParser;
 
 /**
  * Utilities to extract the raw key bytes from ed25519 or ed448 public keys, in a manner that is independent of the
@@ -44,8 +51,41 @@ public final class EdDSAUtils {
     private static final byte[] ED448_X509_PREFIX = {
             0x30, 0x43, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x71, 0x03, 0x3a, 0x00 };
 
+    // For reconstructing private keys from raw bytes we construct a minimal PKCS#8 encoding, using RFC 5208 (version 0)
+    // without the public key and without attributes. This is allowed by RFC 5958 (Asymmetric key packages).
+
+    // Sequence, length 46, (3 bytes: Version 0), Sequence, length 5, OID, length 3, O, I, D, Octet String, length 34,
+    // Octet String, length 32
+    private static final byte[] ED25519_PKCS8_PREFIX = {
+            0x30, 0x2e, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x70,
+            0x04, 0x22, 0x04, 0x20 };
+    // Sequence, length 71, (3 bytes: Version 0), Sequence, length 5, OID, length 3, O, I, D, Octet String, length 59,
+    // Octet String, length 57
+    private static final byte[] ED448_PKCS8_PREFIX = {
+            0x30, 0x47, 0x02, 0x01, 0x00, 0x30, 0x05, 0x06, 0x03, 0x2b, 0x65, 0x71,
+            0x04, 0x3b, 0x04, 0x39 };
+
+    // The first two numbers of the dotted notation are combined into one byte: (1 * 40 + 3) = 43 = 0x2b
+    private static final byte[] ED25519_OID = { 0x2b, 0x65, 0x70 }; // 1.3.101.112
+    private static final byte[] ED448_OID = { 0x2b, 0x65, 0x71 }; // 1.3.101.113
+
     private EdDSAUtils() {
         throw new IllegalStateException("No instantiation");
+    }
+
+    private static boolean arrayEq(byte[] a, byte[] b) {
+        if (a == null && b == null) {
+            return true;
+        }
+        if (a == null || b == null) {
+            return false;
+        }
+        int unequal = a.length ^ b.length;
+        int length = Math.min(a.length, b.length);
+        for (int i = 0; i < length; i++) {
+            unequal |= a[i] ^ b[i];
+        }
+        return unequal == 0;
     }
 
     private static boolean startsWith(byte[] data, byte[] prefix) {
@@ -86,4 +126,165 @@ public final class EdDSAUtils {
         }
         return Arrays.copyOfRange(encoded, encoded.length - n, encoded.length);
     }
+
+    /**
+     * Retrieves the raw key bytes from an ed25519 or ed448 {@link PrivateKey}.
+     *
+     * @param  key                 {@link PrivateKey} to get the bytes of
+     * @return                     the raw key bytes
+     * @throws InvalidKeyException if the key is not an ed25519 or ed448 key, or if it doesn't use PKCS#8 encoding
+     */
+    public static byte[] getBytes(PrivateKey key) throws InvalidKeyException {
+        // Extract the private key bytes from the PKCS#8 encoding.
+        if (!"PKCS#8".equalsIgnoreCase(key.getFormat())) {
+            throw new InvalidKeyException("Cannot extract private key bytes from a non-PKCS#8 encoding");
+        }
+        byte[] encoded = key.getEncoded();
+        if (encoded == null) {
+            throw new InvalidKeyException("Private key " + key.getClass().getCanonicalName() + " does not support encoding");
+        }
+        try {
+            return asn1Parse(encoded);
+        } finally {
+            Arrays.fill(encoded, (byte) 0);
+        }
+    }
+
+    /**
+     * Extracts the private key bytes from an encoded EdDSA private key by parsing the bytes as ASN.1 according to RFC
+     * 5958 (PKCS #8 encoding):
+     *
+     * <pre>
+     * OneAsymmetricKey ::= SEQUENCE {
+     *   version Version,
+     *   privateKeyAlgorithm PrivateKeyAlgorithmIdentifier,
+     *   privateKey PrivateKey,
+     *   ...
+     * }
+     *
+     * Version ::= INTEGER
+     * PrivateKeyAlgorithmIdentifier ::= AlgorithmIdentifier
+     * PrivateKey ::= OCTET STRING
+     *
+     * AlgorithmIdentifier  ::=  SEQUENCE  {
+     *   algorithm   OBJECT IDENTIFIER,
+     *   parameters  ANY DEFINED BY algorithm OPTIONAL
+     * }
+     * </pre>
+     * <p>
+     * and RFC 8410: "... when encoding a OneAsymmetricKey object, the private key is wrapped in a CurvePrivateKey
+     * object and wrapped by the OCTET STRING of the 'privateKey' field."
+     * </p>
+     *
+     * <pre>
+     * CurvePrivateKey ::= OCTET STRING
+     * </pre>
+     *
+     * @param  encoded             encoded private key to extract the private key bytes from
+     * @return                     the extracted private key bytes
+     * @throws InvalidKeyException if the private key cannot be extracted
+     * @see                        <a href="https://tools.ietf.org/html/rfc5958">RFC 5958</a>
+     * @see                        <a href="https://tools.ietf.org/html/rfc8410">RFC 8410</a>
+     */
+    private static byte[] asn1Parse(byte[] encoded) throws InvalidKeyException {
+        byte[] privateKey = null;
+        try (DERParser byteParser = new DERParser(encoded);
+             DERParser oneAsymmetricKey = byteParser.readObject().createParser()) {
+            oneAsymmetricKey.readObject(); // Skip version
+            int n;
+            try (DERParser algorithmIdentifier = oneAsymmetricKey.readObject().createParser()) {
+                byte[] oid = algorithmIdentifier.readObject().getValue();
+                if (arrayEq(ED25519_OID, oid)) {
+                    n = ED25519_LENGTH;
+                } else if (arrayEq(ED448_OID, oid)) {
+                    n = ED448_LENGTH;
+                } else {
+                    throw new InvalidKeyException("Private key is neither ed25519 nor ed448");
+                }
+            }
+            privateKey = oneAsymmetricKey.readObject().getValue();
+            // The last n bytes of this must be the private key bytes.
+            return Arrays.copyOfRange(privateKey, privateKey.length - n, privateKey.length);
+            // Depending on the version there may be optional stuff following, but we don't care about that.
+        } catch (IOException e) {
+            throw new InvalidKeyException("Cannot parse EdDSA private key", e);
+        } finally {
+            if (privateKey != null) {
+                Arrays.fill(privateKey, (byte) 0);
+            }
+        }
+    }
+
+    /**
+     * Creates a {@link KeySpec} for re-creating the given ed25519 or ed448 public key.
+     *
+     * @param  key                 ed25519 or ed448 key to create a {@link KeySpec} for
+     * @return                     the {@link KeySpec}
+     * @throws InvalidKeyException if the key is neither an ed25519 nor an ed448 key
+     */
+    public static KeySpec createKeySpec(PublicKey key) throws InvalidKeyException {
+        return createPublicKeySpec(getBytes(key));
+    }
+
+    /**
+     * Creates a {@link KeySpec} for re-creating the given ed25519 or ed448 private key.
+     *
+     * @param  key                 ed25519 or ed448 key to create a {@link KeySpec} for
+     * @return                     the {@link KeySpec}
+     * @throws InvalidKeyException if the key is neither an ed25519 nor an ed448 key
+     */
+    public static KeySpec createKeySpec(PrivateKey key) throws InvalidKeyException {
+        return createPrivateKeySpec(getBytes(key));
+    }
+
+    /**
+     * Creates a {@link KeySpec} for re-creating an ed25519 or ed448 public key from the raw key bytes.
+     *
+     * @param  keyData             the raw key bytes
+     * @return                     the {@link KeySpec}
+     * @throws InvalidKeyException if the key bytes do not have the appropriate length for an ed25519 or ed448 key
+     */
+    public static KeySpec createPublicKeySpec(byte[] keyData) throws InvalidKeyException {
+        // Create an X.509 encoding for ed25519 or ed448, depending on the length of keyData.
+        if (keyData.length == ED25519_LENGTH) {
+            byte[] x509 = Arrays.copyOf(ED25519_X509_PREFIX, ED25519_X509_PREFIX.length + ED25519_LENGTH);
+            System.arraycopy(keyData, 0, x509, ED25519_X509_PREFIX.length, ED25519_LENGTH);
+            return new X509EncodedKeySpec(x509);
+        } else if (keyData.length == ED448_LENGTH) {
+            byte[] x509 = Arrays.copyOf(ED448_X509_PREFIX, ED448_X509_PREFIX.length + ED448_LENGTH);
+            System.arraycopy(keyData, 0, x509, ED448_X509_PREFIX.length, ED448_LENGTH);
+            return new X509EncodedKeySpec(x509);
+        }
+        throw new InvalidKeyException("Public key data is neither ed25519 nor ed448");
+    }
+
+    /**
+     * Creates a {@link KeySpec} for re-creating an ed25519 or ed448 public key from the raw key bytes.
+     *
+     * @param  keyData             the raw key bytes
+     * @return                     the {@link KeySpec}
+     * @throws InvalidKeyException if the key bytes do not have the appropriate length for an ed25519 or ed448 key
+     */
+    public static KeySpec createPrivateKeySpec(byte[] keyData) throws InvalidKeyException {
+        // Create a PKCS#8 encoding for ed25519 or ed448, depending on the length of keyData.
+        if (keyData.length == ED25519_LENGTH) {
+            byte[] pkcs8 = Arrays.copyOf(ED25519_PKCS8_PREFIX, ED25519_PKCS8_PREFIX.length + ED25519_LENGTH);
+            try {
+                System.arraycopy(keyData, 0, pkcs8, ED25519_PKCS8_PREFIX.length, ED25519_LENGTH);
+                return new PKCS8EncodedKeySpec(pkcs8);
+            } finally {
+                Arrays.fill(pkcs8, (byte) 0);
+            }
+        } else if (keyData.length == ED448_LENGTH) {
+            byte[] pkcs8 = Arrays.copyOf(ED448_PKCS8_PREFIX, ED448_PKCS8_PREFIX.length + ED448_LENGTH);
+            try {
+                System.arraycopy(keyData, 0, pkcs8, ED448_PKCS8_PREFIX.length, ED448_LENGTH);
+                return new PKCS8EncodedKeySpec(pkcs8);
+            } finally {
+                Arrays.fill(pkcs8, (byte) 0);
+            }
+        }
+        throw new InvalidKeyException("Private key data is neither ed25519 nor ed448");
+    }
+
 }

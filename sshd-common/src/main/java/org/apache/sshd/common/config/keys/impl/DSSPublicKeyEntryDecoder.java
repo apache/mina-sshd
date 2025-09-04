@@ -26,8 +26,8 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.PublicKey;
 import java.security.interfaces.DSAParams;
-import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
 import java.security.spec.DSAPublicKeySpec;
 import java.security.spec.InvalidKeySpecException;
@@ -39,21 +39,21 @@ import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAPublicKey, DSAPrivateKey> {
+public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder {
     public static final DSSPublicKeyEntryDecoder INSTANCE = new DSSPublicKeyEntryDecoder();
 
     public DSSPublicKeyEntryDecoder() {
-        super(DSAPublicKey.class, DSAPrivateKey.class,
-              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
+        super(Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
     }
 
     @Override
-    public DSAPublicKey decodePublicKey(
+    public PublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
@@ -69,8 +69,8 @@ public class DSSPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<DSAP
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, DSAPublicKey key) throws IOException {
-        Objects.requireNonNull(key, "No public key provided");
+    public String encodePublicKey(OutputStream s, PublicKey k) throws IOException {
+        DSAPublicKey key = ValidateUtils.checkInstanceOf(k, DSAPublicKey.class, "Key must be a DSAPublicKey");
 
         DSAParams keyParams = Objects.requireNonNull(key.getParams(), "No DSA params available");
         KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_DSS);

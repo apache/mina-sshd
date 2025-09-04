@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collection;
@@ -38,12 +37,9 @@ import org.apache.sshd.common.util.ValidateUtils;
 /**
  * Represents a decoder of an {@code OpenSSH} encoded key data
  *
- * @param  <PUB> Type of {@link PublicKey}
- * @param  <PRV> Type of {@link PrivateKey}
- * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends KeyEntryResolver<PUB, PRV>, PublicKeyRawDataDecoder<PUB>, PublicKeyEntryResolver {
+public interface PublicKeyEntryDecoder extends KeyEntryResolver, PublicKeyRawDataDecoder, PublicKeyEntryResolver {
 
     @Override
     default PublicKey resolve(
@@ -59,7 +55,7 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
     }
 
     @Override
-    default PUB decodePublicKeyByType(
+    default PublicKey decodePublicKeyByType(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
@@ -85,5 +81,5 @@ public interface PublicKeyEntryDecoder<PUB extends PublicKey, PRV extends Privat
      * @return             The key type value - one of the {@link #getSupportedKeyTypes()}
      * @throws IOException If failed to generate the encoding
      */
-    String encodePublicKey(OutputStream s, PUB key) throws IOException;
+    String encodePublicKey(OutputStream s, PublicKey key) throws IOException;
 }

@@ -25,9 +25,10 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPrivateCrtKey;
 import java.security.interfaces.RSAPrivateKey;
-import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPrivateCrtKeySpec;
 import java.util.Collections;
@@ -39,23 +40,23 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<RSAPublicKey, RSAPrivateKey> {
+public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder {
     public static final BigInteger DEFAULT_PUBLIC_EXPONENT = KeyUtils.DEFAULT_RSA_PUBLIC_EXPONENT;
     public static final OpenSSHRSAPrivateKeyDecoder INSTANCE = new OpenSSHRSAPrivateKeyDecoder();
 
     public OpenSSHRSAPrivateKeyDecoder() {
-        super(RSAPublicKey.class, RSAPrivateKey.class,
-              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
+        super(Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_RSA)));
     }
 
     @Override
-    public RSAPrivateKey decodePrivateKey(
+    public PrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_RSA.equals(keyType)) { // just in case we were invoked directly
@@ -82,7 +83,7 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
     }
 
     @Override
-    public String encodePrivateKey(SecureByteArrayOutputStream s, RSAPrivateKey key, RSAPublicKey pubKey) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, PrivateKey key, PublicKey pubKey) throws IOException {
         Objects.requireNonNull(key, "No private key provided");
         if (key instanceof RSAPrivateCrtKey) {
             RSAPrivateCrtKey a = (RSAPrivateCrtKey) key;
@@ -104,8 +105,9 @@ public class OpenSSHRSAPrivateKeyDecoder extends AbstractPrivateKeyEntryDecoder<
     }
 
     @Override
-    public RSAPublicKey recoverPublicKey(RSAPrivateKey privateKey) throws GeneralSecurityException {
-        return KeyUtils.recoverRSAPublicKey(privateKey);
+    public PublicKey recoverPublicKey(PrivateKey k) throws GeneralSecurityException {
+        RSAPrivateKey key = ValidateUtils.checkInstanceOf(k, RSAPrivateKey.class, "Key must be a RSAPrivateKey");
+        return KeyUtils.recoverRSAPublicKey(key);
     }
 
     @Override

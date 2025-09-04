@@ -25,8 +25,6 @@ import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Base64;
@@ -50,13 +48,11 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @param  <PRV> Generic private key type
  * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends AbstractIdentityResourceLoader<PUB, PRV>
-        implements PuttyKeyPairResourceParser<PUB, PRV> {
+public abstract class AbstractPuttyKeyDecoder extends AbstractIdentityResourceLoader implements PuttyKeyPairResourceParser {
     public static final String ENCRYPTION_HEADER = "Encryption";
 
-    protected AbstractPuttyKeyDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        super(pubType, prvType, names);
+    protected AbstractPuttyKeyDecoder(Collection<String> names) {
+        super(names);
     }
 
     @Override

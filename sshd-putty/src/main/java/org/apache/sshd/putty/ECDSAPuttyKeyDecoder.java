@@ -25,8 +25,6 @@ import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
 import java.security.spec.ECPrivateKeySpec;
@@ -47,11 +45,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder<ECPublicKey, ECPrivateKey> {
+public class ECDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder {
     public static final ECDSAPuttyKeyDecoder INSTANCE = new ECDSAPuttyKeyDecoder();
 
     public ECDSAPuttyKeyDecoder() {
-        super(ECPublicKey.class, ECPrivateKey.class, ECCurves.KEY_TYPES);
+        super(ECCurves.KEY_TYPES);
     }
 
     @Override

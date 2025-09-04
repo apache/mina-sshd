@@ -79,9 +79,6 @@ public final class IdentityUtils {
         Map<String, KeyPair> pairsMap = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
         ids.forEach((type, kp) -> {
             BuiltinIdentities id = BuiltinIdentities.fromName(type);
-            if (id == null) {
-                id = BuiltinIdentities.fromKeyPair(kp);
-            }
 
             if (supportedOnly && ((id == null) || (!id.isSupported()))) {
                 return;
@@ -144,7 +141,7 @@ public final class IdentityUtils {
 
             for (KeyPair kp : pairs) {
                 KeyPair prev = ids.put(type, kp);
-                ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s due to %s", type, path);
+                ValidateUtils.checkTrue(prev == null, "Multiple keys for type=%s in %s", type, path);
             }
         }
 

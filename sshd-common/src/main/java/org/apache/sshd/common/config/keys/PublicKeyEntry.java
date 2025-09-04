@@ -507,9 +507,7 @@ public class PublicKeyEntry implements Serializable, KeyTypeIndicator {
             keyType = unsupported.getKeyType();
             bytes = unsupported.getKeyData();
         } else {
-            @SuppressWarnings("unchecked")
-            PublicKeyEntryDecoder<PublicKey, ?> decoder = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils
-                    .getPublicKeyEntryDecoder(key);
+            PublicKeyEntryDecoder decoder = KeyUtils.getPublicKeyEntryDecoder(key);
             if (decoder == null) {
                 throw new StreamCorruptedException("Cannot retrieve decoder for key=" + key.getAlgorithm());
             }

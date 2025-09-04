@@ -25,8 +25,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,7 +37,7 @@ import javax.crypto.spec.IvParameterSpec;
 import javax.crypto.spec.SecretKeySpec;
 
 import org.apache.sshd.common.NamedResource;
-import org.apache.sshd.common.config.keys.IdentityResourceLoader;
+import org.apache.sshd.common.config.keys.KeyTypeNamesSupport;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.util.GenericUtils;
@@ -98,8 +96,7 @@ import org.bouncycastle.crypto.params.Argon2Parameters;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 //CHECKSTYLE:ON
-public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends PrivateKey>
-        extends IdentityResourceLoader<PUB, PRV>, KeyPairResourceParser {
+public interface PuttyKeyPairResourceParser extends KeyTypeNamesSupport, KeyPairResourceParser {
     String KEY_FILE_HEADER_PREFIX = "PuTTY-User-Key-File-";
     String PUBLIC_LINES_HEADER = "Public-Lines";
     String PRIVATE_LINES_HEADER = "Private-Lines";

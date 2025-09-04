@@ -42,8 +42,7 @@ import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
  * @param  <PRV> Type of {@link PrivateKey}
  * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends KeyEntryResolver<PUB, PRV>, PrivateKeyEntryResolver {
+public interface PrivateKeyEntryDecoder extends KeyEntryResolver, PrivateKeyEntryResolver {
 
     @Override
     default PrivateKey resolve(
@@ -69,13 +68,13 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    default PRV decodePrivateKey(
+    default PrivateKey decodePrivateKey(
             SessionContext session, FilePasswordProvider passwordProvider, byte... keyData)
             throws IOException, GeneralSecurityException {
         return decodePrivateKey(session, passwordProvider, keyData, 0, NumberUtils.length(keyData));
     }
 
-    default PRV decodePrivateKey(
+    default PrivateKey decodePrivateKey(
             SessionContext session, FilePasswordProvider passwordProvider, byte[] keyData, int offset, int length)
             throws IOException, GeneralSecurityException {
         if (length <= 0) {
@@ -87,7 +86,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
         }
     }
 
-    default PRV decodePrivateKey(
+    default PrivateKey decodePrivateKey(
             SessionContext session, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException {
         // the actual data is preceded by a string that repeats the key type
@@ -116,7 +115,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      * @throws IOException              If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PRV decodePrivateKey(
+    PrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException;
 
@@ -132,7 +131,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      *                     not supported
      * @throws IOException If failed to generate the encoding
      */
-    default String encodePrivateKey(SecureByteArrayOutputStream s, PRV key, PUB pubKey) throws IOException {
+    default String encodePrivateKey(SecureByteArrayOutputStream s, PrivateKey key, PublicKey pubKey) throws IOException {
         Objects.requireNonNull(key, "No private key provided");
         return null;
     }
@@ -148,7 +147,7 @@ public interface PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends Priva
      * @return                          The recovered {@link PublicKey} - {@code null} if cannot recover it
      * @throws GeneralSecurityException If failed to generate the public key
      */
-    default PUB recoverPublicKey(PRV prvKey) throws GeneralSecurityException {
+    default PublicKey recoverPublicKey(PrivateKey prvKey) throws GeneralSecurityException {
         return null;
     }
 }

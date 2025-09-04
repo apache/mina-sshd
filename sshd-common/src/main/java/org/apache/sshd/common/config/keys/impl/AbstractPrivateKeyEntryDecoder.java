@@ -19,21 +19,15 @@
 
 package org.apache.sshd.common.config.keys.impl;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 
 /**
- * @param  <PUB> Type of {@link PublicKey}
- * @param  <PRV> Type of {@link PrivateKey}
- * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends AbstractKeyEntryResolver<PUB, PRV>
-        implements PrivateKeyEntryDecoder<PUB, PRV> {
-    protected AbstractPrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        super(pubType, prvType, names);
+public abstract class AbstractPrivateKeyEntryDecoder extends AbstractKeyEntryResolver implements PrivateKeyEntryDecoder {
+    protected AbstractPrivateKeyEntryDecoder(Collection<String> names) {
+        super(names);
     }
 }

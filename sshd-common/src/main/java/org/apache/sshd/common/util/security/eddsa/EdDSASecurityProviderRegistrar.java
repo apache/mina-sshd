@@ -99,7 +99,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     }
 
     @Override
-    public Optional<EdDSASupport<?, ?>> getEdDSASupport() {
+    public Optional<EdDSASupport> getEdDSASupport() {
         if (!isSupported()) {
             return Optional.empty();
         }

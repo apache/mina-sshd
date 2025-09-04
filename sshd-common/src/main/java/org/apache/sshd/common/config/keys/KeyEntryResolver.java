@@ -30,8 +30,6 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Map;
 
@@ -39,12 +37,16 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 
 /**
- * @param  <PUB> Type of {@link PublicKey}
- * @param  <PRV> Type of {@link PrivateKey}
- * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
-        extends IdentityResourceLoader<PUB, PRV> {
+public interface KeyEntryResolver extends KeyTypeNamesSupport {
+
+    /**
+     * A reasonable max. number of octets used for a {@link java.math.BigInteger} in the context of keys based on such
+     * numbers
+     */
+    int MAX_BIGINT_OCTETS_COUNT = Short.MAX_VALUE;
+
     /**
      * @param  keySize                  Key size in bits
      * @return                          A {@link KeyPair} with the specified key size
@@ -119,7 +121,7 @@ public interface KeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
     }
 
     static BigInteger decodeBigInt(InputStream s) throws IOException {
-        return new BigInteger(readRLEBytes(s, IdentityResourceLoader.MAX_BIGINT_OCTETS_COUNT));
+        return new BigInteger(readRLEBytes(s, MAX_BIGINT_OCTETS_COUNT));
     }
 
     static byte[] readRLEBytes(InputStream s, int maxAllowed) throws IOException {

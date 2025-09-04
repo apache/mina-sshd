@@ -38,13 +38,11 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class EdDSAPuttyKeyDecoder<PUB extends PublicKey, PRIV extends PrivateKey> extends AbstractPuttyKeyDecoder<PUB, PRIV> {
+public class EdDSAPuttyKeyDecoder extends AbstractPuttyKeyDecoder {
     public static final EdDSAPuttyKeyDecoder INSTANCE = new EdDSAPuttyKeyDecoder();
 
     public EdDSAPuttyKeyDecoder() {
-        super((Class<PUB>) SecurityUtils.getEdDSASupport().get().getEDDSAPublicKeyType(),
-              (Class<PRIV>) SecurityUtils.getEdDSASupport().get().getEDDSAPrivateKeyType(),
-              Collections.singletonList(KeyPairProvider.SSH_ED25519));
+        super(Collections.singletonList(KeyPairProvider.SSH_ED25519));
     }
 
     @Override

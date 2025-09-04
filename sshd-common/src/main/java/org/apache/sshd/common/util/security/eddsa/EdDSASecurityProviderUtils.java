@@ -111,12 +111,12 @@ public final class EdDSASecurityProviderUtils {
         return SecurityUtils.EDDSA.equalsIgnoreCase(algorithm);
     }
 
-    public static PublicKeyEntryDecoder<? extends PublicKey, ? extends PrivateKey> getEDDSAPublicKeyEntryDecoder() {
+    public static PublicKeyEntryDecoder getEDDSAPublicKeyEntryDecoder() {
         ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
         return Ed25519PublicKeyDecoder.INSTANCE;
     }
 
-    public static PrivateKeyEntryDecoder<? extends PublicKey, ? extends PrivateKey> getOpenSSHEDDSAPrivateKeyEntryDecoder() {
+    public static PrivateKeyEntryDecoder getOpenSSHEDDSAPrivateKeyEntryDecoder() {
         ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
         return OpenSSHEd25519PrivateKeyEntryDecoder.INSTANCE;
     }

@@ -33,27 +33,23 @@ import org.apache.sshd.common.config.keys.KeyEntryResolver;
  * @param  <PRV> Type of {@link PrivateKey}
  * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractKeyEntryResolver<PUB extends PublicKey, PRV extends PrivateKey>
-        extends AbstractIdentityResourceLoader<PUB, PRV>
-        implements KeyEntryResolver<PUB, PRV> {
-    protected AbstractKeyEntryResolver(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        super(pubType, prvType, names);
+public abstract class AbstractKeyEntryResolver extends AbstractIdentityResourceLoader implements KeyEntryResolver {
+    protected AbstractKeyEntryResolver(Collection<String> names) {
+        super(names);
     }
 
-    public PUB generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {
+    public PublicKey generatePublicKey(KeySpec keySpec) throws GeneralSecurityException {
         KeyFactory factory = getKeyFactoryInstance();
-        Class<PUB> keyType = getPublicKeyType();
-        return keyType.cast(factory.generatePublic(keySpec));
+        return factory.generatePublic(keySpec);
     }
 
-    public PRV generatePrivateKey(KeySpec keySpec) throws GeneralSecurityException {
+    public PrivateKey generatePrivateKey(KeySpec keySpec) throws GeneralSecurityException {
         KeyFactory factory = getKeyFactoryInstance();
-        Class<PRV> keyType = getPrivateKeyType();
-        return keyType.cast(factory.generatePrivate(keySpec));
+        return factory.generatePrivate(keySpec);
     }
 
     @Override
     public String toString() {
-        return getPublicKeyType().getSimpleName() + ": " + getSupportedKeyTypes();
+        return getSupportedKeyTypes().toString();
     }
 }

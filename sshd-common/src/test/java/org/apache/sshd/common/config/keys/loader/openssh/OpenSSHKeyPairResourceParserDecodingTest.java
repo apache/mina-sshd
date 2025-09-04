@@ -64,16 +64,12 @@ class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairResourcePar
             throws Exception {
         assertEquals(1, GenericUtils.size(pairs), "Mismatched pairs count");
 
-        Class<? extends PublicKey> pubType = identity.getPublicKeyType();
-        Class<? extends PrivateKey> prvType = identity.getPrivateKeyType();
         Collection<String> supportedTypeNames = identity.getSupportedKeyTypes();
         for (KeyPair kp : pairs) {
             PublicKey pubKey = kp.getPublic();
-            assertObjectInstanceOf("Mismatched public key type", pubType, pubKey);
             assertKeyEquals("Mismatched identity public key", pubEntry, pubKey);
 
             PrivateKey prvKey = kp.getPrivate();
-            assertObjectInstanceOf("Mismatched private key type", prvType, prvKey);
 
             String pubName = KeyUtils.getKeyType(pubKey);
             String prvName = KeyUtils.getKeyType(prvKey);
@@ -85,12 +81,10 @@ class OpenSSHKeyPairResourceParserDecodingTest extends OpenSSHKeyPairResourcePar
 
             validateKeyPairSignable(pubName, kp);
 
-            @SuppressWarnings("rawtypes")
             PrivateKeyEntryDecoder decoder = OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(prvKey);
             assertNotNull(decoder, "No private key decoder");
 
             if (decoder.isPublicKeyRecoverySupported()) {
-                @SuppressWarnings("unchecked")
                 PublicKey recKey = decoder.recoverPublicKey(prvKey);
                 assertKeyEquals("Mismatched recovered public key", pubKey, recKey);
             }

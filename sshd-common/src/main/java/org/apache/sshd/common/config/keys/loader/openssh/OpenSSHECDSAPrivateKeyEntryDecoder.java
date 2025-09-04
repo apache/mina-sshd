@@ -27,6 +27,8 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
@@ -41,21 +43,22 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder<ECPublicKey, ECPrivateKey> {
+public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder {
     public static final OpenSSHECDSAPrivateKeyEntryDecoder INSTANCE = new OpenSSHECDSAPrivateKeyEntryDecoder();
 
     public OpenSSHECDSAPrivateKeyEntryDecoder() {
-        super(ECPublicKey.class, ECPrivateKey.class, ECCurves.KEY_TYPES);
+        super(ECCurves.KEY_TYPES);
     }
 
     @Override
-    public ECPrivateKey decodePrivateKey(
+    public PrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException {
         ECCurves curve = ECCurves.fromKeyType(keyType);
@@ -79,9 +82,9 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
     }
 
     @Override
-    public String encodePrivateKey(SecureByteArrayOutputStream s, ECPrivateKey key, ECPublicKey pubKey) throws IOException {
-        Objects.requireNonNull(key, "No private key provided");
-        Objects.requireNonNull(pubKey, "No public key provided");
+    public String encodePrivateKey(SecureByteArrayOutputStream s, PrivateKey k, PublicKey pk) throws IOException {
+        ECPrivateKey key = ValidateUtils.checkInstanceOf(k, ECPrivateKey.class, "Key must be an ECPrivateKey");
+        ECPublicKey pubKey = ValidateUtils.checkInstanceOf(pk, ECPublicKey.class, "Key must be an ECPublicKey");
         ECCurves curve = ECCurves.fromECKey(key);
         if (curve == null) {
             return null;
@@ -95,7 +98,8 @@ public class OpenSSHECDSAPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryD
     }
 
     @Override
-    public ECPublicKey recoverPublicKey(ECPrivateKey prvKey) throws GeneralSecurityException {
+    public PublicKey recoverPublicKey(PrivateKey key) throws GeneralSecurityException {
+        ECPrivateKey prvKey = ValidateUtils.checkInstanceOf(key, ECPrivateKey.class, "Key must be an ECPrivateKey");
         ECCurves curve = ECCurves.fromECKey(prvKey);
         if (curve == null) {
             throw new InvalidKeyException("Unknown curve");

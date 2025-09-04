@@ -33,7 +33,7 @@ import org.apache.sshd.common.util.NumberUtils;
  * @param  <PUB> Generic {@link PublicKey} type
  * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface PublicKeyRawDataDecoder<PUB extends PublicKey> {
+public interface PublicKeyRawDataDecoder {
     /**
      * @param  session                  The {@link SessionContext} for invoking this command - may be {@code null} if
      *                                  not invoked within a session context (e.g., offline tool or session unknown).
@@ -45,13 +45,13 @@ public interface PublicKeyRawDataDecoder<PUB extends PublicKey> {
      * @throws IOException              If failed to decode the key
      * @throws GeneralSecurityException If failed to generate the key
      */
-    default PUB decodePublicKey(
+    default PublicKey decodePublicKey(
             SessionContext session, String keyType, byte[] keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         return decodePublicKey(session, keyType, keyData, 0, NumberUtils.length(keyData), headers);
     }
 
-    default PUB decodePublicKey(
+    default PublicKey decodePublicKey(
             SessionContext session, String keyType, byte[] keyData, int offset, int length, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         if (length <= 0) {
@@ -63,7 +63,7 @@ public interface PublicKeyRawDataDecoder<PUB extends PublicKey> {
         }
     }
 
-    PUB decodePublicKeyByType(
+    PublicKey decodePublicKeyByType(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException;
 
@@ -78,6 +78,6 @@ public interface PublicKeyRawDataDecoder<PUB extends PublicKey> {
      * @throws IOException              If failed to read from the data stream
      * @throws GeneralSecurityException If failed to generate the key
      */
-    PUB decodePublicKey(SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
+    PublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException;
 }

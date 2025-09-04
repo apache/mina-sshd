@@ -24,7 +24,6 @@ import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Map;
@@ -39,14 +38,13 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends AbstractPublicKeyEntryDecoder<PUB, PRV> {
+public class GenericEd25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder {
     public static final int MAX_ALLOWED_SEED_LEN = 1024; // in reality it is much less than this
 
-    protected final EdDSASupport<PUB, PRV> edDSASupport;
+    protected final EdDSASupport edDSASupport;
 
-    public GenericEd25519PublicKeyDecoder(Class<PUB> pubType, Class<PRV> prvType, EdDSASupport<PUB, PRV> edDSASupport) {
-        super(pubType, prvType, Collections.singletonList(KeyPairProvider.SSH_ED25519));
+    public GenericEd25519PublicKeyDecoder(EdDSASupport edDSASupport) {
+        super(Collections.singletonList(KeyPairProvider.SSH_ED25519));
         this.edDSASupport = edDSASupport;
     }
 
@@ -56,7 +54,7 @@ public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends P
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, PUB key) throws IOException {
+    public String encodePublicKey(OutputStream s, PublicKey key) throws IOException {
         Objects.requireNonNull(key, "No public key provided");
         KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_ED25519);
         byte[] seed = edDSASupport.getPublicKeyData(key);
@@ -70,7 +68,7 @@ public class GenericEd25519PublicKeyDecoder<PUB extends PublicKey, PRV extends P
     }
 
     @Override
-    public PUB decodePublicKey(
+    public PublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         byte[] seed = KeyEntryResolver.readRLEBytes(keyData, MAX_ALLOWED_SEED_LEN);

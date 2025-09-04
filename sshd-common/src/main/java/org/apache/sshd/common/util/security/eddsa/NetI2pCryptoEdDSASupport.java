@@ -19,17 +19,13 @@
 
 package org.apache.sshd.common.util.security.eddsa;
 
-import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.KeySpec;
 
 import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
-import net.i2p.crypto.eddsa.spec.EdDSAPrivateKeySpec;
-import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.signature.Signature;
@@ -37,19 +33,19 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
-public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
+public class NetI2pCryptoEdDSASupport implements EdDSASupport {
 
     public NetI2pCryptoEdDSASupport() {
         super();
     }
 
     @Override
-    public PublicKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> getEDDSAPublicKeyEntryDecoder() {
+    public PublicKeyEntryDecoder getEDDSAPublicKeyEntryDecoder() {
         return Ed25519PublicKeyDecoder.INSTANCE;
     }
 
     @Override
-    public PrivateKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> getOpenSSHEDDSAPrivateKeyEntryDecoder() {
+    public PrivateKeyEntryDecoder getOpenSSHEDDSAPrivateKeyEntryDecoder() {
         return OpenSSHEd25519PrivateKeyEntryDecoder.INSTANCE;
     }
 
@@ -61,16 +57,6 @@ public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     @Override
     public int getEDDSAKeySize(Key key) {
         return EdDSASecurityProviderUtils.getEDDSAKeySize(key);
-    }
-
-    @Override
-    public Class<EdDSAPublicKey> getEDDSAPublicKeyType() {
-        return EdDSAPublicKey.class;
-    }
-
-    @Override
-    public Class<EdDSAPrivateKey> getEDDSAPrivateKeyType() {
-        return EdDSAPrivateKey.class;
     }
 
     @Override
@@ -106,26 +92,6 @@ public class NetI2pCryptoEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     @Override
     public <B extends Buffer> B putEDDSAKeyPair(B buffer, PublicKey pubKey, PrivateKey prvKey) {
         return EdDSASecurityProviderUtils.putEDDSAKeyPair(buffer, pubKey, prvKey);
-    }
-
-    @Override
-    public KeySpec createPublicKeySpec(EdDSAPublicKey publicKey) {
-        return new EdDSAPublicKeySpec(publicKey.getA(), publicKey.getParams());
-    }
-
-    @Override
-    public KeySpec createPrivateKeySpec(EdDSAPrivateKey privateKey) {
-        return new EdDSAPrivateKeySpec(privateKey.getSeed(), privateKey.getParams());
-    }
-
-    @Override
-    public byte[] getPublicKeyData(EdDSAPublicKey publicKey) {
-        return publicKey == null ? null : publicKey.getAbyte();
-    }
-
-    @Override
-    public byte[] getPrivateKeyData(EdDSAPrivateKey privateKey) throws IOException {
-        return privateKey.getSeed();
     }
 
     @Override

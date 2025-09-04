@@ -18,14 +18,11 @@
  */
 package org.apache.sshd.common.config.keys.impl;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.NavigableSet;
-import java.util.Objects;
 
-import org.apache.sshd.common.config.keys.IdentityResourceLoader;
+import org.apache.sshd.common.config.keys.KeyTypeNamesSupport;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -35,29 +32,15 @@ import org.apache.sshd.common.util.logging.AbstractLoggingBean;
  * @param  <PRV> Generic private key type
  * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractIdentityResourceLoader<PUB extends PublicKey, PRV extends PrivateKey>
+public abstract class AbstractIdentityResourceLoader
         extends AbstractLoggingBean
-        implements IdentityResourceLoader<PUB, PRV> {
-    private final Class<PUB> pubType;
-    private final Class<PRV> prvType;
+        implements KeyTypeNamesSupport {
     private final NavigableSet<String> types;
 
-    protected AbstractIdentityResourceLoader(Class<PUB> pubType, Class<PRV> prvType, Collection<String> keyTypes) {
-        this.pubType = Objects.requireNonNull(pubType, "No public key type specified");
-        this.prvType = Objects.requireNonNull(prvType, "No private key type specified");
+    protected AbstractIdentityResourceLoader(Collection<String> keyTypes) {
         this.types = Collections.unmodifiableNavigableSet(
                 GenericUtils.asSortedSet(String.CASE_INSENSITIVE_ORDER,
                         ValidateUtils.checkNotNullAndNotEmpty(keyTypes, "No key type names provided")));
-    }
-
-    @Override
-    public final Class<PUB> getPublicKeyType() {
-        return pubType;
-    }
-
-    @Override
-    public final Class<PRV> getPrivateKeyType() {
-        return prvType;
     }
 
     @Override

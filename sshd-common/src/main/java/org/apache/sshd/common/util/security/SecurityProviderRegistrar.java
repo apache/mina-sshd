@@ -193,7 +193,7 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
     /**
      * @return the EdDSA support implementation associated with the security provider (if applicable)
      */
-    default Optional<EdDSASupport<?, ?>> getEdDSASupport() {
+    default Optional<EdDSASupport> getEdDSASupport() {
         return Optional.empty();
     }
 

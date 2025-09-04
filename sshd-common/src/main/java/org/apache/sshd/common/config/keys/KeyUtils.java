@@ -140,7 +140,7 @@ public final class KeyUtils {
 
     private static final AtomicReference<DigestFactory> DEFAULT_DIGEST_HOLDER = new AtomicReference<>();
 
-    private static final Map<String, PublicKeyEntryDecoder<?, ?>> BY_KEY_TYPE_DECODERS_MAP
+    private static final Map<String, PublicKeyEntryDecoder> BY_KEY_TYPE_DECODERS_MAP
             = new ConcurrentHashMap<>();
 
     private static final Map<String, String> KEY_TYPE_ALIASES
@@ -342,7 +342,7 @@ public final class KeyUtils {
      * @see                             PublicKeyEntryDecoder<?, ?>#generateKeyPair(int)
      */
     public static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
-        PublicKeyEntryDecoder<?, ?> decoder = getPublicKeyEntryDecoder(keyType);
+        PublicKeyEntryDecoder decoder = getPublicKeyEntryDecoder(keyType);
         if (decoder == null) {
             throw new InvalidKeySpecException("No decoder for key type=" + keyType);
         }
@@ -354,9 +354,9 @@ public final class KeyUtils {
      * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes()
      * supports}
      *
-     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder<?, ?> decoder} to register
+     * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
      */
-    public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
+    public static void registerPublicKeyEntryDecoder(PublicKeyEntryDecoder decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names
@@ -374,14 +374,14 @@ public final class KeyUtils {
      *                 {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes() supported} ones.
      * @see            #unregisterPublicKeyEntryDecoderForKeyType(String)
      */
-    public static Set<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder<?, ?> decoder) {
+    public static Set<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder decoder) {
         Objects.requireNonNull(decoder, "No decoder specified");
 
         Collection<String> names = ValidateUtils.checkNotNullAndNotEmpty(
                 decoder.getSupportedKeyTypes(), "No supported key types");
         Set<String> removed = new HashSet<>();
         for (String n : names) {
-            PublicKeyEntryDecoder<?, ?> prev = unregisterPublicKeyEntryDecoderForKeyType(n);
+            PublicKeyEntryDecoder prev = unregisterPublicKeyEntryDecoderForKeyType(n);
             if (prev != null) {
                 removed.add(n);
             }
@@ -396,7 +396,7 @@ public final class KeyUtils {
      * @return         The unregistered {@link PublicKeyEntryDecoder<?, ?>} - {@code null} if none registered for this
      *                 key type
      */
-    public static PublicKeyEntryDecoder<?, ?> unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
+    public static PublicKeyEntryDecoder unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
         return BY_KEY_TYPE_DECODERS_MAP.remove(keyType);
     }
@@ -406,7 +406,7 @@ public final class KeyUtils {
      *                 {@code null}/empty
      * @return         The registered {@link PublicKeyEntryDecoder<?, ?>} or {code null} if not found
      */
-    public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(String keyType) {
+    public static PublicKeyEntryDecoder getPublicKeyEntryDecoder(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
             return null;
         }
@@ -419,13 +419,13 @@ public final class KeyUtils {
      *            the same decoder - {@code null} if no match found
      * @see       #getPublicKeyEntryDecoder(Key)
      */
-    public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(KeyPair kp) {
+    public static PublicKeyEntryDecoder getPublicKeyEntryDecoder(KeyPair kp) {
         if (kp == null) {
             return null;
         }
 
-        PublicKeyEntryDecoder<?, ?> d1 = getPublicKeyEntryDecoder(kp.getPublic());
-        PublicKeyEntryDecoder<?, ?> d2 = getPublicKeyEntryDecoder(kp.getPrivate());
+        PublicKeyEntryDecoder d1 = getPublicKeyEntryDecoder(kp.getPublic());
+        PublicKeyEntryDecoder d2 = getPublicKeyEntryDecoder(kp.getPrivate());
         if (d1 == d2) {
             return d1;
         } else {
@@ -435,9 +435,9 @@ public final class KeyUtils {
 
     /**
      * @param  key The {@link Key} (public or private) - ignored if {@code null}
-     * @return     The registered {@link PublicKeyEntryDecoder<?, ?>} for this key or {code null} if no match found
+     * @return     The registered {@link PublicKeyEntryDecoder} for this key or {code null} if no match found
      */
-    public static PublicKeyEntryDecoder<?, ?> getPublicKeyEntryDecoder(Key key) {
+    public static PublicKeyEntryDecoder getPublicKeyEntryDecoder(Key key) {
         if (key == null) {
             return null;
         }

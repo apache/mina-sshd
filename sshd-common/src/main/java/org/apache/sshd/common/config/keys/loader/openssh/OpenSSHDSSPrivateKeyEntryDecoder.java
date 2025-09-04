@@ -25,6 +25,8 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.DSAParams;
 import java.security.interfaces.DSAPrivateKey;
 import java.security.interfaces.DSAPublicKey;
@@ -39,22 +41,22 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.impl.AbstractPrivateKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder<DSAPublicKey, DSAPrivateKey> {
+public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder {
     public static final OpenSSHDSSPrivateKeyEntryDecoder INSTANCE = new OpenSSHDSSPrivateKeyEntryDecoder();
 
     public OpenSSHDSSPrivateKeyEntryDecoder() {
-        super(DSAPublicKey.class, DSAPrivateKey.class,
-              Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
+        super(Collections.unmodifiableList(Collections.singletonList(KeyPairProvider.SSH_DSS)));
     }
 
     @Override
-    public DSAPrivateKey decodePrivateKey(
+    public PrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_DSS.equals(keyType)) { // just in case we were invoked directly
@@ -72,7 +74,11 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
     }
 
     @Override
-    public String encodePrivateKey(SecureByteArrayOutputStream s, DSAPrivateKey key, DSAPublicKey pubKey) throws IOException {
+    public String encodePrivateKey(SecureByteArrayOutputStream s, PrivateKey k, PublicKey pk) throws IOException {
+        DSAPrivateKey key = ValidateUtils.checkInstanceOf(k, DSAPrivateKey.class, "Key must be a DSAPrivateKey");
+        DSAPublicKey pubKey = pk == null
+                ? null
+                : ValidateUtils.checkInstanceOf(pk, DSAPublicKey.class, "Key must be a DSAPublicKey");
         Objects.requireNonNull(key, "No private key provided");
 
         DSAParams keyParams = Objects.requireNonNull(key.getParams(), "No DSA params available");
@@ -96,8 +102,9 @@ public class OpenSSHDSSPrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDec
     }
 
     @Override
-    public DSAPublicKey recoverPublicKey(DSAPrivateKey privateKey) throws GeneralSecurityException {
-        return KeyUtils.recoverDSAPublicKey(privateKey);
+    public PublicKey recoverPublicKey(PrivateKey k) throws GeneralSecurityException {
+        DSAPrivateKey key = ValidateUtils.checkInstanceOf(k, DSAPrivateKey.class, "Key must be a DSAPrivateKey");
+        return KeyUtils.recoverDSAPublicKey(key);
     }
 
     @Override

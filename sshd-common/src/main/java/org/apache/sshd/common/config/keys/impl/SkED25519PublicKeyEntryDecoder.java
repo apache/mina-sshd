@@ -27,24 +27,23 @@ import java.security.InvalidKeyException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<SkED25519PublicKey, PrivateKey> {
+public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder {
     public static final String KEY_TYPE = "sk-ssh-ed25519@openssh.com";
     public static final int MAX_APP_NAME_LENGTH = 1024;
 
@@ -54,7 +53,7 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
     private static final String VERIFY_REQUIRED_HEADER = "verify-required";
 
     public SkED25519PublicKeyEntryDecoder() {
-        super(SkED25519PublicKey.class, PrivateKey.class, Collections.singleton(KEY_TYPE));
+        super(Collections.singleton(KEY_TYPE));
     }
 
     @Override
@@ -74,8 +73,9 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, SkED25519PublicKey key) throws IOException {
-        Objects.requireNonNull(key, "No public key provided");
+    public String encodePublicKey(OutputStream s, PublicKey k) throws IOException {
+        SkED25519PublicKey key = ValidateUtils.checkInstanceOf(k, SkED25519PublicKey.class,
+                "Key must be an SkED25519PublicKey");
         KeyEntryResolver.encodeString(s, KEY_TYPE);
         try {
             byte[] keyData = EdDSAUtils.getBytes(key.getDelegatePublicKey());

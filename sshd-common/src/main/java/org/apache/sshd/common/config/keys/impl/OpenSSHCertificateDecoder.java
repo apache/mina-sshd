@@ -26,7 +26,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
@@ -36,6 +36,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.buffer.keys.OpenSSHCertPublicKeyParser;
 import org.apache.sshd.common.util.io.IoUtils;
@@ -43,20 +44,19 @@ import org.apache.sshd.common.util.io.IoUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<OpenSshCertificate, PrivateKey> {
+public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder {
     public static final OpenSSHCertificateDecoder INSTANCE = new OpenSSHCertificateDecoder();
 
     public OpenSSHCertificateDecoder() {
-        super(OpenSshCertificate.class, PrivateKey.class,
-              Collections.unmodifiableList(Arrays.asList(
-                      KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
-                      KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS,
-                      KeyPairProvider.SSH_RSA_CERT,
-                      KeyPairProvider.SSH_DSS_CERT,
-                      KeyPairProvider.SSH_ED25519_CERT,
-                      KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
-                      KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
-                      KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT)));
+        super(Collections.unmodifiableList(Arrays.asList(
+                KeyUtils.RSA_SHA256_CERT_TYPE_ALIAS,
+                KeyUtils.RSA_SHA512_CERT_TYPE_ALIAS,
+                KeyPairProvider.SSH_RSA_CERT,
+                KeyPairProvider.SSH_DSS_CERT,
+                KeyPairProvider.SSH_ED25519_CERT,
+                KeyPairProvider.SSH_ECDSA_SHA2_NISTP256_CERT,
+                KeyPairProvider.SSH_ECDSA_SHA2_NISTP384_CERT,
+                KeyPairProvider.SSH_ECDSA_SHA2_NISTP521_CERT)));
     }
 
     @Override
@@ -76,7 +76,9 @@ public class OpenSSHCertificateDecoder extends AbstractPublicKeyEntryDecoder<Ope
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, OpenSshCertificate key) throws IOException {
+    public String encodePublicKey(OutputStream s, PublicKey k) throws IOException {
+        OpenSshCertificate key = ValidateUtils.checkInstanceOf(k, OpenSshCertificate.class,
+                "Key must be an OpenSshCertificate");
         Objects.requireNonNull(key, "No public key provided");
 
         ByteArrayBuffer buffer = new ByteArrayBuffer();

@@ -59,9 +59,7 @@ class EcdsaPublicKeyEntryDecoderTest extends JUnitTestSupport {
 
             KeyPair keyPair = KeyUtils.generateKeyPair(keyType, keySize);
             PublicKey expected = keyPair.getPublic();
-            @SuppressWarnings("unchecked")
-            PublicKeyEntryDecoder<PublicKey, ?> decoder
-                    = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(expected);
+            PublicKeyEntryDecoder decoder = KeyUtils.getPublicKeyEntryDecoder(expected);
             byte[] encodedPublicKey;
             try (ByteArrayOutputStream ostrm = new ByteArrayOutputStream()) {
                 decoder.encodePublicKey(ostrm, expected);

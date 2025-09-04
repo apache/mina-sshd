@@ -26,7 +26,6 @@ import java.security.Key;
 import java.security.KeyFactory;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
@@ -41,27 +40,26 @@ import org.apache.sshd.common.util.security.eddsa.generic.GenericOpenSSHEd25519P
 import org.apache.sshd.common.util.security.eddsa.generic.GenericSignatureEd25519;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.crypto.params.Ed25519PrivateKeyParameters;
-import org.bouncycastle.crypto.util.PrivateKeyFactory;
 import org.bouncycastle.crypto.util.PrivateKeyInfoFactory;
 import org.bouncycastle.jcajce.interfaces.EdDSAKey;
 import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
 import org.bouncycastle.jcajce.interfaces.EdDSAPublicKey;
 import org.bouncycastle.jcajce.spec.RawEncodedKeySpec;
 
-public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, EdDSAPrivateKey> {
+public class BouncyCastleEdDSASupport implements EdDSASupport {
 
     public BouncyCastleEdDSASupport() {
         super();
     }
 
     @Override
-    public PublicKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> getEDDSAPublicKeyEntryDecoder() {
-        return new GenericEd25519PublicKeyDecoder<>(EdDSAPublicKey.class, EdDSAPrivateKey.class, this);
+    public PublicKeyEntryDecoder getEDDSAPublicKeyEntryDecoder() {
+        return new GenericEd25519PublicKeyDecoder(this);
     }
 
     @Override
-    public PrivateKeyEntryDecoder<EdDSAPublicKey, EdDSAPrivateKey> getOpenSSHEDDSAPrivateKeyEntryDecoder() {
-        return new GenericOpenSSHEd25519PrivateKeyEntryDecoder<>(EdDSAPublicKey.class, EdDSAPrivateKey.class, this);
+    public PrivateKeyEntryDecoder getOpenSSHEDDSAPrivateKeyEntryDecoder() {
+        return new GenericOpenSSHEd25519PrivateKeyEntryDecoder(this);
     }
 
     @Override
@@ -72,16 +70,6 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
     @Override
     public int getEDDSAKeySize(Key key) {
         return key instanceof EdDSAKey ? KEY_SIZE : -1;
-    }
-
-    @Override
-    public Class<EdDSAPublicKey> getEDDSAPublicKeyType() {
-        return EdDSAPublicKey.class;
-    }
-
-    @Override
-    public Class<EdDSAPrivateKey> getEDDSAPrivateKeyType() {
-        return EdDSAPrivateKey.class;
     }
 
     @Override
@@ -138,28 +126,6 @@ public class BouncyCastleEdDSASupport implements EdDSASupport<EdDSAPublicKey, Ed
         ValidateUtils.checkInstanceOf(pubKey, EdDSAPublicKey.class, "Not an EDDSA public key: %s", pubKey);
         ValidateUtils.checkInstanceOf(prvKey, EdDSAPrivateKey.class, "Not an EDDSA private key: %s", prvKey);
         throw new UnsupportedOperationException("Full SSHD-440 implementation N/A");
-    }
-
-    @Override
-    public KeySpec createPublicKeySpec(EdDSAPublicKey publicKey) {
-        return new RawEncodedKeySpec(publicKey.getPointEncoding());
-    }
-
-    @Override
-    public KeySpec createPrivateKeySpec(EdDSAPrivateKey privateKey) {
-        return new PKCS8EncodedKeySpec(privateKey.getEncoded());
-    }
-
-    @Override
-    public byte[] getPublicKeyData(EdDSAPublicKey publicKey) {
-        return publicKey == null ? null : publicKey.getPointEncoding();
-    }
-
-    @Override
-    public byte[] getPrivateKeyData(EdDSAPrivateKey privateKey) throws IOException {
-        Ed25519PrivateKeyParameters parameters
-                = (Ed25519PrivateKeyParameters) PrivateKeyFactory.createKey(privateKey.getEncoded());
-        return parameters.getEncoded();
     }
 
     @Override

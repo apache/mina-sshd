@@ -54,7 +54,7 @@ class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
     private String keyType;
     private String regularFile;
     private String encryptedFile;
-    private PuttyKeyPairResourceParser<?, ?> parser;
+    private PuttyKeyPairResourceParser parser;
 
     void initPuttyKeyUtilsTest(String keyType) {
         this.keyType = keyType;
@@ -90,7 +90,7 @@ class PuttyKeyUtilsTest extends AbstractPuttyTestSupport {
             NamedResource resourceKey = NamedResource.ofName(resource);
             assertTrue(parser.canExtractKeyPairs(resourceKey, lines), resource + " - can extract key pair");
 
-            for (PuttyKeyPairResourceParser<?, ?> other : PuttyKeyUtils.BY_KEY_TYPE.values()) {
+            for (PuttyKeyPairResourceParser other : PuttyKeyUtils.BY_KEY_TYPE.values()) {
                 if (parser == other) {
                     continue;
                 }

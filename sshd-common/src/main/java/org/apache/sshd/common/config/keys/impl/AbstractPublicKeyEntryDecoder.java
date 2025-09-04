@@ -35,11 +35,9 @@ import org.apache.sshd.common.util.MapEntryUtils;
  * @param  <PRV> Type of {@link PrivateKey}
  * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public abstract class AbstractPublicKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends AbstractKeyEntryResolver<PUB, PRV>
-        implements PublicKeyEntryDecoder<PUB, PRV> {
-    protected AbstractPublicKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType, Collection<String> names) {
-        super(pubType, prvType, names);
+public abstract class AbstractPublicKeyEntryDecoder extends AbstractKeyEntryResolver implements PublicKeyEntryDecoder {
+    protected AbstractPublicKeyEntryDecoder(Collection<String> names) {
+        super(names);
     }
 
     protected final boolean parseBooleanHeader(Map<String, String> headers, String propertyKey, boolean defaultVal) {

@@ -26,7 +26,7 @@ import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
-import java.security.interfaces.ECPrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECParameterSpec;
 import java.security.spec.ECPoint;
@@ -36,18 +36,18 @@ import java.util.Map;
 import java.util.Objects;
 
 import org.apache.sshd.common.cipher.ECCurves;
-import org.apache.sshd.common.config.keys.IdentityResourceLoader;
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<ECPublicKey, ECPrivateKey> {
-    public static final int MAX_ALLOWED_POINT_SIZE = IdentityResourceLoader.MAX_BIGINT_OCTETS_COUNT;
+public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder {
+    public static final int MAX_ALLOWED_POINT_SIZE = KeyEntryResolver.MAX_BIGINT_OCTETS_COUNT;
     public static final int MAX_CURVE_NAME_LENGTH = 1024;
 
     public static final ECDSAPublicKeyEntryDecoder INSTANCE = new ECDSAPublicKeyEntryDecoder();
@@ -58,11 +58,11 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     public static final byte ECPOINT_COMPRESSED_VARIANT_3 = 0x02;
 
     public ECDSAPublicKeyEntryDecoder() {
-        super(ECPublicKey.class, ECPrivateKey.class, ECCurves.KEY_TYPES);
+        super(ECCurves.KEY_TYPES);
     }
 
     @Override
-    public ECPublicKey decodePublicKey(
+    public PublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         ECCurves curve = ECCurves.fromKeyType(keyType);
@@ -73,7 +73,7 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
         return decodePublicKey(curve, keyData);
     }
 
-    ECPublicKey decodePublicKey(ECCurves curve, InputStream keyData) throws IOException, GeneralSecurityException {
+    PublicKey decodePublicKey(ECCurves curve, InputStream keyData) throws IOException, GeneralSecurityException {
         String keyCurveName = curve.getName();
         // see rfc5656 section 3.1
         String encCurveName = KeyEntryResolver.decodeString(keyData, MAX_CURVE_NAME_LENGTH);
@@ -101,8 +101,8 @@ public class ECDSAPublicKeyEntryDecoder extends AbstractPublicKeyEntryDecoder<EC
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, ECPublicKey key) throws IOException {
-        Objects.requireNonNull(key, "No public key provided");
+    public String encodePublicKey(OutputStream s, PublicKey k) throws IOException {
+        ECPublicKey key = ValidateUtils.checkInstanceOf(k, ECPublicKey.class, "Key must be an ECPublicKey");
 
         ECParameterSpec params = Objects.requireNonNull(key.getParams(), "No EC parameters available");
         ECCurves curve = Objects.requireNonNull(ECCurves.fromCurveParameters(params), "Cannot determine curve");

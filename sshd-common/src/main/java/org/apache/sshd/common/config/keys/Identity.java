@@ -19,9 +19,6 @@
 
 package org.apache.sshd.common.config.keys;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
-
 import org.apache.sshd.common.AlgorithmNameProvider;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
@@ -37,7 +34,4 @@ public interface Identity
         NamedResource,
         OptionalFeature,
         KeyTypeNamesSupport {
-    Class<? extends PublicKey> getPublicKeyType();
-
-    Class<? extends PrivateKey> getPrivateKeyType();
 }

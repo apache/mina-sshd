@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Base64;
@@ -152,10 +151,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
             KeyEntryResolver.encodeInt(out, check);
             KeyEntryResolver.encodeInt(out, check);
             KeyEntryResolver.encodeString(out, keyType);
-            @SuppressWarnings("unchecked") // Problem with generics
-            PrivateKeyEntryDecoder<PublicKey, PrivateKey> encoder
-                    = (PrivateKeyEntryDecoder<PublicKey, PrivateKey>) OpenSSHKeyPairResourceParser
-                            .getPrivateKeyEntryDecoder(keyType);
+            PrivateKeyEntryDecoder encoder = OpenSSHKeyPairResourceParser.getPrivateKeyEntryDecoder(keyType);
             if (encoder.encodePrivateKey(out, key.getPrivate(), key.getPublic()) == null) {
                 throw new GeneralSecurityException("Cannot encode key of type " + keyType);
             }
@@ -176,9 +172,7 @@ public class OpenSSHKeyPairResourceWriter implements KeyPairResourceWriter<OpenS
 
     public static byte[] encodePublicKey(PublicKey key, String keyType)
             throws IOException, GeneralSecurityException {
-        @SuppressWarnings("unchecked") // Problem with generics.
-        PublicKeyEntryDecoder<PublicKey, ?> decoder
-                = (PublicKeyEntryDecoder<PublicKey, ?>) KeyUtils.getPublicKeyEntryDecoder(keyType);
+        PublicKeyEntryDecoder decoder = KeyUtils.getPublicKeyEntryDecoder(keyType);
         if (decoder == null) {
             throw new GeneralSecurityException("Unknown key type: " + keyType);
         }

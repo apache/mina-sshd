@@ -36,6 +36,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.bouncycastle.BouncyCastleEdDSASupport;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
@@ -55,14 +56,14 @@ import org.junit.jupiter.params.provider.MethodSource;
 class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends JUnitTestSupport {
 
     private byte[] prvBytes;
-    private PRV privateKey;
+    private PrivateKey privateKey;
     private byte[] pubBytes;
-    private PUB publicKey;
+    private PublicKey publicKey;
     private byte[] msgBytes;
     private byte[] expSignature;
 
     void initEd25519VectorsTest(
-            String name, EdDSASupport<PUB, PRV> support, String prvKey, String pubKey, String msg, String signature)
+            String name, EdDSASupport support, String prvKey, String pubKey, String msg, String signature)
             throws GeneralSecurityException, IOException {
         prvBytes = BufferUtils.decodeHex(BufferUtils.EMPTY_HEX_SEPARATOR, prvKey);
         privateKey = support.generateEDDSAPrivateKey(prvBytes.clone());
@@ -74,10 +75,10 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
 
     static List<Object[]> parameters() {
         List<Object[]> parameters = new ArrayList<>();
-        Map<String, EdDSASupport<?, ?>> supportedSecurityProviders = new LinkedHashMap<>();
+        Map<String, EdDSASupport> supportedSecurityProviders = new LinkedHashMap<>();
         supportedSecurityProviders.put(SecurityUtils.EDDSA, new NetI2pCryptoEdDSASupport());
         supportedSecurityProviders.put(SecurityUtils.BOUNCY_CASTLE, new BouncyCastleEdDSASupport());
-        for (Map.Entry<String, EdDSASupport<?, ?>> entry : supportedSecurityProviders.entrySet()) {
+        for (Map.Entry<String, EdDSASupport> entry : supportedSecurityProviders.entrySet()) {
             String supportClassName = entry.getValue().getClass().getSimpleName();
             parameters.add(new Object[] {
                     supportClassName + " TEST1 - empty message",
@@ -202,7 +203,7 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void publicKeyBytes(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
         byte[] publicSeed = support.getPublicKeyData(publicKey);
@@ -212,7 +213,7 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void privateKeyBytes(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
         byte[] privateSeed = support.getPrivateKeyData(privateKey);
@@ -222,7 +223,7 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void signature(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
         Signature signer = support.getEDDSASigner();
@@ -241,7 +242,7 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void partialBufferSignature(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature)
             throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
@@ -268,10 +269,10 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void recoverEDDSAPublicKey(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
-        PUB recoveredKey = support.recoverEDDSAPublicKey(privateKey);
+        PublicKey recoveredKey = support.recoverEDDSAPublicKey(privateKey);
         assertTrue(support.compareEDDSAPPublicKeys(publicKey, recoveredKey), "Recovered key is not equal");
         byte[] recoveredBytes = support.getPublicKeyData(recoveredKey);
         assertArrayEquals(pubBytes, recoveredBytes, "Mismatched public seed value");
@@ -280,12 +281,12 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void createPublicKeySpec(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
-        KeySpec keySpec = support.createPublicKeySpec(publicKey);
+        KeySpec keySpec = EdDSAUtils.createKeySpec(publicKey);
         KeyFactory keyFactory = KeyFactory.getInstance(support.getKeyFactoryAlgorithm(), provider);
-        PUB generatedKey = (PUB) keyFactory.generatePublic(keySpec);
+        PublicKey generatedKey = keyFactory.generatePublic(keySpec);
         assertTrue(support.compareEDDSAPPublicKeys(publicKey, generatedKey), "Generated key is not equal");
         byte[] generatedBytes = support.getPublicKeyData(generatedKey);
         assertArrayEquals(pubBytes, generatedBytes, "Mismatched public seed value");
@@ -294,12 +295,12 @@ class Ed25519VectorsTest<PUB extends PublicKey, PRV extends PrivateKey> extends 
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
     void createPrivateKeySpec(
-            String name, EdDSASupport<PUB, PRV> support, String provider, String prvKey, String pubKey, String msg,
+            String name, EdDSASupport support, String provider, String prvKey, String pubKey, String msg,
             String signature) throws Exception {
         initEd25519VectorsTest(name, support, prvKey, pubKey, msg, signature);
-        KeySpec keySpec = support.createPrivateKeySpec(privateKey);
+        KeySpec keySpec = EdDSAUtils.createKeySpec(privateKey);
         KeyFactory keyFactory = KeyFactory.getInstance(support.getKeyFactoryAlgorithm(), provider);
-        PRV generatedKey = (PRV) keyFactory.generatePrivate(keySpec);
+        PrivateKey generatedKey = keyFactory.generatePrivate(keySpec);
         assertTrue(support.compareEDDSAPrivateKeys(privateKey, generatedKey), "Generated key is not equal");
         byte[] generatedBytes = support.getPrivateKeyData(generatedKey);
         assertArrayEquals(prvBytes, generatedBytes, "Mismatched private seed value");

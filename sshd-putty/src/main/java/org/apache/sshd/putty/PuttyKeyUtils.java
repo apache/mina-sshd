@@ -33,22 +33,22 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class PuttyKeyUtils {
-    public static final List<PuttyKeyPairResourceParser<?, ?>> DEFAULT_PARSERS;
+    public static final List<PuttyKeyPairResourceParser> DEFAULT_PARSERS;
 
-    public static final NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> BY_KEY_TYPE;
+    public static final NavigableMap<String, PuttyKeyPairResourceParser> BY_KEY_TYPE;
 
     public static final KeyPairResourceParser DEFAULT_INSTANCE;
 
     static {
-        List<PuttyKeyPairResourceParser<?, ?>> parsers = new ArrayList<>();
+        List<PuttyKeyPairResourceParser> parsers = new ArrayList<>();
         parsers.add(RSAPuttyKeyDecoder.INSTANCE);
         parsers.add(DSSPuttyKeyDecoder.INSTANCE);
         parsers.add(ECDSAPuttyKeyDecoder.INSTANCE);
         if (SecurityUtils.isEDDSACurveSupported()) {
             parsers.add(EdDSAPuttyKeyDecoder.INSTANCE);
         }
-        NavigableMap<String, PuttyKeyPairResourceParser<?, ?>> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
-        for (PuttyKeyPairResourceParser<?, ?> p : parsers) {
+        NavigableMap<String, PuttyKeyPairResourceParser> map = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+        for (PuttyKeyPairResourceParser p : parsers) {
             Collection<String> supported = p.getSupportedKeyTypes();
             for (String k : supported) {
                 map.put(k, p);

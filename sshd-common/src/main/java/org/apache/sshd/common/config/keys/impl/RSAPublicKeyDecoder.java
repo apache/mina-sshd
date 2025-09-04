@@ -26,38 +26,37 @@ import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
-import java.security.interfaces.RSAPrivateKey;
+import java.security.PublicKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.RSAPublicKeySpec;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
-import java.util.Objects;
 
 import org.apache.sshd.common.config.keys.KeyEntryResolver;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublicKey, RSAPrivateKey> {
+public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder {
     public static final RSAPublicKeyDecoder INSTANCE = new RSAPublicKeyDecoder();
 
     public RSAPublicKeyDecoder() {
-        super(RSAPublicKey.class, RSAPrivateKey.class,
-              Collections.unmodifiableList(
-                      Arrays.asList(KeyPairProvider.SSH_RSA,
-                              // Not really required, but allow it
-                              KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
-                              KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS)));
+        super(Collections.unmodifiableList(
+                Arrays.asList(KeyPairProvider.SSH_RSA,
+                        // Not really required, but allow it
+                        KeyUtils.RSA_SHA256_KEY_TYPE_ALIAS,
+                        KeyUtils.RSA_SHA512_KEY_TYPE_ALIAS)));
     }
 
     @Override
-    public RSAPublicKey decodePublicKey(
+    public PublicKey decodePublicKey(
             SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         // Not really required, but allow it
@@ -73,8 +72,8 @@ public class RSAPublicKeyDecoder extends AbstractPublicKeyEntryDecoder<RSAPublic
     }
 
     @Override
-    public String encodePublicKey(OutputStream s, RSAPublicKey key) throws IOException {
-        Objects.requireNonNull(key, "No public key provided");
+    public String encodePublicKey(OutputStream s, PublicKey k) throws IOException {
+        RSAPublicKey key = ValidateUtils.checkInstanceOf(k, RSAPublicKey.class, "Key must be a RSAPublicKey");
         KeyEntryResolver.encodeString(s, KeyPairProvider.SSH_RSA);
         KeyEntryResolver.encodeBigInt(s, key.getPublicExponent());
         KeyEntryResolver.encodeBigInt(s, key.getModulus());

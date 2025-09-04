@@ -45,22 +45,20 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericOpenSSHEd25519PrivateKeyEntryDecoder<PUB extends PublicKey, PRV extends PrivateKey>
-        extends AbstractPrivateKeyEntryDecoder<PUB, PRV> {
+public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder {
     private static final int PK_SIZE = 32;
     private static final int SK_SIZE = 32;
     private static final int KEYPAIR_SIZE = PK_SIZE + SK_SIZE;
 
-    protected final EdDSASupport<PUB, PRV> edDSASupport;
+    protected final EdDSASupport edDSASupport;
 
-    public GenericOpenSSHEd25519PrivateKeyEntryDecoder(Class<PUB> pubType, Class<PRV> prvType,
-                                                       EdDSASupport<PUB, PRV> edDSASupport) {
-        super(pubType, prvType, Collections.singletonList(KeyPairProvider.SSH_ED25519));
+    public GenericOpenSSHEd25519PrivateKeyEntryDecoder(EdDSASupport edDSASupport) {
+        super(Collections.singletonList(KeyPairProvider.SSH_ED25519));
         this.edDSASupport = edDSASupport;
     }
 
     @Override
-    public PRV decodePrivateKey(
+    public PrivateKey decodePrivateKey(
             SessionContext session, String keyType, FilePasswordProvider passwordProvider, InputStream keyData)
             throws IOException, GeneralSecurityException {
         if (!KeyPairProvider.SSH_ED25519.equals(keyType)) {
@@ -98,7 +96,7 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder<PUB extends PublicKey, 
             }
 
             byte[] sk = Arrays.copyOf(keypair, SK_SIZE);
-            PRV privateKey = edDSASupport.generateEDDSAPrivateKey(sk);
+            PrivateKey privateKey = edDSASupport.generateEDDSAPrivateKey(sk);
 
             // we can now verify the generated pk matches the one we read
             if (!Arrays.equals(edDSASupport.getPublicKeyData(recoverPublicKey(privateKey)), pk)) {
@@ -114,7 +112,7 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder<PUB extends PublicKey, 
     }
 
     @Override
-    public String encodePrivateKey(SecureByteArrayOutputStream s, PRV key, PUB pubKey)
+    public String encodePrivateKey(SecureByteArrayOutputStream s, PrivateKey key, PublicKey pubKey)
             throws IOException {
         Objects.requireNonNull(key, "No private key provided");
 
@@ -143,7 +141,7 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder<PUB extends PublicKey, 
     }
 
     @Override
-    public PUB recoverPublicKey(PRV prvKey) throws GeneralSecurityException {
+    public PublicKey recoverPublicKey(PrivateKey prvKey) throws GeneralSecurityException {
         return edDSASupport.recoverEDDSAPublicKey(prvKey);
     }
 
