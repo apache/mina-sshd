@@ -43,6 +43,7 @@ import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
@@ -94,7 +95,7 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
                     curve.isSupported() ? ECDSAPublicKeyEntryDecoder.INSTANCE : null);
         }
         addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES,
-                SecurityUtils.isEDDSACurveSupported() ? SecurityUtils.getEDDSAPublicKeyEntryDecoder() : null);
+                SecurityUtils.isEDDSACurveSupported() ? Ed25519PublicKeyDecoder.INSTANCE : null);
         return Collections.unmodifiableList(list);
     }
 

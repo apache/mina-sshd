@@ -21,17 +21,17 @@ package org.apache.sshd.common.util.security.bouncycastle;
 import java.lang.reflect.Field;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -104,14 +104,12 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
 
         if (KeyPairGenerator.class.isAssignableFrom(entityType)
                 || KeyFactory.class.isAssignableFrom(entityType)) {
-            if (SecurityUtils.ED25519.equalsIgnoreCase(name)
-                    && SecurityUtils.isNetI2pCryptoEdDSARegistered()) {
-                return false;
+            if (SecurityUtils.ED25519.equalsIgnoreCase(name)) {
+                return !SecurityUtils.isNetI2pCryptoEdDSARegistered() && isEdDSASupported();
             }
         } else if (Signature.class.isAssignableFrom(entityType)) {
-            if (SecurityUtils.ED25519.equalsIgnoreCase(name)
-                    && SecurityUtils.isNetI2pCryptoEdDSARegistered()) {
-                return false;
+            if (SecurityUtils.ED25519.equalsIgnoreCase(name)) {
+                return !SecurityUtils.isNetI2pCryptoEdDSARegistered() && isEdDSASupported();
             }
         }
 
@@ -172,11 +170,11 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     }
 
     @Override
-    public Optional<EdDSASupport> getEdDSASupport() {
-        if (!isEdDSASupported()) {
-            return Optional.empty();
+    public PublicKey getPublicKey(PrivateKey key) {
+        if (isEnabled() && isEdDSASupported() && key.getClass().getPackage().getName().startsWith("org.bouncycastle.")) {
+            return new BouncyCastlePublicKeyFactory().getPublicKey(key);
         }
-        return Optional.of(new org.apache.sshd.common.util.security.eddsa.bouncycastle.BouncyCastleEdDSASupport());
+        return super.getPublicKey(key);
     }
 
     private boolean isEdDSASupported() {

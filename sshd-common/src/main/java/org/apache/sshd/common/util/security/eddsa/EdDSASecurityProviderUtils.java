@@ -34,19 +34,19 @@ import net.i2p.crypto.eddsa.EdDSAPrivateKey;
 import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.spec.EdDSAParameterSpec;
 import net.i2p.crypto.eddsa.spec.EdDSAPublicKeySpec;
-import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
+import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.SignatureEd25519;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class EdDSASecurityProviderUtils {
     // See EdDSANamedCurveTable
-    public static final int KEY_SIZE = EdDSASupport.KEY_SIZE;
+    public static final int KEY_SIZE = EdDSAUtils.ED25519_LENGTH * Byte.SIZE;
 
     private EdDSASecurityProviderUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -103,11 +103,6 @@ public final class EdDSASecurityProviderUtils {
     public static PublicKeyEntryDecoder getEDDSAPublicKeyEntryDecoder() {
         ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
         return Ed25519PublicKeyDecoder.INSTANCE;
-    }
-
-    public static PrivateKeyEntryDecoder getOpenSSHEDDSAPrivateKeyEntryDecoder() {
-        ValidateUtils.checkTrue(SecurityUtils.isEDDSACurveSupported(), SecurityUtils.EDDSA + " not supported");
-        return OpenSSHEd25519PrivateKeyEntryDecoder.INSTANCE;
     }
 
     public static boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2) {

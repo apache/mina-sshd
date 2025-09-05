@@ -49,7 +49,8 @@ import org.apache.sshd.common.util.io.der.ASN1Type;
 import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.Decryptor;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
+import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PEMResourceKeyParser;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -146,9 +147,9 @@ public class PKCS8PEMResourceKeyPairParser extends AbstractPEMResourceKeyPairPar
                 kp = ECDSAPEMResourceKeyPairParser.parseECKeyPair(curve, parser);
             }
         } else if (SecurityUtils.isEDDSACurveSupported()
-                && EdDSASupport.ED25519_OID.endsWith(oid)) {
+                && EdDSAUtils.ED25519_OID.equals(oid)) {
             ASN1Object privateKeyBytes = pkcs8Info.getPrivateKeyBytes();
-            kp = EdDSASupport.decodeEd25519KeyPair(privateKeyBytes.getPureValueBytes());
+            kp = Ed25519PEMResourceKeyParser.decodeEd25519KeyPair(privateKeyBytes.getPureValueBytes());
         } else {
             PrivateKey prvKey = decodePEMPrivateKeyPKCS8(oidAlgorithm, encBytes);
             PublicKey pubKey = ValidateUtils.checkNotNull(KeyUtils.recoverPublicKey(prvKey),

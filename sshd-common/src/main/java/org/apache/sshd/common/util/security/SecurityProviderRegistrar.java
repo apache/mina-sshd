@@ -22,7 +22,9 @@ package org.apache.sshd.common.util.security;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.MessageDigest;
+import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
 import java.security.cert.CertificateFactory;
@@ -32,7 +34,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.function.Predicate;
 
 import javax.crypto.Cipher;
@@ -46,12 +47,11 @@ import org.apache.sshd.common.SyspropsMapWrapper;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.IgnoringEmptyMap;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public interface SecurityProviderRegistrar extends SecurityProviderChoice, OptionalFeature, PropertyResolver {
+public interface SecurityProviderRegistrar extends SecurityProviderChoice, OptionalFeature, PublicKeyFactory, PropertyResolver {
     /**
      * Base name for configuration properties related to security providers
      */
@@ -190,11 +190,9 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
         return isSecurityEntitySupported(CertificateFactory.class, type);
     }
 
-    /**
-     * @return the EdDSA support implementation associated with the security provider (if applicable)
-     */
-    default Optional<EdDSASupport> getEdDSASupport() {
-        return Optional.empty();
+    @Override
+    default PublicKey getPublicKey(PrivateKey key) {
+        return null;
     }
 
     /**

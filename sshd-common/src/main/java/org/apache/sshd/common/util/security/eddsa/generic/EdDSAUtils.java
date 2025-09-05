@@ -28,6 +28,7 @@ import java.security.spec.KeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 import java.security.spec.X509EncodedKeySpec;
 import java.util.Arrays;
+import java.util.Objects;
 
 import org.apache.sshd.common.util.io.der.DERParser;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -40,9 +41,19 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public final class EdDSAUtils {
 
-    private static final int ED25519_LENGTH = 32; // bytes
+    /**
+     * @see <a href="https://tools.ietf.org/html/rfc8410#section-3">RFC8412 section 3</a>
+     */
+    public static final String ED25519_OID = "1.3.101.112";
 
-    private static final int ED448_LENGTH = 57; // bytes
+    /**
+     * @see <a href="https://tools.ietf.org/html/rfc8410#section-3">RFC8412 section 3</a>
+     */
+    public static final String ED448_OID = "1.3.101.113";
+
+    public static final int ED25519_LENGTH = 32; // bytes
+
+    public static final int ED448_LENGTH = 57; // bytes
 
     // These are the constant prefixes of X.509 encodings of ed25519 and ed448 keys. Appending the actual 32
     // or 57 key bytes yields valid encodings.
@@ -69,8 +80,8 @@ public final class EdDSAUtils {
             0x04, 0x3b, 0x04, 0x39 };
 
     // The first two numbers of the dotted notation are combined into one byte: (1 * 40 + 3) = 43 = 0x2b
-    private static final byte[] ED25519_OID = { 0x2b, 0x65, 0x70 }; // 1.3.101.112
-    private static final byte[] ED448_OID = { 0x2b, 0x65, 0x71 }; // 1.3.101.113
+    private static final byte[] ED25519_OID_BYTES = { 0x2b, 0x65, 0x70 }; // 1.3.101.112
+    private static final byte[] ED448_OID_BYTES = { 0x2b, 0x65, 0x71 }; // 1.3.101.113
 
     private EdDSAUtils() {
         throw new IllegalStateException("No instantiation");
@@ -199,9 +210,9 @@ public final class EdDSAUtils {
             int n;
             try (DERParser algorithmIdentifier = oneAsymmetricKey.readObject().createParser()) {
                 byte[] oid = algorithmIdentifier.readObject().getValue();
-                if (arrayEq(ED25519_OID, oid)) {
+                if (arrayEq(ED25519_OID_BYTES, oid)) {
                     n = ED25519_LENGTH;
-                } else if (arrayEq(ED448_OID, oid)) {
+                } else if (arrayEq(ED448_OID_BYTES, oid)) {
                     n = ED448_LENGTH;
                 } else {
                     throw new IllegalArgumentException("Private key is neither ed25519 nor ed448");
@@ -325,7 +336,10 @@ public final class EdDSAUtils {
      * @throws IllegalArgumentException if one of the keys is neither an ed25519 nor an ed448 key
      */
     public static boolean equals(PublicKey k1, PublicKey k2) throws IllegalArgumentException {
-        return arrayEq(getBytes(k1), getBytes(k2));
+        if (Objects.equals(k1, k2)) {
+            return true;
+        }
+        return k1 != null && k2 != null && arrayEq(getBytes(k1), getBytes(k2));
     }
 
     /**
@@ -337,6 +351,12 @@ public final class EdDSAUtils {
      * @throws IllegalArgumentException if one of the keys is neither an ed25519 nor an ed448 key
      */
     public static boolean equals(PrivateKey k1, PrivateKey k2) throws IllegalArgumentException {
+        if (Objects.equals(k1, k2)) {
+            return true;
+        }
+        if (k1 == null || k2 == null) {
+            return false;
+        }
         byte[] k1Data = null;
         byte[] k2Data = null;
         try {

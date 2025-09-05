@@ -25,6 +25,8 @@ import java.io.StreamCorruptedException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -44,7 +46,7 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericEd25519PEMResourceKeyParser extends AbstractPEMResourceKeyPairParser {
+public class Ed25519PEMResourceKeyParser extends AbstractPEMResourceKeyPairParser {
 
     // From an early draft of RFC 8410 (https://datatracker.ietf.org/doc/html/draft-ietf-curdle-pkix-eddsa-00).
     // The final RFC 8410 dropped the "EDDSA" and moved to PKCS#8 using just "BEGIN PRIVATE KEY".
@@ -59,11 +61,11 @@ public class GenericEd25519PEMResourceKeyParser extends AbstractPEMResourceKeyPa
     public static final String END_ED25519_MARKER = "END ED25519 PRIVATE KEY";
     public static final List<String> ENDERS = GenericUtils.unmodifiableList(END_MARKER, END_ED25519_MARKER);
 
-    public static final String ED25519_OID = EdDSASupport.ED25519_OID;
+    public static final String ED25519_OID = EdDSAUtils.ED25519_OID;
 
-    public static final GenericEd25519PEMResourceKeyParser INSTANCE = new GenericEd25519PEMResourceKeyParser();
+    public static final Ed25519PEMResourceKeyParser INSTANCE = new Ed25519PEMResourceKeyParser();
 
-    public GenericEd25519PEMResourceKeyParser() {
+    public Ed25519PEMResourceKeyParser() {
         super(SecurityUtils.ED25519, ED25519_OID, BEGINNERS, ENDERS);
     }
 
@@ -145,7 +147,29 @@ public class GenericEd25519PEMResourceKeyParser extends AbstractPEMResourceKeyPa
     }
 
     public static KeyPair decodeEd25519KeyPair(byte[] keyData) throws IOException, GeneralSecurityException {
-        return EdDSASupport.decodeEd25519KeyPair(keyData);
+        PrivateKey privateKey = decodeEdDSAPrivateKey(keyData);
+        PublicKey publicKey = SecurityUtils.recoverEDDSAPublicKey(privateKey);
+        return new KeyPair(publicKey, privateKey);
+    }
+
+    /**
+     * @param  keyData the raw private key bytes.
+     * @return         the associated private key.
+     */
+    private static PrivateKey decodeEdDSAPrivateKey(byte[] keyData) throws IOException, GeneralSecurityException {
+        try (DERParser parser = new DERParser(keyData)) {
+            ASN1Object obj = parser.readObject();
+            if (obj == null) {
+                throw new StreamCorruptedException("Missing key data container");
+            }
+
+            ASN1Type objType = obj.getObjType();
+            if (objType != ASN1Type.OCTET_STRING) {
+                throw new StreamCorruptedException("Mismatched key data container type: " + objType);
+            }
+
+            return EdDSAUtils.getPrivateKey(obj.getValue());
+        }
     }
 
 }

@@ -36,7 +36,7 @@ import org.apache.sshd.common.config.keys.u2f.SkED25519PublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
-import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 
 /**
@@ -65,7 +65,7 @@ public class SkED25519PublicKeyEntryDecoder extends AbstractPublicKeyEntryDecode
 
         boolean noTouchRequired = parseBooleanHeader(headers, NO_TOUCH_REQUIRED_HEADER, false);
         boolean verifyRequired = parseBooleanHeader(headers, VERIFY_REQUIRED_HEADER, false);
-        PublicKey pk = SecurityUtils.getEDDSAPublicKeyEntryDecoder().decodePublicKey(session, KeyPairProvider.SSH_ED25519,
+        PublicKey pk = Ed25519PublicKeyDecoder.INSTANCE.decodePublicKey(session, KeyPairProvider.SSH_ED25519,
                 keyData, headers);
         String appName = KeyEntryResolver.decodeString(keyData, MAX_APP_NAME_LENGTH);
         return new SkED25519PublicKey(appName, noTouchRequired, verifyRequired, pk);

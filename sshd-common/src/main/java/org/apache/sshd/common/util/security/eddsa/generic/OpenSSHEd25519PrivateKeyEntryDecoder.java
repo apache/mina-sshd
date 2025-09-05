@@ -45,16 +45,16 @@ import org.apache.sshd.common.util.security.SecurityUtils;
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder {
+public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntryDecoder {
+
+    public static final OpenSSHEd25519PrivateKeyEntryDecoder INSTANCE = new OpenSSHEd25519PrivateKeyEntryDecoder();
+
     private static final int PK_SIZE = 32;
     private static final int SK_SIZE = 32;
     private static final int KEYPAIR_SIZE = PK_SIZE + SK_SIZE;
 
-    protected final EdDSASupport edDSASupport;
-
-    public GenericOpenSSHEd25519PrivateKeyEntryDecoder(EdDSASupport edDSASupport) {
+    public OpenSSHEd25519PrivateKeyEntryDecoder() {
         super(Collections.singletonList(KeyPairProvider.SSH_ED25519));
-        this.edDSASupport = edDSASupport;
     }
 
     @Override
@@ -99,7 +99,8 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivate
             PrivateKey privateKey = EdDSAUtils.getPrivateKey(sk);
 
             // we can now verify the generated pk matches the one we read
-            if (!Arrays.equals(EdDSAUtils.getBytes(recoverPublicKey(privateKey)), pk)) {
+            PublicKey recoveredPk = recoverPublicKey(privateKey);
+            if (recoveredPk != null && !Arrays.equals(EdDSAUtils.getBytes(recoveredPk), pk)) {
                 throw new InvalidKeyException("The provided pk does NOT match the computed pk for the given sk.");
             }
 
@@ -148,7 +149,7 @@ public class GenericOpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivate
 
     @Override
     public PublicKey recoverPublicKey(PrivateKey prvKey) throws GeneralSecurityException {
-        return edDSASupport.recoverEDDSAPublicKey(prvKey);
+        return SecurityUtils.recoverEDDSAPublicKey(prvKey);
     }
 
     @Override

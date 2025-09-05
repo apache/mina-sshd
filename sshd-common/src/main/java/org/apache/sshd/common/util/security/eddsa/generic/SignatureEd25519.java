@@ -16,7 +16,7 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.util.security.eddsa;
+package org.apache.sshd.common.util.security.eddsa.generic;
 
 import java.util.Map;
 

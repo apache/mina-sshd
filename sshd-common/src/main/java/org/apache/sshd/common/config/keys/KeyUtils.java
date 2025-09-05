@@ -84,6 +84,7 @@ import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 
 /**
  * Utility class for keys
@@ -172,7 +173,7 @@ public final class KeyUtils {
         registerPublicKeyEntryDecoder(ECDSAPublicKeyEntryDecoder.INSTANCE);
 
         if (SecurityUtils.isEDDSACurveSupported()) {
-            registerPublicKeyEntryDecoder(SecurityUtils.getEDDSAPublicKeyEntryDecoder());
+            registerPublicKeyEntryDecoder(Ed25519PublicKeyDecoder.INSTANCE);
         }
 
         registerPublicKeyEntryDecoder(SkECDSAPublicKeyEntryDecoder.INSTANCE);

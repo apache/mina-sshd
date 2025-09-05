@@ -42,7 +42,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -60,7 +59,6 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.PrivateKeyEntryDecoder;
-import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.loader.KeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.openssh.OpenSSHKeyPairResourceParser;
 import org.apache.sshd.common.config.keys.loader.pem.PEMResourceParserUtils;
@@ -76,8 +74,8 @@ import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleEncryptedPr
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleKeyPairResourceParser;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
-import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
+import org.apache.sshd.common.util.security.eddsa.generic.OpenSSHEd25519PrivateKeyEntryDecoder;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.slf4j.Logger;
@@ -167,6 +165,8 @@ public final class SecurityUtils {
     private static final AtomicReference<SecurityProviderChoice> DEFAULT_PROVIDER_HOLDER = new AtomicReference<>();
 
     private static final AtomicReference<Boolean> FIPS_MODE = new AtomicReference<>();
+
+    private static final AtomicReference<Boolean> EDDSA_SUPPORT_PRESENT = new AtomicReference<>();
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -556,7 +556,26 @@ public final class SecurityUtils {
      * @return {@code true} if EDDSA curves (e.g., {@code ed25519}) are supported
      */
     public static boolean isEDDSACurveSupported() {
-        return getEdDSASupport().isPresent();
+        Boolean isSupported = EDDSA_SUPPORT_PRESENT.get();
+        if (isSupported == null) {
+            register();
+            // Currently we can only support ed25519 through libraries and thus we require a registrar.
+            // TODO: GH-585 (needs a multi-release JAR)
+            boolean supported = false;
+            synchronized (REGISTERED_PROVIDERS) {
+                for (SecurityProviderRegistrar r : REGISTERED_PROVIDERS.values()) {
+                    supported = r.isEnabled() && r.isSupported() && r.isKeyFactorySupported(ED25519);
+                    if (supported) {
+                        break;
+                    }
+                }
+            }
+            isSupported = Boolean.valueOf(supported);
+            if (!EDDSA_SUPPORT_PRESENT.compareAndSet(null, Boolean.valueOf(supported))) {
+                isSupported = EDDSA_SUPPORT_PRESENT.get();
+            }
+        }
+        return isSupported != null && isSupported.booleanValue();
     }
 
     public static boolean isNetI2pCryptoEdDSARegistered() {
@@ -564,73 +583,30 @@ public final class SecurityUtils {
         return isProviderRegistered(EDDSA);
     }
 
-    public static Optional<EdDSASupport> getEdDSASupport() {
-        if (isFipsMode()) {
-            return Optional.empty();
-        }
-        register();
-
-        synchronized (REGISTERED_PROVIDERS) {
-            // Prefer the net.i2p.crypto provider if it's available for backwards compatibility
-            SecurityProviderRegistrar netI2pCryptoProvider = REGISTERED_PROVIDERS.get(EDDSA);
-            if (netI2pCryptoProvider != null) {
-                Optional<EdDSASupport> support = netI2pCryptoProvider.getEdDSASupport();
-                if (support.isPresent()) {
-                    return support;
-                }
-            }
-
-            for (Map.Entry<String, SecurityProviderRegistrar> entry : REGISTERED_PROVIDERS.entrySet()) {
-                Optional<EdDSASupport> support = entry.getValue().getEdDSASupport();
-                if (support.isPresent()) {
-                    return support;
-                }
-            }
-        }
-        return Optional.empty();
-    }
-
     /* -------------------------------------------------------------------- */
 
-    public static PublicKeyEntryDecoder getEDDSAPublicKeyEntryDecoder() {
-        Optional<EdDSASupport> support = getEdDSASupport();
-        if (!support.isPresent()) {
-            throw new UnsupportedOperationException(EDDSA + " provider N/A");
-        }
-
-        return support.get().getEDDSAPublicKeyEntryDecoder();
-    }
-
     public static PrivateKeyEntryDecoder getOpenSSHEDDSAPrivateKeyEntryDecoder() {
-        Optional<EdDSASupport> support = getEdDSASupport();
-        if (!support.isPresent()) {
-            throw new UnsupportedOperationException(EDDSA + " provider N/A");
-        }
-
-        return support.get().getOpenSSHEDDSAPrivateKeyEntryDecoder();
+        return OpenSSHEd25519PrivateKeyEntryDecoder.INSTANCE;
     }
 
     public static boolean compareEDDSAPPublicKeys(PublicKey k1, PublicKey k2) {
-        if (k1 == null && k2 == null) {
-            return true;
-        }
-        return k1 != null && k2 != null && EdDSAUtils.equals(k1, k2);
+        return EdDSAUtils.equals(k1, k2);
     }
 
     public static boolean compareEDDSAPrivateKeys(PrivateKey k1, PrivateKey k2) {
-        if (k1 == null && k2 == null) {
-            return true;
-        }
-        return k1 != null && k2 != null && EdDSAUtils.equals(k1, k2);
+        return EdDSAUtils.equals(k1, k2);
     }
 
     public static PublicKey recoverEDDSAPublicKey(PrivateKey key) throws GeneralSecurityException {
-        Optional<EdDSASupport> support = getEdDSASupport();
-        if (!support.isPresent()) {
-            throw new NoSuchAlgorithmException(EDDSA + " provider not supported");
+        synchronized (REGISTERED_PROVIDERS) {
+            for (SecurityProviderRegistrar registrar : REGISTERED_PROVIDERS.values()) {
+                PublicKey pk = registrar.getPublicKey(key);
+                if (pk != null) {
+                    return pk;
+                }
+            }
         }
-
-        return support.get().recoverEDDSAPublicKey(key);
+        return null;
     }
 
     public static KeyPair extractEDDSAKeyPair(Buffer buffer, String keyType) throws GeneralSecurityException {

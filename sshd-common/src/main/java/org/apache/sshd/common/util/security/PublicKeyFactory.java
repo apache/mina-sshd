@@ -16,23 +16,24 @@
  * specific language governing permissions and limitations
  * under the License.
  */
+package org.apache.sshd.common.util.security;
 
-package org.apache.sshd.common.util.security.eddsa;
-
-import org.apache.sshd.common.util.security.eddsa.generic.GenericOpenSSHEd25519PrivateKeyEntryDecoder;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 /**
- * An implementation of {@link GenericOpenSSHEd25519PrivateKeyEntryDecoder} tied to the {@code net.i2p.crypto} EdDSA
- * security provider
+ * Something that can compute a {@link PublicKey} from a given {@link PrivateKey}.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class OpenSSHEd25519PrivateKeyEntryDecoder
-        extends GenericOpenSSHEd25519PrivateKeyEntryDecoder {
-    public static final OpenSSHEd25519PrivateKeyEntryDecoder INSTANCE = new OpenSSHEd25519PrivateKeyEntryDecoder();
+@FunctionalInterface
+public interface PublicKeyFactory {
 
-    public OpenSSHEd25519PrivateKeyEntryDecoder() {
-        super(new NetI2pCryptoEdDSASupport());
-    }
-
+    /**
+     * Given a {@link PrivateKey} computes the corresponding {@link PublicKey}.
+     *
+     * @param  key {@link PrivateKey} to get the {@link PublicKey} for
+     * @return     the {@link PublicKey}, or {@code null} if no public key could be computed
+     */
+    PublicKey getPublicKey(PrivateKey key);
 }

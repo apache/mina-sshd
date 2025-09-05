@@ -21,16 +21,16 @@ package org.apache.sshd.common.util.security.eddsa;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
+import java.security.PrivateKey;
 import java.security.Provider;
+import java.security.PublicKey;
 import java.security.Signature;
-import java.util.Optional;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityEntityFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
@@ -131,14 +131,19 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     }
 
     @Override
-    public Optional<EdDSASupport> getEdDSASupport() {
-        if (!isSupported()) {
-            return Optional.empty();
+    public PublicKey getPublicKey(PrivateKey key) {
+        if (isEnabled() && isSupported() && "EdDSA".equals(key.getAlgorithm())
+                && key.getClass().getPackage().getName().startsWith("net.i2p.")) {
+            try {
+                return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(key);
+            } catch (GeneralSecurityException e) {
+                return null;
+            }
         }
-        return Optional.of(new NetI2pCryptoEdDSASupport());
+        return super.getPublicKey(key);
     }
 
-    private static abstract class DelegatingSecurityEntityFactory<F> implements SecurityEntityFactory<F> {
+    private abstract static class DelegatingSecurityEntityFactory<F> implements SecurityEntityFactory<F> {
 
         private SecurityEntityFactory<F> delegate;
 

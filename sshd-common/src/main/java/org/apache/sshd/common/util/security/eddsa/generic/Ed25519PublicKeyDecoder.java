@@ -36,16 +36,18 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
+ * An {@link AbstractPublicKeyEntryDecoder} for ed25519 keys.
+ *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-public class GenericEd25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder {
+public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder {
+
     public static final int MAX_ALLOWED_SEED_LEN = 1024; // in reality it is much less than this
 
-    protected final EdDSASupport edDSASupport;
+    public static final Ed25519PublicKeyDecoder INSTANCE = new Ed25519PublicKeyDecoder();
 
-    public GenericEd25519PublicKeyDecoder(EdDSASupport edDSASupport) {
+    private Ed25519PublicKeyDecoder() {
         super(Collections.singletonList(KeyPairProvider.SSH_ED25519));
-        this.edDSASupport = edDSASupport;
     }
 
     @Override
@@ -67,11 +69,9 @@ public class GenericEd25519PublicKeyDecoder extends AbstractPublicKeyEntryDecode
     }
 
     @Override
-    public PublicKey decodePublicKey(
-            SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
+    public PublicKey decodePublicKey(SessionContext session, String keyType, InputStream keyData, Map<String, String> headers)
             throws IOException, GeneralSecurityException {
         byte[] seed = KeyEntryResolver.readRLEBytes(keyData, MAX_ALLOWED_SEED_LEN);
         return EdDSAUtils.getPublicKey(seed);
     }
-
 }

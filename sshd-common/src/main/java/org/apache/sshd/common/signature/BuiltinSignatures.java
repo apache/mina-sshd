@@ -44,7 +44,7 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.security.eddsa.SignatureEd25519;
+import org.apache.sshd.common.util.security.eddsa.generic.SignatureEd25519;
 
 /**
  * Provides easy access to the currently implemented signatures

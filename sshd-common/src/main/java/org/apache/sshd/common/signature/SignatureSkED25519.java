@@ -20,7 +20,7 @@ package org.apache.sshd.common.signature;
 
 import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
-import org.apache.sshd.common.util.security.eddsa.SignatureEd25519;
+import org.apache.sshd.common.util.security.eddsa.generic.SignatureEd25519;
 
 public class SignatureSkED25519 extends AbstractSecurityKeySignature {
 
