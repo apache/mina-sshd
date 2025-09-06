@@ -8,28 +8,19 @@
 
 Version 3 includes all the features and bug fixes of version 2, including the [latest ones](https://github.com/apache/mina-sshd/blob/master/CHANGES.md#planned-for-next-version).
 
-## Bug fixes
+## Milestone 1: Pre-Release 3.0.0-M1
 
-* [GH-622](https://github.com/apache/mina-sshd/issues/622) Handle quoted values in `HostConfigEntry`.
+Complete refactoring of the SSH transport protocol. New feature: support for client-side proxies.
+
+* [Change notes for 3.0.0-M1](./doc/changes/3.0.0-M1.md)
+
+# Planned for the Next Milestone Release
+
+## Bug Fixes
 
 ## Major Code Re-factoring
 
-* The `AbstractSession` has been completely refactored. Most of its code has been moved out of this class into separate filters in a filter chain. For details, see the [technical documentation](./docs/technical/filters.md).
-* Handling of global requests has been moved from `AbstractSession` to the `ConnectionService`.
-* KEX temporarily closes `RemoteWindow`s, preventing data to be written in that way until KEX is over. Version 2 blocked threads in a different, more convoluted, and fragile way.
-* Deprecated API has been removed.
-    * System property "org.apache.sshd.registerBouncyCastle" is gone; use "org.apache.sshd.security.provider.BC.enabled" instead.
-    * System property "org.apache.sshd.eddsaSupport" is gone; use "org.apache.sshd.security.provider.EdDSA.enabled" instead. (This property applies only to the `net.i2p` ed25519 provider.)
-* Method `KeyUtils.cloneKeyPair()` has been removed. It was never used inside Apache MINA sshd. If you need to duplicate an existing `KeyPair`, use `Key.getEncoded()` on the keys and then re-create a duplicate key using an `X509EncodedKeySpec` for the public key or a `PKCS8EncodedKeySpec` for the private key.
-* `HostConfigEntry` has been changed to be more compliant with OpenSSH, and handles quoted values now. It also has a new method `getValues(key)` to get all the values of a key that can have multiple values, either because it may have multiple space-separated values (such as `UserKnownHostsFile`) or because it appears several times and does not follow the "first match wins" rule (such as `IdentityFile` or `CertificateFile`). Note that some keys have values that are comma-separated lists of items; such lists are a single value and must be split by user code (as in version 2).
-* Integration tests using docker containers have been moved out of bundle `sshd-core` into a new bundle `sshd-test`, and are run now also with the MINA and the netty transports.
-* All docker tests have been changed to be skipped if no docker engine is running. If a docker engine _is_ running, they will newly also be run on Windows. (Previously, they were disabled unconditionally on Windows because the Windows runners in CI don't have docker support.)
-    * This was back-ported to version 2.17.0-SNAPSHOT on the master branch.
+* The classes dealing with serializing or de-serializing public and private keys have been de-generified, which simplifies them a lot. Previous code from version 2 tried to tie particular public key types and private key types together via generics, such that it could be statically checked that only matching key types were used. But that never worked well and in a few crucial places unchecked conversions or raw types were used anyway, which makes the point moot. Code now just uses `PublicKey` and `PrivateKey` instead of generic types, and checks at run-time that keys are of the expected kind.
+* The way ed25519 keys are handled has been refactored. Duplicate code has been removed, and the handling has been simplified to make it easier in the near future to include support for other eddsa implementations. This brings additional API breaks, but in code areas that are unlikely to be used in customer code.
 
 ## New Features
-
-* Random padding on SSH packets as suggested by [RFC 4253, section 6](https://datatracker.ietf.org/doc/html/rfc4253#section-6).
-* New event callback `SessionListener.sessionStarting()`. See the [filter documentation](./docs/technical/filters.md). `SessionListener.sessionEstablished()` was removed; it was called from the constructor of `AbstractSession` at a time when the object was not yet fully initialized.
-* [GH-728](https://github.com/apache/mina-sshd/issues/728) New method `ClientSession.getHostConfigEntry()` to get the `HostConfigEntry` for the session.
-* [GH-729](https://github.com/apache/mina-sshd/issues/729) Support for client-side SOCKS5 or HTTP CONNECT proxies. See the [documentation](./docs/client-setup.md#proxies).
-* The [OpenSSH "hostkeys-00@openssh.com" host key rotation extension](https://github.com/openssh/openssh-portable/blob/b5b405fee/PROTOCOL#L367) is now implemented client-side. New host keys so received are registered on the session but we don't update the `known_hosts` file. If you want that, implement your own `NewHostKeysHandler` and set it on the `SshClient`.
