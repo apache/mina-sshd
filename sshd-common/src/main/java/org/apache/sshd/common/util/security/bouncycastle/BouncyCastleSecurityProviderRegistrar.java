@@ -172,7 +172,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     @Override
     public PublicKey getPublicKey(PrivateKey key) {
         if (isEnabled() && isEdDSASupported() && key.getClass().getPackage().getName().startsWith("org.bouncycastle.")) {
-            return new BouncyCastlePublicKeyFactory().getPublicKey(key);
+            return BouncyCastlePublicKeyFactory.INSTANCE.getPublicKey(key);
         }
         return super.getPublicKey(key);
     }

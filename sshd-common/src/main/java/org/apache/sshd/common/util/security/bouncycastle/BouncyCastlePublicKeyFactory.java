@@ -25,9 +25,11 @@ import org.apache.sshd.common.util.security.PublicKeyFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.bouncycastle.jcajce.interfaces.EdDSAPrivateKey;
 
-public class BouncyCastlePublicKeyFactory implements PublicKeyFactory {
+public final class BouncyCastlePublicKeyFactory implements PublicKeyFactory {
 
-    public BouncyCastlePublicKeyFactory() {
+    public static final PublicKeyFactory INSTANCE = new BouncyCastlePublicKeyFactory();
+
+    private BouncyCastlePublicKeyFactory() {
         super();
     }
 

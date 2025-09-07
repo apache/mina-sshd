@@ -134,11 +134,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     public PublicKey getPublicKey(PrivateKey key) {
         if (isEnabled() && isSupported() && "EdDSA".equals(key.getAlgorithm())
                 && key.getClass().getPackage().getName().startsWith("net.i2p.")) {
-            try {
-                return EdDSASecurityProviderUtils.recoverEDDSAPublicKey(key);
-            } catch (GeneralSecurityException e) {
-                return null;
-            }
+            return EdDSAPublicKeyFactory.INSTANCE.getPublicKey(key);
         }
         return super.getPublicKey(key);
     }
