@@ -12,7 +12,7 @@ Version 3 includes all the features and bug fixes of version 2, including the [l
 
 Complete refactoring of the SSH transport protocol. New feature: support for client-side proxies.
 
-* [Change notes for 3.0.0-M1](./doc/changes/3.0.0-M1.md)
+* [Change notes for 3.0.0-M1](./docs/changes/3.0.0-M1.md)
 
 # Planned for the Next Milestone Release
 
