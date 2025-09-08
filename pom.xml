@@ -438,9 +438,9 @@
             </dependency>
 
             <dependency>
-                <groupId>net.i2p.crypto</groupId>
-                <artifactId>eddsa</artifactId>
-                <version>0.3.0</version>
+                <groupId>com.bloxbean.cardano</groupId>
+                <artifactId>net-i2p-crypto-eddsa</artifactId>
+                <version>0.3.1</version>
             </dependency>
 
             <dependency>

@@ -71,8 +71,8 @@
         </dependency>
 
         <dependency>
-            <groupId>net.i2p.crypto</groupId>
-            <artifactId>eddsa</artifactId>
+            <groupId>com.bloxbean.cardano</groupId>
+            <artifactId>net-i2p-crypto-eddsa</artifactId>
         </dependency>
 
         <dependency>
