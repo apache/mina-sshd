@@ -105,17 +105,17 @@
     </supplement>
     <supplement>
         <project>
-            <groupId>net.i2p.crypto</groupId>
-            <artifactId>eddsa</artifactId>
+            <groupId>com.bloxbean.cardano</groupId>
+            <artifactId>net-i2p-crypto-eddsa</artifactId>
             <name>ed25519-java</name>
             <organization>
-                <name>str4d</name>
-                <url>https://github.com/str4d/ed25519-java</url>
+                <name>bloxbean</name>
+                <url>https://github.com/bloxbean/ed25519-java</url>
             </organization>
             <licenses>
                 <license>
                     <name>Creative Commons</name>
-                    <url>https://github.com/str4d/ed25519-java/blob/master/LICENSE.txt</url>
+                    <url>https://github.com/bloxbean/ed25519-java/blob/master/LICENSE.txt</url>
                 </license>
             </licenses>
         </project>
