@@ -91,10 +91,10 @@ implementation. This is also an **optional** dependency and must be add explicit
 
 ```
 
-## [ed25519-java](https://github.com/str4d/ed25519-java)
+## [ed25519-java](https://github.com/bloxbean/ed25519-java)
 
-Can optionally be provided to support [ssh-ed25519](https://tools.ietf.org/html/draft-bjh21-ssh-ed25519-02) keys
-and [ed25519-sha-512](https://tools.ietf.org/html/draft-josefsson-eddsa-ed25519-02) signatures where [Bouncy Castle](#bouncy-castle) is not suitable. **Note:**
+Can optionally be provided to support [ssh-ed25519](https://www.rfc-editor.org/rfc/rfc8709) keys
+and [ed25519-sha-512](https://www.rfc-editor.org/rfc/rfc8032) signatures where [Bouncy Castle](#bouncy-castle) is not suitable. **Note:**
 use of this dependency is not recommended, but it can be added as an **explicit** dependency in
 order to provide Ed25519 support as follows:
 
@@ -103,8 +103,8 @@ order to provide Ed25519 support as follows:
 
     <!-- For ed25519 support -->
     <dependency>
-        <groupId>net.i2p.crypto</groupId>
-        <artifactId>eddsa</artifactId>
+        <groupId>com.bloxbean.cardano</groupId>
+        <artifactId>net-i2p-crypto-eddsa</artifactId>
     </dependency>
 
 ```
