@@ -34,6 +34,9 @@
 
 ## New Features
 
+* [GH-814](https://github.com/apache/mina-sshd/pull/814) Include a fix for CVE-2020-36843 in optional dependency net.i2p.crypto:eddsa:0.3.0: perform the missing range check in Apache MINA SSHD before delegating to the signature verification in net.i2p.crypto:eddsa:0.3.0. This means that using net.i2p.crypto:eddsa:0.3.0 in Apache MINA SSHD is
+safe despite that CVE in the dependency.
+
 ## Potential Compatibility Issues
 
 ## Major Code Re-factoring
