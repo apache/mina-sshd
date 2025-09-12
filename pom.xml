@@ -115,7 +115,7 @@
         <grpc.version>1.74.0</grpc.version> <!-- Used only in tests -->
 
         <maven.archiver.version>3.6.3</maven.archiver.version>
-        <plexus.archiver.version>4.10.0</plexus.archiver.version>
+        <plexus.archiver.version>4.10.1</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>7.16.0</pmd.version>
 
