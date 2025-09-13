@@ -105,11 +105,11 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
         if (KeyPairGenerator.class.isAssignableFrom(entityType)
                 || KeyFactory.class.isAssignableFrom(entityType)) {
             if (SecurityUtils.ED25519.equalsIgnoreCase(name)) {
-                return !SecurityUtils.isNetI2pCryptoEdDSARegistered() && isEdDSASupported();
+                return isEdDSASupported();
             }
         } else if (Signature.class.isAssignableFrom(entityType)) {
             if (SecurityUtils.ED25519.equalsIgnoreCase(name)) {
-                return !SecurityUtils.isNetI2pCryptoEdDSARegistered() && isEdDSASupported();
+                return isEdDSASupported();
             }
         }
 

@@ -134,8 +134,8 @@ public final class SecurityUtils {
     public static final List<String> DEFAULT_SECURITY_PROVIDER_REGISTRARS = Collections.unmodifiableList(
             Arrays.asList(
                     "org.apache.sshd.common.util.security.SunJCESecurityProviderRegistrar",
-                    "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
-                    "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar"));
+                    "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar",
+                    "org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar"));
 
     public static final String PROP_DEFAULT_SECURITY_PROVIDER = "org.apache.sshd.security.defaultProvider";
 
@@ -576,11 +576,6 @@ public final class SecurityUtils {
             }
         }
         return isSupported != null && isSupported.booleanValue();
-    }
-
-    public static boolean isNetI2pCryptoEdDSARegistered() {
-        register();
-        return isProviderRegistered(EDDSA);
     }
 
     /* -------------------------------------------------------------------- */

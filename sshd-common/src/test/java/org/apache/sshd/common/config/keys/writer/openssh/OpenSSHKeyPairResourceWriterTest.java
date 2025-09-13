@@ -33,14 +33,11 @@ import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
-import java.security.spec.AlgorithmParameterSpec;
-import java.security.spec.ECGenParameterSpec;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
-import net.i2p.crypto.eddsa.spec.EdDSAGenParameterSpec;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.FilePasswordProvider;
 import org.apache.sshd.common.config.keys.KeyUtils;
@@ -61,36 +58,22 @@ class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     static Collection<TestData> parameters() {
         List<TestData> result = new ArrayList<>();
-        result.add(new TestData("RSA", 1024, null));
-        result.add(new TestData("RSA", 2048, null));
-        result.add(new TestData("DSA", 1024, null));
-        result.add(new TestData("ECDSA", 256, new ECGenParameterSpec("secp256r1")));
-        result.add(new TestData("ECDSA", 384, new ECGenParameterSpec("secp384r1")));
-        result.add(new TestData("ECDSA", 521, new ECGenParameterSpec("secp521r1")));
+        result.add(new TestData("RSA", 1024));
+        result.add(new TestData("RSA", 2048));
+        result.add(new TestData("DSA", 1024));
+        result.add(new TestData("ECDSA", 256));
+        result.add(new TestData("ECDSA", 384));
+        result.add(new TestData("ECDSA", 521));
         if (SecurityUtils.isEDDSACurveSupported()) {
-            // Note: BC also has an EDDSA provider, but that one returns
-            // "Ed25519" as algorithm from its keys, while the one in
-            // net.i2p.crypto.eddsa gives keys with "EDDSA" as algorithm.
-            // sshd handles only the latter.
-            result.add(new TestData(
-                    "EDDSA", "EdDSA", 25519,
-                    new EdDSAGenParameterSpec("Ed25519")));
+            result.add(new TestData(SecurityUtils.ED25519, -1));
         }
 
         return result;
     }
 
     private KeyPair generateKey(TestData data) throws Exception {
-        KeyPairGenerator generator;
-        if (data.provider == null) {
-            generator = KeyPairGenerator.getInstance(data.algorithm);
-        } else {
-            generator = KeyPairGenerator.getInstance(data.algorithm, data.provider);
-        }
-
-        if (data.spec != null) {
-            generator.initialize(data.spec);
-        } else {
+        KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(data.algorithm);
+        if (data.keySize > 0) {
             generator.initialize(data.keySize);
         }
         return generator.generateKeyPair();
@@ -450,29 +433,19 @@ class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
         final String algorithm;
 
-        final String provider;
-
         final int keySize;
 
-        final AlgorithmParameterSpec spec;
-
-        TestData(String algorithm, int keySize,
-                 AlgorithmParameterSpec spec) {
-            this(algorithm, null, keySize, spec);
-        }
-
-        TestData(String algorithm, String provider, int keySize,
-                 AlgorithmParameterSpec spec) {
+        TestData(String algorithm, int keySize) {
             this.algorithm = algorithm;
-            this.provider = provider;
             this.keySize = keySize;
-            this.spec = spec;
         }
 
         @Override
         public String toString() {
-            return algorithm + '-' + keySize
-                   + (provider == null ? "" : '(' + provider + ')');
+            if (keySize > 0) {
+                return algorithm + '-' + keySize;
+            }
+            return algorithm;
         }
     }
 }

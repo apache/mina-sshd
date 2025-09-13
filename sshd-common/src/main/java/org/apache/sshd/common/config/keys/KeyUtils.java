@@ -737,8 +737,7 @@ public final class KeyUtils {
             } else {
                 return curve.getKeyType();
             }
-        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())
-                || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm())) {
+        } else if (isEd25519(key)) {
             return KeyPairProvider.SSH_ED25519;
         }
 
@@ -808,8 +807,7 @@ public final class KeyUtils {
             if (curve != null) {
                 return curve.getKeySize();
             }
-        } else if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())
-                || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm())) {
+        } else if (isEd25519(key)) {
             return 256;
         }
 
@@ -857,6 +855,13 @@ public final class KeyUtils {
         return compareKeys(k1.getPublic(), k2.getPublic()) && compareKeys(k1.getPrivate(), k2.getPrivate());
     }
 
+    private static boolean isEd25519(Key k) {
+        return k != null
+                && (SecurityUtils.ED25519.equals(k.getAlgorithm()) //
+                        || (SecurityUtils.EDDSA.equalsIgnoreCase(k.getAlgorithm())
+                                && k.getClass().getCanonicalName().startsWith("net.i2p.")));
+    }
+
     public static boolean compareKeys(PublicKey k1, PublicKey k2) {
         if (Objects.equals(k1, k2)) {
             return true;
@@ -869,11 +874,7 @@ public final class KeyUtils {
             return compareECKeys(ECPublicKey.class.cast(k1), ECPublicKey.class.cast(k2));
         } else if ((k1 instanceof SkEcdsaPublicKey) && (k2 instanceof SkEcdsaPublicKey)) {
             return compareSkEcdsaKeys(SkEcdsaPublicKey.class.cast(k1), SkEcdsaPublicKey.class.cast(k2));
-        } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
-                && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
-            return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
-        } else if ((k1 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k1.getAlgorithm())
-                && (k2 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k2.getAlgorithm())) {
+        } else if (isEd25519(k1) && isEd25519(k2)) {
             return SecurityUtils.compareEDDSAPPublicKeys(k1, k2);
         } else if ((k1 instanceof SkED25519PublicKey) && (k2 instanceof SkED25519PublicKey)) {
             return compareSkEd25519Keys(SkED25519PublicKey.class.cast(k1), SkED25519PublicKey.class.cast(k2));
@@ -888,8 +889,7 @@ public final class KeyUtils {
             return recoverRSAPublicKey((RSAPrivateKey) key);
         } else if (key instanceof DSAPrivateKey) {
             return recoverDSAPublicKey((DSAPrivateKey) key);
-        } else if ((key != null) && (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm())
-                || SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm()))) {
+        } else if (isEd25519(key)) {
             return SecurityUtils.recoverEDDSAPublicKey(key);
         }
         return null;
@@ -902,11 +902,7 @@ public final class KeyUtils {
             return compareDSAKeys(DSAPrivateKey.class.cast(k1), DSAPrivateKey.class.cast(k2));
         } else if ((k1 instanceof ECPrivateKey) && (k2 instanceof ECPrivateKey)) {
             return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
-        } else if ((k1 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k1.getAlgorithm())
-                && (k2 != null) && SecurityUtils.EDDSA.equalsIgnoreCase(k2.getAlgorithm())) {
-            return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
-        } else if ((k1 != null) && SecurityUtils.ED25519.equalsIgnoreCase(k1.getAlgorithm()) && (k2 != null)
-                && SecurityUtils.ED25519.equalsIgnoreCase(k2.getAlgorithm())) {
+        } else if (isEd25519(k1) && isEd25519(k2)) {
             return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
         }
         return false; // either key is null or not of same class
