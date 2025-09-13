@@ -38,6 +38,8 @@ import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.apache.sshd.util.test.JUnitTestSupport;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -70,6 +72,11 @@ class BouncyCastleGeneratorHostKeyProviderTest extends JUnitTestSupport {
          * }
          */
         return params;
+    }
+
+    @BeforeAll
+    static void requireBouncyCastle() {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "Test requires Bouncy Castle");
     }
 
     @MethodSource("parameters")

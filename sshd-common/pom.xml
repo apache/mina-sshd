@@ -72,6 +72,76 @@
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>no-net-i2p</id>
+            <activation>
+                <property>
+                    <name>test.no-net-i2p</name>
+                    <value>!disable</value>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>no-net-i2p</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-no-net-i2p</reportsDirectory>
+                                    <systemPropertyVariables>
+                                        <org.apache.sshd.security.provider.EdDSA.enabled>false</org.apache.sshd.security.provider.EdDSA.enabled>
+                                    </systemPropertyVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>jce</id>
+            <activation>
+                <property>
+                    <name>test.jce</name>
+                    <value>!disable</value>
+                </property>
+            </activation>
+
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <executions>
+                            <execution>
+                                <id>jce</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <configuration>
+                                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                                    <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
+                                    <systemPropertyVariables>
+                                        <org.apache.sshd.security.provider.EdDSA.enabled>false</org.apache.sshd.security.provider.EdDSA.enabled>
+                                        <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
+                                    </systemPropertyVariables>
+                                </configuration>
+                            </execution>
+                        </executions>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <resources>
             <resource>

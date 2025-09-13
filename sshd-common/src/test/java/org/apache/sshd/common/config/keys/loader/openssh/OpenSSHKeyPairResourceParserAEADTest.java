@@ -23,7 +23,10 @@ import java.security.KeyPair;
 import java.util.Collection;
 
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -52,6 +55,11 @@ class OpenSSHKeyPairResourceParserAEADTest extends JUnitTestSupport {
         KeyPair result = pairs.iterator().next();
         assertNotNull(result, "No unencrypted key pair");
         return result;
+    }
+
+    @BeforeAll
+    static void requireEd25519() {
+        Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), "Test requires ed25519");
     }
 
     @BeforeEach

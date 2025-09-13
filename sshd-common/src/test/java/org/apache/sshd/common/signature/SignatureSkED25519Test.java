@@ -22,7 +22,10 @@ import java.security.PublicKey;
 import java.util.Base64;
 
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.JUnitTestSupport;
+import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -55,6 +58,11 @@ class SignatureSkED25519Test extends JUnitTestSupport {
 
     SignatureSkED25519Test() {
         super();
+    }
+
+    @BeforeAll
+    static void requireEd25519() {
+        Assumptions.assumeTrue(SecurityUtils.isEDDSACurveSupported(), "Test requires ed25519");
     }
 
     @Test

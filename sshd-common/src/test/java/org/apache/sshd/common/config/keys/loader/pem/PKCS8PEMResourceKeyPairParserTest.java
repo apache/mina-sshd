@@ -77,6 +77,19 @@ class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         return params;
     }
 
+    private boolean canRun(String algorithm, KeyPair kp) {
+        if (!KeyUtils.EC_ALGORITHM.equals(algorithm)) {
+            return true;
+        }
+        // Cannot work with JCE EC keys because the public key is not in the encoding.
+        // See https://bugs.openjdk.org/browse/JDK-8234465, which was fixed in Java 15 but
+        // then again reverted: https://bugs.openjdk.org/browse/JDK-8236070
+        // If we wanted to be able to parse such key pairs with only having the private key,
+        // we would need to have a way to compute the public key from the private key.
+        // With standard Java, there is no such way.
+        return kp.getPublic().getClass().getCanonicalName().startsWith("org.bouncycastle.");
+    }
+
     @MethodSource("parameters")
     @ParameterizedTest(name = "{0}-{1}") // see SSHD-760
     void locallyGeneratedPkcs8(String algorithm, int keySize) throws IOException, GeneralSecurityException {
@@ -86,6 +99,7 @@ class PKCS8PEMResourceKeyPairParserTest extends JUnitTestSupport {
         }
 
         KeyPair kp = generator.generateKeyPair();
+        Assumptions.assumeTrue(canRun(algorithm, kp), "Cannot work with JCE; see JDK-8234465 and its revert JDK-8236070");
         try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             Collection<Object> items = new ArrayList<>();
             PrivateKey prv1 = kp.getPrivate();
