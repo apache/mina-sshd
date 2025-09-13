@@ -76,6 +76,7 @@ import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleKeyPairReso
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.OpenSSHEd25519PrivateKeyEntryDecoder;
+import org.apache.sshd.common.util.security.eddsa.jce.JcePublicKeyFactory;
 import org.apache.sshd.common.util.threads.ThreadUtils;
 import org.apache.sshd.server.keyprovider.AbstractGeneratorHostKeyProvider;
 import org.slf4j.Logger;
@@ -601,7 +602,7 @@ public final class SecurityUtils {
                 }
             }
         }
-        return null;
+        return new JcePublicKeyFactory().getPublicKey(key);
     }
 
     public static KeyPair extractEDDSAKeyPair(Buffer buffer, String keyType) throws GeneralSecurityException {

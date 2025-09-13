@@ -84,18 +84,12 @@
         <project.build.outputTimestamp>2025-08-29T21:59:28Z</project.build.outputTimestamp>
 
         <java.sdk.version>8</java.sdk.version>
-        <javac.source>${java.sdk.version}</javac.source>
-        <project.build.java.source>${javac.source}</project.build.java.source>
-        <maven.compiler.source>${javac.source}</maven.compiler.source>
+        <javac.release>${java.sdk.version}</javac.release>
+        <maven.compiler.release>${java.sdk.version}</maven.compiler.release>
         <ant.version>1.10.15</ant.version>
-        <ant.build.javac.source>${javac.source}</ant.build.javac.source>
         <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
 
-        <javac.target>${javac.source}</javac.target>
-        <required.java.version>[${javac.target},)</required.java.version>
-        <project.build.java.target>${javac.target}</project.build.java.target>
-        <maven.compiler.target>${javac.target}</maven.compiler.target>
-        <ant.build.javac.target>${javac.target}</ant.build.javac.target>
+        <required.java.version>[${java.sdk.version},)</required.java.version>
 
         <groovy.version>4.0.17</groovy.version>
         <bouncycastle.version>1.81</bouncycastle.version>
@@ -266,38 +260,20 @@
                             <showWarnings>true</showWarnings>
                         </configuration>
                         <dependencies>
-    	                    <dependency>
-            	                <groupId>org.codehaus.plexus</groupId>
+                            <dependency>
+                                <groupId>org.codehaus.plexus</groupId>
                                 <artifactId>plexus-compiler-javac-errorprone</artifactId>
-            	                <version>2.15.0</version>
-            		        </dependency>
-                		      <!-- override plexus-compiler-javac-errorprone's dependency on Error Prone with the latest version -->
-                           <dependency>
+                                <version>2.15.0</version>
+                            </dependency>
+                            <!-- override plexus-compiler-javac-errorprone's dependency on Error Prone with the latest version -->
+                            <dependency>
                                 <groupId>com.google.errorprone</groupId>
                                 <artifactId>error_prone_core</artifactId>
-                	            <version>2.41.0</version>
+                                <version>2.41.0</version>
                             </dependency>
-            		    </dependencies>
+                        </dependencies>
                     </plugin>
                  </plugins>
-            </build>
-        </profile>
-
-        <profile>
-            <id>javac-jdk9+</id>
-            <activation>
-                <jdk>[9,)</jdk>
-            </activation>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <release>${java.sdk.version}</release>
-                        </configuration>
-                    </plugin>
-                </plugins>
             </build>
         </profile>
 
@@ -1176,8 +1152,6 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${javac.source}</source>
-                    <target>${javac.target}</target>
                     <compilerArgument>-g</compilerArgument>
                         <!-- see http://www.javaworld.com/article/2073587/javac-s(dashdash)xlint-options.html -->
                     <compilerArgument>-Xlint:-serial</compilerArgument>
