@@ -77,10 +77,7 @@ class Ed25519VectorsTest extends JUnitTestSupport {
         if (registrar == null) {
             registrar = SecurityUtils.getRegisteredProvider(SecurityUtils.BOUNCY_CASTLE);
         }
-        if (registrar == null) {
-            throw new IllegalStateException("Neither net.i2p nor BC registered");
-        }
-        String supportClassName = registrar.getClass().getSimpleName();
+        String supportClassName = registrar != null ? registrar.getClass().getSimpleName() : "JCE";
         parameters.add(new Object[] {
                 supportClassName + " TEST1 - empty message",
                 "9d61b19deffd5a60ba844af492ec2cc44449c5697b326919703bac031cae7f60",
@@ -243,6 +240,7 @@ class Ed25519VectorsTest extends JUnitTestSupport {
             String name, String prvKey, String pubKey, String msg, String signature) throws Exception {
         initEd25519VectorsTest(name, prvKey, pubKey, msg, signature);
         PublicKey recoveredKey = SecurityUtils.recoverEDDSAPublicKey(privateKey);
+        assertNotNull(recoveredKey, "Public key could not be recovered");
         assertTrue(SecurityUtils.compareEDDSAPPublicKeys(publicKey, recoveredKey), "Recovered key is not equal");
         byte[] recoveredBytes = EdDSAUtils.getBytes(recoveredKey);
         assertArrayEquals(pubBytes, recoveredBytes, "Mismatched public seed value");

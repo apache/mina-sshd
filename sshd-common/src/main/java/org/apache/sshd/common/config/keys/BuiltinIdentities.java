@@ -158,6 +158,9 @@ public enum BuiltinIdentities implements Identity {
     }
 
     private static BuiltinIdentities fromKeyType(String type) {
+        if (type == null) {
+            return null;
+        }
         return VALUES.stream().filter(b -> b.getSupportedKeyTypes().contains(type)).findFirst().orElse(null);
     }
 

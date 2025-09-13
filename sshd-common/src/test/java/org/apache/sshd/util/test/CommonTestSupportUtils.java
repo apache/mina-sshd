@@ -422,7 +422,7 @@ public final class CommonTestSupportUtils {
                 throw new InvalidKeySpecException("Unknown curve for key size=" + keySize);
             }
             gen.initialize(curve.getParameters());
-        } else {
+        } else if (!SecurityUtils.ED25519.equals(algorithm)) {
             gen.initialize(keySize);
         }
 

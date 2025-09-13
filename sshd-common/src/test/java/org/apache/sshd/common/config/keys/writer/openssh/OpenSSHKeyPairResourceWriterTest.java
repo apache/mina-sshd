@@ -58,12 +58,12 @@ class OpenSSHKeyPairResourceWriterTest extends JUnitTestSupport {
 
     static Collection<TestData> parameters() {
         List<TestData> result = new ArrayList<>();
-        result.add(new TestData("RSA", 1024));
-        result.add(new TestData("RSA", 2048));
-        result.add(new TestData("DSA", 1024));
-        result.add(new TestData("ECDSA", 256));
-        result.add(new TestData("ECDSA", 384));
-        result.add(new TestData("ECDSA", 521));
+        result.add(new TestData(KeyUtils.RSA_ALGORITHM, 1024));
+        result.add(new TestData(KeyUtils.RSA_ALGORITHM, 2048));
+        result.add(new TestData(KeyUtils.DSS_ALGORITHM, 1024));
+        result.add(new TestData(KeyUtils.EC_ALGORITHM, 256));
+        result.add(new TestData(KeyUtils.EC_ALGORITHM, 384));
+        result.add(new TestData(KeyUtils.EC_ALGORITHM, 521));
         if (SecurityUtils.isEDDSACurveSupported()) {
             result.add(new TestData(SecurityUtils.ED25519, -1));
         }

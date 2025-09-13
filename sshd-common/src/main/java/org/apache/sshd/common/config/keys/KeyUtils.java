@@ -85,6 +85,7 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
+import org.apache.sshd.common.util.security.eddsa.generic.EdDSAKeyTypeDetector;
 
 /**
  * Utility class for keys
@@ -856,10 +857,7 @@ public final class KeyUtils {
     }
 
     private static boolean isEd25519(Key k) {
-        return k != null
-                && (SecurityUtils.ED25519.equals(k.getAlgorithm()) //
-                        || (SecurityUtils.EDDSA.equalsIgnoreCase(k.getAlgorithm())
-                                && k.getClass().getCanonicalName().startsWith("net.i2p.")));
+        return EdDSAKeyTypeDetector.isEd25519(k);
     }
 
     public static boolean compareKeys(PublicKey k1, PublicKey k2) {

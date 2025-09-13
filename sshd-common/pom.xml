@@ -118,13 +118,14 @@
             <build>
                 <plugins>
                     <plugin>
+                        <!-- MR JAR needs to run tests from the built JAR, so use failsafe instead of surefire -->
                         <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-surefire-plugin</artifactId>
+                        <artifactId>maven-failsafe-plugin</artifactId>
                         <executions>
                             <execution>
                                 <id>jce</id>
                                 <goals>
-                                    <goal>test</goal>
+                                    <goal>integration-test</goal>
                                 </goals>
                                 <configuration>
                                     <redirectTestOutputToFile>true</redirectTestOutputToFile>
@@ -133,6 +134,9 @@
                                         <org.apache.sshd.security.provider.EdDSA.enabled>false</org.apache.sshd.security.provider.EdDSA.enabled>
                                         <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
                                     </systemPropertyVariables>
+                                    <includes>
+                                        <include>**/*Test.java</include>
+                                    </includes>
                                 </configuration>
                             </execution>
                         </executions>

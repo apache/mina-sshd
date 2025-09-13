@@ -24,6 +24,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.interfaces.EdECKey;
 import java.security.spec.NamedParameterSpec;
 
 import org.apache.sshd.common.util.security.PublicKeyFactory;
@@ -39,13 +40,14 @@ public class JcePublicKeyFactory implements PublicKeyFactory {
 
     @Override
     public PublicKey getPublicKey(PrivateKey key) {
-        if (SecurityUtils.ED25519.equals(key.getAlgorithm())) {
-            return recoverEd25519PublicKey(key);
+        if (SecurityUtils.EDDSA.equals(key.getAlgorithm()) && (key instanceof EdECKey)) {
+            NamedParameterSpec params = ((EdECKey) key).getParams();
+            return recoverEd25519PublicKey(key, params);
         }
         return null;
     }
 
-    private static PublicKey recoverEd25519PublicKey(PrivateKey key) {
+    private static PublicKey recoverEd25519PublicKey(PrivateKey key, NamedParameterSpec params) {
         byte[] rawPrivateKey = EdDSAUtils.getBytes(key);
         // An EdDSA private key is just cryptographically secure random data, which the JDK implementation obtains from
         // the given SecureRandom. By making that random generator return not new random bytes but the bytes of the
@@ -62,8 +64,8 @@ public class JcePublicKeyFactory implements PublicKeyFactory {
         //
         // Note that NamedParameterSpec was introduced in Java 11, and the ED25519 constant in Java 15.
         try {
-            KeyPairGenerator gen = KeyPairGenerator.getInstance("Ed25519");
-            gen.initialize(NamedParameterSpec.ED25519, new SecureRandom() {
+            KeyPairGenerator gen = KeyPairGenerator.getInstance(params.getName());
+            gen.initialize(params, new SecureRandom() {
 
                 private static final long serialVersionUID = 1L;
 
