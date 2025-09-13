@@ -31,7 +31,6 @@ import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityEntityFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -92,8 +91,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
                 return supported.booleanValue();
             }
 
-            Class<?> clazz = ThreadUtils.resolveDefaultClass(getClass(), "net.i2p.crypto.eddsa.EdDSAKey");
-            supported = clazz != null;
+            supported = Boolean.valueOf(EdDSAAccessor.INSTANCE.isSupported());
             supportHolder.set(supported);
         }
 
@@ -164,5 +162,4 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
             return delegate.toString();
         }
     }
-
 }
