@@ -35,13 +35,13 @@ public final class BouncyCastlePublicKeyFactory implements PublicKeyFactory {
 
     @Override
     public PublicKey getPublicKey(PrivateKey key) {
-        if (SecurityUtils.ED25519.equals(key.getAlgorithm())) {
+        if (SecurityUtils.ED25519.equalsIgnoreCase(key.getAlgorithm())) {
             return getPublicEdDSAKey(key);
         }
         return null;
     }
 
-    public PublicKey getPublicEdDSAKey(PrivateKey key) {
+    private static PublicKey getPublicEdDSAKey(PrivateKey key) {
         if (key instanceof EdDSAPrivateKey) {
             EdDSAPrivateKey edDSAKey = (EdDSAPrivateKey) key;
             return edDSAKey.getPublicKey();

@@ -40,7 +40,7 @@ public class JcePublicKeyFactory implements PublicKeyFactory {
 
     @Override
     public PublicKey getPublicKey(PrivateKey key) {
-        if (SecurityUtils.EDDSA.equals(key.getAlgorithm()) && (key instanceof EdECKey)) {
+        if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm()) && (key instanceof EdECKey)) {
             NamedParameterSpec params = ((EdECKey) key).getParams();
             return recoverEd25519PublicKey(key, params);
         }

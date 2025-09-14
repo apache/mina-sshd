@@ -35,7 +35,7 @@ public final class EdDSAKeyTypeDetector {
             return false;
         }
         String algorithm = key.getAlgorithm();
-        if (SecurityUtils.ED25519.equals(algorithm)) {
+        if (SecurityUtils.ED25519.equalsIgnoreCase(algorithm)) {
             return true;
         }
         if (SecurityUtils.EDDSA.equalsIgnoreCase(algorithm)) {
