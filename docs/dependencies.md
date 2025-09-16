@@ -5,7 +5,9 @@
 Required mainly for writing keys to PEM files or for special keys/ciphers/etc. that are not part of the standard
 [Java Cryptography Extension](https://en.wikipedia.org/wiki/Java_Cryptography_Extension). See
 [Java Cryptography Architecture (JCA) Reference Guide](https://docs.oracle.com/javase/8/docs/technotes/guides/security/crypto/CryptoSpec.html)
-for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers).
+for key classes and explanations as to how _Bouncy Castle_ is plugged in (other security providers). 
+Also necessary for [certain algorithms](./standards.md#implementedavailable-support) that are supported only
+if Bouncy Castle is present.
 
 **Caveat**: If _Bouncy Castle_ modules are registered, then the code will use its implementation of the ciphers,
 keys, signatures, etc. rather than the default JCE provided in the JVM.
