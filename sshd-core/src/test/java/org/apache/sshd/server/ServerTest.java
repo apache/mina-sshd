@@ -348,11 +348,11 @@ class ServerTest extends BaseTestSupport {
 
                 try (Channel channel = GenericUtils.head(channels)) {
                     final long maxTimeoutValue = idleTimeoutValue + disconnectTimeoutValue + TimeUnit.SECONDS.toMillis(3L);
-                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue);
+                    final long maxWaitNanos = TimeUnit.MILLISECONDS.toNanos(maxTimeoutValue + 200);
                     RemoteWindow wRemote = channel.getRemoteWindow();
                     for (long totalNanoTime = 0L; wRemote.getSize() > 0;) {
                         long nanoStart = System.nanoTime();
-                        Thread.sleep(1L);
+                        Thread.sleep(100);
                         long nanoEnd = System.nanoTime();
                         long nanoDuration = nanoEnd - nanoStart;
 

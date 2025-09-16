@@ -33,8 +33,8 @@ class FileHostKeyCertificateProviderTest extends JUnitTestSupport {
         FileHostKeyCertificateProvider provider = new FileHostKeyCertificateProvider(
                 getTestResourcesFolder().resolve("dummy_user-cert" + PublicKeyEntry.PUBKEY_FILE_SUFFIX));
         Exception e = assertThrows(Exception.class, () -> provider.loadCertificates(null));
-        assertTrue(e.getMessage().contains("line 1"), "Expected error in line 1");
+        assertTrue(e.getMessage().contains("line 1"), "Expected error in line 1: " + e.toString());
         assertTrue(e.getMessage().contains("host") || e.getMessage().contains("user"),
-                "Unexpected exception message: " + e.getMessage());
+                "Unexpected exception message: " + e.toString());
     }
 }
