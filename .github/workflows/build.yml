@@ -22,6 +22,11 @@ on:
     branches:
       - master
       - dev_3.0
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '*.txt'
   workflow_call:
 
 jobs:

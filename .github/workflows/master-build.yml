@@ -21,6 +21,11 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'docs/**'
+      - '*.md'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '*.txt'
 
 jobs:
   build:

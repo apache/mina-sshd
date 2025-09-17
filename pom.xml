@@ -107,12 +107,12 @@
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
         <testcontainers.version>1.21.3</testcontainers.version>
-        <grpc.version>1.74.0</grpc.version> <!-- Used only in tests -->
+        <grpc.version>1.75.0</grpc.version> <!-- Used only in tests -->
 
-        <maven.archiver.version>3.6.3</maven.archiver.version>
-        <plexus.archiver.version>4.10.0</plexus.archiver.version>
+        <maven.archiver.version>3.6.4</maven.archiver.version>
+        <plexus.archiver.version>4.10.1</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>7.16.0</pmd.version>
+        <pmd.version>7.17.0</pmd.version>
         <japicmp.version>0.23.1</japicmp.version>
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -534,7 +534,7 @@
             <dependency>
                 <groupId>com.github.mwiede</groupId>
                 <artifactId>jsch</artifactId>
-                <version>2.27.2</version>
+                <version>2.27.3</version>
             </dependency>
 
             <dependency>
@@ -993,7 +993,7 @@
                 <plugin>
                     <groupId>net.revelc.code.formatter</groupId>
                     <artifactId>formatter-maven-plugin</artifactId>
-                    <version>2.27.0</version>
+                    <version>2.29.0</version>
                     <configuration>
                         <skipXmlFormatting>true</skipXmlFormatting>
                         <skipHtmlFormatting>true</skipHtmlFormatting>
