@@ -171,7 +171,20 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>default-compile-15</id>
+                        <id>compile-11</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <compileSourceRoots>
+                                <compileSourceRoot>${project.basedir}/src/main/java11</compileSourceRoot>
+                            </compileSourceRoots>
+                            <multiReleaseOutput>true</multiReleaseOutput>
+                            <release>11</release>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>compile-15</id>
                         <goals>
                             <goal>compile</goal>
                         </goals>

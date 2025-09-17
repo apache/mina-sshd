@@ -33,7 +33,7 @@ class ChaCha20CipherTest extends JUnitTestSupport {
 
     @Test
     void encryptDecrypt() throws Exception {
-        ChaCha20Cipher cipher = new ChaCha20Cipher();
+        Cipher cipher = ChaCha20CipherFactory.INSTANCE.get();
         byte[] key = new byte[cipher.getKdfSize()];
         for (int i = 0; i < key.length; i++) {
             key[i] = (byte) (i & 0xff);

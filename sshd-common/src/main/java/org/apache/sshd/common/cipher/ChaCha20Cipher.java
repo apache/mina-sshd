@@ -34,7 +34,7 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
  * <a href="https://github.com/openbsd/src/blob/master/usr.bin/ssh/PROTOCOL.chacha20poly1305">OpenSSH
  * ChaCha20-Poly1305</a> cipher extension.
  */
-public class ChaCha20Cipher implements Cipher {
+public class ChaCha20Cipher extends AbstractChaCha20Cipher {
     protected final ChaChaEngine headerEngine = new ChaChaEngine();
     protected final ChaChaEngine bodyEngine = new ChaChaEngine();
     protected final Mac mac;
@@ -42,11 +42,6 @@ public class ChaCha20Cipher implements Cipher {
 
     public ChaCha20Cipher() {
         this.mac = new Poly1305Mac();
-    }
-
-    @Override
-    public String getAlgorithm() {
-        return "ChaCha20";
     }
 
     @Override
@@ -101,41 +96,6 @@ public class ChaCha20Cipher implements Cipher {
         headerEngine.initCounter(0);
         bodyEngine.advanceNonce();
         mac.init(bodyEngine.polyKey());
-    }
-
-    @Override
-    public String getTransformation() {
-        return "ChaCha20";
-    }
-
-    @Override
-    public int getIVSize() {
-        return 8;
-    }
-
-    @Override
-    public int getAuthenticationTagSize() {
-        return 16;
-    }
-
-    @Override
-    public int getCipherBlockSize() {
-        return 8;
-    }
-
-    @Override
-    public int getKdfSize() {
-        return 64;
-    }
-
-    @Override
-    public int getKeySize() {
-        return 512;
-    }
-
-    @Override
-    public String toString() {
-        return "chacha20-poly1305";
     }
 
     protected static class ChaChaEngine {

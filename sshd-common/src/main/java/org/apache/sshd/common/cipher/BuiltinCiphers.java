@@ -154,7 +154,7 @@ public enum BuiltinCiphers implements CipherFactory {
     cc20p1305_openssh(Constants.CC20P1305_OPENSSH, 8, 16, "ChaCha", 512, "ChaCha", 8) {
         @Override
         public Cipher create() {
-            return new ChaCha20Cipher();
+            return ChaCha20CipherFactory.INSTANCE.get();
         }
 
         @Override
