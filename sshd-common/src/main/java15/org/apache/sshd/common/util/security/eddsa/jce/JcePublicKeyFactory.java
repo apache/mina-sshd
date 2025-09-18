@@ -18,9 +18,8 @@
  */
 package org.apache.sshd.common.util.security.eddsa.jce;
 
-import java.security.InvalidAlgorithmParameterException;
+import java.security.GeneralSecurityException;
 import java.security.KeyPairGenerator;
-import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
@@ -40,7 +39,8 @@ public class JcePublicKeyFactory implements PublicKeyFactory {
 
     @Override
     public PublicKey getPublicKey(PrivateKey key) {
-        if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm()) && (key instanceof EdECKey)) {
+        if (SecurityUtils.EDDSA.equalsIgnoreCase(key.getAlgorithm()) && (key instanceof EdECKey)
+                && (key.getClass().getCanonicalName().startsWith("sun."))) {
             NamedParameterSpec params = ((EdECKey) key).getParams();
             return recoverEd25519PublicKey(key, params);
         }
@@ -55,16 +55,17 @@ public class JcePublicKeyFactory implements PublicKeyFactory {
         //
         // This relies on the library using the returned "random" value as-is for the private key. Theoretically a
         // library would be free to process these random bytes in any way it wants before setting it as private key.
-        // Since any such post-processing of the random value runs the risk of introducing weaknesses through
-        // inadvertently loosing some randomness properties of the originally cryptographically secure random data, it
-        // is unlikely that an EdDSA implementation would do so, and in any case the JDK implementation doesn't.
+        // Luckily the OpenJDK implementation of SunEC doesn't do so.
+        //
+        // Other providers do that, though. For instance IBM's OpenJCEPlus even ignores the passed SecureRandom
+        // completely and generates keys and random data via native code in some unknown way.
         //
         // All this is just a hack to work around sun.security.ec.ed.EdDSAOperations.computePublic() not being
         // accessible.
         //
         // Note that NamedParameterSpec was introduced in Java 11, and the ED25519 constant in Java 15.
         try {
-            KeyPairGenerator gen = KeyPairGenerator.getInstance(params.getName());
+            KeyPairGenerator gen = KeyPairGenerator.getInstance(params.getName(), "SunEC");
             gen.initialize(params, new SecureRandom() {
 
                 private static final long serialVersionUID = 1L;
@@ -79,7 +80,7 @@ public class JcePublicKeyFactory implements PublicKeyFactory {
                 }
             });
             return gen.generateKeyPair().getPublic();
-        } catch (NoSuchAlgorithmException | InvalidAlgorithmParameterException e) {
+        } catch (GeneralSecurityException e) {
             return null;
         } finally {
             Arrays.fill(rawPrivateKey, (byte) 0);
