@@ -124,17 +124,21 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <reportsDirectory>${project.build.directory}/surefire-reports-common</reportsDirectory>
+                            <systemPropertyVariables>
+                                <org.apache.sshd.security.provider.SunECWrapper.enabled>false</org.apache.sshd.security.provider.SunECWrapper.enabled>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
                     <execution>
-                        <id>no-net-i2p</id>
+                        <id>bc</id>
                         <goals>
                             <goal>test</goal>
                         </goals>
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <reportsDirectory>${project.build.directory}/surefire-reports-no-net-i2p</reportsDirectory>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-bc</reportsDirectory>
                             <systemPropertyVariables>
+                                <org.apache.sshd.security.provider.SunECWrapper.enabled>false</org.apache.sshd.security.provider.SunECWrapper.enabled>
                                 <org.apache.sshd.security.provider.EdDSA.enabled>false</org.apache.sshd.security.provider.EdDSA.enabled>
                             </systemPropertyVariables>
                         </configuration>
@@ -200,4 +204,5 @@
             </plugin>
         </plugins>
     </build>
+
 </project>

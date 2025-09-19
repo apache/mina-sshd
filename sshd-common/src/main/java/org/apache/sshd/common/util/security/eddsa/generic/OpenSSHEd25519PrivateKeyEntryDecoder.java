@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
@@ -155,6 +156,11 @@ public class OpenSSHEd25519PrivateKeyEntryDecoder extends AbstractPrivateKeyEntr
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
         return SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
+    }
+
+    @Override
+    public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
+        return getKeyPairGenerator().generateKeyPair();
     }
 
     @Override

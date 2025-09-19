@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
+import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.Collections;
@@ -53,6 +54,11 @@ public final class Ed25519PublicKeyDecoder extends AbstractPublicKeyEntryDecoder
     @Override
     public KeyPairGenerator getKeyPairGenerator() throws GeneralSecurityException {
         return SecurityUtils.getKeyPairGenerator(SecurityUtils.ED25519);
+    }
+
+    @Override
+    public KeyPair generateKeyPair(int keySize) throws GeneralSecurityException {
+        return getKeyPairGenerator().generateKeyPair();
     }
 
     @Override

@@ -37,37 +37,84 @@ import org.apache.sshd.common.util.GenericUtils;
  * be set correctly. Mixing SunEC keys with Bouncy Castle signatures won't work.
  * </p>
  * <p>
- * This registrar is <em>disabled</em> by default. It can be enabled via a system property
- * {@code org.apache.sshd.security.provider.SunECWrapper.enabled=true}.
+ * This registrar is <em>enabled</em> by default. It can be disabled via a system property
+ * {@code org.apache.sshd.security.provider.SunECWrapper.enabled=false}.
  * </p>
  * <p>
- * The registrar can be configured as usual. By default it has only the "Ed25519" {@code KeyFactory},
- * {@code KeyPairGenerator}, and {@code Signature} enabled; everything else is disabled.
+ * The registrar can be configured as usual. By default are enabled:
+ * </p>
+ * <dl>
+ * <dt>"Ed25519"</dt>
+ * <dd>{@code KeyFactory}, {@code KeyPairGenerator}, and {@code Signature}, if "Ed25519" is supported by SunEC</dd>
+ * <dt>"X25519"</dt>
+ * <dd>{@code KeyAgreement}, {@code KeyFactory}, and {@code KeyPairGenerator}, if "X25519" is supported by SunEC</dd>
+ * <dt>"X448"</dt>
+ * <dd>{@code KeyAgreement}, {@code KeyFactory}, and {@code KeyPairGenerator}, if "X448" is supported by SunEC</dd>
+ * </dl>
+ * <p>
+ * Everything else is disabled.
  * </p>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class SunECSecurityProviderRegistrar extends AbstractSecurityProviderRegistrar {
 
+    private static final String X25519 = "X25519";
+
+    private static final String X448 = "X448";
+
     private final Map<String, String> defaultProperties = new HashMap<>();
 
     public SunECSecurityProviderRegistrar() {
         super("SunECWrapper");
-        String baseName = getBasePropertyName();
-        defaultProperties.put(baseName + ".enabled", "false");
         if (isSupported()) {
-            boolean haveEd25519;
-            try {
-                KeyFactory factory = KeyFactory.getInstance(SecurityUtils.ED25519, getSecurityProvider());
-                haveEd25519 = factory != null;
-            } catch (NoSuchAlgorithmException e) {
-                haveEd25519 = false;
-            }
+            Provider provider = getSecurityProvider();
+
+            boolean haveEd25519 = have(SecurityUtils.ED25519, provider);
+            boolean haveX25519 = have("X25519", provider);
+            boolean haveX448 = have("X448", provider);
+
+            String keyAgreement = null;
+            String generator = null;
+            String factory = null;
+            String signature = null;
             if (haveEd25519) {
-                defaultProperties.put(baseName + ".KeyPairGenerator", "Ed25519");
-                defaultProperties.put(baseName + ".KeyFactory", "Ed25519");
-                defaultProperties.put(baseName + ".Signature", "Ed25519");
+                generator = SecurityUtils.ED25519;
+                factory = SecurityUtils.ED25519;
+                signature = SecurityUtils.ED25519;
             }
+            if (haveX25519) {
+                keyAgreement = X25519;
+                generator = generator == null ? X25519 : (generator + ',' + X25519);
+                factory = factory == null ? X25519 : (factory + ',' + X25519);
+            }
+            if (haveX448) {
+                keyAgreement = keyAgreement == null ? X448 : (keyAgreement + ',' + X448);
+                generator = generator == null ? X448 : (generator + ',' + X448);
+                factory = factory == null ? X448 : (factory + ',' + X448);
+            }
+            String baseName = getBasePropertyName();
+            if (keyAgreement != null) {
+                defaultProperties.put(baseName + ".KeyAgreement", keyAgreement);
+            }
+            if (generator != null) {
+                defaultProperties.put(baseName + ".KeyPairGenerator", generator);
+            }
+            if (factory != null) {
+                defaultProperties.put(baseName + ".KeyFactory", factory);
+            }
+            if (signature != null) {
+                defaultProperties.put(baseName + ".Signature", signature);
+            }
+        }
+    }
+
+    private static boolean have(String algorithm, Provider provider) {
+        try {
+            KeyFactory factory = KeyFactory.getInstance(algorithm, provider);
+            return factory != null;
+        } catch (NoSuchAlgorithmException e) {
+            return false;
         }
     }
 

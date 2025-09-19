@@ -189,28 +189,42 @@
                         <configuration>
                             <redirectTestOutputToFile>true</redirectTestOutputToFile>
                             <reportsDirectory>${project.build.directory}/surefire-reports-nio2</reportsDirectory>
+                            <systemPropertyVariables>
+                                <org.apache.sshd.security.provider.SunECWrapper.enabled>false</org.apache.sshd.security.provider.SunECWrapper.enabled>
+                            </systemPropertyVariables>
                         </configuration>
                     </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                    <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
+                    <systemPropertyVariables>
+                        <!-- Enable using deprecated ssh-rsa signature keys with JSch 0.2.x -->
+                        <jsch.server_host_key>ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,rsa-sha2-512,rsa-sha2-256,ssh-rsa</jsch.server_host_key>
+                        <org.apache.sshd.security.provider.EdDSA.enabled>false</org.apache.sshd.security.provider.EdDSA.enabled>
+                        <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
+                    </systemPropertyVariables>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
+                    <excludes>
+                        <!-- These tests fail inexplicably without Bouncycastle -->
+                        <exclude>**/*LoadTest.java</exclude>
+                        <exclude>**/SinglePublicKeyAuthTest.java</exclude>
+                        <exclude>**/ClientTest.java</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
                     <execution>
                         <id>jce</id>
                         <goals>
-                            <goal>test</goal>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
                         </goals>
-                        <configuration>
-                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
-                            <reportsDirectory>${project.build.directory}/surefire-reports-jce</reportsDirectory>
-                            <systemPropertyVariables>
-                                <!-- Enable using deprecated ssh-rsa signature keys with JSch 0.2.x -->
-                                <jsch.server_host_key>ssh-ed25519,ecdsa-sha2-nistp256,ecdsa-sha2-nistp384,ecdsa-sha2-nistp521,rsa-sha2-512,rsa-sha2-256,ssh-rsa</jsch.server_host_key>
-                                <org.apache.sshd.security.provider.BC.enabled>false</org.apache.sshd.security.provider.BC.enabled>
-                            </systemPropertyVariables>
-                            <excludes>
-                                <!-- These tests fail inexplicably without Bouncycastle -->
-                                <exclude>**/*LoadTest.java</exclude>
-                                <exclude>**/SinglePublicKeyAuthTest.java</exclude>
-                                <exclude>**/ClientTest.java</exclude>
-                            </excludes>
-                        </configuration>
                     </execution>
                 </executions>
             </plugin>
