@@ -28,6 +28,7 @@ import java.security.Signature;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityEntityFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
@@ -99,6 +100,16 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     }
 
     @Override
+    protected Provider createProviderInstance(String providerClassName) throws ReflectiveOperationException {
+        ValidateUtils.checkTrue(PROVIDER_CLASS.equals(providerClassName), "Unexpected class name %s", providerClassName);
+        Provider result = EdDSAAccessor.INSTANCE.createProvider();
+        if (result == null) {
+            throw new ReflectiveOperationException("Cannot instantiate " + PROVIDER_CLASS);
+        }
+        return result;
+    }
+
+    @Override
     public <F> SecurityEntityFactory<F> getFactory(Class<F> entityType) throws ReflectiveOperationException {
         // Return factories that map the algorithm names to the non-standard ones used by net.i2p.
         // That way the rest of our code can work with the standard names.
@@ -108,7 +119,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
                 @Override
                 protected String effectiveAlgorithm(String originalAlgorithm) {
                     if (SecurityUtils.ED25519.equalsIgnoreCase(originalAlgorithm)) {
-                        return "EdDSA";
+                        return SecurityUtils.EDDSA;
                     }
                     return originalAlgorithm;
                 }
@@ -130,7 +141,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
 
     @Override
     public PublicKey getPublicKey(PrivateKey key) {
-        if (isEnabled() && isSupported() && "EdDSA".equals(key.getAlgorithm())
+        if (isEnabled() && isSupported() && SecurityUtils.EDDSA.equals(key.getAlgorithm())
                 && key.getClass().getPackage().getName().startsWith("net.i2p.")) {
             return EdDSAPublicKeyFactory.INSTANCE.getPublicKey(key);
         }

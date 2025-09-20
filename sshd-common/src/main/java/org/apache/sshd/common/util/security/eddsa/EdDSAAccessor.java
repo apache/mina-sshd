@@ -18,7 +18,10 @@
  */
 package org.apache.sshd.common.util.security.eddsa;
 
+import java.security.Provider;
+
 import net.i2p.crypto.eddsa.EdDSAKey;
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 final class EdDSAAccessor {
 
@@ -31,9 +34,32 @@ final class EdDSAAccessor {
     public boolean isSupported() {
         try {
             // Just something that forces class loading.
-            return EdDSAKey.class != null;
+            return Inner.isSupported();
         } catch (Throwable t) {
             return false;
+        }
+    }
+
+    public Provider createProvider() {
+        try {
+            return Inner.createProvider();
+        } catch (Throwable t) {
+            return null;
+        }
+    }
+
+    private static final class Inner {
+
+        private Inner() {
+            super();
+        }
+
+        static boolean isSupported() {
+            return EdDSAKey.class != null;
+        }
+
+        static Provider createProvider() {
+            return new EdDSASecurityProvider();
         }
     }
 }
