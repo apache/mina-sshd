@@ -21,6 +21,9 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
 
 ## Bug Fixes
 
+* [GH-502](https://github.com/apache/mina-sshd/issues/502) Don't load security provider classes reflectively
+  for Bouncy Castle and `net.isp.crypto:eddsa:0.3.0`.
+
 ## Major Code Re-factoring
 
 * The classes dealing with serializing or de-serializing public and private keys have been de-generified,

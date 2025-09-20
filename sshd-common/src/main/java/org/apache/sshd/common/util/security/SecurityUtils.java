@@ -49,6 +49,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import javax.crypto.Cipher;
 import javax.crypto.KeyAgreement;
@@ -74,6 +75,8 @@ import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleEncryptedPr
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleGeneratorHostKeyProvider;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleKeyPairResourceParser;
 import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleRandomFactory;
+import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar;
+import org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.OpenSSHEd25519PrivateKeyEntryDecoder;
 import org.apache.sshd.common.util.security.eddsa.jce.JcePublicKeyFactory;
@@ -155,6 +158,8 @@ public final class SecurityUtils {
     private static final AtomicInteger MIN_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
     private static final AtomicInteger MAX_DHG_KEY_SIZE_HOLDER = new AtomicInteger(0);
 
+    private static final Map<String, Supplier<SecurityProviderRegistrar>> REGISTRAR_FACTORIES = buildRegistrarsMap();
+
     /*
      * NOTE: we use a LinkedHashMap in order to preserve registration order in case several providers support the same
      * security entity
@@ -174,6 +179,19 @@ public final class SecurityUtils {
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
+    }
+
+    private static Map<String, Supplier<SecurityProviderRegistrar>> buildRegistrarsMap() {
+        Map<String, Supplier<SecurityProviderRegistrar>> result = new HashMap<>();
+        result.put("org.apache.sshd.common.util.security.SunJCESecurityProviderRegistrar",
+                SunJCESecurityProviderRegistrar::new);
+        result.put("org.apache.sshd.common.util.security.SunECSecurityProviderRegistrar", //
+                SunECSecurityProviderRegistrar::new);
+        result.put("org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar",
+                EdDSASecurityProviderRegistrar::new);
+        result.put("org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar",
+                BouncyCastleSecurityProviderRegistrar::new);
+        return Collections.unmodifiableMap(result);
     }
 
     /**
@@ -423,22 +441,26 @@ public final class SecurityUtils {
                 boolean debugEnabled = logger.isDebugEnabled();
                 for (String registrarClass : classes) {
                     SecurityProviderRegistrar r;
-                    try {
-                        r = ThreadUtils.createDefaultInstance(SecurityUtils.class, SecurityProviderRegistrar.class,
-                                registrarClass);
-                    } catch (ReflectiveOperationException t) {
-                        Throwable e = ExceptionUtils.peelException(t);
-                        logger.error("Failed ({}) to create default {} registrar instance: {}",
-                                e.getClass().getSimpleName(), registrarClass, e.getMessage());
-                        if (e instanceof RuntimeException) {
-                            throw (RuntimeException) e;
-                        } else if (e instanceof Error) {
-                            throw (Error) e;
-                        } else {
-                            throw new IllegalStateException(e);
+                    Supplier<SecurityProviderRegistrar> factory = REGISTRAR_FACTORIES.get(registrarClass);
+                    if (factory != null) {
+                        r = factory.get();
+                    } else {
+                        try {
+                            r = ThreadUtils.createDefaultInstance(SecurityUtils.class, SecurityProviderRegistrar.class,
+                                    registrarClass);
+                        } catch (ReflectiveOperationException t) {
+                            Throwable e = ExceptionUtils.peelException(t);
+                            logger.error("Failed ({}) to create default {} registrar instance: {}",
+                                    e.getClass().getSimpleName(), registrarClass, e.getMessage());
+                            if (e instanceof RuntimeException) {
+                                throw (RuntimeException) e;
+                            } else if (e instanceof Error) {
+                                throw (Error) e;
+                            } else {
+                                throw new IllegalStateException(e);
+                            }
                         }
                     }
-
                     String name = r.getName();
                     SecurityProviderRegistrar registeredInstance = registerSecurityProvider(r);
                     if (registeredInstance == null) {
