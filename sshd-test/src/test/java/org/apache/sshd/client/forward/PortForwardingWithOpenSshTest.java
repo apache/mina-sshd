@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.common.forward.DefaultForwarder;
 import org.apache.sshd.common.forward.DefaultForwarderFactory;
 import org.apache.sshd.common.forward.Forwarder;
@@ -42,7 +43,6 @@ import org.apache.sshd.server.channel.ChannelSessionFactory;
 import org.apache.sshd.server.forward.AcceptAllForwardingFilter;
 import org.apache.sshd.server.forward.DirectTcpipFactory;
 import org.apache.sshd.server.forward.ForwardedTcpipFactory;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -55,7 +55,6 @@ import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 /**
@@ -78,8 +77,7 @@ import org.testcontainers.utility.MountableFile;
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1055">SSHD-1055</a>
  * @see <a href="https://issues.apache.org/jira/browse/SSHD-1269">SSHD-1269</a>
  */
-@Testcontainers(disabledWithoutDocker = true)
-class PortForwardingWithOpenSshTest extends BaseTestSupport {
+class PortForwardingWithOpenSshTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(PortForwardingWithOpenSshTest.class);
 
@@ -177,6 +175,7 @@ class PortForwardingWithOpenSshTest extends BaseTestSupport {
         @SuppressWarnings("resource")
         GenericContainer<?> sshdContainer = new GenericContainer<>(
                 new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.16") //
+                        .run(discriminate()) //
                         .run("apk --update add openssh openssh-server") // Installs OpenSSH 9.0
                         .run("mkdir -p /root/.ssh") // Create the SSH config directory
                         .entryPoint("/entrypoint.sh") //

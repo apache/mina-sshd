@@ -26,13 +26,13 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.config.DefaultNewHostKeysHandler;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -43,11 +43,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-@Testcontainers(disabledWithoutDocker = true)
-public class HostBoundPubKeyAuthTest extends BaseTestSupport {
+public class HostBoundPubKeyAuthTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(HostBoundPubKeyAuthTest.class);
 
@@ -62,6 +60,7 @@ public class HostBoundPubKeyAuthTest extends BaseTestSupport {
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(
             new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.16")
+                    .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.0
                     .run("ssh-keygen -A") // Generate multiple host keys
                     .run("adduser -D bob") // Add a user

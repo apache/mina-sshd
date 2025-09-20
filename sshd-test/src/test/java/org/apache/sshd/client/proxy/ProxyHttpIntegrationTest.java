@@ -25,10 +25,10 @@ import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommandExecutionHelper;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterAll;
@@ -36,16 +36,15 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.testcontainers.Testcontainers;
 import org.testcontainers.containers.GenericContainer;
 import org.testcontainers.containers.output.Slf4jLogConsumer;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 /**
  * Test client connection through tinyproxy (HTTP CONNECT), anonymous.
  */
-@Testcontainers(disabledWithoutDocker = true)
-class ProxyHttpIntegrationTest extends BaseTestSupport {
+class ProxyHttpIntegrationTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProxyHttpIntegrationTest.class);
 
@@ -72,7 +71,7 @@ class ProxyHttpIntegrationTest extends BaseTestSupport {
             }
         });
         server.start();
-        org.testcontainers.Testcontainers.exposeHostPorts(server.getPort());
+        Testcontainers.exposeHostPorts(server.getPort());
         proxy.start();
     }
 

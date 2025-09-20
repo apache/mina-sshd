@@ -23,6 +23,7 @@ import java.io.PipedInputStream;
 import java.io.PipedOutputStream;
 import java.nio.charset.StandardCharsets;
 
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.client.ClientFactoryManager;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -32,7 +33,6 @@ import org.apache.sshd.client.session.SessionFactory;
 import org.apache.sshd.common.channel.StreamingChannel;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +44,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.images.builder.dockerfile.DockerfileBuilder;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 /**
@@ -55,8 +54,7 @@ import org.testcontainers.utility.MountableFile;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  * @see    <A HREF="https://github.com/apache/mina-sshd/issues/445">Terrapin Mitigation: &quot;strict-kex&quot;</A>
  */
-@Testcontainers(disabledWithoutDocker = true)
-class StrictKexInteroperabilityTest extends BaseTestSupport {
+class StrictKexInteroperabilityTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(StrictKexInteroperabilityTest.class);
 
@@ -88,6 +86,7 @@ class StrictKexInteroperabilityTest extends BaseTestSupport {
         if (!withStrictKex) {
             return builder
                     .from("alpine:3.9.2") //
+                    .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH 7.9_p1-r6
                     .run("echo 'PrintMotd no' >> /etc/ssh/sshd_config") //
                     .run("ssh-keygen -A") // Generate multiple host keys
@@ -96,6 +95,7 @@ class StrictKexInteroperabilityTest extends BaseTestSupport {
         } else {
             return builder
                     .from("alpine:3.19") //
+                    .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.6
                     .run("ssh-keygen -A") // Generate multiple host keys
                     .run("adduser -D bob") // Add a user

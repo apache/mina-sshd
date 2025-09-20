@@ -23,12 +23,12 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.AfterEach;
@@ -41,16 +41,14 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 /**
- * Test ciphers against OpenSSH. Force resetting ciphers every time to verify that they are res-initialized correctly.
+ * Test ciphers against OpenSSH. Force resetting ciphers every time to verify that they are re-initialized correctly.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Testcontainers(disabledWithoutDocker = true)
-class OpenSshCipherTest extends BaseTestSupport {
+class OpenSshCipherTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenSshCipherTest.class);
 
@@ -61,6 +59,7 @@ class OpenSshCipherTest extends BaseTestSupport {
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
             .withDockerfileFromBuilder(builder -> builder.from("alpine:3.19") //
+                    .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH
                     // Enable deprecated ciphers
                     .run("echo 'Ciphers +aes128-cbc,aes192-cbc,aes256-cbc,3des-cbc' >> /etc/ssh/sshd_config")

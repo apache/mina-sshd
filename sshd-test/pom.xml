@@ -159,6 +159,7 @@
                         </configuration>
                         <executions>
                             <execution>
+                                <id>multirelease</id>
                                 <goals>
                                     <goal>integration-test</goal>
                                     <goal>verify</goal>

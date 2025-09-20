@@ -21,13 +21,13 @@ package org.apache.sshd.client.kex;
 import java.security.Security;
 import java.util.Collections;
 
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.client.ClientBuilder;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assumptions;
@@ -40,7 +40,6 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
 /**
@@ -48,8 +47,7 @@ import org.testcontainers.utility.MountableFile;
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
-@Testcontainers(disabledWithoutDocker = true)
-class OpenSshMlKemTest extends BaseTestSupport {
+class OpenSshMlKemTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(OpenSshMlKemTest.class);
 
@@ -60,6 +58,7 @@ class OpenSshMlKemTest extends BaseTestSupport {
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
             .withDockerfileFromBuilder(builder -> builder.from("alpine:3.21") //
+                    .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.9
                     .run("ssh-keygen -A") // Generate multiple host keys
                     .run("adduser -D bob") // Add a user

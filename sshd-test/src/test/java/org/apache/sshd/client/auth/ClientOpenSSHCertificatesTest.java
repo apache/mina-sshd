@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.sshd.AbstractContainerTestBase;
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
@@ -39,7 +40,6 @@ import org.apache.sshd.common.keyprovider.KeyIdentityProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.io.IoUtils;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,11 +52,9 @@ import org.testcontainers.containers.output.Slf4jLogConsumer;
 import org.testcontainers.containers.wait.strategy.Wait;
 import org.testcontainers.images.builder.ImageFromDockerfile;
 import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 import org.testcontainers.utility.MountableFile;
 
-@Testcontainers(disabledWithoutDocker = true)
-public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
+public class ClientOpenSSHCertificatesTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(ClientOpenSSHCertificatesTest.class);
 
@@ -88,6 +86,7 @@ public class ClientOpenSSHCertificatesTest extends BaseTestSupport {
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(
             new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.19") //
+                    .run(discriminate()) //
                     .run("apk --update add openssh openssh-server") // Install
                     .run("rm -rf /var/cache/apk/*") // Clear cache
                     .run("addgroup customusers") // Give our users a group
