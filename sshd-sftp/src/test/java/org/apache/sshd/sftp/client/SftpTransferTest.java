@@ -29,17 +29,24 @@ import java.util.Date;
 import java.util.List;
 
 import org.apache.sshd.client.session.ClientSession;
+import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.sftp.client.fs.SftpFileSystem;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
 @TestMethodOrder(MethodName.class)
 public class SftpTransferTest extends AbstractSftpClientTestSupport {
+
+    private static final Logger LOG = LoggerFactory.getLogger(SftpTransferTest.class);
 
     private static final int BUFFER_SIZE = 8192;
 
@@ -54,6 +61,16 @@ public class SftpTransferTest extends AbstractSftpClientTestSupport {
         params.add(Long.valueOf(0));
         params.add(Long.valueOf(65536));
         return params;
+    }
+
+    @BeforeAll
+    static void logExceptions() {
+        sshd.addSessionListener(new SessionListener() {
+            @Override
+            public void sessionException(Session session, Throwable t) {
+                LOG.warn("**** Session {} caught exception", session, t);
+            }
+        });
     }
 
     @MethodSource("getParameters")
