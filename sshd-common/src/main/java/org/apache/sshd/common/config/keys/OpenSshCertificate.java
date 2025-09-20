@@ -27,7 +27,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.SortedMap;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.sshd.common.util.ValidateUtils;
 
@@ -226,8 +225,7 @@ public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
      * @return      {@code true} if the certificate is valid according to its timestamps, {@code false} otherwise
      */
     static boolean isValidNow(OpenSshCertificate cert) {
-        long now = TimeUnit.MILLISECONDS.toSeconds(System.currentTimeMillis());
-        return Long.compareUnsigned(cert.getValidAfter(), now) <= 0 && Long.compareUnsigned(now, cert.getValidBefore()) < 0;
+        return isValidAt(cert, Instant.now());
     }
 
     /**
