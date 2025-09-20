@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.common.util.security.bouncycastle;
 
-import java.lang.reflect.Field;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -32,7 +31,6 @@ import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.SecurityUtils;
-import org.apache.sshd.common.util.threads.ThreadUtils;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -43,7 +41,6 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     public static final String FIPS_PROVIDER_CLASS = "org.bouncycastle.jcajce.provider.BouncyCastleFipsProvider";
     private static final String BCFIPS_PROVIDER_NAME = "BCFIPS";
     private static final String BC_PROVIDER_NAME = "BC";
-    private static final String NAME_FIELD = "PROVIDER_NAME";
 
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
@@ -124,48 +121,57 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
                 return supported.booleanValue();
             }
             boolean requireFips = SecurityUtils.isFipsMode();
-            Class<?> clazz = null;
-            if (!requireFips) {
-                clazz = ThreadUtils.resolveDefaultClass(getClass(), PROVIDER_CLASS);
-            }
-            if (clazz == null) {
-                clazz = ThreadUtils.resolveDefaultClass(getClass(), FIPS_PROVIDER_CLASS);
-            }
-            if (clazz != null) {
+            if (requireFips) {
                 // Apache MINA sshd assumes that if we can get at the provider class, we can also get any other class we
                 // need. However, and BC-based optional stuff should actually check if it does have the concrete
                 // classes it needs accessible. The FIPS version has only a subset of the full BC.
-                providerClass = clazz.getName();
-                Provider provider = Security.getProvider(BCFIPS_PROVIDER_NAME);
-                if (provider != null) {
+                if (BouncyCastleAccessor.INSTANCE.getProviderClass(FIPS_PROVIDER_CLASS) == null) {
+                    supported = Boolean.FALSE;
+                } else {
+                    providerClass = FIPS_PROVIDER_CLASS;
                     providerName = BCFIPS_PROVIDER_NAME;
-                } else if (!requireFips) {
-                    provider = Security.getProvider(BC_PROVIDER_NAME);
-                    if (provider != null) {
-                        providerName = BC_PROVIDER_NAME;
-                    }
+                    supported = Boolean.TRUE;
                 }
-                if (providerName == null) {
-                    Field f;
-                    try {
-                        f = clazz.getField(NAME_FIELD);
-                        Object nameValue = f.get(null);
-                        if (nameValue instanceof String) {
-                            providerName = nameValue.toString();
-                        }
-                    } catch (Exception e) {
-                        log.warn("Alleged Bouncy Castle class {} has no {}; ignoring this provider.", providerClass, NAME_FIELD,
-                                e);
-                    }
-                }
-                supported = Boolean.valueOf(providerName != null);
             } else {
-                supported = Boolean.FALSE;
+                // Check first what providers we have installed in the system. We also need to be able to load classes
+                // from there, so check if we can load the class.
+                boolean fipsInstalled = Security.getProvider(BCFIPS_PROVIDER_NAME) != null;
+                boolean bcInstalled = Security.getProvider(BC_PROVIDER_NAME) != null;
+                boolean haveFips = BouncyCastleAccessor.INSTANCE.getProviderClass(FIPS_PROVIDER_CLASS) != null;
+                boolean haveBc = BouncyCastleAccessor.INSTANCE.getProviderClass(PROVIDER_CLASS) != null;
+                if (fipsInstalled && haveFips) {
+                    providerClass = FIPS_PROVIDER_CLASS;
+                    providerName = BCFIPS_PROVIDER_NAME;
+                    supported = Boolean.TRUE;
+                } else if (bcInstalled && haveBc) {
+                    providerClass = PROVIDER_CLASS;
+                    providerName = BC_PROVIDER_NAME;
+                    supported = Boolean.TRUE;
+                } else if (haveFips) {
+                    providerClass = FIPS_PROVIDER_CLASS;
+                    providerName = BCFIPS_PROVIDER_NAME;
+                    supported = Boolean.TRUE;
+                } else if (haveBc) {
+                    providerClass = PROVIDER_CLASS;
+                    providerName = BC_PROVIDER_NAME;
+                    supported = Boolean.TRUE;
+                } else {
+                    supported = Boolean.FALSE;
+                }
             }
             supportHolder.set(supported);
         }
 
         return supported.booleanValue();
+    }
+
+    @Override
+    protected Provider createProviderInstance(String providerClassName) throws ReflectiveOperationException {
+        Provider result = BouncyCastleAccessor.INSTANCE.createProvider(providerClassName);
+        if (result == null) {
+            throw new ReflectiveOperationException("Cannot instantiate " + providerClassName);
+        }
+        return result;
     }
 
     @Override

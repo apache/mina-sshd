@@ -30,10 +30,22 @@ final class BouncyCastleEdDSAAccessor {
 
     public boolean isSupported() {
         try {
-            // Just something that forces class loading.
-            return EdDSAKey.class != null;
+            return Inner.isSupported();
         } catch (Throwable t) {
             return false;
         }
+    }
+
+    private static final class Inner {
+
+        private Inner() {
+            super();
+        }
+
+        static boolean isSupported() {
+            // Just something that forces class loading.
+            return EdDSAKey.class != null;
+        }
+
     }
 }
