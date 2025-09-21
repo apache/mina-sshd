@@ -274,8 +274,12 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
             return false;
         }
 
-        if ((values.length == 1) && isAllOptionsValue(values[0])) {
-            return true;
+        if (values.length == 1) {
+            if (isAllOptionsValue(values[0])) {
+                return true;
+            }
+        } else {
+            Arrays.sort(values, String.CASE_INSENSITIVE_ORDER);
         }
 
         String effectiveName = getEffectiveSecurityEntityName(entityType, name);
