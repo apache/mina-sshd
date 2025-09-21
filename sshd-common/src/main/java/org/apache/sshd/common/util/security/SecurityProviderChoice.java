@@ -71,11 +71,11 @@ public interface SecurityProviderChoice extends NamedResource {
         return getName();
     }
 
-    default <F> SecurityEntityFactory<F> getFactory(Class<F> entityType) throws ReflectiveOperationException {
+    default SecurityEntityFactory getFactory() {
         if (isNamedProviderUsed()) {
-            return SecurityEntityFactory.toNamedProviderFactory(entityType, getProviderName());
+            return new SecurityEntityFactory.Named(getProviderName());
         }
-        return SecurityEntityFactory.toProviderInstanceFactory(entityType, getSecurityProvider());
+        return new SecurityEntityFactory.ByProvider(getSecurityProvider());
     }
 
     /**

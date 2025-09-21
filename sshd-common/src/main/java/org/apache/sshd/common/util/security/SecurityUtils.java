@@ -169,7 +169,10 @@ public final class SecurityUtils {
     // If an entry already exists for the named provider, then it overrides its SecurityProviderRegistrar#isEnabled()
     private static final Set<String> APRIORI_DISABLED_PROVIDERS = new TreeSet<>();
     private static final AtomicBoolean REGISTRATION_STATE_HOLDER = new AtomicBoolean(false);
-    private static final Map<Class<?>, Map<String, SecurityEntityFactory<?>>> SECURITY_ENTITY_FACTORIES = new HashMap<>();
+    /*
+     * This map keys security entities by algorithm names to SecurityEntityProviders.
+     */
+    private static final Map<Class<?>, Map<String, SecurityEntityFactory>> SECURITY_ENTITY_FACTORIES = new HashMap<>();
 
     private static final AtomicReference<SecurityProviderChoice> DEFAULT_PROVIDER_HOLDER = new AtomicReference<>();
 
@@ -667,27 +670,25 @@ public final class SecurityUtils {
 
     //////////////////////////// Security entities factories /////////////////////////////
 
-    @SuppressWarnings("unchecked")
-    public static <T> SecurityEntityFactory<T> resolveSecurityEntityFactory(
-            Class<T> entityType, String algorithm, Predicate<? super SecurityProviderRegistrar> entitySelector) {
-        Map<String, SecurityEntityFactory<?>> factoriesMap;
+    public static SecurityEntityFactory resolveSecurityEntityFactory(
+            Class<?> entityType, String algorithm,
+            Predicate<? super SecurityProviderRegistrar> entitySelector) {
+        Map<String, SecurityEntityFactory> factoriesMap;
         synchronized (SECURITY_ENTITY_FACTORIES) {
             factoriesMap = SECURITY_ENTITY_FACTORIES.computeIfAbsent(
                     entityType, k -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER));
         }
 
-        String effectiveName = SecurityProviderRegistrar.getEffectiveSecurityEntityName(entityType, algorithm);
-        SecurityEntityFactory<?> factoryEntry;
+        SecurityEntityFactory provider;
         synchronized (factoriesMap) {
-            factoryEntry = factoriesMap.computeIfAbsent(
-                    effectiveName, k -> createSecurityEntityFactory(entityType, entitySelector));
+            provider = factoriesMap.computeIfAbsent(algorithm, k -> createSecurityEntityFactory(entitySelector));
         }
 
-        return (SecurityEntityFactory<T>) factoryEntry;
+        return provider;
     }
 
-    public static <T> SecurityEntityFactory<T> createSecurityEntityFactory(
-            Class<T> entityType, Predicate<? super SecurityProviderRegistrar> entitySelector) {
+    public static SecurityEntityFactory createSecurityEntityFactory(
+            Predicate<? super SecurityProviderRegistrar> entitySelector) {
         register();
 
         SecurityProviderRegistrar registrar;
@@ -696,65 +697,67 @@ public final class SecurityUtils {
                     entitySelector, REGISTERED_PROVIDERS.values());
         }
 
-        try {
-            return SecurityEntityFactory.toFactory(entityType, registrar, getDefaultProviderChoice());
-        } catch (ReflectiveOperationException t) {
-            Throwable e = ExceptionUtils.peelException(t);
-            if (e instanceof RuntimeException) {
-                throw (RuntimeException) e;
-            } else if (e instanceof Error) {
-                throw (Error) e;
-            } else {
-                throw new IllegalArgumentException(e);
+        return getSecurityEntityProvider(registrar, getDefaultProviderChoice());
+    }
+
+    public static SecurityEntityFactory getSecurityEntityProvider(
+            SecurityProviderRegistrar registrar,
+            SecurityProviderChoice defaultProvider) {
+        if (registrar == null) {
+            if ((defaultProvider == null) || (defaultProvider == SecurityProviderChoice.EMPTY)) {
+                return SecurityEntityFactory.Default.INSTANCE;
             }
+            return defaultProvider.getFactory();
         }
+        return registrar.getFactory();
     }
 
     public static KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<KeyFactory> factory = resolveSecurityEntityFactory(KeyFactory.class, algorithm,
+        SecurityEntityFactory factory = resolveSecurityEntityFactory(KeyFactory.class, algorithm,
                 r -> r.isKeyFactorySupported(algorithm));
-        return factory.getInstance(algorithm);
+        return factory.createKeyFactory(algorithm);
     }
 
     public static Cipher getCipher(String transformation) throws GeneralSecurityException {
-        SecurityEntityFactory<Cipher> factory
-                = resolveSecurityEntityFactory(Cipher.class, transformation, r -> r.isCipherSupported(transformation));
-        return factory.getInstance(transformation);
+        String algorithm = SecurityProviderRegistrar.getEffectiveSecurityEntityName(Cipher.class, transformation);
+        SecurityEntityFactory factory = resolveSecurityEntityFactory(Cipher.class, algorithm,
+                r -> r.isCipherSupported(algorithm));
+        return factory.createCipher(transformation);
     }
 
     public static MessageDigest getMessageDigest(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<MessageDigest> factory
+        SecurityEntityFactory factory
                 = resolveSecurityEntityFactory(MessageDigest.class, algorithm, r -> r.isMessageDigestSupported(algorithm));
-        return factory.getInstance(algorithm);
+        return factory.createMessageDigest(algorithm);
     }
 
     public static KeyPairGenerator getKeyPairGenerator(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<KeyPairGenerator> factory = resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm,
+        SecurityEntityFactory factory = resolveSecurityEntityFactory(KeyPairGenerator.class, algorithm,
                 r -> r.isKeyPairGeneratorSupported(algorithm));
-        return factory.getInstance(algorithm);
+        return factory.createKeyPairGenerator(algorithm);
     }
 
     public static KeyAgreement getKeyAgreement(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<KeyAgreement> factory
+        SecurityEntityFactory factory
                 = resolveSecurityEntityFactory(KeyAgreement.class, algorithm, r -> r.isKeyAgreementSupported(algorithm));
-        return factory.getInstance(algorithm);
+        return factory.createKeyAgreement(algorithm);
     }
 
     public static Mac getMac(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<Mac> factory
+        SecurityEntityFactory factory
                 = resolveSecurityEntityFactory(Mac.class, algorithm, r -> r.isMacSupported(algorithm));
-        return factory.getInstance(algorithm);
+        return factory.createMac(algorithm);
     }
 
     public static Signature getSignature(String algorithm) throws GeneralSecurityException {
-        SecurityEntityFactory<Signature> factory
+        SecurityEntityFactory factory
                 = resolveSecurityEntityFactory(Signature.class, algorithm, r -> r.isSignatureSupported(algorithm));
-        return factory.getInstance(algorithm);
+        return factory.createSignature(algorithm);
     }
 
     public static CertificateFactory getCertificateFactory(String type) throws GeneralSecurityException {
-        SecurityEntityFactory<CertificateFactory> factory
+        SecurityEntityFactory factory
                 = resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
-        return factory.getInstance(type);
+        return factory.createCertificateFactory(type);
     }
 }

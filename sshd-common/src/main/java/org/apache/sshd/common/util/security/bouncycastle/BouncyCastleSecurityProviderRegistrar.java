@@ -50,6 +50,8 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     private String providerClass;
     private String providerName;
 
+    private boolean useName = true;
+
     public BouncyCastleSecurityProviderRegistrar() {
         super(SecurityUtils.BOUNCY_CASTLE);
     }
@@ -57,6 +59,11 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     @Override
     public String getProviderName() {
         return providerName;
+    }
+
+    @Override
+    public boolean isNamedProviderUsed() {
+        return useName;
     }
 
     @Override
@@ -142,19 +149,23 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
                 if (fipsInstalled && haveFips) {
                     providerClass = FIPS_PROVIDER_CLASS;
                     providerName = BCFIPS_PROVIDER_NAME;
+                    useName = true;
                     supported = Boolean.TRUE;
                 } else if (bcInstalled && haveBc) {
                     providerClass = PROVIDER_CLASS;
                     providerName = BC_PROVIDER_NAME;
+                    useName = true;
                     supported = Boolean.TRUE;
                 } else if (haveFips) {
                     providerClass = FIPS_PROVIDER_CLASS;
                     providerName = BCFIPS_PROVIDER_NAME;
+                    useName = false;
                     supported = Boolean.TRUE;
                 } else if (haveBc) {
                     providerClass = PROVIDER_CLASS;
                     providerName = BC_PROVIDER_NAME;
                     supported = Boolean.TRUE;
+                    useName = false;
                 } else {
                     supported = Boolean.FALSE;
                 }

@@ -24,6 +24,7 @@ import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.PublicKey;
+import java.security.Security;
 import java.security.Signature;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,6 +43,8 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     // Do not define a static registrar instance to minimize class loading issues
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
 
+    private boolean useName = true;
+
     public EdDSASecurityProviderRegistrar() {
         super(SecurityUtils.EDDSA);
     }
@@ -49,6 +52,11 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     @Override
     public boolean isEnabled() {
         return !SecurityUtils.isFipsMode() && super.isEnabled();
+    }
+
+    @Override
+    public boolean isNamedProviderUsed() {
+        return useName;
     }
 
     @Override
@@ -93,6 +101,10 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
             }
 
             supported = Boolean.valueOf(EdDSAAccessor.INSTANCE.isSupported());
+            if (supported.booleanValue()) {
+                Provider provider = Security.getProvider(getProviderName());
+                useName = provider != null;
+            }
             supportHolder.set(supported);
         }
 
@@ -110,33 +122,8 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
     }
 
     @Override
-    public <F> SecurityEntityFactory<F> getFactory(Class<F> entityType) throws ReflectiveOperationException {
-        // Return factories that map the algorithm names to the non-standard ones used by net.i2p.
-        // That way the rest of our code can work with the standard names.
-        if (KeyPairGenerator.class.isAssignableFrom(entityType) || KeyFactory.class.isAssignableFrom(entityType)) {
-            return new DelegatingSecurityEntityFactory<F>(super.getFactory(entityType)) {
-
-                @Override
-                protected String effectiveAlgorithm(String originalAlgorithm) {
-                    if (SecurityUtils.ED25519.equalsIgnoreCase(originalAlgorithm)) {
-                        return SecurityUtils.EDDSA;
-                    }
-                    return originalAlgorithm;
-                }
-            };
-        } else if (Signature.class.isAssignableFrom(entityType)) {
-            return new DelegatingSecurityEntityFactory<F>(super.getFactory(entityType)) {
-
-                @Override
-                protected String effectiveAlgorithm(String originalAlgorithm) {
-                    if (SecurityUtils.ED25519.equalsIgnoreCase(originalAlgorithm)) {
-                        return "NONEwithEdDSA";
-                    }
-                    return originalAlgorithm;
-                }
-            };
-        }
-        return super.getFactory(entityType);
+    public SecurityEntityFactory getFactory() {
+        return new DelegatingSecurityEntityProvider(super.getFactory());
     }
 
     @Override
@@ -148,29 +135,39 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
         return super.getPublicKey(key);
     }
 
-    private abstract static class DelegatingSecurityEntityFactory<F> implements SecurityEntityFactory<F> {
+    private static class DelegatingSecurityEntityProvider implements SecurityEntityFactory {
 
-        private SecurityEntityFactory<F> delegate;
+        private SecurityEntityFactory delegate;
 
-        DelegatingSecurityEntityFactory(SecurityEntityFactory<F> delegate) {
+        DelegatingSecurityEntityProvider(SecurityEntityFactory delegate) {
             this.delegate = delegate;
         }
 
         @Override
-        public Class<F> getEntityType() {
-            return delegate.getEntityType();
+        public KeyFactory createKeyFactory(String algorithm) throws GeneralSecurityException {
+            String effective = algorithm;
+            if (SecurityUtils.ED25519.equalsIgnoreCase(effective)) {
+                effective = SecurityUtils.EDDSA;
+            }
+            return delegate.createKeyFactory(effective);
         }
 
         @Override
-        public F getInstance(String algorithm) throws GeneralSecurityException {
-            return delegate.getInstance(effectiveAlgorithm(algorithm));
+        public KeyPairGenerator createKeyPairGenerator(String algorithm) throws GeneralSecurityException {
+            String effective = algorithm;
+            if (SecurityUtils.ED25519.equalsIgnoreCase(effective)) {
+                effective = SecurityUtils.EDDSA;
+            }
+            return delegate.createKeyPairGenerator(effective);
         }
 
-        protected abstract String effectiveAlgorithm(String originalAlgorithm);
-
         @Override
-        public String toString() {
-            return delegate.toString();
+        public Signature createSignature(String algorithm) throws GeneralSecurityException {
+            String effective = algorithm;
+            if (SecurityUtils.ED25519.equalsIgnoreCase(effective)) {
+                effective = "NONEwithEdDSA";
+            }
+            return delegate.createSignature(effective);
         }
     }
 }
