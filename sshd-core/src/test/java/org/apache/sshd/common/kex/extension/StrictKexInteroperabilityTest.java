@@ -92,7 +92,7 @@ public class StrictKexInteroperabilityTest extends BaseTestSupport {
                     .run("echo 'bob:passwordBob' | chpasswd"); // Give it a password to unlock the user
         } else {
             return builder
-                    .from("alpine:20231219") //
+                    .from("alpine:3.19") //
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.6
                     .run("ssh-keygen -A") // Generate multiple host keys
                     .run("adduser -D bob") // Add a user
