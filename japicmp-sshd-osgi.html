@@ -846,6 +846,26 @@
 <td><img src="https://img.shields.io/badge/Annotation_added-yellow" alt="Annotation added" title="Annotation added" /></td></tr>
 <tr class="b">
 <td>Modified</td>
+<td><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory">org.apache.sshd.common.util.security.SecurityEntityFactory</a></td>
+<td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
+<td><img src="https://img.shields.io/badge/Class_generic_template_changed-orange" alt="Class generic template changed" title="Class generic template changed" /> <img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /> <img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory.24byprovider">org.apache.sshd.common.util.security.SecurityEntityFactory$ByProvider</a></td>
+<td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
+<td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /> <img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory.24default">org.apache.sshd.common.util.security.SecurityEntityFactory$Default</a></td>
+<td><img src="https://img.shields.io/badge/Compatible-green" alt="Compatible" title="Compatible" /></td>
+<td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /> <img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory.24named">org.apache.sshd.common.util.security.SecurityEntityFactory$Named</a></td>
+<td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
+<td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /> <img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Modified</td>
 <td><a href="#user-content-org.apache.sshd.common.util.security.securityproviderchoice">org.apache.sshd.common.util.security.SecurityProviderChoice</a></td>
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
@@ -858,7 +878,7 @@
 <td>Modified</td>
 <td><a href="#user-content-org.apache.sshd.common.util.security.securityutils">org.apache.sshd.common.util.security.SecurityUtils</a></td>
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
-<td><img src="https://img.shields.io/badge/Annotation_removed-yellow" alt="Annotation removed" title="Annotation removed" /> <img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /> <img src="https://img.shields.io/badge/Method_return_type_generics_changed-orange" alt="Method return type generics changed" title="Method return type generics changed" /> <img src="https://img.shields.io/badge/Field_removed-red" alt="Field removed" title="Field removed" /></td></tr>
+<td><img src="https://img.shields.io/badge/Annotation_removed-yellow" alt="Annotation removed" title="Annotation removed" /> <img src="https://img.shields.io/badge/Class_generic_template_changed-orange" alt="Class generic template changed" title="Class generic template changed" /> <img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /> <img src="https://img.shields.io/badge/Method_return_type_generics_changed-orange" alt="Method return type generics changed" title="Method return type generics changed" /> <img src="https://img.shields.io/badge/Method_parameter_generics_changed-orange" alt="Method parameter generics changed" title="Method parameter generics changed" /> <img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /> <img src="https://img.shields.io/badge/Field_removed-red" alt="Field removed" title="Field removed" /></td></tr>
 <tr class="a">
 <td>Added</td>
 <td><a href="#user-content-org.apache.sshd.common.util.security.sunecsecurityproviderregistrar">org.apache.sshd.common.util.security.SunECSecurityProviderRegistrar</a></td>
@@ -15165,6 +15185,705 @@
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
 <hr />
+<p><a id="user-content-org.apache.sshd.common.util.security.securityentityfactory"></a></p></section></section><section><a id="org.apache.sshd.common.util.security.SecurityEntityFactory"></a>
+<h3><code>org.apache.sshd.common.util.security.SecurityEntityFactory</code></h3>
+<ul>
+
+<li>[ ] Binary-compatible</li>
+<li>[ ] Source-compatible</li>
+<li>[X] Serialization-compatible</li>
+</ul>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Type</th>
+<th>Name</th>
+<th>Extends</th>
+<th>JDK</th>
+<th>Serialization</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Modified</td>
+<td><code>public</code> <code>abstract</code></td>
+<td>Interface</td>
+<td><code>SecurityEntityFactory</code></td>
+<td><a href="#null" title="java.lang.Object"><code>Object</code></a></td>
+<td>JDK 8</td>
+<td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
+<td><img src="https://img.shields.io/badge/Class_generic_template_changed-orange" alt="Class generic template changed" title="Class generic template changed" /></td></tr></tbody>
+</table>
+<section><a id="Generics_18"></a>
+<h4>Generics</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Name</th>
+<th>Extends</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Removed</td>
+<td><del><code>T</code></del></td>
+<td><del><a href="#null" title="java.lang.Object"><code>Object</code></a></del></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+</section><section><a id="Methods_110"></a>
+<h4>Methods</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Generics</th>
+<th>Type</th>
+<th>Method</th>
+<th>Annotations</th>
+<th>Throws</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.cert.CertificateFactory"><code>CertificateFactory</code></a></strong></td>
+<td><strong><code>createCertificateFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Cipher"><code>Cipher</code></a></strong></td>
+<td><strong><code>createCipher</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.KeyAgreement"><code>KeyAgreement</code></a></strong></td>
+<td><strong><code>createKeyAgreement</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyFactory"><code>KeyFactory</code></a></strong></td>
+<td><strong><code>createKeyFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyPairGenerator"><code>KeyPairGenerator</code></a></strong></td>
+<td><strong><code>createKeyPairGenerator</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Mac"><code>Mac</code></a></strong></td>
+<td><strong><code>createMac</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.MessageDigest"><code>MessageDigest</code></a></strong></td>
+<td><strong><code>createMessageDigest</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.SecureRandom"><code>SecureRandom</code></a></strong></td>
+<td><strong><code>createSecureRandom</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.Signature"><code>Signature</code></a></strong></td>
+<td><strong><code>createSignature</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr>
+<tr class="a">
+<td>Removed</td>
+<td><del><code>public</code></del> <del><code>abstract</code></del></td>
+<td> </td>
+<td><del><a href="#null" title="java.lang.Class<T>"><code>Class&lt;T&gt;</code></a></del></td>
+<td><del><code>getEntityType</code></del>()</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="b">
+<td>Removed</td>
+<td><del><code>public</code></del> <del><code>abstract</code></del></td>
+<td> </td>
+<td><del><a href="#null" title="java.lang.Object"><code>Object</code></a></del></td>
+<td><del><code>getInstance</code></del>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="a">
+<td>Removed</td>
+<td><del><code>static</code></del> <del><code>public</code></del></td>
+<td>&lt;<del><a href="#null" title="F extends java.lang.Object"><code>F extends Object</code></a></del>&gt;</td>
+<td><del><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<F>"><code>SecurityEntityFactory&lt;F&gt;</code></a></del></td>
+<td><del><code>toDefaultFactory</code></del>(<a href="#null" title="java.lang.Class<F>"><code>Class&lt;F&gt;</code></a>)</td>
+<td> </td>
+<td><del><a href="#null" title="java.lang.ReflectiveOperationException"><code>ReflectiveOperationException</code></a></del></td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="b">
+<td>Removed</td>
+<td><del><code>static</code></del> <del><code>public</code></del></td>
+<td>&lt;<del><a href="#null" title="F extends java.lang.Object"><code>F extends Object</code></a></del>&gt;</td>
+<td><del><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<F>"><code>SecurityEntityFactory&lt;F&gt;</code></a></del></td>
+<td><del><code>toFactory</code></del>(<a href="#null" title="java.lang.Class<F>"><code>Class&lt;F&gt;</code></a>, <a href="#user-content-org.apache.sshd.common.util.security.securityproviderchoice" title="org.apache.sshd.common.util.security.SecurityProviderChoice"><code>SecurityProviderChoice</code></a>, <a href="#user-content-org.apache.sshd.common.util.security.securityproviderchoice" title="org.apache.sshd.common.util.security.SecurityProviderChoice"><code>SecurityProviderChoice</code></a>)</td>
+<td> </td>
+<td><del><a href="#null" title="java.lang.ReflectiveOperationException"><code>ReflectiveOperationException</code></a></del></td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="a">
+<td>Removed</td>
+<td><del><code>static</code></del> <del><code>public</code></del></td>
+<td>&lt;<del><a href="#null" title="F extends java.lang.Object"><code>F extends Object</code></a></del>&gt;</td>
+<td><del><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<F>"><code>SecurityEntityFactory&lt;F&gt;</code></a></del></td>
+<td><del><code>toNamedProviderFactory</code></del>(<a href="#null" title="java.lang.Class<F>"><code>Class&lt;F&gt;</code></a>, <a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><del><a href="#null" title="java.lang.ReflectiveOperationException"><code>ReflectiveOperationException</code></a></del></td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="b">
+<td>Removed</td>
+<td><del><code>static</code></del> <del><code>public</code></del></td>
+<td>&lt;<del><a href="#null" title="F extends java.lang.Object"><code>F extends Object</code></a></del>&gt;</td>
+<td><del><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<F>"><code>SecurityEntityFactory&lt;F&gt;</code></a></del></td>
+<td><del><code>toProviderInstanceFactory</code></del>(<a href="#null" title="java.lang.Class<F>"><code>Class&lt;F&gt;</code></a>, <a href="#null" title="java.security.Provider"><code>Provider</code></a>)</td>
+<td> </td>
+<td><del><a href="#null" title="java.lang.ReflectiveOperationException"><code>ReflectiveOperationException</code></a></del></td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
+</table>
+<hr />
+<p><a id="user-content-org.apache.sshd.common.util.security.securityentityfactory$byprovider"></a></p></section></section><section><a id="org.apache.sshd.common.util.security.SecurityEntityFactory.24ByProvider"></a>
+<h3><code>org.apache.sshd.common.util.security.SecurityEntityFactory$ByProvider</code></h3>
+<ul>
+
+<li>[X] Binary-compatible</li>
+<li>[X] Source-compatible</li>
+<li>[X] Serialization-compatible</li>
+</ul>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Type</th>
+<th>Name</th>
+<th>Extends</th>
+<th>JDK</th>
+<th>Serialization</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td><strong>Class</strong></td>
+<td><strong><code>ByProvider</code></strong></td>
+<td><strong><a href="#null" title="java.lang.Object"><code>Object</code></a></strong></td>
+<td><strong>JDK 8</strong></td>
+<td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
+<td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
+</table>
+<section><a id="Implemented_Interfaces_59"></a>
+<h4>Implemented Interfaces</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Interface</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<T extends java.lang.Object>"><code>SecurityEntityFactory&lt;T&gt;</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+</section><section><a id="Constructors_36"></a>
+<h4>Constructors</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Generics</th>
+<th>Constructor</th>
+<th>Annotations</th>
+<th>Throws</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><code>ByProvider</code></strong>(<a href="#null" title="java.security.Provider"><code>Provider</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+</section><section><a id="Methods_111"></a>
+<h4>Methods</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Generics</th>
+<th>Type</th>
+<th>Method</th>
+<th>Annotations</th>
+<th>Throws</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.cert.CertificateFactory"><code>CertificateFactory</code></a></strong></td>
+<td><strong><code>createCertificateFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Cipher"><code>Cipher</code></a></strong></td>
+<td><strong><code>createCipher</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.KeyAgreement"><code>KeyAgreement</code></a></strong></td>
+<td><strong><code>createKeyAgreement</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyFactory"><code>KeyFactory</code></a></strong></td>
+<td><strong><code>createKeyFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyPairGenerator"><code>KeyPairGenerator</code></a></strong></td>
+<td><strong><code>createKeyPairGenerator</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Mac"><code>Mac</code></a></strong></td>
+<td><strong><code>createMac</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.MessageDigest"><code>MessageDigest</code></a></strong></td>
+<td><strong><code>createMessageDigest</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.SecureRandom"><code>SecureRandom</code></a></strong></td>
+<td><strong><code>createSecureRandom</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.Signature"><code>Signature</code></a></strong></td>
+<td><strong><code>createSignature</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
+</table>
+<hr />
+<p><a id="user-content-org.apache.sshd.common.util.security.securityentityfactory$default"></a></p></section></section><section><a id="org.apache.sshd.common.util.security.SecurityEntityFactory.24Default"></a>
+<h3><code>org.apache.sshd.common.util.security.SecurityEntityFactory$Default</code></h3>
+<ul>
+
+<li>[X] Binary-compatible</li>
+<li>[X] Source-compatible</li>
+<li>[X] Serialization-compatible</li>
+</ul>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Type</th>
+<th>Name</th>
+<th>Extends</th>
+<th>JDK</th>
+<th>Serialization</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>final</code></strong> <strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td><strong>Enum</strong></td>
+<td><strong><code>Default</code></strong></td>
+<td><strong><a href="#null" title="java.lang.Enum<E extends java.lang.Enum<E>>"><code>Enum&lt;E&gt;</code></a></strong></td>
+<td><strong>JDK 8</strong></td>
+<td><img src="https://img.shields.io/badge/Compatible-green" alt="Compatible" title="Compatible" /></td>
+<td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
+</table>
+<section><a id="Implemented_Interfaces_60"></a>
+<h4>Implemented Interfaces</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Interface</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><a href="#null" title="java.io.Serializable"><code>Serializable</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><a href="#null" title="java.lang.Comparable<T extends java.lang.Object>"><code>Comparable&lt;T&gt;</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><a href="#null" title="java.lang.constant.Constable"><code>Constable</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<T extends java.lang.Object>"><code>SecurityEntityFactory&lt;T&gt;</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+</section><section><a id="Methods_112"></a>
+<h4>Methods</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Generics</th>
+<th>Type</th>
+<th>Method</th>
+<th>Annotations</th>
+<th>Throws</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.cert.CertificateFactory"><code>CertificateFactory</code></a></strong></td>
+<td><strong><code>createCertificateFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Cipher"><code>Cipher</code></a></strong></td>
+<td><strong><code>createCipher</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.KeyAgreement"><code>KeyAgreement</code></a></strong></td>
+<td><strong><code>createKeyAgreement</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyFactory"><code>KeyFactory</code></a></strong></td>
+<td><strong><code>createKeyFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyPairGenerator"><code>KeyPairGenerator</code></a></strong></td>
+<td><strong><code>createKeyPairGenerator</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Mac"><code>Mac</code></a></strong></td>
+<td><strong><code>createMac</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.MessageDigest"><code>MessageDigest</code></a></strong></td>
+<td><strong><code>createMessageDigest</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.SecureRandom"><code>SecureRandom</code></a></strong></td>
+<td><strong><code>createSecureRandom</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.Signature"><code>Signature</code></a></strong></td>
+<td><strong><code>createSignature</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory$Default"><code>Default</code></a></strong></td>
+<td><strong><code>valueOf</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory$Default[]"><code>Default[]</code></a></strong></td>
+<td><strong><code>values</code></strong>()</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
+</table>
+</section><section><a id="Fields_21"></a>
+<h4>Fields</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Type</th>
+<th>Name</th>
+<th>Annotations</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong> <strong><code>static</code></strong> <strong><code>final</code></strong></td>
+<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory$Default"><code>Default</code></a></strong></td>
+<td><code>INSTANCE</code></td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+<hr />
+<p><a id="user-content-org.apache.sshd.common.util.security.securityentityfactory$named"></a></p></section></section><section><a id="org.apache.sshd.common.util.security.SecurityEntityFactory.24Named"></a>
+<h3><code>org.apache.sshd.common.util.security.SecurityEntityFactory$Named</code></h3>
+<ul>
+
+<li>[X] Binary-compatible</li>
+<li>[X] Source-compatible</li>
+<li>[X] Serialization-compatible</li>
+</ul>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Type</th>
+<th>Name</th>
+<th>Extends</th>
+<th>JDK</th>
+<th>Serialization</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td><strong>Class</strong></td>
+<td><strong><code>Named</code></strong></td>
+<td><strong><a href="#null" title="java.lang.Object"><code>Object</code></a></strong></td>
+<td><strong>JDK 8</strong></td>
+<td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
+<td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
+</table>
+<section><a id="Implemented_Interfaces_61"></a>
+<h4>Implemented Interfaces</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Interface</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<T extends java.lang.Object>"><code>SecurityEntityFactory&lt;T&gt;</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+</section><section><a id="Constructors_37"></a>
+<h4>Constructors</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Generics</th>
+<th>Constructor</th>
+<th>Annotations</th>
+<th>Throws</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><code>Named</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+</table>
+</section><section><a id="Methods_113"></a>
+<h4>Methods</h4>
+<table class="table table-striped">
+<thead>
+<tr class="a">
+<th>Status</th>
+<th>Modifiers</th>
+<th>Generics</th>
+<th>Type</th>
+<th>Method</th>
+<th>Annotations</th>
+<th>Throws</th>
+<th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.cert.CertificateFactory"><code>CertificateFactory</code></a></strong></td>
+<td><strong><code>createCertificateFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Cipher"><code>Cipher</code></a></strong></td>
+<td><strong><code>createCipher</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.KeyAgreement"><code>KeyAgreement</code></a></strong></td>
+<td><strong><code>createKeyAgreement</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyFactory"><code>KeyFactory</code></a></strong></td>
+<td><strong><code>createKeyFactory</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.KeyPairGenerator"><code>KeyPairGenerator</code></a></strong></td>
+<td><strong><code>createKeyPairGenerator</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="javax.crypto.Mac"><code>Mac</code></a></strong></td>
+<td><strong><code>createMac</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.MessageDigest"><code>MessageDigest</code></a></strong></td>
+<td><strong><code>createMessageDigest</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.SecureRandom"><code>SecureRandom</code></a></strong></td>
+<td><strong><code>createSecureRandom</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.Signature"><code>Signature</code></a></strong></td>
+<td><strong><code>createSignature</code></strong>(<a href="#null" title="java.lang.String"><code>String</code></a>)</td>
+<td> </td>
+<td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
+</table>
+<hr />
 <p><a id="user-content-org.apache.sshd.common.util.security.securityproviderchoice"></a></p></section></section><section><a id="org.apache.sshd.common.util.security.SecurityProviderChoice"></a>
 <h3><code>org.apache.sshd.common.util.security.SecurityProviderChoice</code></h3>
 <ul>
@@ -15194,7 +15913,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Methods_110"></a>
+<section><a id="Methods_114"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15210,11 +15929,11 @@
 <tr class="b">
 <td>Added</td>
 <td><strong><code>public</code></strong></td>
-<td>&lt;<strong><a href="#null" title="F extends java.lang.Object"><code>F extends Object</code></a></strong>&gt;</td>
-<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<F>"><code>SecurityEntityFactory&lt;F&gt;</code></a></strong></td>
-<td><strong><code>getFactory</code></strong>(<a href="#null" title="java.lang.Class<F>"><code>Class&lt;F&gt;</code></a>)</td>
 <td> </td>
-<td><strong><a href="#null" title="java.lang.ReflectiveOperationException"><code>ReflectiveOperationException</code></a></strong></td>
+<td><strong><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory" title="org.apache.sshd.common.util.security.SecurityEntityFactory"><code>SecurityEntityFactory</code></a></strong></td>
+<td><strong><code>getFactory</code></strong>()</td>
+<td> </td>
+<td> </td>
 <td><img src="https://img.shields.io/badge/Method_new_default-orange" alt="Method new default" title="Method new default" /></td></tr></tbody>
 </table>
 <hr />
@@ -15247,7 +15966,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_59"></a>
+<section><a id="Implemented_Interfaces_62"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -15260,7 +15979,7 @@
 <td><strong><a href="#user-content-org.apache.sshd.common.util.security.publickeyfactory" title="org.apache.sshd.common.util.security.PublicKeyFactory"><code>PublicKeyFactory</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_111"></a>
+</section><section><a id="Methods_115"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15322,7 +16041,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Methods_112"></a>
+<section><a id="Methods_116"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15335,6 +16054,24 @@
 <th>Annotations</th>
 <th>Throws</th>
 <th>Compatibility Changes</th></tr></thead><tbody>
+<tr class="b">
+<td>Removed</td>
+<td><del><code>static</code></del> <del><code>public</code></del></td>
+<td>&lt;<del><a href="#null" title="T extends java.lang.Object"><code>T extends Object</code></a></del>&gt;</td>
+<td><del><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<T>"><code>SecurityEntityFactory&lt;T&gt;</code></a></del></td>
+<td><del><code>createSecurityEntityFactory</code></del>(<a href="#null" title="java.lang.Class<T>"><code>Class&lt;T&gt;</code></a>, <a href="#null" title="java.util.function.Predicate<? super org.apache.sshd.common.util.security.SecurityProviderRegistrar>"><code>Predicate&lt;? super SecurityProviderRegistrar&gt;</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="a">
+<td>Added</td>
+<td><strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory" title="org.apache.sshd.common.util.security.SecurityEntityFactory"><code>SecurityEntityFactory</code></a></strong></td>
+<td><strong><code>createSecurityEntityFactory</code></strong>(<a href="#null" title="java.util.function.Predicate<? super org.apache.sshd.common.util.security.SecurityProviderRegistrar>"><code>Predicate&lt;? super SecurityProviderRegistrar&gt;</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
 <tr class="b">
 <td>Removed</td>
 <td><del><code>static</code></del> <del><code>public</code></del></td>
@@ -15417,6 +16154,15 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_return_type_generics_changed-orange" alt="Method return type generics changed" title="Method return type generics changed" /></td></tr>
 <tr class="a">
+<td>Added</td>
+<td><strong><code>static</code></strong> <strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory" title="org.apache.sshd.common.util.security.SecurityEntityFactory"><code>SecurityEntityFactory</code></a></strong></td>
+<td><strong><code>getSecurityEntityProvider</code></strong>(<a href="#user-content-org.apache.sshd.common.util.security.securityproviderregistrar" title="org.apache.sshd.common.util.security.SecurityProviderRegistrar"><code>SecurityProviderRegistrar</code></a>, <a href="#user-content-org.apache.sshd.common.util.security.securityproviderchoice" title="org.apache.sshd.common.util.security.SecurityProviderChoice"><code>SecurityProviderChoice</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
 <td>Removed</td>
 <td><del><code>static</code></del> <del><code>public</code></del></td>
 <td> </td>
@@ -15425,7 +16171,7 @@
 <td> </td>
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
-<tr class="b">
+<tr class="a">
 <td>Removed</td>
 <td><del><code>static</code></del> <del><code>public</code></del></td>
 <td> </td>
@@ -15434,7 +16180,7 @@
 <td> </td>
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
-<tr class="a">
+<tr class="b">
 <td>Removed</td>
 <td><del><code>static</code></del> <del><code>public</code></del></td>
 <td>&lt;<del><a href="#null" title="B extends org.apache.sshd.common.util.buffer.Buffer"><code>B extends Buffer</code></a></del>&gt;</td>
@@ -15443,7 +16189,7 @@
 <td> </td>
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
-<tr class="b">
+<tr class="a">
 <td>Removed</td>
 <td><del><code>static</code></del> <del><code>public</code></del></td>
 <td>&lt;<del><a href="#null" title="B extends org.apache.sshd.common.util.buffer.Buffer"><code>B extends Buffer</code></a></del>&gt;</td>
@@ -15452,7 +16198,7 @@
 <td> </td>
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
-<tr class="a">
+<tr class="b">
 <td>Removed</td>
 <td><del><code>static</code></del> <del><code>public</code></del></td>
 <td>&lt;<del><a href="#null" title="B extends org.apache.sshd.common.util.buffer.Buffer"><code>B extends Buffer</code></a></del>&gt;</td>
@@ -15460,9 +16206,18 @@
 <td><del><code>putRawEDDSAPublicKey</code></del>(<code>B</code>, <a href="#null" title="java.security.PublicKey"><code>PublicKey</code></a>)</td>
 <td> </td>
 <td> </td>
-<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
+<td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr>
+<tr class="a">
+<td>Source-incompatible</td>
+<td><code>static</code> <code>public</code></td>
+<td>&lt;<del><a href="#null" title="T extends java.lang.Object"><code>T extends Object</code></a></del>&gt;</td>
+<td><del><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<T>"><code>SecurityEntityFactory&lt;T&gt;</code></a></del> &#x2192; <strong><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory" title="org.apache.sshd.common.util.security.SecurityEntityFactory"><code>SecurityEntityFactory</code></a></strong></td>
+<td><code>resolveSecurityEntityFactory</code>(<del><a href="#null" title="java.lang.Class<T>"><code>Class&lt;T&gt;</code></a></del> &#x2192; <strong><a href="#null" title="java.lang.Class<?>"><code>Class&lt;?&gt;</code></a></strong>, <a href="#null" title="java.lang.String"><code>String</code></a>, <a href="#null" title="java.util.function.Predicate<? super org.apache.sshd.common.util.security.SecurityProviderRegistrar>"><code>Predicate&lt;? super SecurityProviderRegistrar&gt;</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Class_generic_template_changed-orange" alt="Class generic template changed" title="Class generic template changed" /> <img src="https://img.shields.io/badge/Method_return_type_generics_changed-orange" alt="Method return type generics changed" title="Method return type generics changed" /> <img src="https://img.shields.io/badge/Method_parameter_generics_changed-orange" alt="Method parameter generics changed" title="Method parameter generics changed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_21"></a>
+</section><section><a id="Fields_22"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -15532,7 +16287,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /> <img src="https://img.shields.io/badge/Method_abstract_added_in_implemented_interface-orange" alt="Method abstract added in implemented interface" title="Method abstract added in implemented interface" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_60"></a>
+<section><a id="Implemented_Interfaces_63"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -15565,7 +16320,7 @@
 <td><strong><a href="#user-content-org.apache.sshd.common.util.security.securityproviderregistrar" title="org.apache.sshd.common.util.security.SecurityProviderRegistrar"><code>SecurityProviderRegistrar</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_36"></a>
+</section><section><a id="Constructors_38"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -15586,7 +16341,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_113"></a>
+</section><section><a id="Methods_117"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15711,7 +16466,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_61"></a>
+<section><a id="Implemented_Interfaces_64"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -15724,7 +16479,7 @@
 <td><strong><a href="#user-content-org.apache.sshd.common.util.security.publickeyfactory" title="org.apache.sshd.common.util.security.PublicKeyFactory"><code>PublicKeyFactory</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_114"></a>
+</section><section><a id="Methods_118"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15747,7 +16502,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_22"></a>
+</section><section><a id="Fields_23"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -15796,7 +16551,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Method_default_added_in_implemented_interface-orange" alt="Method default added in implemented interface" title="Method default added in implemented interface" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_62"></a>
+<section><a id="Implemented_Interfaces_65"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -15809,7 +16564,7 @@
 <td><a href="#user-content-org.apache.sshd.common.util.security.securityproviderregistrar" title="org.apache.sshd.common.util.security.SecurityProviderRegistrar"><code>SecurityProviderRegistrar</code></a></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_115"></a>
+</section><section><a id="Methods_119"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15857,7 +16612,16 @@
 <td><del><code>isEnabled</code></del>()</td>
 <td> </td>
 <td> </td>
-<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
+<td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><code>boolean</code></strong></td>
+<td><strong><code>isNamedProviderUsed</code></strong>()</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
 <hr />
 <p><a id="user-content-org.apache.sshd.common.util.security.eddsa.ed25519pemresourcekeyparser"></a></p></section></section><section><a id="org.apache.sshd.common.util.security.eddsa.Ed25519PEMResourceKeyParser"></a>
@@ -15889,7 +16653,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_63"></a>
+<section><a id="Implemented_Interfaces_66"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -15914,7 +16678,7 @@
 <td><del><a href="#null" title="org.apache.sshd.common.config.keys.loader.pem.KeyPairPEMResourceParser"><code>KeyPairPEMResourceParser</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_37"></a>
+</section><section><a id="Constructors_39"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -15935,7 +16699,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_116"></a>
+</section><section><a id="Methods_120"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -15967,7 +16731,7 @@
 <td><del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_23"></a>
+</section><section><a id="Fields_24"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -16016,7 +16780,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_64"></a>
+<section><a id="Implemented_Interfaces_67"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16045,7 +16809,7 @@
 <td><del><a href="#user-content-org.apache.sshd.common.config.keys.publickeyrawdatadecoder" title="org.apache.sshd.common.config.keys.PublicKeyRawDataDecoder"><code>PublicKeyRawDataDecoder</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_117"></a>
+</section><section><a id="Methods_121"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -16068,7 +16832,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_24"></a>
+</section><section><a id="Fields_25"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -16117,7 +16881,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_65"></a>
+<section><a id="Implemented_Interfaces_68"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16130,7 +16894,7 @@
 <td><strong><a href="#user-content-org.apache.sshd.common.util.security.publickeyfactory" title="org.apache.sshd.common.util.security.PublicKeyFactory"><code>PublicKeyFactory</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_118"></a>
+</section><section><a id="Methods_122"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -16153,7 +16917,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_25"></a>
+</section><section><a id="Fields_26"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -16202,7 +16966,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_66"></a>
+<section><a id="Implemented_Interfaces_69"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16215,7 +16979,7 @@
 <td><a href="#user-content-org.apache.sshd.common.util.security.securityproviderregistrar" title="org.apache.sshd.common.util.security.SecurityProviderRegistrar"><code>SecurityProviderRegistrar</code></a></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_119"></a>
+</section><section><a id="Methods_123"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -16249,11 +17013,11 @@
 <tr class="b">
 <td>Added</td>
 <td><strong><code>public</code></strong></td>
-<td>&lt;<strong><a href="#null" title="F extends java.lang.Object"><code>F extends Object</code></a></strong>&gt;</td>
-<td><strong><a href="#null" title="org.apache.sshd.common.util.security.SecurityEntityFactory<F>"><code>SecurityEntityFactory&lt;F&gt;</code></a></strong></td>
-<td><strong><code>getFactory</code></strong>(<a href="#null" title="java.lang.Class<F>"><code>Class&lt;F&gt;</code></a>)</td>
 <td> </td>
-<td><strong><a href="#null" title="java.lang.ReflectiveOperationException"><code>ReflectiveOperationException</code></a></strong></td>
+<td><strong><a href="#user-content-org.apache.sshd.common.util.security.securityentityfactory" title="org.apache.sshd.common.util.security.SecurityEntityFactory"><code>SecurityEntityFactory</code></a></strong></td>
+<td><strong><code>getFactory</code></strong>()</td>
+<td> </td>
+<td> </td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
 <tr class="a">
 <td>Added</td>
@@ -16261,6 +17025,15 @@
 <td> </td>
 <td><strong><a href="#null" title="java.security.PublicKey"><code>PublicKey</code></a></strong></td>
 <td><strong><code>getPublicKey</code></strong>(<a href="#null" title="java.security.PrivateKey"><code>PrivateKey</code></a>)</td>
+<td> </td>
+<td> </td>
+<td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr>
+<tr class="b">
+<td>Added</td>
+<td><strong><code>public</code></strong></td>
+<td> </td>
+<td><strong><code>boolean</code></strong></td>
+<td><strong><code>isNamedProviderUsed</code></strong>()</td>
 <td> </td>
 <td> </td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
@@ -16295,7 +17068,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Methods_120"></a>
+<section><a id="Methods_124"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -16453,7 +17226,7 @@
 <td><del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_26"></a>
+</section><section><a id="Fields_27"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -16509,7 +17282,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_67"></a>
+<section><a id="Implemented_Interfaces_70"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16522,7 +17295,7 @@
 <td><del><a href="#user-content-org.apache.sshd.common.util.security.eddsa.generic.eddsasupport" title="org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport"><code>EdDSASupport</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_38"></a>
+</section><section><a id="Constructors_40"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -16543,7 +17316,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_121"></a>
+</section><section><a id="Methods_125"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -16749,7 +17522,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_68"></a>
+<section><a id="Implemented_Interfaces_71"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16774,7 +17547,7 @@
 <td><del><a href="#null" title="org.apache.sshd.common.config.keys.PrivateKeyEntryResolver"><code>PrivateKeyEntryResolver</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_39"></a>
+</section><section><a id="Constructors_41"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -16795,7 +17568,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_27"></a>
+</section><section><a id="Fields_28"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -16844,7 +17617,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_69"></a>
+<section><a id="Implemented_Interfaces_72"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16861,7 +17634,7 @@
 <td><del><a href="#null" title="org.apache.sshd.common.signature.Signature"><code>Signature</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_40"></a>
+</section><section><a id="Constructors_42"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -16912,7 +17685,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_70"></a>
+<section><a id="Implemented_Interfaces_73"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -16925,7 +17698,7 @@
 <td><del><a href="#user-content-org.apache.sshd.common.util.security.eddsa.generic.eddsasupport" title="org.apache.sshd.common.util.security.eddsa.generic.EdDSASupport"><code>EdDSASupport</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_41"></a>
+</section><section><a id="Constructors_43"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -16946,7 +17719,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_122"></a>
+</section><section><a id="Methods_126"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -17152,7 +17925,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_71"></a>
+<section><a id="Implemented_Interfaces_74"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -17177,7 +17950,7 @@
 <td><strong><a href="#null" title="org.apache.sshd.common.config.keys.loader.pem.KeyPairPEMResourceParser"><code>KeyPairPEMResourceParser</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_42"></a>
+</section><section><a id="Constructors_44"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -17198,7 +17971,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_123"></a>
+</section><section><a id="Methods_127"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -17248,7 +18021,7 @@
 <td><strong><a href="#null" title="java.io.IOException"><code>IOException</code></a></strong>, <strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_28"></a>
+</section><section><a id="Fields_29"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -17346,7 +18119,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /> <img src="https://img.shields.io/badge/Method_abstract_added_in_implemented_interface-orange" alt="Method abstract added in implemented interface" title="Method abstract added in implemented interface" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_72"></a>
+<section><a id="Implemented_Interfaces_75"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -17375,7 +18148,7 @@
 <td><strong><a href="#null" title="org.apache.sshd.common.config.keys.PublicKeyRawDataDecoder<PUB extends java.security.PublicKey>"><code>PublicKeyRawDataDecoder&lt;PUB&gt;</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_124"></a>
+</section><section><a id="Methods_128"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -17434,7 +18207,7 @@
 <td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_29"></a>
+</section><section><a id="Fields_30"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -17490,7 +18263,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Methods_125"></a>
+<section><a id="Methods_129"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -17543,7 +18316,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Generics_18"></a>
+<section><a id="Generics_19"></a>
 <h4>Generics</h4>
 <table class="table table-striped">
 <thead>
@@ -17563,7 +18336,7 @@
 <td><del><a href="#null" title="java.security.PrivateKey"><code>PrivateKey</code></a></del></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_126"></a>
+</section><section><a id="Methods_130"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -17757,7 +18530,7 @@
 <td><del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_30"></a>
+</section><section><a id="Fields_31"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -17813,7 +18586,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Methods_127"></a>
+<section><a id="Methods_131"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -17917,7 +18690,7 @@
 <td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_31"></a>
+</section><section><a id="Fields_32"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -17987,7 +18760,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_73"></a>
+<section><a id="Implemented_Interfaces_76"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18012,7 +18785,7 @@
 <td><del><a href="#null" title="org.apache.sshd.common.config.keys.loader.pem.KeyPairPEMResourceParser"><code>KeyPairPEMResourceParser</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_43"></a>
+</section><section><a id="Constructors_45"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18033,7 +18806,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_128"></a>
+</section><section><a id="Methods_132"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -18083,7 +18856,7 @@
 <td><del><a href="#null" title="java.io.IOException"><code>IOException</code></a></del>, <del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Method_removed-red" alt="Method removed" title="Method removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_32"></a>
+</section><section><a id="Fields_33"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -18181,7 +18954,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Generics_19"></a>
+<section><a id="Generics_20"></a>
 <h4>Generics</h4>
 <table class="table table-striped">
 <thead>
@@ -18201,7 +18974,7 @@
 <td><del><a href="#null" title="java.security.PrivateKey"><code>PrivateKey</code></a></del></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Implemented_Interfaces_74"></a>
+</section><section><a id="Implemented_Interfaces_77"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18230,7 +19003,7 @@
 <td><del><a href="#user-content-org.apache.sshd.common.config.keys.publickeyrawdatadecoder" title="org.apache.sshd.common.config.keys.PublicKeyRawDataDecoder"><code>PublicKeyRawDataDecoder</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_44"></a>
+</section><section><a id="Constructors_46"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18251,7 +19024,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_129"></a>
+</section><section><a id="Methods_133"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -18319,7 +19092,7 @@
 <td><del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_33"></a>
+</section><section><a id="Fields_34"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -18375,7 +19148,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Generics_20"></a>
+<section><a id="Generics_21"></a>
 <h4>Generics</h4>
 <table class="table table-striped">
 <thead>
@@ -18395,7 +19168,7 @@
 <td><del><a href="#null" title="java.security.PrivateKey"><code>PrivateKey</code></a></del></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Implemented_Interfaces_75"></a>
+</section><section><a id="Implemented_Interfaces_78"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18420,7 +19193,7 @@
 <td><del><a href="#null" title="org.apache.sshd.common.config.keys.PrivateKeyEntryResolver"><code>PrivateKeyEntryResolver</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_45"></a>
+</section><section><a id="Constructors_47"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18441,7 +19214,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_130"></a>
+</section><section><a id="Methods_134"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -18527,7 +19300,7 @@
 <td><del><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></del></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_34"></a>
+</section><section><a id="Fields_35"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -18576,7 +19349,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_76"></a>
+<section><a id="Implemented_Interfaces_79"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18593,7 +19366,7 @@
 <td><del><a href="#null" title="org.apache.sshd.common.signature.Signature"><code>Signature</code></a></del></td>
 <td><img src="https://img.shields.io/badge/Interface_removed-red" alt="Interface removed" title="Interface removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_46"></a>
+</section><section><a id="Constructors_48"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18614,7 +19387,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/Constructor_removed-red" alt="Constructor removed" title="Constructor removed" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_131"></a>
+</section><section><a id="Methods_135"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -18667,7 +19440,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /> <img src="https://img.shields.io/badge/Method_abstract_added_in_implemented_interface-orange" alt="Method abstract added in implemented interface" title="Method abstract added in implemented interface" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_77"></a>
+<section><a id="Implemented_Interfaces_80"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18692,7 +19465,7 @@
 <td><strong><a href="#null" title="org.apache.sshd.common.config.keys.PrivateKeyEntryResolver"><code>PrivateKeyEntryResolver</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_47"></a>
+</section><section><a id="Constructors_49"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18713,7 +19486,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_132"></a>
+</section><section><a id="Methods_136"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -18790,7 +19563,7 @@
 <td><strong><a href="#null" title="java.security.GeneralSecurityException"><code>GeneralSecurityException</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/Method_added_to_public_class-yellow" alt="Method added to public class" title="Method added to public class" /></td></tr></tbody>
 </table>
-</section><section><a id="Fields_35"></a>
+</section><section><a id="Fields_36"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -18839,7 +19612,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_78"></a>
+<section><a id="Implemented_Interfaces_81"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18856,7 +19629,7 @@
 <td><strong><a href="#null" title="org.apache.sshd.common.signature.Signature"><code>Signature</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_48"></a>
+</section><section><a id="Constructors_50"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18877,7 +19650,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_133"></a>
+</section><section><a id="Methods_137"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -18939,7 +19712,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Interface_added-orange" alt="Interface added" title="Interface added" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_79"></a>
+<section><a id="Implemented_Interfaces_82"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -18952,7 +19725,7 @@
 <td><strong><a href="#user-content-org.apache.sshd.common.util.security.publickeyfactory" title="org.apache.sshd.common.util.security.PublicKeyFactory"><code>PublicKeyFactory</code></a></strong></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Constructors_49"></a>
+</section><section><a id="Constructors_51"></a>
 <h4>Constructors</h4>
 <table class="table table-striped">
 <thead>
@@ -18973,7 +19746,7 @@
 <td> </td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_134"></a>
+</section><section><a id="Methods_138"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19026,7 +19799,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Methods_135"></a>
+<section><a id="Methods_139"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19097,7 +19870,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Fields_36"></a>
+<section><a id="Fields_37"></a>
 <h4>Fields</h4>
 <table class="table table-striped">
 <thead>
@@ -19167,7 +19940,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_80"></a>
+<section><a id="Implemented_Interfaces_83"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -19210,7 +19983,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_81"></a>
+<section><a id="Implemented_Interfaces_84"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -19223,7 +19996,7 @@
 <td><a href="#user-content-org.apache.sshd.server.serverfactorymanager" title="org.apache.sshd.server.ServerFactoryManager"><code>ServerFactoryManager</code></a></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_136"></a>
+</section><section><a id="Methods_140"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19375,7 +20148,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Methods_137"></a>
+<section><a id="Methods_141"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19428,7 +20201,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Method_removed_in_superclass-red" alt="Method removed in superclass" title="Method removed in superclass" /> <img src="https://img.shields.io/badge/Field_removed_in_superclass-red" alt="Field removed in superclass" title="Field removed in superclass" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_82"></a>
+<section><a id="Implemented_Interfaces_85"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -19445,7 +20218,7 @@
 <td><a href="#user-content-org.apache.sshd.server.session.serversession" title="org.apache.sshd.server.session.ServerSession"><code>ServerSession</code></a></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_138"></a>
+</section><section><a id="Methods_142"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19556,7 +20329,7 @@
 <td><del><a href="#null" title="java.lang.FunctionalInterface"><code>FunctionalInterface</code></a></del></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-</section><section><a id="Methods_139"></a>
+</section><section><a id="Methods_143"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19609,7 +20382,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Class_removed-red" alt="Class removed" title="Class removed" /> <img src="https://img.shields.io/badge/Superclass_removed-red" alt="Superclass removed" title="Superclass removed" /></td></tr></tbody>
 </table>
-<section><a id="Methods_140"></a>
+<section><a id="Methods_144"></a>
 <h4>Methods</h4>
 <table class="table table-striped">
 <thead>
@@ -19671,7 +20444,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/No_changes-green" alt="No changes" title="No changes" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_83"></a>
+<section><a id="Implemented_Interfaces_86"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
@@ -19718,7 +20491,7 @@
 <td><img src="https://img.shields.io/badge/Not_serializable-green" alt="Not serializable" title="Not serializable" /></td>
 <td><img src="https://img.shields.io/badge/Method_removed_in_superclass-red" alt="Method removed in superclass" title="Method removed in superclass" /> <img src="https://img.shields.io/badge/Field_removed_in_superclass-red" alt="Field removed in superclass" title="Field removed in superclass" /></td></tr></tbody>
 </table>
-<section><a id="Implemented_Interfaces_84"></a>
+<section><a id="Implemented_Interfaces_87"></a>
 <h4>Implemented Interfaces</h4>
 <table class="table table-striped">
 <thead>
