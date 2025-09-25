@@ -18,6 +18,9 @@
  */
 package org.apache.sshd.common.util.security;
 
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
 import java.util.HashMap;
@@ -57,6 +60,23 @@ public class SunJCESecurityProviderRegistrar extends AbstractSecurityProviderReg
         String baseName = getBasePropertyName();
         defaultProperties.put(baseName + ".Cipher", "AES");
         defaultProperties.put(baseName + ".Mac", "HmacSha1,HmacSha224,HmacSha256,HmacSha384,HmacSha512");
+        if (isSupported()) {
+            if (haveKEM(getSecurityProvider())) {
+                String kems = KEM.ML_KEM_1024 + ',' + KEM.ML_KEM_768;
+                defaultProperties.put(baseName + ".KEM", kems);
+                defaultProperties.put(baseName + ".KeyPairGenerator", kems);
+                defaultProperties.put(baseName + ".KeyFactory", kems);
+            }
+        }
+    }
+
+    private static boolean haveKEM(Provider provider) {
+        try {
+            KeyFactory factory = KeyFactory.getInstance(KEM.ML_KEM_768, provider);
+            return factory != null;
+        } catch (NoSuchAlgorithmException e) {
+            return false;
+        }
     }
 
     @Override
@@ -104,4 +124,14 @@ public class SunJCESecurityProviderRegistrar extends AbstractSecurityProviderReg
         return getSecurityProvider() != null;
     }
 
+    @Override
+    public SecurityEntityFactory getFactory() {
+        return new SecurityEntityFactory.ByProvider(getSecurityProvider()) {
+
+            @Override
+            public KEM createKEM(String algorithm) throws GeneralSecurityException {
+                return JceKEM.INSTANCE.get(algorithm);
+            }
+        };
+    }
 }

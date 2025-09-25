@@ -18,75 +18,37 @@
  */
 package org.apache.sshd.common.kex;
 
+import java.security.GeneralSecurityException;
+
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.OptionalFeature;
+import org.apache.sshd.common.util.security.KEM;
+import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
  * All built in key encapsulation methods (KEM).
  */
-public enum BuiltinKEM implements KeyEncapsulationMethod, NamedResource, OptionalFeature {
+public enum BuiltinKEM implements KEM, NamedResource, OptionalFeature {
 
-    mlkem768("mlkem768") {
+    mlkem768("mlkem768", KEM.ML_KEM_768),
 
-        @Override
-        public Client getClient() {
-            return MLKEM.getClient(MLKEM.Parameters.mlkem768);
-        }
+    mlkem1024("mlkem1024", KEM.ML_KEM_1024),
 
-        @Override
-        public Server getServer() {
-            return MLKEM.getServer(MLKEM.Parameters.mlkem768);
-        }
-
-        @Override
-        public boolean isSupported() {
-            return MLKEM.Parameters.mlkem768.isSupported();
-        }
-
-    },
-
-    mlkem1024("mlkem1024") {
-
-        @Override
-        public Client getClient() {
-            return MLKEM.getClient(MLKEM.Parameters.mlkem1024);
-        }
-
-        @Override
-        public Server getServer() {
-            return MLKEM.getServer(MLKEM.Parameters.mlkem1024);
-        }
-
-        @Override
-        public boolean isSupported() {
-            return MLKEM.Parameters.mlkem1024.isSupported();
-        }
-
-    },
-
-    sntrup761("sntrup761") {
-
-        @Override
-        public Client getClient() {
-            return new SNTRUP761.Client();
-        }
-
-        @Override
-        public Server getServer() {
-            return new SNTRUP761.Server();
-        }
-
-        @Override
-        public boolean isSupported() {
-            return SNTRUP761.isSupported();
-        }
-
-    };
+    sntrup761("sntrup761", KEM.SNTRUP_761);
 
     private String name;
 
-    BuiltinKEM(String name) {
+    private KEM kem;
+
+    BuiltinKEM(String name, String algorithm) {
         this.name = name;
+        KEM k;
+        try {
+            k = SecurityUtils.getKEM(algorithm);
+        } catch (GeneralSecurityException e) {
+            k = null;
+        }
+        this.kem = k;
     }
 
     @Override
@@ -94,4 +56,18 @@ public enum BuiltinKEM implements KeyEncapsulationMethod, NamedResource, Optiona
         return name;
     }
 
+    @Override
+    public boolean isSupported() {
+        return kem != null && kem.isSupported();
+    }
+
+    @Override
+    public Client getClient() {
+        return kem.getClient();
+    }
+
+    @Override
+    public Server getServer() {
+        return kem.getServer();
+    }
 }

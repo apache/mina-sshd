@@ -51,12 +51,6 @@
         </dependency>
 
         <!-- test dependencies -->
-                <dependency>
-                    <groupId>org.apache.sshd</groupId>
-                    <artifactId>sshd-mina</artifactId>
-                    <version>${project.version}</version>
-                    <scope>test</scope>
-                </dependency>
         <dependency>
             <groupId>org.bouncycastle</groupId>
             <artifactId>bcpg-jdk18on</artifactId>

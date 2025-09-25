@@ -76,6 +76,10 @@ public interface SecurityEntityFactory {
         throw new NoSuchAlgorithmException("Algorithm '" + algorithm + "' not supported (default)");
     }
 
+    default KEM createKEM(String algorithm) throws GeneralSecurityException {
+        throw new NoSuchAlgorithmException("Algorithm '" + algorithm + "' not supported (default)");
+    }
+
     class Named implements SecurityEntityFactory {
 
         private final String name;
@@ -231,6 +235,11 @@ public interface SecurityEntityFactory {
         @Override
         public SecureRandom createSecureRandom(String algorithm) throws GeneralSecurityException {
             return SecureRandom.getInstance(algorithm);
+        }
+
+        @Override
+        public KEM createKEM(String algorithm) throws GeneralSecurityException {
+            return JceKEM.INSTANCE.get(algorithm);
         }
     }
 }

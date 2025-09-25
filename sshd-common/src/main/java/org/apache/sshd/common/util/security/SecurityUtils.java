@@ -760,4 +760,9 @@ public final class SecurityUtils {
                 = resolveSecurityEntityFactory(CertificateFactory.class, type, r -> r.isCertificateFactorySupported(type));
         return factory.createCertificateFactory(type);
     }
+
+    public static KEM getKEM(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory factory = resolveSecurityEntityFactory(KEM.class, algorithm, r -> r.isKEMSupported(algorithm));
+        return factory.createKEM(algorithm);
+    }
 }

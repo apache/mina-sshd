@@ -18,7 +18,6 @@
  */
 package org.apache.sshd.client.kex;
 
-import java.security.Security;
 import java.util.Collections;
 
 import org.apache.sshd.AbstractContainerTestBase;
@@ -28,10 +27,10 @@ import org.apache.sshd.client.future.AuthFuture;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.kex.BuiltinDHFactories;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
+import org.apache.sshd.common.util.security.KEM;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.jupiter.api.Assumptions;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -76,16 +75,10 @@ class OpenSshMlKemTest extends AbstractContainerTestBase {
             .waitingFor(Wait.forLogMessage(".*Server listening on.*port 22.*\\n", 1)) //
             .withLogConsumer(new Slf4jLogConsumer(LOG));
 
-    @BeforeAll
-    static void registerBouncyCastleProviderIfNecessary() {
-        if (Security.getProvider(BouncyCastleProvider.PROVIDER_NAME) == null) {
-            Security.addProvider(new BouncyCastleProvider());
-        }
-    }
-
     @Test
     void mlkem768x25519() throws Exception {
         Assumptions.assumeTrue(BuiltinDHFactories.mlkem768x25519.isSupported());
+        LOG.info("Java {} using KEM {}", System.getProperty("java.version"), SecurityUtils.getKEM(KEM.ML_KEM_768));
         FileKeyPairProvider keyPairProvider = CommonTestSupportUtils
                 .createTestKeyPairProvider(TEST_KEYS + "/user01_ed25519");
         SshClient client = setupTestClient();

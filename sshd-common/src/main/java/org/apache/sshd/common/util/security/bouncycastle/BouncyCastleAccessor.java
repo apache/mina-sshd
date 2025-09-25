@@ -21,7 +21,6 @@ package org.apache.sshd.common.util.security.bouncycastle;
 import java.security.Provider;
 
 import org.apache.sshd.common.util.ReflectionUtils;
-import org.bouncycastle.jcajce.interfaces.EdDSAKey;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 final class BouncyCastleAccessor {
@@ -45,14 +44,6 @@ final class BouncyCastleAccessor {
             return Inner.createProvider(className);
         } catch (Throwable t) {
             return null;
-        }
-    }
-
-    public boolean isSupported() {
-        try {
-            return Inner.isSupported();
-        } catch (Throwable t) {
-            return false;
         }
     }
 
@@ -90,15 +81,6 @@ final class BouncyCastleAccessor {
                 }
             }
             return null;
-        }
-
-        static boolean isSupported() {
-            try {
-                // Just something that forces class loading.
-                return EdDSAKey.class != null;
-            } catch (Throwable t) {
-                return false;
-            }
         }
     }
 

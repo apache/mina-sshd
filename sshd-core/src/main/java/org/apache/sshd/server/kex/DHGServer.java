@@ -30,7 +30,6 @@ import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.CurveSizeIndicator;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
@@ -39,6 +38,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.apache.sshd.common.util.security.KEM;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -103,13 +103,13 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         }
 
         byte[] e = updateE(buffer);
-        KeyEncapsulationMethod kem = dh.getKeyEncapsulation();
+        KEM kem = dh.getKeyEncapsulation();
         if (kem == null) {
             dh.setF(e);
             k = normalize(dh.getK());
         } else {
             try {
-                KeyEncapsulationMethod.Server kemServer = kem.getServer();
+                KEM.Server kemServer = kem.getServer();
 
                 if (dh instanceof CurveSizeIndicator) {
                     int expectedLength = kemServer.getPublicKeyLength() + ((CurveSizeIndicator) dh).getByteLength();

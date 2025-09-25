@@ -16,13 +16,14 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.kex;
+package org.apache.sshd.common.util.security.bouncycastle;
 
 import java.util.Arrays;
 import java.util.Objects;
 
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.random.JceRandom;
+import org.apache.sshd.common.util.security.KEM;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.SecretWithEncapsulation;
 import org.bouncycastle.pqc.crypto.mlkem.MLKEMExtractor;
@@ -42,7 +43,43 @@ import org.bouncycastle.pqc.crypto.mlkem.MLKEMPublicKeyParameters;
  *
  * @see <a href="https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf">NIST FIPS 203</a>
  */
-final class MLKEM {
+enum MLKEM implements KEM {
+
+    ML_KEM_768 {
+
+        @Override
+        public Client getClient() {
+            return new Client(Parameters.mlkem768);
+        }
+
+        @Override
+        public Server getServer() {
+            return new Server(Parameters.mlkem768);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return Parameters.mlkem768.isSupported();
+        }
+    },
+
+    ML_KEM_1024 {
+
+        @Override
+        public Client getClient() {
+            return new Client(Parameters.mlkem1024);
+        }
+
+        @Override
+        public Server getServer() {
+            return new Server(Parameters.mlkem1024);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return Parameters.mlkem1024.isSupported();
+        }
+    };
 
     enum Parameters implements OptionalFeature {
         // For key sizes see NIST FIPS 203, section 8, table 3. Bouncy Castle does not expose the
@@ -88,19 +125,7 @@ final class MLKEM {
         }
     }
 
-    private MLKEM() {
-        // No instantiation
-    }
-
-    static KeyEncapsulationMethod.Client getClient(Parameters parameters) {
-        return new Client(parameters);
-    }
-
-    static KeyEncapsulationMethod.Server getServer(Parameters parameters) {
-        return new Server(parameters);
-    }
-
-    private static class Client implements KeyEncapsulationMethod.Client {
+    private static class Client implements KEM.Client {
 
         private final Parameters parameters;
 
@@ -140,7 +165,7 @@ final class MLKEM {
         }
     }
 
-    private static class Server implements KeyEncapsulationMethod.Server {
+    private static class Server implements KEM.Server {
 
         private final Parameters parameters;
 

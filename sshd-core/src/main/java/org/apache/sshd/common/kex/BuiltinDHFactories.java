@@ -39,6 +39,7 @@ import org.apache.sshd.common.digest.BuiltinDigests;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.KEM;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -315,7 +316,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new XDH(MontgomeryCurve.x25519, true) {
 
                 @Override
-                public KeyEncapsulationMethod getKeyEncapsulation() {
+                public KEM getKeyEncapsulation() {
                     return BuiltinKEM.mlkem768;
                 }
 
@@ -345,7 +346,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new ECDH(ECCurves.nistp256, true) {
 
                 @Override
-                public KeyEncapsulationMethod getKeyEncapsulation() {
+                public KEM getKeyEncapsulation() {
                     return BuiltinKEM.mlkem768;
                 }
 
@@ -370,7 +371,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new ECDH(ECCurves.nistp384, true) {
 
                 @Override
-                public KeyEncapsulationMethod getKeyEncapsulation() {
+                public KEM getKeyEncapsulation() {
                     return BuiltinKEM.mlkem1024;
                 }
 
@@ -395,7 +396,7 @@ public enum BuiltinDHFactories implements DHFactory {
             return new XDH(MontgomeryCurve.x25519, true) {
 
                 @Override
-                public KeyEncapsulationMethod getKeyEncapsulation() {
+                public KEM getKeyEncapsulation() {
                     return BuiltinKEM.sntrup761;
                 }
 

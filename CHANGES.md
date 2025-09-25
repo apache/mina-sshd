@@ -66,3 +66,7 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
   the version used in SSH. Since the Poly1305 MAC in Java is not accessible separately, Apache MINA SSHD still
   has to use its own implementation for that part.)
 
+* [GH-803](https://github.com/apache/mina-sshd/issues/803) Support the JDK built-in ML-KEMs on Java24+
+
+  Use the ML-KEM implementations from SunJCE if run on Java >= 24. For Java < 24, The Bouncy Castle implementations
+  are used. The SunJCE ML-KEMs are advertised in the `SunJCESecurityProviderRegistrar`.

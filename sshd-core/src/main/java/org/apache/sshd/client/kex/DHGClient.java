@@ -36,7 +36,6 @@ import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.CurveSizeIndicator;
 import org.apache.sshd.common.kex.DHFactory;
 import org.apache.sshd.common.kex.KexProposalOption;
-import org.apache.sshd.common.kex.KeyEncapsulationMethod;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
 import org.apache.sshd.common.session.Session;
@@ -46,6 +45,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
+import org.apache.sshd.common.util.security.KEM;
 import org.apache.sshd.core.CoreModuleProperties;
 
 /**
@@ -58,7 +58,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
     protected final DHFactory factory;
     protected AbstractDH dh;
 
-    private KeyEncapsulationMethod.Client kemClient;
+    private KEM.Client kemClient;
 
     protected DHGClient(DHFactory factory, Session session) {
         super(session);
@@ -100,7 +100,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
         hash = dh.getHash();
         hash.init();
 
-        KeyEncapsulationMethod kem = dh.getKeyEncapsulation();
+        KEM kem = dh.getKeyEncapsulation();
         byte[] e;
         if (kem == null) {
             e = updateE(dh.getE());

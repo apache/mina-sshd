@@ -190,6 +190,15 @@ public interface SecurityProviderRegistrar extends SecurityProviderChoice, Optio
         return isSecurityEntitySupported(CertificateFactory.class, type);
     }
 
+    /**
+     * @param  algorithm The {@link KEM} algorithm
+     * @return           {@code true} if this security provider supports the algorithm
+     * @see              #isSecurityEntitySupported(Class, String)
+     */
+    default boolean isKEMSupported(String algorithm) {
+        return isSecurityEntitySupported(KEM.class, algorithm);
+    }
+
     @Override
     default PublicKey getPublicKey(PrivateKey key) {
         return null;

@@ -23,6 +23,7 @@ import javax.crypto.KeyAgreement;
 import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.security.KEM;
 
 /**
  * Base class for the Diffie-Hellman key agreement.
@@ -118,7 +119,7 @@ public abstract class AbstractDH {
 
     public abstract Digest getHash() throws Exception;
 
-    public KeyEncapsulationMethod getKeyEncapsulation() {
+    public KEM getKeyEncapsulation() {
         return null;
     }
 

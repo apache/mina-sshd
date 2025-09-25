@@ -16,12 +16,20 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.kex;
+package org.apache.sshd.common.util.security;
+
+import org.apache.sshd.common.OptionalFeature;
 
 /**
  * General interface for key encapsulation methods (KEM).
  */
-public interface KeyEncapsulationMethod {
+public interface KEM extends OptionalFeature {
+
+    String ML_KEM_768 = "ML-KEM-768";
+
+    String ML_KEM_1024 = "ML-KEM-1024";
+
+    String SNTRUP_761 = "SNTRUP-761";
 
     /**
      * Client-side KEM operations.

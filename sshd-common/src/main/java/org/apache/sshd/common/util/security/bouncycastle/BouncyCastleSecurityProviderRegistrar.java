@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.common.util.security.bouncycastle;
 
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
@@ -30,6 +31,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
+import org.apache.sshd.common.util.security.KEM;
+import org.apache.sshd.common.util.security.SecurityEntityFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -105,18 +108,42 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
             return false;
         }
 
+        boolean supported = true;
         if (KeyPairGenerator.class.isAssignableFrom(entityType)
                 || KeyFactory.class.isAssignableFrom(entityType)) {
             if (SecurityUtils.ED25519.equalsIgnoreCase(name)) {
-                return isEdDSASupported();
+                supported = isEdDSASupported();
             }
         } else if (Signature.class.isAssignableFrom(entityType)) {
             if (SecurityUtils.ED25519.equalsIgnoreCase(name)) {
-                return isEdDSASupported();
+                supported = isEdDSASupported();
             }
+        } else if (KEM.class.isAssignableFrom(entityType)) {
+            supported = BouncyCastleKEMAccessor.INSTANCE.isSupported();
+            supported = supported && BouncyCastleKEM.INSTANCE.isSupported(name);
         }
 
-        return super.isSecurityEntitySupported(entityType, name);
+        return supported && super.isSecurityEntitySupported(entityType, name);
+    }
+
+    @Override
+    public SecurityEntityFactory getFactory() {
+        if (isNamedProviderUsed()) {
+            return new SecurityEntityFactory.Named(getProviderName()) {
+
+                @Override
+                public KEM createKEM(String algorithm) throws GeneralSecurityException {
+                    return BouncyCastleKEM.INSTANCE.get(algorithm);
+                }
+            };
+        }
+        return new SecurityEntityFactory.ByProvider(getSecurityProvider()) {
+
+            @Override
+            public KEM createKEM(String algorithm) throws GeneralSecurityException {
+                return BouncyCastleKEM.INSTANCE.get(algorithm);
+            }
+        };
     }
 
     @Override

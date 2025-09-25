@@ -200,6 +200,19 @@
                             <release>15</release>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>compile-24</id>
+                        <goals>
+                            <goal>compile</goal>
+                        </goals>
+                        <configuration>
+                            <compileSourceRoots>
+                                <compileSourceRoot>${project.basedir}/src/main/java24</compileSourceRoot>
+                            </compileSourceRoots>
+                            <multiReleaseOutput>true</multiReleaseOutput>
+                            <release>24</release>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
         </plugins>

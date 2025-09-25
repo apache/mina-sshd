@@ -16,11 +16,12 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.kex;
+package org.apache.sshd.common.util.security.bouncycastle;
 
 import java.util.Arrays;
 
 import org.apache.sshd.common.random.JceRandom;
+import org.apache.sshd.common.util.security.KEM;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.SecretWithEncapsulation;
@@ -35,13 +36,16 @@ import org.bouncycastle.pqc.crypto.ntruprime.SNTRUPrimePublicKeyParameters;
 /**
  * A Bouncy Castle implementation of the sntrup761 key encapsulation method (KEM).
  */
-final class SNTRUP761 {
+final class SNTRUP761 implements KEM {
+
+    static final SNTRUP761 INSTANCE = new SNTRUP761();
 
     private SNTRUP761() {
         // No instantiation
     }
 
-    static boolean isSupported() {
+    @Override
+    public boolean isSupported() {
         if (SecurityUtils.isFipsMode()) {
             return false;
         }
@@ -52,7 +56,17 @@ final class SNTRUP761 {
         }
     }
 
-    static class Client implements KeyEncapsulationMethod.Client {
+    @Override
+    public Client getClient() {
+        return new Client();
+    }
+
+    @Override
+    public Server getServer() {
+        return new Server();
+    }
+
+    static class Client implements KEM.Client {
 
         private SNTRUPrimeKEMExtractor extractor;
         private SNTRUPrimePublicKeyParameters publicKey;
@@ -89,7 +103,7 @@ final class SNTRUP761 {
         }
     }
 
-    static class Server implements KeyEncapsulationMethod.Server {
+    static class Server implements KEM.Server {
 
         private SecretWithEncapsulation value;
 

@@ -123,7 +123,7 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
 
     @Override
     public SecurityEntityFactory getFactory() {
-        return new DelegatingSecurityEntityProvider(super.getFactory());
+        return new DelegatingSecurityEntityFactory(super.getFactory());
     }
 
     @Override
@@ -135,11 +135,11 @@ public class EdDSASecurityProviderRegistrar extends AbstractSecurityProviderRegi
         return super.getPublicKey(key);
     }
 
-    private static class DelegatingSecurityEntityProvider implements SecurityEntityFactory {
+    private static class DelegatingSecurityEntityFactory implements SecurityEntityFactory {
 
         private SecurityEntityFactory delegate;
 
-        DelegatingSecurityEntityProvider(SecurityEntityFactory delegate) {
+        DelegatingSecurityEntityFactory(SecurityEntityFactory delegate) {
             this.delegate = delegate;
         }
 
