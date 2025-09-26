@@ -100,8 +100,11 @@ aes128-gcm@<!-- -->openssh.com, aes256-gcm@<!-- -->openssh.com, chacha20-poly130
 , ecdh-sha2-nistp256, ecdh-sha2-nistp384, ecdh-sha2-nistp521, curve25519-sha256, curve25519-sha256@<!-- -->libssh.org, curve448-sha512
     * On Java versions before Java 11, [Bouncy Castle](./dependencies.md#bouncy-castle) is required for curve25519-sha256, curve25519-sha256@<!-- -->libssh.org, or curve448-sha512.
 
-* If [Bouncy Castle](./dependencies.md#bouncy-castle) is present, the following post-quantum cryptography (PQC) hybrid key exchanges are also supported: sntrup761x25519-sha512, sntrup761x25519-sha512@<!-- -->openssh.com, mlkem768x25519-sha256, mlkem768nistp256-sha256, and
-mlkem1024nistp384-sha384.
+* If [Bouncy Castle](./dependencies.md#bouncy-castle) is present, the following post-quantum cryptography (PQC) hybrid key
+  exchanges are also supported: sntrup761x25519-sha512, sntrup761x25519-sha512@<!-- -->openssh.com, mlkem768x25519-sha256,
+  mlkem768nistp256-sha256, and mlkem1024nistp384-sha384.
+
+* The three ML-KEM algorithms are also supported on Java >= 24 without Bouncy Castle. 
 
 ### Compressions
 
@@ -110,11 +113,13 @@ mlkem1024nistp384-sha384.
 ### Signatures/Keys
 
 * ssh-dss, ssh-rsa, rsa-sha2-256, rsa-sha2-512, nistp256, nistp384, nistp521
-, ssh-ed25519 (requires Bouncy Castle or `net.i2p.crypto.eddsa` as an optional dependency - if both are present, `net.i2p.crypto.eddsa` is used)
-, sk-ecdsa-sha2-nistp256@<!-- -->openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
+, ssh-ed25519, sk-ecdsa-sha2-nistp256@<!-- -->openssh.com, sk-ssh-ed25519@<!-- -->openssh.com
 , ssh-rsa-cert-v01@<!-- -->openssh.com, ssh-dss-cert-v01<!-- -->@openssh.com, ssh-ed25519-cert-v01@<!-- -->openssh.com
 , ecdsa-sha2-nistp256-cert-v01@<!-- -->openssh.com, ecdsa-sha2-nistp384-cert-v01<!-- -->@openssh.com
 , ecdsa-sha2-nistp521-cert-v01<!-- -->@openssh.com
+    * On Java versions before Java 15, ed25519 keys are supported if Bouncy Castle or the optional `net.i2p.crypto.eddsa` dependency
+      are present. If both are present, `net.i2p.crypto.eddsa` is used. On Java >= 15, ed25519 keys are supported using the JDK
+      implementation.
 
 **Note:** The above list contains all the supported security settings in the code. However, in accordance with the latest recommendations
 the default client/server setup includes only the security settings that are currently considered safe to use. Users who wish to include
