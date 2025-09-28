@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StreamCorruptedException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,13 +33,14 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.io.input.NoCloseReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contains a representation of an entry in the <code>known_hosts</code> file
@@ -58,6 +58,8 @@ public class KnownHostEntry extends HostPatternsHolder {
      * Standard OpenSSH config file name
      */
     public static final String STD_HOSTS_FILENAME = "known_hosts";
+
+    private static final Logger LOG = LoggerFactory.getLogger(KnownHostEntry.class);
 
     private static final class LazyDefaultConfigFileHolder {
         private static final Path HOSTS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_HOSTS_FILENAME);
@@ -183,7 +185,7 @@ public class KnownHostEntry extends HostPatternsHolder {
                 continue;
             }
 
-            int pos = line.indexOf(ConfigFileReaderSupport.COMMENT_CHAR);
+            int pos = line.indexOf(PublicKeyEntry.COMMENT_CHAR);
             if (pos == 0) {
                 continue;
             }
@@ -203,9 +205,8 @@ public class KnownHostEntry extends HostPatternsHolder {
                     entries = new ArrayList<>();
                 }
                 entries.add(entry);
-            } catch (RuntimeException | Error e) { // TODO consider consulting a user callback
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ") to parse line #"
-                                                   + lineNumber + " '" + line + "': " + e.getMessage());
+            } catch (RuntimeException e) { // TODO consider consulting a user callback
+                LOG.warn("Invalid known_hosts line #" + lineNumber + " '" + line + "': " + e.getMessage());
             }
         }
 
@@ -217,13 +218,16 @@ public class KnownHostEntry extends HostPatternsHolder {
     }
 
     public static KnownHostEntry parseKnownHostEntry(String line) {
-        return parseKnownHostEntry(GenericUtils.isEmpty(line) ? null : new KnownHostEntry(), line);
+        return GenericUtils.isEmpty(line) ? null : parseKnownHostEntry(new KnownHostEntry(), line);
     }
 
     public static <E extends KnownHostEntry> E parseKnownHostEntry(E entry, String data) {
+        if (data == null) {
+            return null;
+        }
         String line = GenericUtils.replaceWhitespaceAndTrim(data);
         if (GenericUtils.isEmpty(line) || (line.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
-            return entry;
+            return null;
         }
 
         entry.setConfigLine(line);
@@ -254,6 +258,9 @@ public class KnownHostEntry extends HostPatternsHolder {
         }
         AuthorizedKeyEntry key = PublicKeyEntry.parsePublicKeyEntry(new AuthorizedKeyEntry(),
                 ValidateUtils.checkNotNullAndNotEmpty(line, "No valid key entry recovered from line=%s", data));
+        if (key == null) {
+            return null;
+        }
         entry.setKeyEntry(key);
         return entry;
     }
