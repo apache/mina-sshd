@@ -71,6 +71,23 @@ class KnownHostsUnsupportedKeysTest extends JUnitTestSupport {
     }
 
     @Test
+    void invalidLineIgnored() throws Exception {
+        Path knownHosts = tmp.resolve("known_hosts");
+        String entry
+                = "[127.0.0.1]:2222 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBCbZVVpqEHGLNWMqMeyU1VbWb91XteoamVcgpy4yxNVbZffb5IDdbo1ons/y9KAhcub6LZeLrvXzVUZbXCZiUkg=";
+        List<String> lines = new ArrayList<>();
+        lines.add(entry + entry);
+        lines.add(entry);
+        Files.write(knownHosts, lines);
+        KnownHostsServerKeyVerifier verifier = new KnownHostsServerKeyVerifier(RejectAllServerKeyVerifier.INSTANCE, knownHosts);
+        KnownHostEntry knownHost = KnownHostEntry.parseKnownHostEntry(lines.get(1));
+        PublicKeyEntry keyEntry = knownHost.getKeyEntry();
+        assertNotNull(keyEntry);
+        PublicKey key = keyEntry.resolvePublicKey(null, PublicKeyEntryResolver.FAILING);
+        assertTrue(invokeVerifier(verifier, new SshdSocketAddress("127.0.0.1", 2222), key));
+    }
+
+    @Test
     void unknownNewKey() throws Exception {
         KeyPair kp = CommonTestSupportUtils.generateKeyPair(KeyUtils.RSA_ALGORITHM, 1024);
         PublicKey newKey = kp.getPublic();

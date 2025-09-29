@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
-import java.io.StreamCorruptedException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -34,12 +33,13 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import org.apache.sshd.common.config.ConfigFileReaderSupport;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.input.NoCloseInputStream;
 import org.apache.sshd.common.util.io.input.NoCloseReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contains a representation of an entry in the <code>known_hosts</code> file
@@ -57,6 +57,8 @@ public class KnownHostEntry extends HostPatternsHolder {
      * Standard OpenSSH config file name
      */
     public static final String STD_HOSTS_FILENAME = "known_hosts";
+
+    private static final Logger LOG = LoggerFactory.getLogger(KnownHostEntry.class);
 
     private static final class LazyDefaultConfigFileHolder {
         private static final Path HOSTS_FILE = PublicKeyEntry.getDefaultKeysFolderPath().resolve(STD_HOSTS_FILENAME);
@@ -181,17 +183,6 @@ public class KnownHostEntry extends HostPatternsHolder {
             if (GenericUtils.isEmpty(line)) {
                 continue;
             }
-
-            int pos = line.indexOf(ConfigFileReaderSupport.COMMENT_CHAR);
-            if (pos == 0) {
-                continue;
-            }
-
-            if (pos > 0) {
-                line = line.substring(0, pos);
-                line = line.trim();
-            }
-
             try {
                 KnownHostEntry entry = parseKnownHostEntry(line);
                 if (entry == null) {
@@ -202,9 +193,8 @@ public class KnownHostEntry extends HostPatternsHolder {
                     entries = new ArrayList<>();
                 }
                 entries.add(entry);
-            } catch (RuntimeException | Error e) { // TODO consider consulting a user callback
-                throw new StreamCorruptedException("Failed (" + e.getClass().getSimpleName() + ") to parse line #"
-                                                   + lineNumber + " '" + line + "': " + e.getMessage());
+            } catch (RuntimeException e) { // TODO consider consulting a user callback
+                LOG.warn("Invalid known_hosts line #" + lineNumber + " '" + line + "': " + e.getMessage());
             }
         }
 
@@ -216,35 +206,39 @@ public class KnownHostEntry extends HostPatternsHolder {
     }
 
     public static KnownHostEntry parseKnownHostEntry(String line) {
-        return parseKnownHostEntry(GenericUtils.isEmpty(line) ? null : new KnownHostEntry(), line);
-    }
-
-    public static <E extends KnownHostEntry> E parseKnownHostEntry(E entry, String data) {
-        String line = GenericUtils.replaceWhitespaceAndTrim(data);
-        if (GenericUtils.isEmpty(line) || (line.charAt(0) == PublicKeyEntry.COMMENT_CHAR)) {
-            return entry;
+        if (line == null) {
+            return null;
+        }
+        String tmp = GenericUtils.replaceWhitespaceAndTrim(line);
+        int i = tmp.indexOf(PublicKeyEntry.COMMENT_CHAR);
+        if (i >= 0) {
+            tmp = tmp.substring(0, i).trim();
+        }
+        if (GenericUtils.isEmpty(tmp)) {
+            return null;
         }
 
+        KnownHostEntry entry = new KnownHostEntry();
         entry.setConfigLine(line);
 
-        if (line.charAt(0) == MARKER_INDICATOR) {
-            int pos = line.indexOf(' ');
-            ValidateUtils.checkTrue(pos > 0, "Missing marker name end delimiter in line=%s", data);
-            ValidateUtils.checkTrue(pos > 1, "No marker name after indicator in line=%s", data);
-            entry.setMarker(line.substring(1, pos));
-            line = line.substring(pos + 1).trim();
+        if (tmp.charAt(0) == MARKER_INDICATOR) {
+            int pos = tmp.indexOf(' ');
+            ValidateUtils.checkTrue(pos > 0, "Missing marker name end delimiter in line=%s", line);
+            ValidateUtils.checkTrue(pos > 1, "No marker name after indicator in line=%s", line);
+            entry.setMarker(tmp.substring(1, pos));
+            tmp = tmp.substring(pos + 1).trim();
         } else {
             entry.setMarker(null);
         }
 
-        int pos = line.indexOf(' ');
-        ValidateUtils.checkTrue(pos > 0, "Missing host patterns end delimiter in line=%s", data);
-        String hostPattern = line.substring(0, pos);
-        line = line.substring(pos + 1).trim();
+        int pos = tmp.indexOf(' ');
+        ValidateUtils.checkTrue(pos > 0, "Missing host patterns end delimiter in line=%s", line);
+        String hostPattern = tmp.substring(0, pos);
+        tmp = tmp.substring(pos + 1).trim();
 
         if (hostPattern.charAt(0) == KnownHostHashValue.HASHED_HOST_DELIMITER) {
             KnownHostHashValue hash = ValidateUtils.checkNotNull(KnownHostHashValue.parse(hostPattern),
-                    "Failed to extract host hash value from line=%s", data);
+                    "Failed to extract host hash value from line=%s", line);
             entry.setHashedEntry(hash);
             entry.setPatterns(null);
         } else {
@@ -252,7 +246,10 @@ public class KnownHostEntry extends HostPatternsHolder {
             entry.setPatterns(parsePatterns(GenericUtils.split(hostPattern, ',')));
         }
         PublicKeyEntry key = PublicKeyEntry.parsePublicKeyEntry(
-                ValidateUtils.checkNotNullAndNotEmpty(line, "No valid key entry recovered from line=%s", data));
+                ValidateUtils.checkNotNullAndNotEmpty(tmp, "No valid key entry recovered from line=%s", line));
+        if (key == null) {
+            return null;
+        }
         entry.setKeyEntry(key);
         return entry;
     }
