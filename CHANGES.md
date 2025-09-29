@@ -66,8 +66,9 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
   
   (Note that one cannot use the JDK's "ChaCha20-Poly1305" cipher for SSH; Java implements
   [RFC 8439](https://datatracker.ietf.org/doc/html/rfc8439), which has a different AEAD tag construction than
-  the version used in SSH. Since the Poly1305 MAC in Java is not accessible separately, Apache MINA SSHD still
-  has to use its own implementation for that part.)
+  the version used in SSH. Since the Poly1305 MAC in Java is not accessible separately (see
+  [JDK-8253394](https://bugs.openjdk.org/browse/JDK-8253394)), Apache MINA SSHD still has to use its own
+  implementation for that part.)
 
 * [GH-803](https://github.com/apache/mina-sshd/issues/803) Support the JDK built-in ML-KEMs on Java24+
 
