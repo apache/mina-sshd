@@ -68,7 +68,7 @@ jobs:
       - name: Set up Maven
         uses: stCarolas/setup-maven@v5
         with:
-          maven-version: '3.9.8'
+          maven-version: '3.9.11'
 
       - name: Check version (SNAPSHOT)
         # Only deploy SNAPSHOT versions. We do not use "exit 1" because we still want the workflow

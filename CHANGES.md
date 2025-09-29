@@ -19,6 +19,9 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
 
 # Planned for the Next Milestone Release
 
+* For building Apache MINA SSHD 3.0, Java >= 24 and Apache Maven >= 3.9.11 are required. Generated artifacts
+  still use Java 8 as minimum runtime requirement.
+
 ## Bug Fixes
 
 * [GH-502](https://github.com/apache/mina-sshd/issues/502) Don't load security provider classes reflectively

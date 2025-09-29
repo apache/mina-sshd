@@ -74,7 +74,7 @@
         <japicmp-sshd-last-release>2.16.0</japicmp-sshd-last-release>
         <minimalJavaBuildVersion>24</minimalJavaBuildVersion>
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
-        <minimalMavenBuildVersion>3.9.8</minimalMavenBuildVersion>
+        <minimalMavenBuildVersion>3.9.11</minimalMavenBuildVersion>
 
         <format.impsort.action>sort</format.impsort.action>
         <format.formatter.action>format</format.formatter.action>
