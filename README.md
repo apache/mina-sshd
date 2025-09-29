@@ -34,8 +34,8 @@ Sensitive issues such as security vulnerabilities must be reported through [priv
 
 # Core requirements
 
-* Java 8+ at runtime (as of version 2.3)
-* Java 17+ at build time (as of version 2.14)
+* Java 8+ at runtime (as of version 2.3.0)
+* Java 24+ at build time (as of version 3.0.0; for versions [2.14.0 .. 3.0.0), Java 17+)
 
 * [Slf4j](https://www.slf4j.org/)
 
