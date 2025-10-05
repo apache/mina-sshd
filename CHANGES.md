@@ -25,7 +25,7 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
 ## Bug Fixes
 
 * [GH-502](https://github.com/apache/mina-sshd/issues/502) Don't load security provider classes reflectively
-  for Bouncy Castle and `net.isp.crypto:eddsa:0.3.0`.
+  for Bouncy Castle and `net.i2p.crypto:eddsa:0.3.0`.
 
 ## Major Code Re-factoring
 
@@ -45,10 +45,10 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
 
   With this change `sshd-common` and `sshd-osgi` become MRJARs (multi-release JARs). When run on Java >= 15,
   Apache MINA SSHD will use the built-in ed25519 from the SunEC security provider. On Java < 15, ed25519 is
-  supported if Bouncy Castle or `net.isp.crypto:eddsa:0.3.0` is present.
+  supported if Bouncy Castle or `net.i2p.crypto:eddsa:0.3.0` is present.
 
-  On Java >= 15, Apache MINA SSHD will use the JDK ed25519 even if Bouncy Castle or `net.isp.crypto:eddsa:0.3.0`
-  are present. (Including `net.isp.crypto:eddsa:0.3.0` makes no sense on Java >= 15.) There is a new
+  On Java >= 15, Apache MINA SSHD will use the JDK ed25519 even if Bouncy Castle or `net.i2p.crypto:eddsa:0.3.0`
+  are present. (Including `net.i2p.crypto:eddsa:0.3.0` makes no sense on Java >= 15.) There is a new
   [registrar](./docs/security-providers.md) `SunECSecurityProviderRegistrar` with the name "SunECWrapper". It
   is by default registered ahead of the Bouncy Castle or net.i2p registrars, and has by default ed25519,
   X25519, and X448 enabled if SunEC is registered and has these algorithms. This new registrar can be 
