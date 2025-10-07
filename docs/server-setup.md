@@ -37,7 +37,7 @@ the host keys are modified. **Note**: saving key files in PEM format requires  t
 supporting artifacts be available in the code's classpath.
 
 * `HostKeyCertificateProvider` - used for OpenSSH public-key certificate authentication system
-as defined in [this document](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
+as defined in [this document](https://datatracker.ietf.org/doc/draft-miller-ssh-cert/)
 
 * `ShellFactory` - That's the part one usually has to write to customize the SSHD server. The shell factory will
 be used to create a new shell each time a user logs in and wants to run an interactive shell. SSHD provides a simple
