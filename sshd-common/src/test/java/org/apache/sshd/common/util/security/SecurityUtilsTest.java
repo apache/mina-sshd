@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.DSAPrivateKey;
@@ -32,6 +33,7 @@ import java.security.interfaces.ECPublicKey;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 
@@ -45,6 +47,7 @@ import org.apache.sshd.common.keyprovider.AbstractResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.ClassLoadableResourceKeyPairProvider;
 import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.resource.PathResource;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
@@ -116,6 +119,19 @@ class SecurityUtilsTest extends SecurityUtilsTestSupport {
 
             testLoadECPrivateKey(getClass().getSimpleName() + "-EC-" + c.getKeySize() + "-KeyPair");
         }
+    }
+
+    @Test
+    void x509EncodingEc() throws Exception {
+        KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(KeyUtils.EC_ALGORITHM);
+        generator.initialize(521);
+        KeyPair kp = generator.generateKeyPair();
+        String enc = Base64.getEncoder().encodeToString(kp.getPublic().getEncoded());
+        ByteArrayBuffer buf = new ByteArrayBuffer();
+        buf.putPublicKey(kp.getPublic());
+        PublicKey readBack = buf.getPublicKey();
+        assertTrue(KeyUtils.compareKeys(kp.getPublic(), readBack), "Public keys should be equal");
+        assertEquals(enc, Base64.getEncoder().encodeToString(readBack.getEncoded()), readBack.getClass().getCanonicalName());
     }
 
     private KeyPair testLoadECPrivateKey(String name) throws Exception {

@@ -36,7 +36,7 @@
 
 * [OpenSSH support for U2F/FIDO security keys](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.u2f)
     * **Note:** the server side supports these keys by default. The client side requires specific initialization
-* [OpenSSH public-key certificate authentication system for use by SSH](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys)
+* [OpenSSH public-key certificate authentication system for use by SSH](https://datatracker.ietf.org/doc/draft-miller-ssh-cert/)
 * [OpenSSH 1.9 transport: strict key exchange extension](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 * [(Some) OpenSSH SFTP extensions](https://github.com/openssh/openssh-portable/blob/master/PROTOCOL)
 

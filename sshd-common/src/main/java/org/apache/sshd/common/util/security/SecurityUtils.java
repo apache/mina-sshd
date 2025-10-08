@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.math.BigInteger;
 import java.nio.file.Path;
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -710,6 +711,13 @@ public final class SecurityUtils {
             return defaultProvider.getFactory();
         }
         return registrar.getFactory();
+    }
+
+    public static AlgorithmParameters getAlgorithmParameters(String algorithm) throws GeneralSecurityException {
+        SecurityEntityFactory factory
+                = resolveSecurityEntityFactory(AlgorithmParameters.class, algorithm,
+                        r -> r.isSecurityEntitySupported(AlgorithmParameters.class, algorithm));
+        return factory.createAlgorithmParameters(algorithm);
     }
 
     public static KeyFactory getKeyFactory(String algorithm) throws GeneralSecurityException {

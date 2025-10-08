@@ -19,6 +19,7 @@
 
 package org.apache.sshd.common.util.security;
 
+import java.security.AlgorithmParameters;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyPairGenerator;
@@ -39,6 +40,10 @@ import org.apache.sshd.common.util.ValidateUtils;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface SecurityEntityFactory {
+
+    default AlgorithmParameters createAlgorithmParameters(String algorithm) throws GeneralSecurityException {
+        throw new NoSuchAlgorithmException("Algorithm '" + algorithm + "' not supported (default)");
+    }
 
     default CertificateFactory createCertificateFactory(String algorithm) throws GeneralSecurityException {
         throw new NoSuchAlgorithmException("Algorithm '" + algorithm + "' not supported (default)");
@@ -86,6 +91,11 @@ public interface SecurityEntityFactory {
 
         public Named(String name) {
             this.name = ValidateUtils.checkNotNullAndNotEmpty(name, "Security provider name must not be empty");
+        }
+
+        @Override
+        public AlgorithmParameters createAlgorithmParameters(String algorithm) throws GeneralSecurityException {
+            return AlgorithmParameters.getInstance(algorithm, name);
         }
 
         @Override
@@ -143,6 +153,11 @@ public interface SecurityEntityFactory {
         }
 
         @Override
+        public AlgorithmParameters createAlgorithmParameters(String algorithm) throws GeneralSecurityException {
+            return AlgorithmParameters.getInstance(algorithm, provider);
+        }
+
+        @Override
         public CertificateFactory createCertificateFactory(String algorithm) throws GeneralSecurityException {
             return CertificateFactory.getInstance(algorithm, provider);
         }
@@ -191,6 +206,11 @@ public interface SecurityEntityFactory {
     enum Default implements SecurityEntityFactory {
 
         INSTANCE;
+
+        @Override
+        public AlgorithmParameters createAlgorithmParameters(String algorithm) throws GeneralSecurityException {
+            return AlgorithmParameters.getInstance(algorithm);
+        }
 
         @Override
         public CertificateFactory createCertificateFactory(String algorithm) throws GeneralSecurityException {
