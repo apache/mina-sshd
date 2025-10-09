@@ -35,6 +35,8 @@ updates:
         versions: [ ">= 2.0.0" ]
       - dependency-name: "ch.qos.logback:*"
         versions: [ ">= 1.3.0" ]
+      - dependency-name: "org.junit.jupiter:*"
+        versions: [ ">= 6.0.0" ]
       # We *do* test against 2.2.X. We only want to get patch version updates for mina-core
       - dependency-name: "org.apache.mina:mina-core"
         update-types: [ "version-update:semver-major", "version-update:semver-minor" ]
