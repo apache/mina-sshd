@@ -113,11 +113,11 @@ class StrictKexTest extends BaseTestSupport {
         } catch (SshException e) {
             IoWriteFuture future = debugMsg.get();
             assertNotNull(future, "No SSH_MSG_DEBUG");
-            assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
             // Due to a race condition in the Nio2 transport when closing a connection due to an exception it's possible
             // that we do _not_ get the expected disconnection code. The race condition may lead to the IoSession being
             // closed in the peer before it has sent the DISCONNECT message. Happens in particular on Windows.
             if (e.getDisconnectCode() == SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED) {
+                assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
                 assertTrue(e.getMessage()
                         .startsWith("KEX: strict KEX negotiated but there were 1 messages before the first SSH_MSG_KEXINIT"),
                         "Unexpected disconnect reason: " + e.getMessage());
@@ -162,8 +162,8 @@ class StrictKexTest extends BaseTestSupport {
         } catch (SshException e) {
             IoWriteFuture future = debugMsg.get();
             assertNotNull(future, "No SSH_MSG_DEBUG");
-            assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
             if (e.getDisconnectCode() == SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED) {
+                assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
                 assertEquals("SSH_MSG_DEBUG not allowed during initial key exchange in strict KEX", e.getMessage(),
                         "Unexpected disconnect reason");
             }
