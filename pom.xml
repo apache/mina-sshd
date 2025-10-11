@@ -107,10 +107,10 @@
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
         <testcontainers.version>1.21.3</testcontainers.version>
-        <grpc.version>1.75.0</grpc.version> <!-- Used only in tests -->
+        <grpc.version>1.76.0</grpc.version> <!-- Used only in tests -->
 
-        <maven.archiver.version>3.6.4</maven.archiver.version>
-        <plexus.archiver.version>4.10.2</plexus.archiver.version>
+        <maven.archiver.version>3.6.5</maven.archiver.version>
+        <plexus.archiver.version>4.10.3</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
         <pmd.version>7.17.0</pmd.version>
         <japicmp.version>0.23.1</japicmp.version>
@@ -637,7 +637,7 @@
             <dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
-                <version>5.13.4</version>
+                <version>5.14.0</version>
             </dependency>
             <dependency>
                 <groupId>org.mockito</groupId>
@@ -918,7 +918,7 @@
                 <plugin>
                    <groupId>org.apache.maven.plugins</groupId>
                    <artifactId>maven-pmd-plugin</artifactId>
-                   <version>3.27.0</version>
+                   <version>3.28.0</version>
                    <configuration>
                        <targetJdk>${javac.target}</targetJdk>
                        <printFailingErrors>true</printFailingErrors>
