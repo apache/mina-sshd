@@ -268,7 +268,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
                 }
 
                 if (disconnectSession) {
-                    session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                    session.disconnect(SshConstants.SSH2_DISCONNECT_NO_MORE_AUTH_METHODS_AVAILABLE,
                             "Too many authentication failures: " + nbAuthRequests);
                     return false;
                 }
@@ -294,9 +294,9 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             }
 
             if (disconnectSession) {
-                session.disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                session.disconnect(SshConstants.SSH2_DISCONNECT_ILLEGAL_USER_NAME,
                         "Change of username or service is not allowed (" + this.authUserName + ", " + this.authService + ")"
-                                                                                + " -> (" + username + ", " + service + ")");
+                                                                                   + " -> (" + username + ", " + service + ")");
             } else {
                 if (debugEnabled) {
                     log.debug(

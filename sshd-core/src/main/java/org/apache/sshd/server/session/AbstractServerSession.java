@@ -354,7 +354,7 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         }
 
         // TODO: can services be initiated by the server-side ?
-        disconnect(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+        disconnect(SshConstants.SSH2_DISCONNECT_SERVICE_NOT_AVAILABLE,
                 "Unsupported packet: SSH_MSG_SERVICE_ACCEPT for " + serviceName);
     }
 
