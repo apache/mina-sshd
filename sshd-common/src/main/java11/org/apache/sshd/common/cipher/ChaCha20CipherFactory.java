@@ -131,7 +131,7 @@ public final class ChaCha20CipherFactory implements Supplier<Cipher> {
             AlgorithmParameterSpec algorithmParameterSpec = new ChaCha20ParameterSpec(nonce, 0);
             k1 = new SecretKeySpec(Arrays.copyOfRange(key, 0, 32), "ChaCha20");
             bodyEngine.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE, k1, algorithmParameterSpec);
-            mac.init(computePolyMacKey());
+            init(mac, bodyEngine);
 
             k2 = new SecretKeySpec(Arrays.copyOfRange(key, 32, 64), "ChaCha20");
             headerEngine.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE, k2, algorithmParameterSpec);
@@ -179,23 +179,20 @@ public final class ChaCha20CipherFactory implements Supplier<Cipher> {
             BufferUtils.putUInt(counter, nonce, 8, 4);
             AlgorithmParameterSpec algorithmParameterSpec = new ChaCha20ParameterSpec(nonce, 0);
             bodyEngine.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE, k1, algorithmParameterSpec);
-            mac.init(computePolyMacKey());
+            init(mac, bodyEngine);
             headerEngine.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE, k2,
                     algorithmParameterSpec);
         }
 
-        private byte[] computePolyMacKey() throws GeneralSecurityException {
+        private void init(Mac mac, javax.crypto.Cipher engine) throws Exception {
+            // Getting a full block from ChaCha20 increments its block counter (from 0 to 1), so the cipher
+            // is set up correctly as a side-effect. The extra bytes gotten are simply discarded.
+            //
+            // Note that AbstractChaCha20Cipher.BLOCK_BYTES == 2 * Poly1305Mac.KEY_BYTES.
             byte[] block = new byte[Poly1305Mac.KEY_BYTES];
-            bodyEngine.update(block, 0, block.length, block);
-            // JDK does not like re-initialization with same key and nonce, even if the counter is different.
-            // But it only checks the latest nonce. So trick it:
-            nonce[0] ^= 1;
-            AlgorithmParameterSpec next = new ChaCha20ParameterSpec(nonce, 1);
-            bodyEngine.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE, k1, next);
-            nonce[0] ^= 1;
-            next = new ChaCha20ParameterSpec(nonce, 1);
-            bodyEngine.init(mode == Mode.Encrypt ? javax.crypto.Cipher.ENCRYPT_MODE : javax.crypto.Cipher.DECRYPT_MODE, k1, next);
-            return block;
+            engine.update(block, 0, block.length, block);
+            mac.init(block);
+            engine.update(block, 0, block.length, block);
         }
     }
 

@@ -99,7 +99,6 @@ public class ChaCha20Cipher extends AbstractChaCha20Cipher {
     }
 
     protected static class ChaChaEngine {
-        private static final int BLOCK_BYTES = 64;
         private static final int BLOCK_INTS = BLOCK_BYTES / Integer.BYTES;
         private static final int KEY_OFFSET = 4;
         private static final int KEY_BYTES = 32;

@@ -24,6 +24,8 @@ package org.apache.sshd.common.cipher;
  */
 public abstract class AbstractChaCha20Cipher implements Cipher {
 
+    protected static final int BLOCK_BYTES = 64;
+
     protected AbstractChaCha20Cipher() {
         super();
     }
