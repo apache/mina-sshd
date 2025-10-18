@@ -35,6 +35,7 @@
         <projectRoot>${project.basedir}/..</projectRoot>
         <maven.install.skip>true</maven.install.skip>
         <maven.deploy.skip>true</maven.deploy.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
         <japicmp.skip>true</japicmp.skip>
     </properties>
 
