@@ -21,7 +21,6 @@ package org.apache.sshd.common.util.security.bouncycastle;
 import java.security.Provider;
 
 import org.apache.sshd.common.util.ReflectionUtils;
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 final class BouncyCastleAccessor {
 
@@ -33,7 +32,12 @@ final class BouncyCastleAccessor {
 
     public Class<?> getProviderClass(String className) {
         try {
-            return Inner.getProviderClass(className);
+            if (BouncyCastleSecurityProviderRegistrar.FIPS_PROVIDER_CLASS.equals(className)) {
+                return Class.forName(className);
+            } else if (BouncyCastleSecurityProviderRegistrar.PROVIDER_CLASS.equals(className)) {
+                return Inner.getProviderClass();
+            }
+            return null;
         } catch (Throwable t) {
             return null;
         }
@@ -41,7 +45,16 @@ final class BouncyCastleAccessor {
 
     public Provider createProvider(String className) throws ReflectiveOperationException {
         try {
-            return Inner.createProvider(className);
+            if (BouncyCastleSecurityProviderRegistrar.FIPS_PROVIDER_CLASS.equals(className)) {
+                try {
+                    return ReflectionUtils.newInstance(Class.forName(className), Provider.class);
+                } catch (ClassNotFoundException e) {
+                    return null;
+                }
+            } else if (BouncyCastleSecurityProviderRegistrar.PROVIDER_CLASS.equals(className)) {
+                return Inner.createProvider();
+            }
+            return null;
         } catch (Throwable t) {
             return null;
         }
@@ -53,34 +66,20 @@ final class BouncyCastleAccessor {
             super();
         }
 
-        static Class<?> getProviderClass(String className) {
+        static Class<?> getProviderClass() {
             try {
-                if (BouncyCastleSecurityProviderRegistrar.PROVIDER_CLASS.equals(className)) {
-                    return BouncyCastleProvider.class;
-                } else if (BouncyCastleSecurityProviderRegistrar.FIPS_PROVIDER_CLASS.equals(className)) {
-                    return Class.forName(className);
-                }
-                return null;
+                return org.bouncycastle.jce.provider.BouncyCastleProvider.class;
             } catch (Throwable t) {
                 return null;
             }
         }
 
-        static Provider createProvider(String className) throws ReflectiveOperationException {
-            if (BouncyCastleSecurityProviderRegistrar.PROVIDER_CLASS.equals(className)) {
-                try {
-                    return new BouncyCastleProvider();
-                } catch (Throwable t) {
-                    return null;
-                }
-            } else if (BouncyCastleSecurityProviderRegistrar.FIPS_PROVIDER_CLASS.equals(className)) {
-                try {
-                    return ReflectionUtils.newInstance(Class.forName(className), Provider.class);
-                } catch (ClassNotFoundException e) {
-                    throw new ReflectiveOperationException("Cannot instantiate " + className, e);
-                }
+        static Provider createProvider() {
+            try {
+                return new org.bouncycastle.jce.provider.BouncyCastleProvider();
+            } catch (Throwable t) {
+                return null;
             }
-            return null;
         }
     }
 
