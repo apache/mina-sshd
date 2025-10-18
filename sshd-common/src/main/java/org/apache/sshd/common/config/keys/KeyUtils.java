@@ -341,7 +341,7 @@ public final class KeyUtils {
      * @return                          A {@link KeyPair} of the specified type and size
      * @throws GeneralSecurityException If failed to generate the key pair
      * @see                             #getPublicKeyEntryDecoder(String)
-     * @see                             PublicKeyEntryDecoder<?, ?>#generateKeyPair(int)
+     * @see                             PublicKeyEntryDecoder#generateKeyPair(int)
      */
     public static KeyPair generateKeyPair(String keyType, int keySize) throws GeneralSecurityException {
         PublicKeyEntryDecoder decoder = getPublicKeyEntryDecoder(keyType);
@@ -353,7 +353,7 @@ public final class KeyUtils {
     }
 
     /**
-     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes()
+     * Registers the specified decoder for all the types it {@link PublicKeyEntryDecoder#getSupportedKeyTypes()
      * supports}
      *
      * @param decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to register
@@ -371,9 +371,9 @@ public final class KeyUtils {
     /**
      * Unregisters the specified decoder for all the types it supports
      *
-     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder<?, ?> decoder} to unregister
+     * @param  decoder The (never {@code null}) {@link PublicKeyEntryDecoder decoder} to unregister
      * @return         {@link Set} of all the effectively un-registered key types out of all the
-     *                 {@link PublicKeyEntryDecoder<?, ?>#getSupportedKeyTypes() supported} ones.
+     *                 {@link PublicKeyEntryDecoder#getSupportedKeyTypes() supported} ones.
      * @see            #unregisterPublicKeyEntryDecoderForKeyType(String)
      */
     public static Set<String> unregisterPublicKeyEntryDecoder(PublicKeyEntryDecoder decoder) {
@@ -395,8 +395,8 @@ public final class KeyUtils {
      * Unregister the decoder registered for the specified key type
      *
      * @param  keyType The key (never {@code null}/empty) key type
-     * @return         The unregistered {@link PublicKeyEntryDecoder<?, ?>} - {@code null} if none registered for this
-     *                 key type
+     * @return         The unregistered {@link PublicKeyEntryDecoder} - {@code null} if none registered for this key
+     *                 type
      */
     public static PublicKeyEntryDecoder unregisterPublicKeyEntryDecoderForKeyType(String keyType) {
         keyType = ValidateUtils.checkNotNullAndNotEmpty(keyType, "No key type specified");
@@ -406,7 +406,7 @@ public final class KeyUtils {
     /**
      * @param  keyType The {@code OpenSSH} key type string - e.g., {@code ssh-rsa, ssh-dss} - ignored if
      *                 {@code null}/empty
-     * @return         The registered {@link PublicKeyEntryDecoder<?, ?>} or {code null} if not found
+     * @return         The registered {@link PublicKeyEntryDecoder} or {code null} if not found
      */
     public static PublicKeyEntryDecoder getPublicKeyEntryDecoder(String keyType) {
         if (GenericUtils.isEmpty(keyType)) {
@@ -417,8 +417,8 @@ public final class KeyUtils {
 
     /**
      * @param  kp The {@link KeyPair} to examine - ignored if {@code null}
-     * @return    The matching {@link PublicKeyEntryDecoder<?, ?>} provided <U>both</U> the public and private keys have
-     *            the same decoder - {@code null} if no match found
+     * @return    The matching {@link PublicKeyEntryDecoder} provided <U>both</U> the public and private keys have the
+     *            same decoder - {@code null} if no match found
      * @see       #getPublicKeyEntryDecoder(Key)
      */
     public static PublicKeyEntryDecoder getPublicKeyEntryDecoder(KeyPair kp) {

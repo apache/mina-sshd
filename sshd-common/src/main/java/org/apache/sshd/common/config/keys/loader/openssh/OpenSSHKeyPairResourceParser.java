@@ -335,7 +335,6 @@ public class OpenSSHKeyPairResourceParser extends AbstractKeyPairResourceParser 
     /**
      * @param  decoder                  The decoder to register
      * @throws IllegalArgumentException if no decoder or not key type or no supported names for the decoder
-     * @see                             PrivateKeyEntryDecoder#getPublicKeyType()
      * @see                             PrivateKeyEntryDecoder#getSupportedKeyTypes()
      */
     public static void registerPrivateKeyEntryDecoder(PrivateKeyEntryDecoder decoder) {

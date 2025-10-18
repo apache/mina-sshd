@@ -30,8 +30,7 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.NumberUtils;
 
 /**
- * @param  <PUB> Generic {@link PublicKey} type
- * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PublicKeyRawDataDecoder {
     /**

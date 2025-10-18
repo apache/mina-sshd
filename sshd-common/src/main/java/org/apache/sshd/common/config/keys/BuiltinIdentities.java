@@ -148,7 +148,6 @@ public enum BuiltinIdentities implements Identity {
      * @param  key The {@link Key} instance - ignored if {@code null}
      * @return     The matching {@link BuiltinIdentities} whose either public or private key type matches the requested
      *             one or {@code null} if no match found
-     * @see        #fromKeyType(Class)
      */
     public static BuiltinIdentities fromKey(Key key) {
         if (key == null) {

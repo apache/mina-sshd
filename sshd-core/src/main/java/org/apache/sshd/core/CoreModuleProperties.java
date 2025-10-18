@@ -205,7 +205,7 @@ public final class CoreModuleProperties {
             = Property.bool("channel-exec-want-reply", false);
 
     /**
-     * On some platforms, a call to {@ode System.in.read(new byte[65536], 0, 32768)} always throws an
+     * On some platforms, a call to {@code System.in.read(new byte[65536], 0, 32768)} always throws an
      * {@link IOException}. So we need to protect against that and chunk the call into smaller calls. This problem was
      * found on Windows, JDK 1.6.0_03-b05.
      */

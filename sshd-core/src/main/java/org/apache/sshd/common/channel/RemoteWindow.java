@@ -55,7 +55,7 @@ public class RemoteWindow extends Window {
      *
      * @param size       the initial window size
      * @param packetSize the peer's advertised maximum packet size
-     * @param resolver   {@PropertyResolver} to access properties
+     * @param resolver   {@link PropertyResolver} to access properties
      */
     @Override
     public void init(long size, long packetSize, PropertyResolver resolver) {

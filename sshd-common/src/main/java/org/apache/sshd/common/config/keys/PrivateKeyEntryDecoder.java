@@ -38,9 +38,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.io.output.SecureByteArrayOutputStream;
 
 /**
- * @param  <PUB> Type of {@link PublicKey}
- * @param  <PRV> Type of {@link PrivateKey}
- * @author       <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
+ * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface PrivateKeyEntryDecoder extends KeyEntryResolver, PrivateKeyEntryResolver {
 
