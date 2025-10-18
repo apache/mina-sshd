@@ -74,3 +74,6 @@ Complete refactoring of the SSH transport protocol. New feature: support for cli
 
   Use the ML-KEM implementations from SunJCE if run on Java >= 24. For Java < 24, the Bouncy Castle implementations
   are used. The SunJCE ML-KEMs are advertised in the `SunJCESecurityProviderRegistrar`.
+
+* OSGi: the upper bound of the version range for package imports from `org.bouncycastle.*` has been raised from 2.0.0
+  to 3.0.0. This enables using BC-FIPS in an OSGi environment. BC-FIPS provides OSGi manifests as of version 2.1.0.

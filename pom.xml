@@ -93,6 +93,8 @@
 
         <groovy.version>4.0.17</groovy.version>
         <bouncycastle.version>1.82</bouncycastle.version>
+        <!-- BC FIPS has version numbers 2.x.y. -->
+        <bouncycastle.upper.bound>3</bouncycastle.upper.bound>
             <!-- NOTE: upgrading slf4j beyond this version causes
 
             Execution verify-style of goal org.apache.maven.plugins:maven-checkstyle-plugin:3.1.2:check failed.: NullPointerException
@@ -1274,6 +1276,7 @@
                                 <Import-Package><![CDATA[
                                   org.apache.sshd*;version="$<range;[===,=+);$<maven_version;${project.version}>>",
                                   org.slf4j*;version="$<range;[==,${slf4j.upper.bound})>",
+                                  org.bouncycastle*;version="[${bouncycastle.version},${bouncycastle.upper.bound})",
                                   ${bnd.extraImports}
                                   *
                                 ]]></Import-Package>

@@ -37,13 +37,12 @@
         <!--
           The BC FIPS security provider class resides in a package that is referenced nowhere, except reflectively in the BouncyCastleSecurityRegistrar.
           The (optional) package import will thus be missing in the generated MANIFEST.MF. However, the BouncyCastleSecurityRegistrar expects to find
-          class org.bouncycastle.jce.provider.BouncyCastleProvider on the classpath; otherwise its isSupported() returns false and Bouncycastle is
-          considered not available.
+          the provider class on the classpath; otherwise its isSupported() returns false and Bouncycastle is considered not available.
 
           However, in OSGi the package will not be on the bundle classpath if there is no Import-Package for it. (And using a Require-Bundle would restrict
           bundle wiring too much.)
         -->
-        <bnd.extraImports>org.bouncycastle.jcajce.provider;version="$$&lt;range;[==,+);${bouncycastle.version}&gt;";resolution:=optional,</bnd.extraImports>
+        <bnd.extraImports>org.bouncycastle.jcajce.provider;version="[${bouncycastle.version},${bouncycastle.upper.bound})";resolution:=optional,</bnd.extraImports>
     </properties>
 
     <dependencies>
