@@ -1717,7 +1717,7 @@ public abstract class AbstractSftpSubsystemHelper
         LinkOption[] options = accessor.resolveFileAccessLinkOptions(
                 this, resolvedPath, SftpConstants.SSH_FXP_REMOVE, "", false);
         WithFileAttributeCache.withAttributeCache(resolvedPath, p -> {
-            Boolean status = checkSymlinkState(p, followLinks, options);
+            Boolean status = checkSymlinkState(p, !followLinks, options);
             if (status == null) {
                 throw signalRemovalPreConditionFailure(id, path, p,
                         new AccessDeniedException(p.toString(), p.toString(), "Cannot determine existence of remove candidate"),

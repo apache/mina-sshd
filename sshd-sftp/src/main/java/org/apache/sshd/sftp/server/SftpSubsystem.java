@@ -845,7 +845,7 @@ public class SftpSubsystem
                 this, file, SftpConstants.SSH_FXP_FSTAT, "", true);
 
         boolean followLinks = resolvePathResolutionFollowLinks(SftpConstants.SSH_FXP_FSTAT, handle, file);
-        return resolveFileAttributes(file, flags, followLinks, options);
+        return resolveFileAttributes(file, flags, !followLinks, options);
     }
 
     @Override

@@ -49,6 +49,7 @@ import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.MapEntryUtils.NavigableMapBuilder;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
@@ -70,6 +71,7 @@ import org.apache.sshd.sftp.server.SftpSubsystem;
 import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -539,6 +541,89 @@ public class SftpVersionsTest extends AbstractSftpClientTestSupport {
                     assertTrue(value, "Bad end-of-list value");
                 }
             }
+        }
+    }
+
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}")
+    void sftpRemoveFileWithSymlinkInPath(int version) throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "Symlinks not reliably supported on Windows");
+
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(
+                targetPath,
+                SftpConstants.SFTP_SUBSYSTEM_NAME,
+                getClass().getSimpleName());
+        Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
+        String testFileName = "test-file.txt";
+
+        Path actualDir = lclParent.resolve("actual-dir-" + version);
+        CommonTestSupportUtils.deleteRecursive(actualDir);
+        Files.createDirectories(actualDir);
+
+        Path symlinkDir = lclParent.resolve("symlink-dir-" + version);
+        Files.deleteIfExists(symlinkDir);
+        Files.createSymbolicLink(symlinkDir, actualDir);
+
+        Path fileViaSymlink = symlinkDir.resolve(testFileName);
+        Files.write(fileViaSymlink, "test content".getBytes(StandardCharsets.UTF_8));
+
+        assertTrue(Files.exists(fileViaSymlink), "File should exist via symlink path");
+        assertTrue(Files.exists(actualDir.resolve(testFileName)), "File should exist in actual directory");
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, fileViaSymlink);
+
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, version)) {
+            sftp.remove(remotePath);
+
+            assertFalse(Files.exists(fileViaSymlink), "File should be deleted via symlink path");
+            assertFalse(Files.exists(actualDir.resolve(testFileName)), "File should be deleted from actual directory");
+        } finally {
+            Files.deleteIfExists(symlinkDir);
+            CommonTestSupportUtils.deleteRecursive(actualDir);
+        }
+    }
+
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "version={0}")
+    void sftpFStatWithSymlinkInPath(int version) throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "Symlinks not reliably supported on Windows");
+
+        Path targetPath = detectTargetFolder();
+        Path lclSftp = CommonTestSupportUtils.resolve(targetPath,
+                SftpConstants.SFTP_SUBSYSTEM_NAME, getClass().getSimpleName());
+        Path lclParent = assertHierarchyTargetFolderExists(lclSftp);
+
+        Path actualDir = lclParent.resolve("actual-fstat-" + version);
+        CommonTestSupportUtils.deleteRecursive(actualDir);
+        Files.createDirectories(actualDir);
+
+        Path symlinkDir = lclParent.resolve("symlink-fstat-" + version);
+        Files.deleteIfExists(symlinkDir);
+        Files.createSymbolicLink(symlinkDir, actualDir);
+
+        Path testFile = symlinkDir.resolve("test.txt");
+        String content = getCurrentTestName();
+        Files.write(testFile, content.getBytes(StandardCharsets.UTF_8));
+
+        Path parentPath = targetPath.getParent();
+        String remotePath = CommonTestSupportUtils.resolveRelativeRemotePath(parentPath, testFile);
+
+        try (ClientSession session = createAuthenticatedClientSession();
+             SftpClient sftp = createSftpClient(session, version)) {
+            try (SftpClient.CloseableHandle handle = sftp.open(remotePath, SftpClient.OpenMode.Read)) {
+                Attributes attrs = sftp.stat(handle);
+
+                assertNotNull(attrs, "Attributes should be retrieved");
+                assertEquals(content.length(), attrs.getSize(), "File size mismatch");
+                assertTrue(attrs.isRegularFile(), "Should be a regular file");
+            }
+        } finally {
+            Files.deleteIfExists(testFile);
+            Files.deleteIfExists(symlinkDir);
+            CommonTestSupportUtils.deleteRecursive(actualDir);
         }
     }
 
