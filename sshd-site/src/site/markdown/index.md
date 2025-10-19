@@ -42,14 +42,16 @@ volunteers in their free time and resources are limited.
 
 But we can give you a rough outline of what we want to do:
 
-* **3.0.0-M1**: Rework of the SSH transport protocol as a filter chain. The main user-visible new feature is support for client-side proxies.
+* **3.0.0-M1**: Rework of the SSH transport protocol as a filter chain. The main user-visible
+  new feature is support for client-side proxies.
+* **3.0.0-M2**: Refactoring of cryptography. New feature: multi-release JARs for `sshd-common`
+  and `sshd-osgi` and using on newer Java versions the already built-in cryptographic algorithms
+  for ChaCha20, ed25519, and ML-KEM.
 
 Further possible milestones (the order might change, though):
 
-* Some rework of handling of private/public keys. No new feature planned, it's necessary clean-up that will require some public API changes.
-* Resolve the split packages between `sshd-common` and `sshd-core`.
-* Support Java native ed25519 on Java >= 15. This may result in a multi-release JAR artifact.
 * Some refactoring of SFTP code; current code has shortcomings regarding SFTP file systems.
+* Resolve the split packages between `sshd-common` and `sshd-core`.
 * Anything else we stumble upon and that we cannot fix reasonably without breaking API.
 
 We reserve the right to make arbitrary API changes between M-releases.
