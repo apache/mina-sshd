@@ -19,10 +19,10 @@
 package org.apache.sshd.common.signature;
 
 import java.security.KeyPair;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 import org.apache.sshd.certificate.OpenSshCertificateBuilder;
@@ -101,7 +101,7 @@ class OpenSshHostCertificateTest extends BaseTestSupport {
                 .serial(System.currentTimeMillis()) //
                 .publicKey(hostKeyPair.getPublic()) //
                 .id("test-cert-" + signatureAlgorithm) //
-                .validBefore(System.currentTimeMillis() + TimeUnit.HOURS.toMillis(1)) //
+                .validBefore(Instant.now().plusSeconds(3600)) //
                 .principals(principals) //
                 .sign(caKey, signatureAlgorithm);
         hostKey = hostKeyPair;
