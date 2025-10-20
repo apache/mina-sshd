@@ -54,7 +54,7 @@ class ProxyHttpAuthIntegrationTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProxyHttpAuthIntegrationTest.class);
 
-    private static GenericContainer<?> proxy = new GenericContainer<>("vimagick/tinyproxy") //
+    private static GenericContainer<?> proxy = new GenericContainer<>("ajoergensen/tinyproxy") //
             .withCopyFileToContainer(MountableFile.forClasspathResource("org/apache/sshd/proxy/tinyproxy-auth.conf"),
                     "/etc/tinyproxy/tinyproxy.conf") //
             .withExposedPorts(1080) //
