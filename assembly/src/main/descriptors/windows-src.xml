@@ -41,7 +41,8 @@
                 <include>**/*.jnilib</include>
                 <include>**/*.cert</include>
                 <include>**/*.sh</include>
-                <include>**/.mvn/*</include>
+                <include>**/.mvn/**</include>
+                <include>mvnw</include>
 
                 <include>sshd-openpgp/src/test/resources/**/*</include>
                 <include>sshd-core/src/test/resources/org/apache/sshd/client/opensshcerts/**/*</include>
@@ -98,6 +99,7 @@
                 <exclude>sshd-core/src/test/resources/org/apache/sshd/client/opensshcerts/**/*</exclude>
                 <exclude>sshd-benchmarks/src/main/resources/org/apache/sshd/**/*</exclude>
                 <exclude>sshd-openpgp/src/test/resources/**/*</exclude>
+                <exclude>mvnw</exclude>
             </excludes>
             <lineEnding>dos</lineEnding>
         </fileSet>
