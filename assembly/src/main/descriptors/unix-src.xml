@@ -40,7 +40,8 @@
                 <include>**/*.bin</include>
                 <include>**/*.jnilib</include>
                 <include>**/*.cert</include>
-                <include>**/.mvn/*</include>
+                <include>**/.mvn/**</include>
+                <include>mvnw.cmd</include>
 
                 <include>sshd-openpgp/src/test/resources/**/*</include>
             </includes>
@@ -92,6 +93,7 @@
 
                 <exclude>sshd-core/src/docs/*.txt</exclude>
                 <exclude>sshd-openpgp/src/test/resources/**/*</exclude>
+                <exclude>mvnw.cmd</exclude>
             </excludes>
             <lineEnding>unix</lineEnding>
         </fileSet>
