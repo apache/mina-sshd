@@ -32,6 +32,7 @@ newer Java versions the already built-in cryptographic algorithms for ChaCha20, 
 
 ## Bug Fixes
 
+* [GH-852](https://github.com/apache/mina-sshd/issues/852) Fix wrong import
 
 ## Major Code Re-factoring
 

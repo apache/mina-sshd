@@ -25,11 +25,11 @@ import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.interfaces.EdECKey;
 import java.security.spec.NamedParameterSpec;
+import java.util.Arrays;
 
 import org.apache.sshd.common.util.security.PublicKeyFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
-import org.bouncycastle.util.Arrays;
 
 public class JcePublicKeyFactory implements PublicKeyFactory {
 
