@@ -619,9 +619,6 @@ public final class SecurityUtils {
     }
 
     public static Optional<EdDSASupport<?, ?>> getEdDSASupport() {
-        if (isFipsMode()) {
-            return Optional.empty();
-        }
         register();
 
         synchronized (REGISTERED_PROVIDERS) {

@@ -33,6 +33,7 @@
 * [GH-809](https://github.com/apache/mina-sshd/pull/809) Fix server-side authentication for FIDO/U2F sk-* keys with flags in `authorized_keys`
 * [GH-827](https://github.com/apache/mina-sshd/issues/827) Don't fail on invalid `known_hosts` lines; log and skip them
 * [GH-830](https://github.com/apache/mina-sshd/issues/830) EC public keys: let Bouncy Castle generate X.509 encodings with the curve OID as algorithm parameter
+* [GH-856](https://github.com/apache/mina-sshd/issues/856) FIX using ed25519 with BC-FIPS
 
 ## New Features
 
