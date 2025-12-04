@@ -194,6 +194,52 @@
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
+                    <execution>
+                        <id>bcfips</id>
+                        <goals>
+                            <goal>test</goal>
+                        </goals>
+                        <configuration>
+                            <redirectTestOutputToFile>true</redirectTestOutputToFile>
+                            <reportsDirectory>${project.build.directory}/surefire-reports-bcfips</reportsDirectory>
+                            <systemPropertyVariables>
+                                <org.apache.sshd.security.fipsEnabled>true</org.apache.sshd.security.fipsEnabled>
+                                <org.apache.sshd.security.provider.SunECWrapper.enabled>false</org.apache.sshd.security.provider.SunECWrapper.enabled>
+                            </systemPropertyVariables>
+                            <includes>
+                                <include>**/SignatureFactoriesTest.java</include>
+                            </includes>
+                            <classpathDependencyExcludes>
+                                <classpathDependencyExclude>net.i2p.crypto:eddsa</classpathDependencyExclude>
+                                <classpathDependencyExclude>org.bouncycastle:bcprov-jdk18on</classpathDependencyExclude>
+                                <classpathDependencyExclude>org.bouncycastle:bcpkix-jdk18on</classpathDependencyExclude>
+                                <classpathDependencyExclude>org.bouncycastle:bcpg-jdk18on</classpathDependencyExclude>
+                                <classpathDependencyExclude>org.bouncycastle:bcutil-jdk18on</classpathDependencyExclude>
+                            </classpathDependencyExcludes>
+                            <additionalClasspathDependencies>
+                                <additionalClasspathDependency>
+                                    <groupId>org.bouncycastle</groupId>
+                                    <artifactId>bc-fips</artifactId>
+                                    <version>2.1.2</version>
+                                </additionalClasspathDependency>
+                                <additionalClasspathDependency>
+                                    <groupId>org.bouncycastle</groupId>
+                                    <artifactId>bcpkix-fips</artifactId>
+                                    <version>2.1.10</version>
+                                </additionalClasspathDependency>
+                                <additionalClasspathDependency>
+                                    <groupId>org.bouncycastle</groupId>
+                                    <artifactId>bcpg-fips</artifactId>
+                                    <version>2.1.11</version>
+                                </additionalClasspathDependency>
+                                <additionalClasspathDependency>
+                                    <groupId>org.bouncycastle</groupId>
+                                    <artifactId>bcutil-fips</artifactId>
+                                    <version>2.1.5</version>
+                                </additionalClasspathDependency>
+                            </additionalClasspathDependencies>
+                        </configuration>
+                    </execution>
                 </executions>
             </plugin>
             <plugin>
