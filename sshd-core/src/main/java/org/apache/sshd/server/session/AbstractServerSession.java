@@ -317,7 +317,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
         Buffer response = createBuffer(SshConstants.SSH_MSG_USERAUTH_SUCCESS, Byte.SIZE);
         IoWriteFuture future;
         IoSession networkSession = getIoSession();
-        synchronized (encodeLock) {
+        encodeLock.lock();
+        try {
             Buffer packet = resolveOutputPacket(response);
 
             setUsername(username);
@@ -327,6 +328,8 @@ public abstract class AbstractServerSession extends AbstractSession implements S
 
             // Now we can inform the peer that authentication is successful
             future = networkSession.writeBuffer(packet);
+        } finally {
+            encodeLock.unlock();
         }
 
         resetIdleTimeout();
