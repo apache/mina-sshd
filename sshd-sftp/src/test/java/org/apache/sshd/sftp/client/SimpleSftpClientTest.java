@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.file.FileSystemFactory;
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
@@ -114,6 +115,27 @@ public class SimpleSftpClientTest extends BaseSimpleClientTestSupport {
             assertTrue(Files.exists(clientFile, IoUtils.EMPTY_LINK_OPTIONS), "Remote file not created: " + clientFile);
             byte[] local = Files.readAllBytes(clientFile);
             assertArrayEquals(written, local, "Mismatched remote written data");
+
+            // Test zero reads
+            try (SftpClient.CloseableHandle h = sftp.open(remoteFilePath, SftpClient.OpenMode.Read)) {
+                AtomicReference<Boolean> eof = new AtomicReference<>();
+                byte[] buf = {};
+                int bytesRead = sftp.read(h, 0, buf, eof);
+                assertEquals(0, bytesRead);
+                assertFalse(eof.get() != null && eof.get().booleanValue());
+                bytesRead = sftp.read(h, written.length, buf, eof);
+                assertEquals(-1, bytesRead);
+                assertTrue(eof.get() != null && eof.get().booleanValue());
+                bytesRead = sftp.read(h, 1, buf, eof);
+                assertEquals(0, bytesRead);
+                assertFalse(eof.get() != null && eof.get().booleanValue());
+                bytesRead = sftp.read(h, written.length + 10, buf, eof);
+                assertEquals(-1, bytesRead);
+                assertTrue(eof.get() != null && eof.get().booleanValue());
+                bytesRead = sftp.read(h, written.length - 1, buf, eof);
+                assertEquals(0, bytesRead);
+                assertFalse(eof.get() != null && eof.get().booleanValue());
+            }
 
             try (SftpClient.CloseableHandle h = sftp.openDir(remoteFileDir)) {
                 boolean matchFound = false;
