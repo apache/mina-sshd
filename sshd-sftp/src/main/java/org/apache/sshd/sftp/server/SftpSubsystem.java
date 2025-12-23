@@ -900,7 +900,7 @@ public class SftpSubsystem
                     session, id, Handle.safe(handle), h, offset, length);
         }
 
-        ValidateUtils.checkTrue(length > 0L, "Invalid read length: %d", length);
+        ValidateUtils.checkTrue(length >= 0, "Invalid read length: %d", length);
         FileHandle fh = validateHandle(handle, h, FileHandle.class);
         SftpEventListener listener = getSftpEventListenerProxy();
         int readLen;

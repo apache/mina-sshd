@@ -134,10 +134,21 @@ public class FileHandle extends Handle {
     @SuppressWarnings("resource")
     public int read(byte[] data, int doff, int length, long offset, AtomicReference<Boolean> eof) throws IOException {
         SeekableByteChannel channel = getFileChannel();
+        if (length == 0 && offset >= channel.size()) {
+            // Zero-length read at EOF. SFTP v3: draft RFC v2 says: "If [...] EOF is encountered before reading any
+            // data, the server will respond with SSH_FXP_STATUS." (section 6.4). Later versions of the draft are
+            // silent on this issue.
+            //
+            // See https://datatracker.ietf.org/doc/html/draft-ietf-secsh-filexfer-02#section-6.4
+            if (eof != null) {
+                eof.set(true);
+            }
+            return -1;
+        }
         channel = channel.position(offset);
         int l = channel.read(ByteBuffer.wrap(data, doff, length));
-        if (l > 0 && eof != null && l < length) {
-            eof.set(channel.position() >= channel.size());
+        if (eof != null) {
+            eof.set(l < 0 || (l < length && channel.position() >= channel.size()));
         }
         return l;
     }
