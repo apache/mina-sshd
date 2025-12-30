@@ -34,6 +34,7 @@
 * [GH-827](https://github.com/apache/mina-sshd/issues/827) Don't fail on invalid `known_hosts` lines; log and skip them
 * [GH-830](https://github.com/apache/mina-sshd/issues/830) EC public keys: let Bouncy Castle generate X.509 encodings with the curve OID as algorithm parameter
 * [GH-856](https://github.com/apache/mina-sshd/issues/856) Fix using ed25519 with BC-FIPS
+* [GH-861](https://github.com/apache/mina-sshd/issues/861) SFTP client: prevent sending zero-length writes in `SftpOutputStreamAsync`
 
 * [SSHD-1348](https://issues.apache.org/jira/browse/SSHD-1348) Fix zero-length SFTP reads
 
