@@ -55,6 +55,7 @@ import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
@@ -472,12 +473,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     protected void setupSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
-        // set up the the session timeout listener and schedule it
         sessionTimeoutListener = createSessionTimeoutListener();
         addSessionListener(sessionTimeoutListener);
-
-        timeoutListenerFuture = getScheduledExecutorService()
-                .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
     }
 
     protected void removeSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
@@ -485,11 +482,38 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     protected SessionTimeoutListener createSessionTimeoutListener() {
-        return new SessionTimeoutListener();
+        return new SessionTimeoutListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                synchronized (this) {
+                    super.sessionCreated(session);
+                    if (!sessions.isEmpty()) {
+                        ensureTimeoutScheduled();
+                    }
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session s) {
+                synchronized (this) {
+                    super.sessionClosed(s);
+                    if (sessions.isEmpty()) {
+                        cancelSessionTimeout();
+                    }
+                }
+            }
+        };
     }
 
-    protected void stopSessionTimeoutListener(AbstractSessionFactory<?, ?> sessionFactory) {
-        // cancel the timeout monitoring task
+    private void ensureTimeoutScheduled() {
+        if (timeoutListenerFuture == null) {
+            timeoutListenerFuture = getScheduledExecutorService().scheduleAtFixedRate(sessionTimeoutListener, 1, 1,
+                    TimeUnit.SECONDS);
+        }
+    }
+
+    private void cancelSessionTimeout() {
         if (timeoutListenerFuture != null) {
             try {
                 timeoutListenerFuture.cancel(true);
@@ -497,6 +521,10 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
                 timeoutListenerFuture = null;
             }
         }
+    }
+
+    protected void stopSessionTimeoutListener(AbstractSessionFactory<?, ?> sessionFactory) {
+        cancelSessionTimeout();
 
         // remove the sessionTimeoutListener completely; should the SSH server/client be restarted, a new one
         // will be created.
