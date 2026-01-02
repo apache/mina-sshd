@@ -29,6 +29,7 @@
 
 ## Bug Fixes
 
+* [GH-721](https://github.com/apache/mina-sshd/issues/721) SSH client: schedule session timeout checks on demand only
 * [GH-807](https://github.com/apache/mina-sshd/issues/807) Handle "verified" flag for sk-* keys
 * [GH-809](https://github.com/apache/mina-sshd/pull/809) Fix server-side authentication for FIDO/U2F sk-* keys with flags in `authorized_keys`
 * [GH-827](https://github.com/apache/mina-sshd/issues/827) Don't fail on invalid `known_hosts` lines; log and skip them
