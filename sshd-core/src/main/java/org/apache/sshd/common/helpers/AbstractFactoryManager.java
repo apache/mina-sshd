@@ -29,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.apache.sshd.agent.SshAgentFactory;
@@ -83,8 +84,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected FileSystemFactory fileSystemFactory;
     protected List<? extends ServiceFactory> serviceFactories;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
-    protected SessionTimeoutListener sessionTimeoutListener;
-    protected ScheduledFuture<?> timeoutListenerFuture;
+    protected final AtomicReference<SessionTimeoutListener> sessionTimeoutListener = new AtomicReference<>();
+    protected final AtomicReference<ScheduledFuture<?>> timeoutListenerFuture = new AtomicReference<>();
     protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
     protected final SessionListener sessionListenerProxy;
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
@@ -473,8 +474,9 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     protected void setupSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
-        sessionTimeoutListener = createSessionTimeoutListener();
-        addSessionListener(sessionTimeoutListener);
+        SessionTimeoutListener listener = createSessionTimeoutListener();
+        sessionTimeoutListener.set(listener);
+        addSessionListener(listener);
     }
 
     protected void removeSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
@@ -507,19 +509,16 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     private void ensureTimeoutScheduled() {
-        if (timeoutListenerFuture == null) {
-            timeoutListenerFuture = getScheduledExecutorService().scheduleAtFixedRate(sessionTimeoutListener, 1, 1,
-                    TimeUnit.SECONDS);
+        if (isOpen() && timeoutListenerFuture.get() == null) {
+            timeoutListenerFuture.set(
+                    getScheduledExecutorService().scheduleAtFixedRate(sessionTimeoutListener.get(), 1, 1, TimeUnit.SECONDS));
         }
     }
 
     private void cancelSessionTimeout() {
-        if (timeoutListenerFuture != null) {
-            try {
-                timeoutListenerFuture.cancel(true);
-            } finally {
-                timeoutListenerFuture = null;
-            }
+        ScheduledFuture<?> future = timeoutListenerFuture.getAndSet(null);
+        if (future != null) {
+            future.cancel(true);
         }
     }
 
@@ -528,12 +527,9 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
 
         // remove the sessionTimeoutListener completely; should the SSH server/client be restarted, a new one
         // will be created.
-        if (sessionTimeoutListener != null) {
-            try {
-                removeSessionListener(sessionTimeoutListener);
-            } finally {
-                sessionTimeoutListener = null;
-            }
+        SessionTimeoutListener listener = sessionTimeoutListener.getAndSet(null);
+        if (listener != null) {
+            removeSessionListener(listener);
         }
     }
 
