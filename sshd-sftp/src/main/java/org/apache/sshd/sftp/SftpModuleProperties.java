@@ -63,8 +63,10 @@ public final class SftpModuleProperties {
      * The maximum size of the channel pool used by an {@link org.apache.sshd.sftp.client.fs.SftpFileSystem}; by default
      * 8. The value must be &gt; zero.
      *
-     * @see org.apache.sshd.sftp.client.fs.SftpFileSystem
+     * @see        org.apache.sshd.sftp.client.fs.SftpFileSystem
+     * @deprecated since 2.17.0 this has no effect since there is no pool anymore
      */
+    @Deprecated
     public static final Property<Integer> POOL_SIZE
             = Property.integer("sftp-fs-pool-size", 8);
 
@@ -76,8 +78,10 @@ public final class SftpModuleProperties {
      * The duration should not be shorter than 1 millisecond. If it is, 1 millisecond will be assumed.
      * </p>
      *
-     * @see org.apache.sshd.sftp.client.fs.SftpFileSystem
+     * @see        org.apache.sshd.sftp.client.fs.SftpFileSystem
+     * @deprecated since 2.17.0 this has no effect since there is no pool anymore
      */
+    @Deprecated
     public static final Property<Duration> POOL_LIFE_TIME
             = Property.duration("sftp-fs-pool-life-time", Duration.ofSeconds(10));
 
@@ -87,8 +91,10 @@ public final class SftpModuleProperties {
      * {@link #POOL_SIZE}, channels will not expire and will be closed only then the file system is closed, or if the
      * server closes them.
      *
-     * @see org.apache.sshd.sftp.client.fs.SftpFileSystem
+     * @see        org.apache.sshd.sftp.client.fs.SftpFileSystem
+     * @deprecated since 2.17.0 this has no effect since there is no pool anymore
      */
+    @Deprecated
     public static final Property<Integer> POOL_CORE_SIZE
             = Property.integer("sftp-fs-pool-core-size", 1);
 

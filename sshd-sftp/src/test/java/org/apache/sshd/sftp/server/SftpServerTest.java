@@ -49,10 +49,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * Multi-thread tests for {@link SftpFileSystem}.
  *
@@ -229,7 +225,7 @@ public class SftpServerTest extends BaseTestSupport {
                 assertFalse(worker2.isAlive(), "Worker 2 should have finished");
                 assertEquals(expected, actual1.get(), "Mismatched content");
                 assertEquals(expected, actual2.get(), "Mismatched content");
-                assertEquals(2, numberOfChannels.get(), "Unexpected number of SftpSubsystems");
+                assertEquals(1, numberOfChannels.get(), "Unexpected number of SftpSubsystems");
             }
             assertTrue(session.isOpen(), "Session should still be open");
             assertTrue(serverHasNoSftpSubsystem.await(3, TimeUnit.SECONDS), "Server did not close SftpSubsystem");
