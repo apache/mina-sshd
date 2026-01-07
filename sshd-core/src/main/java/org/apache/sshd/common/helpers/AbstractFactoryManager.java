@@ -29,6 +29,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Function;
 
 import org.apache.sshd.agent.SshAgentFactory;
@@ -55,6 +56,7 @@ import org.apache.sshd.common.kex.AbstractKexFactoryManager;
 import org.apache.sshd.common.random.Random;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.ReservedSessionMessagesHandler;
+import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.session.UnknownChannelReferenceHandler;
@@ -82,8 +84,8 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     protected FileSystemFactory fileSystemFactory;
     protected List<? extends ServiceFactory> serviceFactories;
     protected List<RequestHandler<ConnectionService>> globalRequestHandlers;
-    protected SessionTimeoutListener sessionTimeoutListener;
-    protected ScheduledFuture<?> timeoutListenerFuture;
+    protected final AtomicReference<SessionTimeoutListener> sessionTimeoutListener = new AtomicReference<>();
+    protected final AtomicReference<ScheduledFuture<?>> timeoutListenerFuture = new AtomicReference<>();
     protected final Collection<SessionListener> sessionListeners = new CopyOnWriteArraySet<>();
     protected final SessionListener sessionListenerProxy;
     protected final Collection<ChannelListener> channelListeners = new CopyOnWriteArraySet<>();
@@ -472,12 +474,9 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     protected void setupSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
-        // set up the the session timeout listener and schedule it
-        sessionTimeoutListener = createSessionTimeoutListener();
-        addSessionListener(sessionTimeoutListener);
-
-        timeoutListenerFuture = getScheduledExecutorService()
-                .scheduleAtFixedRate(sessionTimeoutListener, 1, 1, TimeUnit.SECONDS);
+        SessionTimeoutListener listener = createSessionTimeoutListener();
+        sessionTimeoutListener.set(listener);
+        addSessionListener(listener);
     }
 
     protected void removeSessionTimeout(AbstractSessionFactory<?, ?> sessionFactory) {
@@ -485,27 +484,52 @@ public abstract class AbstractFactoryManager extends AbstractKexFactoryManager i
     }
 
     protected SessionTimeoutListener createSessionTimeoutListener() {
-        return new SessionTimeoutListener();
+        return new SessionTimeoutListener() {
+
+            @Override
+            public void sessionCreated(Session session) {
+                synchronized (this) {
+                    super.sessionCreated(session);
+                    if (!sessions.isEmpty()) {
+                        ensureTimeoutScheduled();
+                    }
+                }
+            }
+
+            @Override
+            public void sessionClosed(Session s) {
+                synchronized (this) {
+                    super.sessionClosed(s);
+                    if (sessions.isEmpty()) {
+                        cancelSessionTimeout();
+                    }
+                }
+            }
+        };
+    }
+
+    private void ensureTimeoutScheduled() {
+        if (isOpen() && timeoutListenerFuture.get() == null) {
+            timeoutListenerFuture.set(
+                    getScheduledExecutorService().scheduleAtFixedRate(sessionTimeoutListener.get(), 1, 1, TimeUnit.SECONDS));
+        }
+    }
+
+    private void cancelSessionTimeout() {
+        ScheduledFuture<?> future = timeoutListenerFuture.getAndSet(null);
+        if (future != null) {
+            future.cancel(true);
+        }
     }
 
     protected void stopSessionTimeoutListener(AbstractSessionFactory<?, ?> sessionFactory) {
-        // cancel the timeout monitoring task
-        if (timeoutListenerFuture != null) {
-            try {
-                timeoutListenerFuture.cancel(true);
-            } finally {
-                timeoutListenerFuture = null;
-            }
-        }
+        cancelSessionTimeout();
 
         // remove the sessionTimeoutListener completely; should the SSH server/client be restarted, a new one
         // will be created.
-        if (sessionTimeoutListener != null) {
-            try {
-                removeSessionListener(sessionTimeoutListener);
-            } finally {
-                sessionTimeoutListener = null;
-            }
+        SessionTimeoutListener listener = sessionTimeoutListener.getAndSet(null);
+        if (listener != null) {
+            removeSessionListener(listener);
         }
     }
 

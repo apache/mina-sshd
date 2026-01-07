@@ -290,7 +290,12 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
 
     @Override
     public void flush() throws IOException {
-        internalFlush();
+        if (!isOpen()) {
+            throw new IOException("flush(" + getPath() + ") stream is closed");
+        }
+        if (buffer != null && buffer.available() > 0) {
+            internalFlush();
+        }
         if (lastMsg != null) {
             lastMsg.waitUntilSent();
             lastMsg = null;
@@ -307,8 +312,8 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
         for (int ackIndex = 1;; ackIndex++) {
             SftpAckData ack = pendingAcks.peek();
             if (ack == null) {
-                if (debugEnabled) {
-                    log.debug("flush({}) processed {} pending writes", this, ackIndex);
+                if (debugEnabled && ackIndex > 1) {
+                    log.debug("flush({}) processed {} pending writes", this, ackIndex - 1);
                 }
                 break;
             }
@@ -333,39 +338,48 @@ public class SftpOutputStreamAsync extends OutputStreamWithChannel implements Sf
             checkStatus(client, buf);
         }
 
-        if (buffer == null) {
+        Buffer currentData = buffer;
+        buffer = null;
+        if (currentData == null) {
             if (debugEnabled) {
                 log.debug("flush({}) no pending buffer to flush", this);
             }
             return;
         }
 
-        int avail = buffer.available();
+        int avail = currentData.available();
 
-        int wpos = buffer.wpos();
+        if (avail == 0) {
+            if (debugEnabled) {
+                log.debug("flush({}) no pending data in buffer to flush", this);
+            }
+            return;
+        }
+
+        long currentOffset = offset;
+        offset += avail;
+
+        int wpos = currentData.wpos();
         // 4 = handle length
         // handle bytes
         // 8 = file offset
         // 4 = length of actual data
-        buffer.rpos(buffer.rpos() - 16 - handleId.length);
-        buffer.wpos(buffer.rpos());
-        buffer.putBytes(handleId);
-        buffer.putLong(offset);
-        buffer.putUInt(avail);
-        buffer.wpos(wpos);
+        currentData.rpos(currentData.rpos() - 16 - handleId.length);
+        currentData.wpos(currentData.rpos());
+        currentData.putBytes(handleId);
+        currentData.putLong(currentOffset);
+        currentData.putUInt(avail);
+        currentData.wpos(wpos);
 
         if (lastMsg != null) {
             lastMsg.waitUntilSent();
         }
-        lastMsg = client.write(SftpConstants.SSH_FXP_WRITE, buffer);
-        SftpAckData ack = new SftpAckData(lastMsg.getId(), offset, avail);
+        lastMsg = client.write(SftpConstants.SSH_FXP_WRITE, currentData);
+        SftpAckData ack = new SftpAckData(lastMsg.getId(), currentOffset, avail);
         if (debugEnabled) {
             log.debug("flush({}) enqueue pending ack={}", this, ack);
         }
         pendingAcks.add(ack);
-
-        offset += avail;
-        buffer = null;
     }
 
     private void checkStatus(AbstractSftpClient client, Buffer buf) throws IOException {

@@ -136,7 +136,7 @@ public class SftpFileSystemProvider extends FileSystemProvider {
 
     protected final Logger log;
 
-    private final SshClient clientInstance;
+    private SshClient clientInstance;
     private final SftpClientFactory factory;
     private final SftpVersionSelector versionSelector;
     private final SftpErrorDataHandler errorDataHandler;
@@ -183,11 +183,6 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         this.factory = factory;
         this.versionSelector = selector;
         this.errorDataHandler = errorDataHandler;
-        if (client == null) {
-            // TODO: make this configurable using system properties
-            client = SshClient.setUpDefaultClient();
-            client.start();
-        }
         this.clientInstance = client;
     }
 
@@ -204,8 +199,18 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         return errorDataHandler;
     }
 
-    public final SshClient getClientInstance() {
+    public final synchronized SshClient getClientInstance() {
+        if (clientInstance == null) {
+            clientInstance = createClient();
+        }
         return clientInstance;
+    }
+
+    private SshClient createClient() {
+        // TODO: make this configurable using system properties
+        SshClient client = SshClient.setUpDefaultClient();
+        client.start();
+        return client;
     }
 
     public SftpClientFactory getSftpClientFactory() {
@@ -561,10 +566,30 @@ public class SftpFileSystemProvider extends FileSystemProvider {
         }
     }
 
+    private SftpFileSystem getOrCreateFileSystem(URI uri) throws IOException {
+        String id = getFileSystemIdentifier(uri);
+        synchronized (fileSystems) {
+            SftpFileSystem fs = fileSystems.get(id);
+            if (fs == null) {
+                fs = newFileSystem(uri, Collections.emptyMap());
+            }
+            return fs;
+        }
+    }
+
     @Override
     public Path getPath(URI uri) {
-        FileSystem fs = getFileSystem(uri);
-        return fs.getPath(uri.getPath());
+        if (!getScheme().equalsIgnoreCase(uri.getScheme())) {
+            throw new IllegalArgumentException("Not a " + getScheme() + " URI: " + uri);
+        }
+        try {
+            FileSystem fs = getOrCreateFileSystem(uri);
+            return fs.getPath(uri.getPath());
+        } catch (IOException e) {
+            FileSystemNotFoundException fe = new FileSystemNotFoundException("No file system for URI " + uri);
+            fe.initCause(e);
+            throw fe;
+        }
     }
 
     @Override

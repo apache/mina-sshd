@@ -93,6 +93,14 @@ class HostConfigEntryTest extends JUnitTestSupport {
     }
 
     @Test
+    void substituteHostname() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo*", "b%%ar%h.org", -1, "test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("fooby", 0, null, "", null, null);
+        expect("b%arfooby.org", 22, "test", resolved);
+    }
+
+    @Test
     void defaults() throws Exception {
         HostConfigEntry entry = new HostConfigEntry("foo*", "bar.example.com", 22, "test");
         HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))

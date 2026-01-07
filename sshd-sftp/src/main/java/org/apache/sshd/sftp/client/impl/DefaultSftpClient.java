@@ -38,6 +38,8 @@ import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.sshd.client.channel.ChannelSubsystem;
 import org.apache.sshd.client.channel.ClientChannel;
@@ -80,8 +82,9 @@ public class DefaultSftpClient extends AbstractSftpClient {
     private final AtomicBoolean closing = new AtomicBoolean(false);
     private final NavigableMap<String, byte[]> extensions = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private final NavigableMap<String, byte[]> exposedExtensions = Collections.unmodifiableNavigableMap(extensions);
-    private Charset nameDecodingCharset;
-    private SftpMessage lastMessage;
+    private final ReentrantLock writeLock = new ReentrantLock();
+    private final AtomicReference<SftpMessage> lastMessage = new AtomicReference<>();
+    private volatile Charset nameDecodingCharset;
 
     /**
      * @param  clientSession          The {@link ClientSession}
@@ -167,7 +170,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
         if (isOpen()) {
             this.channel.close(false);
         }
-        lastMessage = null;
+        lastMessage.set(null);
     }
 
     /**
@@ -276,7 +279,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             msg.waitUntilSent();
             return msg.getId();
         } finally {
-            lastMessage = null;
+            lastMessage.compareAndSet(msg, null);
         }
     }
 
@@ -311,13 +314,20 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
         ClientChannel clientChannel = getClientChannel();
         IoOutputStream asyncIn = clientChannel.getAsyncIn();
-        if (lastMessage != null) {
-            lastMessage.waitUntilSent();
+        writeLock.lock();
+        try {
+            SftpMessage msg = lastMessage.getAndSet(null);
+            if (msg != null) {
+                msg.waitUntilSent();
+            }
+            IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
+            Duration sendTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
+            msg = new SftpMessage(id, writeFuture, sendTimeout);
+            lastMessage.set(msg);
+            return msg;
+        } finally {
+            writeLock.unlock();
         }
-        IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
-        Duration sendTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
-        lastMessage = new SftpMessage(id, writeFuture, sendTimeout);
-        return lastMessage;
     }
 
     @Override
