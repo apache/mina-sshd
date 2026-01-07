@@ -647,6 +647,8 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
                 String temp = entry.getHostName();  // Remember that this was null above.
                 if (temp == null || temp.isEmpty()) {
                     entry.setHostName(host);
+                } else {
+                    entry.setHostName(substituteHostName(temp, host));
                 }
                 temp = entry.getUsername();
                 if (temp == null || temp.isEmpty()) {
@@ -917,6 +919,38 @@ public class HostConfigEntry extends HostPatternsHolder implements MutableUserHo
         }
 
         return sb.toString();
+    }
+
+    private static String substituteHostName(String host, String originalHostName) {
+        int len = host.length();
+        int j = host.indexOf(PATH_MACRO_CHAR);
+        if (j < 0) {
+            return host;
+        }
+        StringBuilder result = new StringBuilder(len);
+        result.append(host.substring(0, j));
+        for (int i = j; i < len; i++) {
+            char ch = host.charAt(i);
+            if (ch == PATH_MACRO_CHAR) {
+                i++;
+                ValidateUtils.checkTrue(i < len, "Missing macro modifier in hostname %s", host);
+                ch = host.charAt(i);
+                switch (ch) {
+                    case PATH_MACRO_CHAR:
+                        result.append(ch);
+                        break;
+                    case REMOTE_HOST_MACRO:
+                        result.append(originalHostName);
+                        break;
+                    default:
+                        ValidateUtils.throwIllegalArgumentException("Bad modifier '%s' in hostname %s", String.valueOf(ch),
+                                host);
+                }
+            } else {
+                result.append(ch);
+            }
+        }
+        return result.toString();
     }
 
     /**

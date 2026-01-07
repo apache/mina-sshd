@@ -36,12 +36,6 @@ import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -93,6 +87,14 @@ public class HostConfigEntryTest extends JUnitTestSupport {
         HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
                 .resolveEffectiveHost("foo.example.com", 2022, null, "testuser", null, null);
         expect("foo.example.com", 2022, "testuser", resolved);
+    }
+
+    @Test
+    void substituteHostname() throws Exception {
+        HostConfigEntry entry = new HostConfigEntry("foo*", "b%%ar%h.org", -1, "test");
+        HostConfigEntry resolved = HostConfigEntry.toHostConfigEntryResolver(Collections.singleton(entry))
+                .resolveEffectiveHost("fooby", 0, null, "", null, null);
+        expect("b%arfooby.org", 22, "test", resolved);
     }
 
     @Test
