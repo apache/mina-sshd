@@ -73,7 +73,7 @@
     <properties>
         <minimalJavaBuildVersion>17</minimalJavaBuildVersion>
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
-        <minimalMavenBuildVersion>3.9.8</minimalMavenBuildVersion>
+        <minimalMavenBuildVersion>3.9.12</minimalMavenBuildVersion>
 
         <format.impsort.action>sort</format.impsort.action>
         <format.formatter.action>format</format.formatter.action>
