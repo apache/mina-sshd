@@ -1,4 +1,4 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="https://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/maven-v4_0_0.xsd">
 
 
     <!--
@@ -39,10 +39,10 @@
           The (optional) package import will thus be missing in the generated MANIFEST.MF. However, the BouncyCastleSecurityRegistrar expects to find
           class org.bouncycastle.jce.provider.BouncyCastleProvider on the classpath; otherwise its isSupported() returns false and Bouncycastle is
           considered not available.
-          
+
           However, in OSGi the package will not be on the bundle classpath if there is no Import-Package for it. (And using a Require-Bundle would restrict
           bundle wiring too much.)
-          
+
           Arguably this is a shortcoming of the BouncyCastleSecurityRegistrar. For the EdDSASecurityProviderRegistrar, this problem does not exist
           since the security provider is in a package that is also referenced elsewhere.
         -->
