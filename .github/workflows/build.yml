@@ -34,7 +34,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest ]
-        java: [ '17' ]
+        java: [ '25' ]
     steps:
       - uses: actions/checkout@v4
 
@@ -51,13 +51,8 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-maven-
 
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: '3.9.8'
-
       - name: Build with maven
-        run: mvn -B --errors --activate-profiles ci,format-check --no-transfer-progress package -DskipTests
+        run: ./mvnw -B --errors --activate-profiles ci,format-check --no-transfer-progress package -DskipTests
 
   test:
     needs: compile
@@ -65,7 +60,7 @@ jobs:
     strategy:
       matrix:
         os: [ ubuntu-latest, windows-latest ]
-        java: [ '8', '11', '17' ]
+        java: [ '8', '17', '25' ]
     steps:
       - uses: actions/checkout@v4
 
@@ -75,7 +70,7 @@ jobs:
           distribution: temurin
           java-version: |
             ${{ matrix.java }} 
-            17
+            25
 
       - uses: actions/cache@v4
         with:
@@ -84,14 +79,9 @@ jobs:
           restore-keys: |
             ${{ matrix.os }}-maven-
 
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: '3.9.8'
-
       - name: Build and test with maven
         # Skip all static checks, they were already done in the compile jobs
-        run: mvn -B --errors --activate-profiles ci -DsurefireJdk${{ matrix.java }} -DsurefireJdk=${{ matrix.java }} --no-transfer-progress package
+        run: ./mvnw -B --errors --activate-profiles ci -DsurefireJdk${{ matrix.java }} -DsurefireJdk=${{ matrix.java }} --no-transfer-progress package
 
       - name: Archive test results and logs
         # if: success() || failure() to also get the test results on successful runs.

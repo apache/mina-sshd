@@ -52,7 +52,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: '25'
           # Create a ~/.m2/settings.xml referencing these environment variable names
           server-id: 'apache.snapshots.https'
           server-username: NEXUS_USERNAME
@@ -65,18 +65,13 @@ jobs:
           restore-keys: |
             ubuntu-latest-maven-
 
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: '3.9.8'
-
       - name: Check version (SNAPSHOT)
         # Only deploy SNAPSHOT versions. We do not use "exit 1" because we still want the workflow
         # to report success, we just want this job to do nothing.
         #
         # All subsequent steps are conditional.
         run: |
-          export PROJECT_VERSION=$(mvn -B -q -DforceStdout -Dexpression=project.version help:evaluate)
+          export PROJECT_VERSION=$(./mvnw -B -q -DforceStdout -Dexpression=project.version help:evaluate)
           echo "Project version: $PROJECT_VERSION"
           [[ "$PROJECT_VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+-SNAPSHOT$ ]] || {
             echo "**** Skipping deployment because not a snapshot version: $PROJECT_VERSION" 1>&2
@@ -108,4 +103,4 @@ jobs:
         # Our root POM overwrites the release repository with an invalid value to prevent
         # accidental release deployments as an additional safety measure. The snapshot
         # repo from the Apache parent POM is not overridden.
-        run: mvn -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd
+        run: ./mvnw -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd
