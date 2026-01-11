@@ -84,7 +84,7 @@ public class TtyFilterOutputStreamTest extends JUnitTestSupport {
             }
         };
              TtyFilterOutputStream ttyOut = new TtyFilterOutputStream(
-                     output, null, PtyMode.ECHO.equals(mode) ? Collections.emptySet() : EnumSet.of(mode));
+                     output, PtyMode.ECHO.equals(mode) ? Collections.emptySet() : EnumSet.of(mode));
              Writer writer = new OutputStreamWriter(ttyOut, StandardCharsets.UTF_8)) {
 
             for (String l : lines) {
