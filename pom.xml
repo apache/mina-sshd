@@ -111,7 +111,7 @@
         <jgit.version>5.13.5.202508271544-r</jgit.version>
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
-        <testcontainers.version>1.21.3</testcontainers.version>
+        <testcontainers.version>2.0.1</testcontainers.version>
         <grpc.version>1.76.0</grpc.version> <!-- Used only in tests -->
 
         <maven.archiver.version>3.6.5</maven.archiver.version>
