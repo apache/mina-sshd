@@ -21,10 +21,11 @@
 * [Version 2.13.2 to 2.14.0](./docs/changes/2.14.0.md)
 * [Version 2.14.0 to 2.15.0](./docs/changes/2.15.0.md)
 * [Version 2.15.0 to 2.16.0](./docs/changes/2.16.0.md)
+* [Version 2.16.0 to 2.17.0](./docs/changes/2.17.0.md)
 
 # Latest Version
 
-* **[Version 2.16.0 to 2.17.0](./docs/changes/2.17.0.md)**
+* **[Version 2.17.0 to 2.17.1](./docs/changes/2.17.1.md)**
 
 # Planned for Next Version
 
