@@ -40,6 +40,7 @@ import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.kex.extension.parser.DelayCompression;
 import org.apache.sshd.common.kex.extension.parser.Elevation;
 import org.apache.sshd.common.kex.extension.parser.NoFlowControl;
+import org.apache.sshd.common.kex.extension.parser.PingPong;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
@@ -84,7 +85,8 @@ public final class KexExtensions {
             ServerSignatureAlgorithms.INSTANCE,
             NoFlowControl.INSTANCE,
             Elevation.INSTANCE,
-            DelayCompression.INSTANCE)
+            DelayCompression.INSTANCE,
+            PingPong.INSTANCE)
             .collect(Collectors.toMap(
                     NamedResource::getName, Function.identity(),
                     MapEntryUtils.throwingMerger(), () -> new TreeMap<>(String.CASE_INSENSITIVE_ORDER)));

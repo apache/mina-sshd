@@ -30,6 +30,7 @@ import java.util.TreeSet;
 import org.apache.sshd.common.AttributeRepository.AttributeKey;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
+import org.apache.sshd.common.kex.extension.parser.PingPong;
 import org.apache.sshd.common.kex.extension.parser.ServerSignatureAlgorithms;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.signature.Signature;
@@ -57,6 +58,11 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
      * Session {@link AttributeKey} storing the version if the server supports host-bound public key authentication.
      */
     public static final AttributeKey<Integer> HOSTBOUND_AUTHENTICATION = new AttributeKey<>();
+
+    /**
+     * Session {@link AttributeKey} storing the version if the server supports ping-pong requests.
+     */
+    public static final AttributeKey<Integer> PING_PONG = new AttributeKey<>();
 
     public DefaultClientKexExtensionHandler() {
         super();
@@ -87,6 +93,21 @@ public class DefaultClientKexExtensionHandler extends AbstractLoggingBean implem
                 }
             } else {
                 session.setAttribute(HOSTBOUND_AUTHENTICATION, version);
+            }
+        } else if (PingPong.NAME.equals(name)) {
+            Integer version = PingPong.INSTANCE.parseExtension(data);
+            if (version == null) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleKexExtensionRequest({}) : ignoring unknown {} extension", session,
+                            PingPong.NAME);
+                }
+            } else if (version != 0) {
+                if (log.isDebugEnabled()) {
+                    log.debug("handleKexExtensionRequest({}) : ignoring unknown {} version {}", session,
+                            PingPong.NAME, version);
+                }
+            } else {
+                session.setAttribute(PING_PONG, version);
             }
         }
         return true;

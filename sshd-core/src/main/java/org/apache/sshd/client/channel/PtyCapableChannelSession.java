@@ -18,21 +18,33 @@
  */
 package org.apache.sshd.client.channel;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.util.Collections;
+import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
+import org.apache.sshd.common.FactoryManager;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.channel.PtyChannelConfiguration;
 import org.apache.sshd.common.channel.PtyChannelConfigurationHolder;
 import org.apache.sshd.common.channel.PtyChannelConfigurationMutator;
 import org.apache.sshd.common.channel.PtyMode;
+import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
+
+import static org.apache.sshd.common.SshConstants.SSH_MSG_PING;
+import static org.apache.sshd.core.CoreModuleProperties.OBFUSCATE_KEYSTROKE_TIMING;
 
 /**
  * <P>
@@ -80,9 +92,12 @@ import org.apache.sshd.core.CoreModuleProperties;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class PtyCapableChannelSession extends ChannelSession implements PtyChannelConfigurationMutator {
+    private static final String PING_MESSAGE = "PING!";
     private boolean agentForwarding;
     private boolean usePty;
+    private int obfuscate;
     private final PtyChannelConfiguration config;
+    private final AtomicReference<ScheduledFuture<?>> chaffFuture = new AtomicReference<>();
 
     public PtyCapableChannelSession(boolean usePty, PtyChannelConfigurationHolder configHolder, Map<String, ?> env) {
         this.usePty = usePty;
@@ -267,8 +282,62 @@ public class PtyCapableChannelSession extends ChannelSession implements PtyChann
             modes.putByte(PtyMode.TTY_OP_END);
             buffer.putBytes(modes.getCompactData());
             writePacket(buffer);
+
+            String obf
+                    = OBFUSCATE_KEYSTROKE_TIMING.get(getSession()).orElse(Boolean.FALSE.toString()).toLowerCase(Locale.ENGLISH);
+            if (obf.equals("yes") || obf.equals("true")) {
+                obfuscate = 20;
+            } else if (obf.equals("no") || obf.equals("false")) {
+                obfuscate = 0;
+            } else if (obf.matches("interval:[0-9]{1,5}")) {
+                obfuscate = Integer.parseInt(obf.substring("interval:".length()));
+            } else {
+                log.warn("doOpenPty({}) unrecognized value {} for property {}", this, obf,
+                        OBFUSCATE_KEYSTROKE_TIMING.getName());
+            }
         }
 
         sendEnvVariables(session);
     }
+
+    @Override
+    public IoWriteFuture writePacket(Buffer buffer) throws IOException {
+        if (obfuscate > 0 && buffer.available() < 256) {
+            log.info("Sending: ");
+            if (mayWrite()) {
+                Session s = getSession();
+                return s.writePacket(buffer);
+            }
+            if (log.isDebugEnabled()) {
+                log.debug("writePacket({}) Discarding output packet because channel state={}", this, state);
+            }
+            return AbstractIoWriteFuture.fulfilled(toString(), new EOFException("Channel is being closed"));
+        } else {
+            return super.writePacket(buffer);
+        }
+    }
+
+    protected void scheduleChaff() {
+        FactoryManager manager = getSession().getFactoryManager();
+        ScheduledExecutorService service = manager.getScheduledExecutorService();
+        long delay = 1024 + manager.getRandomFactory().get().random(2048);
+        ScheduledFuture<?> future = service.schedule(this::sendChaff, delay, TimeUnit.MILLISECONDS);
+        future = this.chaffFuture.getAndSet(future);
+        if (future != null) {
+            future.cancel(false);
+        }
+    }
+
+    protected void sendChaff() {
+        try {
+            Buffer buf = getSession().createBuffer(SSH_MSG_PING, PING_MESSAGE.length() + Integer.SIZE);
+            buf.putString(PING_MESSAGE);
+            getSession().writePacket(buf);
+        } catch (IOException e) {
+            if (log.isDebugEnabled()) {
+                log.debug("Error sending chaff message", e);
+            }
+        }
+    }
+
 }
