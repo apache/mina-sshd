@@ -79,7 +79,7 @@ public final class CoreTestSupportUtils {
 
     public static SshClient setupTestFullSupportClient(SshClient client) {
         client.setKeyExchangeFactories(
-                NamedFactory.setUpTransformedFactories(false, BuiltinDHFactories.VALUES, ClientBuilder.DH2KEX));
+                NamedFactory.setUpTransformedFactories(true, BuiltinDHFactories.VALUES, ClientBuilder.DH2KEX));
         setupFullSignaturesSupport(client);
         return client;
     }
@@ -109,7 +109,7 @@ public final class CoreTestSupportUtils {
 
     public static SshServer setupTestFullSupportServer(SshServer sshd) {
         sshd.setKeyExchangeFactories(
-                NamedFactory.setUpTransformedFactories(false, BuiltinDHFactories.VALUES, ServerBuilder.DH2KEX));
+                NamedFactory.setUpTransformedFactories(true, BuiltinDHFactories.VALUES, ServerBuilder.DH2KEX));
         setupFullSignaturesSupport(sshd);
         return sshd;
     }

@@ -65,18 +65,13 @@ jobs:
           restore-keys: |
             ubuntu-latest-maven-
 
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: '3.9.11'
-
       - name: Check version (SNAPSHOT)
         # Only deploy SNAPSHOT versions. We do not use "exit 1" because we still want the workflow
         # to report success, we just want this job to do nothing.
         #
         # All subsequent steps are conditional.
         run: |
-          export PROJECT_VERSION=$(mvn -B -q -DforceStdout -Dexpression=project.version help:evaluate)
+          export PROJECT_VERSION=$(./mvnw -B -q -DforceStdout -Dexpression=project.version help:evaluate)
           echo "Project version: $PROJECT_VERSION"
           [[ "$PROJECT_VERSION" =~ ^3\.[0-9]+\.[0-9]+-SNAPSHOT$ ]] || {
             echo "**** Skipping deployment because not a snapshot version: $PROJECT_VERSION" 1>&2
@@ -108,7 +103,7 @@ jobs:
         # Our root POM overwrites the release repository with an invalid value to prevent
         # accidental release deployments as an additional safety measure. The snapshot
         # repo from the Apache parent POM is not overridden.
-        run: mvn -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd
+        run: ./mvnw -B --errors --activate-profiles ci --no-transfer-progress deploy -DskipTests -DdeployAtEnd
 
       - name: Build and deploy web site
         if: "! env.SKIP_DEPLOYMENT"
@@ -116,5 +111,5 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          mvn -B --no-transfer-progress -DskipTests -Pjapicmp clean install
-          mvn -B --no-transfer-progress scm-publish:publish-scm -Dgithub.actor=${{ github.actor }} -Dgithub.token=${{ secrets.GITHUB_TOKEN }}
+          ./mvnw -B --no-transfer-progress -DskipTests -Pjapicmp clean install
+          ./mvnw -B --no-transfer-progress scm-publish:publish-scm -Dgithub.actor=${{ github.actor }} -Dgithub.token=${{ secrets.GITHUB_TOKEN }}

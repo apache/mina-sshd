@@ -25,33 +25,30 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import org.apache.sshd.common.channel.PtyMode;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * Handles the output stream while taking care of the {@link PtyMode} for CR / LF and ECHO settings
+ * Handles the output stream while taking care of the {@link PtyMode} for CR / LF settings
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class TtyFilterOutputStream extends FilterOutputStream {
     public static final Set<PtyMode> OUTPUT_OPTIONS
-            = Collections.unmodifiableSet(EnumSet.of(PtyMode.ECHO, PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
+            = Collections.unmodifiableSet(EnumSet.of(PtyMode.INLCR, PtyMode.ICRNL, PtyMode.IGNCR));
 
     private final Set<PtyMode> ttyOptions;
-    private final TtyFilterInputStream echo;
 
-    public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Map<PtyMode, ?> modes) {
-        this(out, echo, PtyMode.resolveEnabledOptions(modes, OUTPUT_OPTIONS));
+    public TtyFilterOutputStream(OutputStream out, Map<PtyMode, ?> modes) {
+        this(out, PtyMode.resolveEnabledOptions(modes, OUTPUT_OPTIONS));
     }
 
-    public TtyFilterOutputStream(OutputStream out, TtyFilterInputStream echo, Collection<PtyMode> ttyOptions) {
+    public TtyFilterOutputStream(OutputStream out, Collection<PtyMode> ttyOptions) {
         super(out);
         // we create a copy of the options so as to avoid concurrent modifications
         this.ttyOptions = GenericUtils.of(ttyOptions); // TODO validate non-conflicting options
-        this.echo = this.ttyOptions.contains(PtyMode.ECHO) ? Objects.requireNonNull(echo, "No echo stream") : echo;
     }
 
     @Override
@@ -86,9 +83,6 @@ public class TtyFilterOutputStream extends FilterOutputStream {
 
     protected void writeRawOutput(int c) throws IOException {
         this.out.write(c);
-        if (ttyOptions.contains(PtyMode.ECHO)) {
-            echo.write(c);
-        }
     }
 
     @Override
@@ -119,8 +113,5 @@ public class TtyFilterOutputStream extends FilterOutputStream {
 
     protected void writeRawOutput(byte[] b, int off, int len) throws IOException {
         this.out.write(b, off, len);
-        if (ttyOptions.contains(PtyMode.ECHO)) {
-            echo.write(b, off, len);
-        }
     }
 }

@@ -29,12 +29,12 @@ import org.apache.sshd.common.PropertyResolverUtils;
 import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.git.GitModuleProperties;
+import org.apache.sshd.git.GitTestSupport;
 import org.apache.sshd.git.transport.GitSshdSessionFactory;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.password.AcceptAllPasswordAuthenticator;
 import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.JSchLogger;
 import org.eclipse.jgit.api.Git;
@@ -45,6 +45,7 @@ import org.eclipse.jgit.transport.ReceivePack;
 import org.eclipse.jgit.transport.SshSessionFactory;
 import org.eclipse.jgit.transport.UploadPack;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.util.SystemReader;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
@@ -55,7 +56,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * Tests for using git over ssh.
  */
 @TestMethodOrder(MethodName.class)
-class GitPackCommandTest extends BaseTestSupport {
+class GitPackCommandTest extends GitTestSupport {
 
     GitPackCommandTest() {
         super();
@@ -78,6 +79,7 @@ class GitPackCommandTest extends BaseTestSupport {
         Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
 
         Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(gitRootDir);
         try (SshServer sshd = setupTestServer()) {
             GitPackTestConfig packConfig = new GitPackTestConfig();
             Path serverRootDir = gitRootDir.resolve("server");
@@ -139,6 +141,8 @@ class GitPackCommandTest extends BaseTestSupport {
             } finally {
                 sshd.stop();
             }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
         }
     }
 

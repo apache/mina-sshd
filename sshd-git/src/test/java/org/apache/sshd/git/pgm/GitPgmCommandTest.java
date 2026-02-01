@@ -31,11 +31,12 @@ import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.git.GitLocationResolver;
+import org.apache.sshd.git.GitTestSupport;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
-import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.util.SystemReader;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -44,7 +45,7 @@ import org.junit.jupiter.api.TestMethodOrder;
  * Tests for running git commands.
  */
 @TestMethodOrder(MethodName.class)
-class GitPgmCommandTest extends BaseTestSupport {
+class GitPgmCommandTest extends GitTestSupport {
 
     GitPgmCommandTest() {
         super();
@@ -53,6 +54,7 @@ class GitPgmCommandTest extends BaseTestSupport {
     @Test
     void gitPgm() throws Exception {
         Path serverDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(serverDir.getParent());
         try (SshServer sshd = setupTestServer()) {
             sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPgmCommandFactory(GitLocationResolver.constantPath(serverDir)));
@@ -86,6 +88,8 @@ class GitPgmCommandTest extends BaseTestSupport {
             } finally {
                 sshd.stop();
             }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
         }
     }
 
