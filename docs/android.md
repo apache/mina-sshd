@@ -74,6 +74,34 @@ public class MyApplication extends Application {
 }
 ```
 
+Another example (in Kotlin flavor):
+```kotlin
+suspend fun connect(host: String, port: Int, user: String, pwd: String): ClientSession {
+    // Set Android's filesystem path
+    val path: Supplier<Path> = Supplier { Paths.get("") }
+    setUserHomeFolderResolver(path)
+    val client: SshClient = SshClient.setUpDefaultClient()
+
+    client.start()
+
+    return withContext(Dispatchers.IO) {
+        // Connect to server
+        val session = client.connect(user, host, port).verify().clientSession
+        // Supply password
+        session.addPasswordIdentity(pwd)
+
+        // Start authentication
+        val authVerif = session.auth()
+        authVerif.verify()
+
+        if (authVerif.isSuccess) {
+            // Return session for further server calls
+            session
+        } else throw authVerif.exception
+    }
+}
+```
+
 **Note:** these are the most *basic* settings - various extra adjustments might be required and they must be dealt with on a case-by-case manner. We do believe though that the code is flexible enough to provide the necessary solutions. As previously stated, even though we do not define Android as a goal, we would appreciate feedback on problems and solutions our users have encountered when running on Android (or iOs for that matter), and what suggestions they have for code changes that would facilitate this task - see [SSHD development mailing list](mailto:dev@mina.apache.org) or open an issue on this project - or better yet, a PR.
 
 ## Further possible features
@@ -98,8 +126,11 @@ The SSHD code contains a robust and flexible mechanism for [configuring](https:/
 
 ### Demo application(s) as part of the SSHD code
 
-It would be very helpful to have several Android demo applications as part of the delivered SSHD code. These applications can demonstrate to users how to integrate SSHD into Android applications as well as serve as a very useful platform for debugging existing code and implementating future features. E.g.,
+For now, users may give a look to [Trante](https://github.com/Chiogros/Trante) application which makes use of SFTP. [SftpNetwork.kt](https://github.com/Chiogros/Trante/blob/main/app/src/main/java/chiogros/trante/protocols/sftp/data/network/SftpNetwork.kt) handles calls to SSHD code for authenticating to the server, listing, downloading and pushing files.
+
+It would be very helpful to have more Android demo applications showcasing SSHD code usage. These applications can demonstrate to users how to integrate SSHD into Android applications as well as serve as a very useful platform for debugging existing code and implementating future features. E.g.,
 
 * [WinSCP](https://winscp.net/eng/index.php)-like application to test SFTP/SCP code.
 * [Putty](https://www.putty.org/)-like application to test remote shell.
 * Basic server application - very interesting use-case in conjunction with Android - turning one's phone/tablet into a public SSH server via becoming a WiFi hotspot.
+
