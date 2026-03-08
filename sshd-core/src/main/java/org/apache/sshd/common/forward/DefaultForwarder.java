@@ -1034,10 +1034,9 @@ public class DefaultForwarder
                 log.debug("sessionClosed({}) closing channel={} after {} messages - cause={}",
                         session, channel, messagesCounter, (cause == null) ? null : cause.getClass().getSimpleName());
             }
-            if (channel == null) {
-                return;
+            if (channel != null) {
+                channel.close(false);
             }
-            channel.close(cause != null);
         }
 
         @Override

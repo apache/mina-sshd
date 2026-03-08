@@ -31,6 +31,8 @@
 
 ## Bug Fixes
 
+* [GH-879](https://github.com/apache/mina-sshd/issues/879) Close SSH channel gracefully on exception in port forwarding
+
 ## New Features
 
 ## Potential Compatibility Issues
