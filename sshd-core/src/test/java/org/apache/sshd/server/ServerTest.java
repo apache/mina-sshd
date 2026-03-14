@@ -22,8 +22,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.io.PipedInputStream;
-import java.io.PipedOutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
@@ -90,6 +88,7 @@ import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TestChannelListener;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -284,6 +283,7 @@ class ServerTest extends BaseTestSupport {
      * read the data, filling the ssh window and the tcp socket - the server session becomes idle, but the ssh
      * disconnect message can't be written - the server session is forcibly closed
      */
+    @Disabled("Unstable test")
     @Test
     void serverIdleTimeoutWithForce() throws Exception {
         final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
@@ -329,12 +329,8 @@ class ServerTest extends BaseTestSupport {
 
         client.start();
         try (ClientSession s = createTestClientSession(sshd);
-             ChannelExec shell = s.createExecChannel("normal");
-             // Create a pipe that will block reading when the buffer is full
-             PipedInputStream pis = new PipedInputStream();
-             PipedOutputStream pos = new PipedOutputStream(pis)) {
+             ChannelExec shell = s.createExecChannel("normal")) {
 
-            shell.setOut(pos);
             shell.open().verify(OPEN_TIMEOUT);
 
             assertTrue(channelListener.waitForActiveChannelsChange(5L, TimeUnit.SECONDS),

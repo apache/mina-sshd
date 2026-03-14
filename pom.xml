@@ -22,7 +22,7 @@
     <parent>
         <groupId>org.apache</groupId>
         <artifactId>apache</artifactId>
-        <version>36</version>
+        <version>37</version>
     </parent>
 
     <groupId>org.apache.sshd</groupId>
@@ -109,12 +109,12 @@
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
         <testcontainers.version>1.21.3</testcontainers.version>
-        <grpc.version>1.76.0</grpc.version> <!-- Used only in tests -->
+        <grpc.version>1.78.0</grpc.version> <!-- Used only in tests -->
 
         <maven.archiver.version>3.6.5</maven.archiver.version>
-        <plexus.archiver.version>4.10.3</plexus.archiver.version>
+        <plexus.archiver.version>4.11.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>7.20.0</pmd.version>
+        <pmd.version>7.22.0</pmd.version>
         <japicmp.version>0.23.1</japicmp.version>
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -217,7 +217,7 @@
                     <plugin>
                         <groupId>org.owasp</groupId>
                         <artifactId>dependency-check-maven</artifactId>
-                        <version>12.1.8</version>
+                        <version>12.2.0</version>
                             <!-- see https://jeremylong.github.io/DependencyCheck/dependency-check-maven/configuration.html -->
                         <configuration>
                                 <!-- see https://github.com/jeremylong/DependencyCheck/issues/1394 -->
