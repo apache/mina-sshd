@@ -47,6 +47,7 @@ But we can give you a rough outline of what we want to do:
 * **3.0.0-M2**: Refactoring of cryptography. New feature: multi-release JARs for `sshd-common`
   and `sshd-osgi` and using on newer Java versions the already built-in cryptographic algorithms
   for ChaCha20, ed25519, and ML-KEM.
+* **3.0.0-M3**: Bug fix release of 3.0.0-M2, and update base to 2.17.1.
 
 Further possible milestones (the order might change, though):
 
