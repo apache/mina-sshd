@@ -141,10 +141,12 @@ public class InjectIgnoreFilter extends IoFilter {
 
         private Buffer createIgnoreBuffer(int length) {
             int size = length + random.random(length + 1);
-            Buffer buffer = new ByteArrayBuffer(SshConstants.SSH_PACKET_HEADER_LEN + 1 + size + CryptFilter.MAX_PADDING + 64);
+            Buffer buffer = new ByteArrayBuffer(
+                    SshConstants.SSH_PACKET_HEADER_LEN + 1 + Integer.BYTES + size + CryptFilter.MAX_PADDING + 64);
             buffer.rpos(SshConstants.SSH_PACKET_HEADER_LEN);
             buffer.wpos(SshConstants.SSH_PACKET_HEADER_LEN);
             buffer.putByte(SshConstants.SSH_MSG_IGNORE);
+            buffer.putUInt(size);
             int start = buffer.wpos();
             buffer.wpos(buffer.wpos() + size);
             random.fill(buffer.array(), start, size);

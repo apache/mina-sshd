@@ -76,15 +76,20 @@ class InjectIgnoreFilterTest extends FilterTestSupport {
         }
         assertEquals((frequency + 1) * rounds, outputs.outputs.size());
         List<IoWriteFutureWithData> out = outputs.outputs;
+        int foundIgnore = 0;
         for (int i = 0; i < outputs.outputs.size();) {
             for (int j = 0; j < frequency - 1; j++) {
                 Buffer data = out.get(i++).data;
                 assertEquals(-1, data.rawByte(data.rpos()));
             }
             Buffer data = out.get(i++).data;
-            assertEquals(SshConstants.SSH_MSG_IGNORE, data.rawByte(data.rpos()));
+            assertEquals(SshConstants.SSH_MSG_IGNORE, data.getByte());
+            foundIgnore++;
+            long dataLength = data.getUInt();
+            assertEquals(data.available(), dataLength);
             data = out.get(i++).data;
             assertEquals(-1, data.rawByte(data.rpos()));
         }
+        assertEquals(rounds, foundIgnore);
     }
 }
