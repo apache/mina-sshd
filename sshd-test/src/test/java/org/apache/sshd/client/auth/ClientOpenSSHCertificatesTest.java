@@ -85,21 +85,23 @@ public class ClientOpenSSHCertificatesTest extends AbstractContainerTestBase {
      **/
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(
-            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.19") //
-                    .run(discriminate()) //
-                    .run("apk --update add openssh openssh-server") // Install
-                    .run("rm -rf /var/cache/apk/*") // Clear cache
-                    .run("addgroup customusers") // Give our users a group
-                    .run("adduser -D user01 -G customusers") // Create a user
-                    .run("adduser -D user02 -G customusers") // Create another one
-                    .run("passwd -u user01") // Unlock, but...
-                    .run("passwd -u user02") // ... don't set passwords
-                    .run("mkdir -p /keys/user/user01") // Directories for...
-                    .run("mkdir -p /keys/user/user02") // ... the authorized keys
-                    .run("echo 'user01:password01' | chpasswd") // Passwords for...
-                    .run("echo 'user02:password02' | chpasswd") // ...both users
-                    .entryPoint("/entrypoint.sh") //
-                    .build())) //
+            new ImageFromDockerfile().withDockerfileFromBuilder(
+                    // 3.19
+                    builder -> builder.from("alpine@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1") //
+                            .run(discriminate()) //
+                            .run("apk --update add openssh openssh-server") // Install
+                            .run("rm -rf /var/cache/apk/*") // Clear cache
+                            .run("addgroup customusers") // Give our users a group
+                            .run("adduser -D user01 -G customusers") // Create a user
+                            .run("adduser -D user02 -G customusers") // Create another one
+                            .run("passwd -u user01") // Unlock, but...
+                            .run("passwd -u user02") // ... don't set passwords
+                            .run("mkdir -p /keys/user/user01") // Directories for...
+                            .run("mkdir -p /keys/user/user02") // ... the authorized keys
+                            .run("echo 'user01:password01' | chpasswd") // Passwords for...
+                            .run("echo 'user02:password02' | chpasswd") // ...both users
+                            .entryPoint("/entrypoint.sh") //
+                            .build())) //
             .withCopyFileToContainer(
                     MountableFile.forClasspathResource(TEST_RESOURCES + "/sshd_config"), "/etc/ssh/sshd_config")
             .withCopyFileToContainer(

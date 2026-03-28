@@ -53,7 +53,9 @@ class ProxySocksAuthIntegrationTest extends AbstractContainerTestBase {
 
     private static final Logger LOG = LoggerFactory.getLogger(ProxySocksAuthIntegrationTest.class);
 
-    private static GenericContainer<?> proxy = new GenericContainer<>("serjs/go-socks5-proxy") //
+    private static GenericContainer<?> proxy = new GenericContainer<>(
+            // latest as of 2026-03-27
+            "serjs/go-socks5-proxy@sha256:0af522996f402c03ecd985a87997158eabeb28935365e3a384df37eafcf740ea") //
             .withEnv("PROXY_USER", "sockstester") //
             .withEnv("PROXY_PASSWORD", "testsocks") //
             .withExposedPorts(1080) //

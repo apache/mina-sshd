@@ -59,14 +59,15 @@ class ScpCharsetTest extends BaseTestSupport {
 
     @Container
     GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
-            .withDockerfileFromBuilder(builder -> builder.from("alpine:3.21") //
-                    .env("MUSL_LOCPATH", "/usr/share/i18n/locales/musl") // Install locales
-                    .run("apk --update add musl-locales openssh-server openssh") // ... and OpenSSH (client for scp)
-                    .run("ssh-keygen -A") // Generate multiple host keys
-                    .run("adduser -D bob") // Add a user
-                    .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
-                    .entryPoint("/entrypoint.sh") // Prepare environment, set locale to en_US.ISO8859-1, and launch
-                    .build())) //
+            .withDockerfileFromBuilder(
+                    builder -> builder.from("alpine@sha256:c3f8e73fdb79deaebaa2037150150191b9dcbfba68b4a46d70103204c53f4709") // 3.21
+                            .env("MUSL_LOCPATH", "/usr/share/i18n/locales/musl") // Install locales
+                            .run("apk --update add musl-locales openssh-server openssh") // ... and OpenSSH (client for scp)
+                            .run("ssh-keygen -A") // Generate multiple host keys
+                            .run("adduser -D bob") // Add a user
+                            .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
+                            .entryPoint("/entrypoint.sh") // Prepare environment, set locale to en_US.ISO8859-1, and launch
+                            .build())) //
             .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_RESOURCES + "/bob_key.pub"),
                     "/home/bob/.ssh/authorized_keys")
             // entrypoint must be executable. Spotbugs doesn't like 0777, so use hex

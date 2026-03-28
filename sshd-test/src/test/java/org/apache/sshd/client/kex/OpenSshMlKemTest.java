@@ -56,15 +56,17 @@ class OpenSshMlKemTest extends AbstractContainerTestBase {
 
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
-            .withDockerfileFromBuilder(builder -> builder.from("alpine:3.21") //
-                    .run(discriminate()) //
-                    .run("apk --update add openssh-server") // Installs OpenSSH 9.9
-                    .run("ssh-keygen -A") // Generate multiple host keys
-                    .run("adduser -D bob") // Add a user
-                    .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
-                    .run("mkdir -p /home/bob/.ssh") // Create the SSH config directory
-                    .entryPoint("/entrypoint.sh") // Sets bob as owner of anything under /home/bob and launches sshd
-                    .build())) //
+            .withDockerfileFromBuilder(
+                    // 3.21
+                    builder -> builder.from("alpine@sha256:c3f8e73fdb79deaebaa2037150150191b9dcbfba68b4a46d70103204c53f4709") //
+                            .run(discriminate()) //
+                            .run("apk --update add openssh-server") // Installs OpenSSH 9.9
+                            .run("ssh-keygen -A") // Generate multiple host keys
+                            .run("adduser -D bob") // Add a user
+                            .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
+                            .run("mkdir -p /home/bob/.ssh") // Create the SSH config directory
+                            .entryPoint("/entrypoint.sh") // Sets bob as owner of anything under /home/bob and launches sshd
+                            .build())) //
             .withCopyFileToContainer(MountableFile.forClasspathResource(TEST_KEYS + "/user01_ed25519.pub"),
                     "/home/bob/.ssh/authorized_keys")
             // entrypoint must be executable. Spotbugs doesn't like 0777, so use hex

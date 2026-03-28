@@ -59,15 +59,17 @@ public class HostBoundPubKeyAuthTest extends AbstractContainerTestBase {
 
     @Container
     static GenericContainer<?> sshdContainer = new GenericContainer<>(
-            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.16")
-                    .run(discriminate()) //
-                    .run("apk --update add openssh-server") // Installs OpenSSH 9.0
-                    .run("ssh-keygen -A") // Generate multiple host keys
-                    .run("adduser -D bob") // Add a user
-                    .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
-                    .run("mkdir -p /home/bob/.ssh") // Create the SSH config directory
-                    .entryPoint("/entrypoint.sh") // Sets bob as owner of anything under /home/bob and launches sshd
-                    .build())) //
+            new ImageFromDockerfile().withDockerfileFromBuilder(
+                    // 3.19
+                    builder -> builder.from("alpine@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1")
+                            .run(discriminate()) //
+                            .run("apk --update add openssh-server") // Installs OpenSSH 9.0
+                            .run("ssh-keygen -A") // Generate multiple host keys
+                            .run("adduser -D bob") // Add a user
+                            .run("echo 'bob:passwordBob' | chpasswd") // Give it a password to unlock the user
+                            .run("mkdir -p /home/bob/.ssh") // Create the SSH config directory
+                            .entryPoint("/entrypoint.sh") // Sets bob as owner of anything under /home/bob and launches sshd
+                            .build())) //
             .withCopyFileToContainer(
                     MountableFile.forClasspathResource(TEST_KEYS + "/user01_authorized_keys"),
                     "/home/bob/.ssh/authorized_keys")

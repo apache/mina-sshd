@@ -174,7 +174,9 @@ class PortForwardingWithOpenSshTest extends AbstractContainerTestBase {
         // Create the container
         @SuppressWarnings("resource")
         GenericContainer<?> sshdContainer = new GenericContainer<>(
-                new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("alpine:3.16") //
+                new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder
+                        // 3.16
+                        .from("alpine@sha256:452e7292acee0ee16c332324d7de05fa2c99f9994ecc9f0779c602916a672ae4") //
                         .run(discriminate()) //
                         .run("apk --update add openssh openssh-server") // Installs OpenSSH 9.0
                         .run("mkdir -p /root/.ssh") // Create the SSH config directory

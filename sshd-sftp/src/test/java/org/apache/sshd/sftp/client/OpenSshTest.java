@@ -44,8 +44,10 @@ class OpenSshTest extends JUnitTestSupport {
 
     private static final String RESOURCES = "/" + OpenSshTest.class.getPackage().getName().replace('.', '/');
 
+    // TODO: this is a amd64-only image. Find a multi-arch image to use instead!
     @Container
-    static GenericContainer<?> server = new GenericContainer<>("atmoz/sftp:alpine") //
+    static GenericContainer<?> server = new GenericContainer<>(
+            "atmoz/sftp@sha256:56483e4d6678cbca5afccb1a6c525d95ba8f65dfb69063954a73317eda911579") // alpine
             .withEnv("SFTP_USERS", "foo::::upload")
             // Set it up for pubkey auth
             .withCopyFileToContainer(MountableFile.forClasspathResource(RESOURCES + "/rsa_key.pub"),

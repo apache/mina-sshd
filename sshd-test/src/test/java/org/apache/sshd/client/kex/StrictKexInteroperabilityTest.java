@@ -85,7 +85,7 @@ class StrictKexInteroperabilityTest extends AbstractContainerTestBase {
     private DockerfileBuilder strictKexImage(DockerfileBuilder builder, boolean withStrictKex) {
         if (!withStrictKex) {
             return builder
-                    .from("alpine:3.9.2") //
+                    .from("alpine@sha256:644fcb1a676b5165371437feaa922943aaf7afcfa8bfee4472f6860aad1ef2a0") // 3.9.2
                     .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH 7.9_p1-r6
                     .run("echo 'PrintMotd no' >> /etc/ssh/sshd_config") //
@@ -94,7 +94,7 @@ class StrictKexInteroperabilityTest extends AbstractContainerTestBase {
                     .run("echo 'bob:passwordBob' | chpasswd"); // Give it a password to unlock the user
         } else {
             return builder
-                    .from("alpine:3.19") //
+                    .from("alpine@sha256:6baf43584bcb78f2e5847d1de515f23499913ac9f12bdf834811a3145eb11ca1") // 3.19
                     .run(discriminate()) //
                     .run("apk --update add openssh-server") // Installs OpenSSH 9.6
                     .run("ssh-keygen -A") // Generate multiple host keys

@@ -51,7 +51,9 @@ class ProFtpdTest extends JUnitTestSupport {
 
     @Container
     static GenericContainer<?> server = new GenericContainer<>(
-            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder.from("instantlinux/proftpd:latest") //
+            new ImageFromDockerfile().withDockerfileFromBuilder(builder -> builder
+                    // latest as of 2026-03-27
+                    .from("instantlinux/proftpd@sha256:3de65108bc60548c575eb3dd8289500d9bfd42358c662ecfcbff93ced732e230")
                     // Get SFTP logs on stderr
                     .run("sed -i -e 's:^WtmpLog:AllowLogSymLinks on\\nSystemLog /dev/stderr\\nSFTPLog /dev/stderr\\nWtmpLog:' /etc/proftpd/proftpd.conf") //
                     .build())) //
