@@ -88,8 +88,6 @@ import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
-import org.hamcrest.BaseMatcher;
-import org.hamcrest.Description;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
@@ -99,8 +97,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -398,21 +394,9 @@ class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
             assertTrue(readDirCount.get() > 0, "Upstream server not called");
             // The current implementation stats 3 times: once to detect whether the directory exists, is a directory,
             // and is readable; once again for the "." entry, and the parent directory once for "..".
-            assertThat(
-                    "Files.getAttributes() should have been called at most a few times for the directory itself",
-                    statCount.get(), new BaseMatcher<Integer>() {
-
-                        @Override
-                        public boolean matches(Object item) {
-                            return item instanceof Integer && ((Integer) item).intValue() < 4;
-                        }
-
-                        @Override
-                        public void describeTo(Description description) {
-                            description.appendText("smaller than 4");
-                        }
-                    });
-
+            assertTrue(statCount.get() < 4,
+                    "Files.getAttributes() should have been called at most a few times for the directory itself; expected less than 4 calls but got "
+                                            + statCount.get());
             // Repeat this a few times to get slightly more reliable timings
             final int maxRepeats = 10;
             long directTime = 0;
