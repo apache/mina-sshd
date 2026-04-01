@@ -984,7 +984,6 @@ public class KexFilter extends IoFilter {
     private void setInputEncoding() throws Exception {
         MessageCodingSettings in = inputSettings.get();
         Compression comp = in.getCompression();
-        // TODO add support for configurable compression level
         comp.init(Compression.Type.Inflater, -1);
         compression.setInputCompression(comp);
         Cipher cipher = in.getCipher(strictKex ? 0 : crypt.getInputSequenceNumber());
