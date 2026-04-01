@@ -60,8 +60,16 @@ public class CompressionZlib extends BaseCompression {
 
     @Override
     public void init(Type type, int level) {
-        compressor = new Deflater(level);
-        decompressor = new Inflater();
+        switch (type) {
+            case Deflater:
+                compressor = new Deflater(level);
+                break;
+            case Inflater:
+                decompressor = new Inflater();
+                break;
+            default:
+                throw new IllegalArgumentException("Unknown Compression.Type " + type);
+        }
     }
 
     @Override
