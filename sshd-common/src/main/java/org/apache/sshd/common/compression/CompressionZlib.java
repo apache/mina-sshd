@@ -23,6 +23,8 @@ import java.util.zip.DataFormatException;
 import java.util.zip.Deflater;
 import java.util.zip.Inflater;
 
+import org.apache.sshd.common.SshConstants;
+import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.util.buffer.Buffer;
 
 /**
@@ -32,11 +34,13 @@ import org.apache.sshd.common.util.buffer.Buffer;
  */
 public class CompressionZlib extends BaseCompression {
 
+    private static final int MAX_UNCOMPRESSED_SIZE = 8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT; // 256kB
+
     private static final int BUF_SIZE = 4096;
 
     private byte[] tmpbuf = new byte[BUF_SIZE];
-    private Deflater compresser;
-    private Inflater decompresser;
+    private Deflater compressor;
+    private Inflater decompressor;
 
     /**
      * Create a new instance of a ZLib base compression
@@ -56,26 +60,31 @@ public class CompressionZlib extends BaseCompression {
 
     @Override
     public void init(Type type, int level) {
-        compresser = new Deflater(level);
-        decompresser = new Inflater();
+        compressor = new Deflater(level);
+        decompressor = new Inflater();
     }
 
     @Override
     public void compress(Buffer buffer) throws IOException {
-        compresser.setInput(buffer.array(), buffer.rpos(), buffer.available());
+        compressor.setInput(buffer.array(), buffer.rpos(), buffer.available());
         buffer.wpos(buffer.rpos());
-        for (int len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH);
+        for (int len = compressor.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH);
              len > 0;
-             len = compresser.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) {
+             len = compressor.deflate(tmpbuf, 0, tmpbuf.length, Deflater.SYNC_FLUSH)) {
             buffer.putRawBytes(tmpbuf, 0, len);
         }
     }
 
     @Override
     public void uncompress(Buffer from, Buffer to) throws IOException {
-        decompresser.setInput(from.array(), from.rpos(), from.available());
+        decompressor.setInput(from.array(), from.rpos(), from.available());
+        int start = to.wpos();
         try {
-            for (int len = decompresser.inflate(tmpbuf); len > 0; len = decompresser.inflate(tmpbuf)) {
+            for (int len = decompressor.inflate(tmpbuf); len > 0; len = decompressor.inflate(tmpbuf)) {
+                if (to.wpos() + len - start > MAX_UNCOMPRESSED_SIZE) {
+                    throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR,
+                            "Compressed SSH packet inflated to more than 256kB");
+                }
                 to.putRawBytes(tmpbuf, 0, len);
             }
         } catch (DataFormatException e) {
