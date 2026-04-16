@@ -25,13 +25,13 @@ import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.random.JceRandom;
 import org.bouncycastle.crypto.AsymmetricCipherKeyPair;
 import org.bouncycastle.crypto.SecretWithEncapsulation;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMExtractor;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMGenerator;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMKeyGenerationParameters;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMKeyPairGenerator;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMParameters;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMPrivateKeyParameters;
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMPublicKeyParameters;
+import org.bouncycastle.crypto.generators.MLKEMKeyPairGenerator;
+import org.bouncycastle.crypto.kems.MLKEMExtractor;
+import org.bouncycastle.crypto.kems.MLKEMGenerator;
+import org.bouncycastle.crypto.params.MLKEMKeyGenerationParameters;
+import org.bouncycastle.crypto.params.MLKEMParameters;
+import org.bouncycastle.crypto.params.MLKEMPrivateKeyParameters;
+import org.bouncycastle.crypto.params.MLKEMPublicKeyParameters;
 
 /**
  * An implementation of the mlkem768 key encapsulation method (KEM), formerly known as Kyber, using Bouncy Castle. But
