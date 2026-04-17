@@ -36,6 +36,7 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -125,14 +126,18 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
             AuthorizedKeyEntry entry, String username, OpenSshCertificate cert,
             ServerSession session) {
         Collection<String> certPrincipals = cert.getPrincipals();
+        // OpenSSH < 10.3:
+        //
+        // "As a special case, a zero-length "valid principals" field means the certificate is valid for
+        // any principal of the specified type."
+        // See https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys
+        //
+        // This is true for user certificates unless they are checked via a TrustedUserCAKeys file, but
+        // that is not what we implement here.
+        // See https://man.openbsd.org/sshd_config#TrustedUserCAKeys
+        //
+        // OpenSSH >= 10.3: certificates without principals never match
         if (!GenericUtils.isEmpty(certPrincipals)) {
-            // "As a special case, a zero-length "valid principals" field means the certificate is valid for
-            // any principal of the specified type."
-            // See https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys
-            //
-            // This is true for user certificates unless they are checked via a TrustedUserCAKeys file, but
-            // that is not what we implement here.
-            // See https://man.openbsd.org/sshd_config#TrustedUserCAKeys
             String allowedPrincipals = entry.getLoginOptions().get("principals");
             if (!GenericUtils.isEmpty(allowedPrincipals)) {
                 if (Stream.of(allowedPrincipals.split(",")) //
@@ -146,12 +151,16 @@ public class AuthorizedKeyEntriesPublickeyAuthenticator extends AbstractLoggingB
             } else {
                 // We have a match for the certificate, but no principals from the entry: check that given
                 // user name is in the certificate's principals.
-                if (!GenericUtils.isEmpty(certPrincipals) && !certPrincipals.contains(username)) {
+                if (!certPrincipals.contains(username)) {
                     log.debug("authenticate({})[{}] certificate match rejected, user not in certificate principals: {}",
-                            username, session, username);
+                            username, session, certPrincipals);
                     return false;
                 }
             }
+        } else if (!CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.getRequired(session)) {
+            log.debug("authenticate({})[{}] certificate match rejected because the certificate has no principals", username,
+                    session);
+            return false;
         }
         return true;
     }

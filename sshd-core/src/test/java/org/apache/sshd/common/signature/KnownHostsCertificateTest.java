@@ -37,11 +37,13 @@ import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -90,6 +92,11 @@ class KnownHostsCertificateTest extends BaseTestSupport {
                 client = null;
             }
         }
+    }
+
+    @AfterEach
+    void resetCertificateProperty() {
+        CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(client, false);
     }
 
     private static Stream<String> markers() {
@@ -156,7 +163,21 @@ class KnownHostsCertificateTest extends BaseTestSupport {
     }
 
     @Test
+    void testHostCertificateWithoutPrincipalsFails() throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
+                new String[0]);
+        assertThrows(SshException.class, () -> {
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                    .getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+                s.auth().verify(AUTH_TIMEOUT);
+            }
+        });
+    }
+
+    @Test
     void testHostCertificateWithoutPrincipalsSucceeds() throws Exception {
+        CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(client, true);
         initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
                 new String[0]);
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)

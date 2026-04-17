@@ -40,6 +40,7 @@ import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
@@ -48,6 +49,7 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -99,14 +101,20 @@ class AuthorizedKeysCertificateTest extends BaseTestSupport {
         }
     }
 
+    @AfterEach
+    void resetCertificateProperty() {
+        CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(sshd, false);
+    }
+
     private static Stream<Arguments> options() {
-        return Stream.of(Arguments.of("", "", false), // Not CA: fail
-                Arguments.of("", "user", false), // Not CA: fail
-                Arguments.of("cert-authority", "user", true), // CA, principal=user: success
-                Arguments.of("cert-authority", "", true), // CA, no principal: success
-                Arguments.of("cert-authority", "other", false), // CA, wrong principal: fail
-                Arguments.of("cert-authority,principals=\"other\"", "user", false), // CA, principal overridden
-                Arguments.of("cert-authority,principals=\"other\"", "other", true) // CA, principal overridden
+        return Stream.of(Arguments.of("", "", true, false), // Not CA: fail
+                Arguments.of("", "user", true, false), // Not CA: fail
+                Arguments.of("cert-authority", "user", false, true), // CA, principal=user: success
+                Arguments.of("cert-authority", "", true, true), // CA, no principal: success
+                Arguments.of("cert-authority", "", false, false), // CA, no principal: fail
+                Arguments.of("cert-authority", "other", false, false), // CA, wrong principal: fail
+                Arguments.of("cert-authority,principals=\"other\"", "user", false, false), // CA, principal overridden
+                Arguments.of("cert-authority,principals=\"other\"", "other", false, true) // CA, principal overridden
         );
     }
 
@@ -139,9 +147,10 @@ class AuthorizedKeysCertificateTest extends BaseTestSupport {
         client.setUserAuthFactories(Collections.singletonList(new UserAuthPublicKeyFactory()));
     }
 
-    @ParameterizedTest(name = "test {0} CA key with {1}")
+    @ParameterizedTest(name = "test {0} CA key with ''{1}'' (empty={2})")
     @MethodSource("options")
-    void testCertificate(String marker, String principals, boolean expectSuccess) throws Exception {
+    void testCertificate(String marker, String principals, boolean allowEmpty, boolean expectSuccess) throws Exception {
+        CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(sshd, allowEmpty);
         String[] certPrincipals = GenericUtils.isEmpty(principals) ? new String[0] : principals.split(",");
         initCert(marker, certPrincipals);
         try (ClientSession s = client.connect("user", TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)

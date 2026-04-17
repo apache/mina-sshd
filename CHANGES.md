@@ -37,5 +37,16 @@
 
 ## Potential Compatibility Issues
 
+* [GH-892](https://github.com/apache/mina-sshd/issues/892) Align handling certificates without principals with OpenSSH 10.3
+
+OpenSSH 10.3 changed the way such certificates are handled; see the [OpenSSH 10.3 release notes](https://www.openssh.org/txt/release-10.3).
+In Apache MINA SSHD, there is a new flag `CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS` (by default `false`)
+that can be set on an `SshClient` or `SshServer` or also on a `Session` directly. If the value is `false`, certificates
+without principals are rejected as in OpenSSH 10.3; if it is `true`, such certificates are considered to match any
+user or host name as in OpenSSH &lt; 10.3.
+
+Set the flag on an `SshClient` or `ClientSession` to determine the handling of host certificates. Set it on an
+`SshServer` or `ServerSession` to govern the handling of user certificates.
+
 ## Major Code Re-factoring
 
