@@ -20,6 +20,7 @@ package org.apache.sshd.common.signature;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collections;
@@ -198,5 +199,25 @@ class KnownHostsCertificateTest extends BaseTestSupport {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(AUTH_TIMEOUT);
         }
+    }
+
+    @Test
+    void testHostCertificateWithRejectedHostKeyFails() throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority");
+        Path knownHosts = tmp.resolve("known_hosts");
+        StringBuilder line = new StringBuilder();
+        line.append("@revoked ");
+        line.append("[localhost]:").append(port).append(",[127.0.0.1]:").append(port).append(' ');
+        line.append(PublicKeyEntry.toString(hostKey.getPublic()));
+        line.append('\n');
+        Files.write(knownHosts, Collections.singletonList(line.toString()), StandardOpenOption.APPEND);
+        client.setServerKeyVerifier(new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, knownHosts));
+        assertThrows(SshException.class, () -> {
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                    .getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+                s.auth().verify(AUTH_TIMEOUT);
+            }
+        });
     }
 }

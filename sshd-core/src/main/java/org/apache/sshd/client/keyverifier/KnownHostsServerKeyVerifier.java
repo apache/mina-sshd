@@ -298,6 +298,18 @@ public class KnownHostsServerKeyVerifier
                 .filter(e -> isCert == "cert-authority".equals(e.getHostEntry().getMarker()))
                 .collect(Collectors.toList());
         if (!keyMatches.isEmpty()) {
+            if (serverKey instanceof OpenSshCertificate) {
+                // Also check whether the certified key has been revoked.
+                PublicKey certifiedKey = ((OpenSshCertificate) serverKey).getCertPubKey();
+                String certKeyType = KeyUtils.getKeyType(certifiedKey);
+                if (hostMatches.stream() //
+                        .filter(entry -> certKeyType.equals(entry.getHostEntry().getKeyEntry().getKeyType()))
+                        .filter(k -> KeyUtils.compareKeys(k.getServerKey(), certifiedKey))
+                        .anyMatch(entry -> "revoked".equals(entry.getHostEntry().getMarker()))) {
+                    handleRevokedKey(clientSession, remoteAddress, certifiedKey);
+                    return false;
+                }
+            }
             return true;
         }
 
@@ -306,7 +318,8 @@ public class KnownHostsServerKeyVerifier
         }
 
         Optional<HostEntryPair> anyNonRevokedMatch = hostMatches.stream()
-                .filter(k -> !"revoked".equals(k.getHostEntry().getMarker()))
+                .filter(k -> !"revoked".equals(k.getHostEntry().getMarker())
+                        && !"cert-authority".equals(k.getHostEntry().getMarker()))
                 .findAny();
 
         if (!anyNonRevokedMatch.isPresent()) {
