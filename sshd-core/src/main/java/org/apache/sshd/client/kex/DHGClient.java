@@ -24,6 +24,8 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.common.NamedFactory;
@@ -291,7 +293,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
 
             if (connectSocketAddress instanceof InetSocketAddress) {
                 String hostName = ((InetSocketAddress) connectSocketAddress).getHostString();
-                if (GenericUtils.isEmpty(principals) || (!principals.contains(hostName))) {
+                if (!hostMatches(principals, hostName)) {
                     throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                             "KeyExchange signature verification failed, invalid principal " + hostName + " for key ID=" + keyId
                                                                                              + " - allowed=" + principals);
@@ -313,5 +315,19 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                                                                                      + " for key ID="
                                                                                      + keyId);
         }
+    }
+
+    private Pattern wildcardToRegex(String wildcardPattern) {
+        String re = "^\\Q" + wildcardPattern + "\\E$";
+        re = re.replace("?", "\\E.\\Q").replaceAll("\\*+", Matcher.quoteReplacement("\\E.*?\\Q")).replace("\\Q\\E", "");
+        return Pattern.compile(re);
+    }
+
+    private boolean hostMatches(Collection<String> principals, String hostName) {
+        return principals.stream() //
+                .filter(s -> s != null && !s.isEmpty()) //
+                .anyMatch(principal -> (principal.contains("?") || principal.contains("*"))
+                        ? wildcardToRegex(principal).matcher(hostName).matches()
+                        : principal.equals(hostName));
     }
 }

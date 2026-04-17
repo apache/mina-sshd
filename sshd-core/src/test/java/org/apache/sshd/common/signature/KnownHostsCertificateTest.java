@@ -49,6 +49,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for KEX with host certificates with host key validation through a {@link KnownHostsServerKeyVerifier}.
@@ -180,6 +181,18 @@ class KnownHostsCertificateTest extends BaseTestSupport {
         CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(client, true);
         initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
                 new String[0]);
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            s.addPasswordIdentity(getCurrentTestName());
+            s.auth().verify(AUTH_TIMEOUT);
+        }
+    }
+
+    @ParameterizedTest(name = "test CA key with {0}")
+    @ValueSource(strings = { "loca?host,127.0.0.?", "loca*ost,127.?.?.*" })
+    void testHostCertificateWithWildcardSucceeds(String principals) throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
+                principals.split(","));
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
                 .getSession()) {
             s.addPasswordIdentity(getCurrentTestName());

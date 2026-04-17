@@ -35,6 +35,10 @@
 
 ## New Features
 
+* [GH-892](https://github.com/apache/mina-sshd/issues/892) Align handling certificates without principals with OpenSSH 10.3
+
+Wildcard principals in host certificates are handled now.
+
 ## Potential Compatibility Issues
 
 * [GH-892](https://github.com/apache/mina-sshd/issues/892) Align handling certificates without principals with OpenSSH 10.3
