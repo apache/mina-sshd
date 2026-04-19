@@ -84,9 +84,9 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.EchoShell;
 import org.apache.sshd.util.test.EchoShellFactory;
 import org.apache.sshd.util.test.TestChannelListener;
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
@@ -347,7 +347,7 @@ public class ServerTest extends BaseTestSupport {
      * read the data, filling the ssh window and the tcp socket - the server session becomes idle, but the ssh
      * disconnect message can't be written - the server session is forcibly closed
      */
-    @Ignore("Unstable test")
+    @Disabled("Unstable test")
     @Test
     void serverIdleTimeoutWithForce() throws Exception {
         final long idleTimeoutValue = TimeUnit.SECONDS.toMillis(5L);
