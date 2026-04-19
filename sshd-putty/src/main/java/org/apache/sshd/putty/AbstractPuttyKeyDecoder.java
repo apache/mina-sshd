@@ -23,6 +23,8 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.PrivateKey;
@@ -171,6 +173,10 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
                 prvEncryption, passwordProvider, headers);
     }
 
+    private interface KeyDecoder {
+        byte[] decode() throws GeneralSecurityException;
+    }
+
     public Collection<KeyPair> loadKeyPairs(
             SessionContext session, NamedResource resourceKey, int formatVersion,
             String pubData, String prvData, String prvEncryption,
@@ -212,15 +218,55 @@ public abstract class AbstractPuttyKeyDecoder<PUB extends PublicKey, PRV extends
         String algorithm = algName;
         int bits = numBits;
         Collection<KeyPair> keys = passwordProvider.decode(session, resourceKey, password -> {
-            byte[] decBytes = PuttyKeyPairResourceParser.decodePrivateKeyBytes(formatVersion, prvBytes, algorithm, bits, mode,
-                    password, headers);
+            KeyDecoder decoder = () -> PuttyKeyPairResourceParser.decodePrivateKeyBytes(formatVersion, prvBytes, algorithm,
+                    bits, mode, password, headers);
             try {
-                return loadKeyPairs(resourceKey, formatVersion, pubBytes, decBytes, headers);
+                return loadEncryptedKeyPairs(resourceKey, formatVersion, pubBytes, headers, decoder);
+            } catch (GeneralSecurityException | IOException e) {
+                // If the password contains non-ASCII characters, Putty may use whatever the current ANSI codepage was
+                // on Windows when the key was generated. In the Western world that's most likely Windows-1252, which is
+                // close to ISO-8859-1.
+                //
+                // So let's try with the native encoding, and if that fails, with ISO-8859-1.
+                if (password.chars().anyMatch(val -> val != (val & 0x7F))) {
+                    // JEP 400: Java 18 populates this system property.
+                    String encoding = System.getProperty("native.encoding"); //$NON-NLS-1$
+                    if (encoding == null || encoding.isEmpty()) {
+                        encoding = Charset.defaultCharset().name();
+                    }
+                    if (encoding != null && !encoding.isEmpty() && !StandardCharsets.UTF_8.name().equals(encoding)) {
+                        try {
+                            headers.put(PuttyKeyPairResourceParser.SSHD_PASSWORD_ENCODING, encoding);
+                            return loadEncryptedKeyPairs(resourceKey, formatVersion, pubBytes, headers, decoder);
+                        } catch (GeneralSecurityException | IOException e2) {
+                            if (StandardCharsets.ISO_8859_1.name().equals(encoding)) {
+                                // No point trying again
+                                throw e2;
+                            }
+                            // Ignore and try ISO-8859-1 below
+                        }
+                    }
+                    headers.put(PuttyKeyPairResourceParser.SSHD_PASSWORD_ENCODING, StandardCharsets.ISO_8859_1.name());
+                    return loadEncryptedKeyPairs(resourceKey, formatVersion, pubBytes, headers, decoder);
+                } else {
+                    throw e;
+                }
             } finally {
-                Arrays.fill(decBytes, (byte) 0); // eliminate sensitive data a.s.a.p.
+                headers.remove(PuttyKeyPairResourceParser.SSHD_PASSWORD_ENCODING);
             }
         });
         return keys == null ? Collections.emptyList() : keys;
+    }
+
+    private Collection<KeyPair> loadEncryptedKeyPairs(
+            NamedResource resourceKey, int formatVersion, byte[] pubBytes, Map<String, String> headers, KeyDecoder decoder)
+            throws GeneralSecurityException, IOException {
+        byte[] decBytes = decoder.decode();
+        try {
+            return loadKeyPairs(resourceKey, formatVersion, pubBytes, decBytes, headers);
+        } finally {
+            Arrays.fill(decBytes, (byte) 0);
+        }
     }
 
     public Collection<KeyPair> loadKeyPairs(

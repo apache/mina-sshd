@@ -20,7 +20,10 @@
 package org.apache.sshd.putty;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.IllegalCharsetNameException;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.MessageDigest;
@@ -30,6 +33,7 @@ import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -103,6 +107,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     String KEY_FILE_HEADER_PREFIX = "PuTTY-User-Key-File-";
     String PUBLIC_LINES_HEADER = "Public-Lines";
     String PRIVATE_LINES_HEADER = "Private-Lines";
+    String SSHD_PASSWORD_ENCODING = "Sshd-Password-Encoding";
     String PPK_FILE_SUFFIX = ".ppk";
 
     List<String> KNOWN_HEADERS = Collections.unmodifiableList(
@@ -192,7 +197,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
      * when it's encrypted.
      *
      * @param  formatVersion            The file format version
-     * @param  passphrase               The Password to be used as seed for the key - ignored if {@code null}/empty
+     * @param  passphrase               The password to be used as seed for the key; must not be {@code null}
      * @param  iv                       Initialization vector to be populated if necessary
      * @param  key                      Key to be populated
      * @param  headers                  Any extra headers found in the PPK file that might be used for KDF
@@ -225,7 +230,16 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
         byte[] salt = ValidateUtils.checkNotNullAndNotEmpty(
                 getHexArrayHeaderValue(headers, "Argon2-Salt"), "No Argon2 salt value provided");
         byte[] hashValue = new byte[key.length + iv.length + FORMAT_3_MAC_KEY_LENGTH];
-        byte[] passBytes = passphrase.getBytes(StandardCharsets.UTF_8);
+        Charset passwordEncoding = StandardCharsets.UTF_8;
+        String charsetName = headers.get(SSHD_PASSWORD_ENCODING);
+        if (charsetName != null) {
+            try {
+                passwordEncoding = Charset.forName(charsetName);
+            } catch (UnsupportedCharsetException e) {
+                // Ignore
+            }
+        }
+        byte[] passBytes = passphrase.getBytes(passwordEncoding);
         try {
             Argon2Parameters.Builder builder;
             if ("Argon2id".equalsIgnoreCase(keyDerivationType)) {
@@ -276,7 +290,7 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
     /**
      * Uses the &quot;legacy&quot; KDF via SHA-1
      *
-     * @param  passphrase               The Password to be used as seed for the key - ignored if {@code null}/empty
+     * @param  passphrase               The password to be used as seed for the key; must not be {@code null}
      * @param  iv                       Initialization vector to be populated if necessary
      * @param  key                      Key to be populated
      * @throws GeneralSecurityException If cannot retrieve SHA-1 digest
@@ -285,9 +299,35 @@ public interface PuttyKeyPairResourceParser<PUB extends PublicKey, PRV extends P
      *                                  How does Putty derive the encryption key in its .ppk format ?</A>
      */
     static void deriveFormat2EncryptionKey(String passphrase, byte[] iv, byte[] key) throws GeneralSecurityException {
+        deriveFormat2EncryptionKey(passphrase, iv, key, new HashMap<>());
+    }
+
+    /**
+     * Uses the &quot;legacy&quot; KDF via SHA-1
+     *
+     * @param  passphrase               The password to be used as seed for the key; must not be {@code null}
+     * @param  iv                       Initialization vector to be populated if necessary
+     * @param  key                      Key to be populated
+     * @param  headers                  Extra headers from the PPK file
+     * @throws GeneralSecurityException If cannot retrieve SHA-1 digest
+     * @see                             <A HREF=
+     *                                  "http://security.stackexchange.com/questions/71341/how-does-putty-derive-the-encryption-key-in-its-ppk-format">
+     *                                  How does Putty derive the encryption key in its .ppk format ?</A>
+     */
+    static void deriveFormat2EncryptionKey(String passphrase, byte[] iv, byte[] key, Map<String, String> headers)
+            throws GeneralSecurityException {
         Objects.requireNonNull(passphrase, "No passphrase provded");
 
-        byte[] passBytes = passphrase.getBytes(StandardCharsets.UTF_8);
+        Charset passwordEncoding = StandardCharsets.UTF_8;
+        String charsetName = headers.get(SSHD_PASSWORD_ENCODING);
+        if (charsetName != null) {
+            try {
+                passwordEncoding = Charset.forName(charsetName);
+            } catch (IllegalCharsetNameException | UnsupportedCharsetException e) {
+                // Ignore
+            }
+        }
+        byte[] passBytes = passphrase.getBytes(passwordEncoding);
         try {
             MessageDigest hash = SecurityUtils.getMessageDigest(BuiltinDigests.sha1.getAlgorithm());
             byte[] stateValue = { 0, 0, 0, 0 };

@@ -39,6 +39,13 @@
 
 Wildcard principals in host certificates are handled now.
 
+* Putty keys with non-ASCII passphrases
+
+The passphrase needs to be converted to a byte sequence to compute a decryption key for an encrypted private key. This
+conversion depends on the character encoding. Putty on Windows uses the ANSI codepage set when the key was generated.
+Apache MINA SSHD now tries multiple encodings in sequence: UTF-8, then the OS encoding, and finally ISO-8859-1 as a
+last-chance fallback.
+
 ## Potential Compatibility Issues
 
 * [GH-892](https://github.com/apache/mina-sshd/issues/892) Align handling certificates without principals with OpenSSH 10.3

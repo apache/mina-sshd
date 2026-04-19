@@ -25,6 +25,7 @@ import java.security.KeyPair;
 
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.junit.jupiter.api.Assumptions;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -40,10 +41,14 @@ public class PuttySpecialKeysTest extends AbstractPuttyTestSupport {
         super();
     }
 
+    @BeforeAll
+    static void assumeBouncyCastle() {
+        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BC provider available");
+    }
+
     // SSHD-1247
     @Test
     void argon2KeyDerivation() throws Exception {
-        Assumptions.assumeTrue(SecurityUtils.isBouncyCastleRegistered(), "BC provider available");
         testDecodeSpecialEncryptedPuttyKeyFile("ssh-rsa", "argon2id", "123456");
     }
 
@@ -55,5 +60,11 @@ public class PuttySpecialKeysTest extends AbstractPuttyTestSupport {
                                                + "-" + flavor + "-" + KeyPair.class.getSimpleName()
                                                + "-" + password + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX,
                 false, password, keyType);
+    }
+
+    @Test
+    void nonAsciiPassphrase() throws Exception {
+        testDecodeEncryptedPuttyKeyFile("non-ascii-passphrase-encrypted-KeyPair" + PuttyKeyPairResourceParser.PPK_FILE_SUFFIX,
+                false, "secret123äöüß", "ecdsa-sha2-nistp256");
     }
 }
