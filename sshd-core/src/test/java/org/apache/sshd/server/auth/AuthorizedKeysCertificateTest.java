@@ -114,7 +114,13 @@ class AuthorizedKeysCertificateTest extends BaseTestSupport {
                 Arguments.of("cert-authority", "", false, false), // CA, no principal: fail
                 Arguments.of("cert-authority", "other", false, false), // CA, wrong principal: fail
                 Arguments.of("cert-authority,principals=\"other\"", "user", false, false), // CA, principal overridden
-                Arguments.of("cert-authority,principals=\"other\"", "other", false, true) // CA, principal overridden
+                Arguments.of("cert-authority,principals=\"other\"", "other", false, true), // CA, principal overridden
+                Arguments.of("cert-authority,principals=\"other,user\"", "user", false, true), //
+                // One principal "root,user" in the certificate
+                Arguments.of("cert-authority,principals=\"other,user\"", "root,user", false, false), //
+                // Two principals "root" and "user" in the certificate
+                Arguments.of("cert-authority,principals=\"other,user\"", "root;user", false, true), //
+                Arguments.of("cert-authority,principals=\"user,other\"", "root;user", false, true) //
         );
     }
 
@@ -151,7 +157,7 @@ class AuthorizedKeysCertificateTest extends BaseTestSupport {
     @MethodSource("options")
     void testCertificate(String marker, String principals, boolean allowEmpty, boolean expectSuccess) throws Exception {
         CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(sshd, allowEmpty);
-        String[] certPrincipals = GenericUtils.isEmpty(principals) ? new String[0] : principals.split(",");
+        String[] certPrincipals = GenericUtils.isEmpty(principals) ? new String[0] : principals.split(";");
         initCert(marker, certPrincipals);
         try (ClientSession s = client.connect("user", TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
                 .getSession()) {
