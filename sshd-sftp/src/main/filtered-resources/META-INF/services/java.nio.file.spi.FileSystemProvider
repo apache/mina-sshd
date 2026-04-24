@@ -17,4 +17,4 @@
 ## under the License.
 ##
 
-org.apache.sshd.sftp.client.fs.SftpFileSystemProvider
+org.apache.sshd.sftp.client.fs.SftpFileSystemProviderFacade

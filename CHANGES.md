@@ -31,6 +31,7 @@
 
 ## Bug Fixes
 
+* [GH-743](https://github.com/apache/mina-sshd/issues/743) Ensure the Java `ServiceLoader` use a singleton `SftpFileSystemProvider`
 * [GH-879](https://github.com/apache/mina-sshd/issues/879) Close SSH channel gracefully on exception in port forwarding
 
 ## New Features
