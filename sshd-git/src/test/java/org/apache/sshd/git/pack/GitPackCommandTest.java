@@ -146,6 +146,252 @@ class GitPackCommandTest extends GitTestSupport {
         }
     }
 
+    @Test
+    void parentCheck() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
+
+        Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(gitRootDir);
+        try (SshServer sshd = setupTestServer()) {
+            GitPackTestConfig packConfig = new GitPackTestConfig();
+            Path serverRootDir = gitRootDir.resolve("server");
+            Path otherRootDir = gitRootDir.resolve("other");
+            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir))
+                    .withGitPackConfiguration(packConfig));
+            sshd.start();
+
+            int port = sshd.getPort();
+            try {
+                CommonTestSupportUtils.deleteRecursive(serverRootDir);
+                Files.createDirectory(serverRootDir);
+                String repoName = getCurrentTestName() + Constants.DOT_GIT_EXT;
+                Path otherDir = otherRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(otherDir);
+                Git.init().setBare(true).setDirectory(otherDir.toFile()).call().close();
+
+                JSch.setConfig("StrictHostKeyChecking", "no");
+                CredentialsProvider
+                        .setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
+                Path localRootDir = gitRootDir.resolve("local");
+                Path localDir = localRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(localDir);
+
+                SshClient client = SshClient.setUpDefaultClient();
+                SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
+                try {
+                    assertThrows(Exception.class, () -> {
+                        Git.cloneRepository().setURI(
+                                "ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/../other/" + repoName)
+                                .setDirectory(localDir.toFile()).call().close();
+                    });
+                } finally {
+                    client.stop();
+                }
+            } finally {
+                sshd.stop();
+            }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
+        }
+    }
+
+    @Test
+    void parentCheck2() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
+
+        Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(gitRootDir);
+        try (SshServer sshd = setupTestServer()) {
+            GitPackTestConfig packConfig = new GitPackTestConfig();
+            Path serverRootDir = gitRootDir.resolve("server");
+            Path otherRootDir = gitRootDir.resolve("other");
+            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir))
+                    .withGitPackConfiguration(packConfig));
+            sshd.start();
+
+            int port = sshd.getPort();
+            try {
+                CommonTestSupportUtils.deleteRecursive(serverRootDir);
+                Files.createDirectory(serverRootDir);
+                String repoName = getCurrentTestName() + Constants.DOT_GIT_EXT;
+                Path otherDir = otherRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(otherDir);
+                Git.init().setBare(true).setDirectory(otherDir.toFile()).call().close();
+
+                JSch.setConfig("StrictHostKeyChecking", "no");
+                CredentialsProvider
+                        .setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
+                Path localRootDir = gitRootDir.resolve("local");
+                Path localDir = localRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(localDir);
+
+                SshClient client = SshClient.setUpDefaultClient();
+                SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
+                try {
+                    assertThrows(Exception.class, () -> {
+                        Git.cloneRepository().setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port
+                                                     + "/foo/../../other/" + repoName)
+                                .setDirectory(localDir.toFile()).call().close();
+                    });
+                } finally {
+                    client.stop();
+                }
+            } finally {
+                sshd.stop();
+            }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
+        }
+    }
+
+    @Test
+    void symLinkAllowed() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink, plus test uses symlinks");
+
+        Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(gitRootDir);
+        try (SshServer sshd = setupTestServer()) {
+            GitPackTestConfig packConfig = new GitPackTestConfig();
+            Path serverRootDir = gitRootDir.resolve("server");
+            Path otherRootDir = gitRootDir.resolve("tenants");
+            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir))
+                    .withGitPackConfiguration(packConfig));
+            sshd.start();
+
+            int port = sshd.getPort();
+            try {
+                CommonTestSupportUtils.deleteRecursive(serverRootDir);
+                Files.createDirectory(serverRootDir);
+                CommonTestSupportUtils.deleteRecursive(otherRootDir);
+                Path realTenantDir = Files.createDirectories(otherRootDir.resolve("tenantX"));
+                String repoName = getCurrentTestName() + Constants.DOT_GIT_EXT;
+                Path otherDir = realTenantDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(otherDir);
+                Git.init().setBare(true).setDirectory(otherDir.toFile()).call().close();
+                Path symLinkPath = serverRootDir.resolve("Tenant-X");
+                Files.createSymbolicLink(symLinkPath, realTenantDir);
+
+                JSch.setConfig("StrictHostKeyChecking", "no");
+                CredentialsProvider
+                        .setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
+                Path localRootDir = gitRootDir.resolve("local");
+                Path localDir = localRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(localDir);
+
+                SshClient client = SshClient.setUpDefaultClient();
+                SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
+                try (Git git = Git.cloneRepository()
+                        .setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/Tenant-X/" + repoName)
+                        .setDirectory(localDir.toFile()).call()) {
+                    assertTrue(localDir.resolve(Constants.DOT_GIT).toFile().isDirectory());
+                } finally {
+                    client.stop();
+                }
+            } finally {
+                sshd.stop();
+            }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
+        }
+    }
+
+    @Test
+    void gitRootAccessDenied() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
+
+        Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(gitRootDir);
+        try (SshServer sshd = setupTestServer()) {
+            GitPackTestConfig packConfig = new GitPackTestConfig();
+            Path serverRootDir = gitRootDir.resolve("server");
+            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir))
+                    .withGitPackConfiguration(packConfig));
+            sshd.start();
+
+            int port = sshd.getPort();
+            try {
+                CommonTestSupportUtils.deleteRecursive(serverRootDir);
+                Files.createDirectory(serverRootDir);
+                String repoName = getCurrentTestName() + Constants.DOT_GIT_EXT;
+                Git.init().setBare(true).setDirectory(serverRootDir.toFile()).call().close();
+
+                JSch.setConfig("StrictHostKeyChecking", "no");
+                CredentialsProvider
+                        .setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
+                Path localRootDir = gitRootDir.resolve("local");
+                Path localDir = localRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(localDir);
+
+                SshClient client = SshClient.setUpDefaultClient();
+                SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
+                try {
+                    assertThrows(Exception.class, () -> {
+                        Git.cloneRepository().setURI(
+                                "ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/foo/../")
+                                .setDirectory(localDir.toFile()).call().close();
+                    });
+                } finally {
+                    client.stop();
+                }
+            } finally {
+                sshd.stop();
+            }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
+        }
+    }
+
+    @Test
+    void giCannotEscapeRoot() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
+
+        Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
+        SystemReader defaultSystemReader = mockGitConfig(gitRootDir);
+        Git.init().setBare(true).setDirectory(gitRootDir.toFile()).call().close();
+        try (SshServer sshd = setupTestServer()) {
+            GitPackTestConfig packConfig = new GitPackTestConfig();
+            Path serverRootDir = gitRootDir.resolve("server");
+            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
+            sshd.setCommandFactory(new GitPackCommandFactory(GitLocationResolver.constantPath(serverRootDir))
+                    .withGitPackConfiguration(packConfig));
+            sshd.start();
+
+            int port = sshd.getPort();
+            try {
+                CommonTestSupportUtils.deleteRecursive(serverRootDir);
+                Files.createDirectory(serverRootDir);
+                String repoName = getCurrentTestName() + Constants.DOT_GIT_EXT;
+
+                JSch.setConfig("StrictHostKeyChecking", "no");
+                CredentialsProvider
+                        .setDefault(new UsernamePasswordCredentialsProvider(getCurrentTestName(), getCurrentTestName()));
+                Path localRootDir = gitRootDir.resolve("local");
+                Path localDir = localRootDir.resolve(repoName);
+                CommonTestSupportUtils.deleteRecursive(localDir);
+
+                SshClient client = SshClient.setUpDefaultClient();
+                SshSessionFactory.setInstance(new GitSshdSessionFactory(client));
+                try {
+                    assertThrows(Exception.class, () -> {
+                        Git.cloneRepository()
+                                .setURI("ssh://" + getCurrentTestName() + "@" + TEST_LOCALHOST + ":" + port + "/./foo/../../")
+                                .setDirectory(localDir.toFile()).call().close();
+                    });
+                } finally {
+                    client.stop();
+                }
+            } finally {
+                sshd.stop();
+            }
+        } finally {
+            SystemReader.setInstance(defaultSystemReader);
+        }
+    }
+
     private static class GitPackTestConfig implements GitPackConfiguration {
         boolean receivePackCalled;
         boolean uploadPackCalled;

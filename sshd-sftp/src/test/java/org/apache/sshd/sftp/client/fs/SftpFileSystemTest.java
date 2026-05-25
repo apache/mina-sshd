@@ -1064,7 +1064,7 @@ class SftpFileSystemTest extends AbstractSftpFilesSystemSupport {
                 }
 
                 assertFalse(found, "Multiple configurations: " + line);
-                assertEquals(SftpFileSystemProvider.class.getName(), line, "Mismatched configuration");
+                assertEquals(SftpFileSystemProviderFacade.class.getName(), line, "Mismatched configuration");
                 found = true;
             }
         }

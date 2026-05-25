@@ -115,14 +115,8 @@ public class GitPackCommand extends AbstractGitCommand {
         ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
 
         String pathArg = args[1];
-        int len = GenericUtils.length(pathArg);
-        // Strip any leading path separator since we use relative to root
-        if ((len > 0) && (pathArg.charAt(0) == '/')) {
-            pathArg = pathArg.substring(1);
-        }
-
         ValidateUtils.hasContent(pathArg, "No %s command sub-path specified", args[0]);
-        return rootDir.resolve(pathArg);
+        return resolveGitRepo(rootDir, pathArg);
     }
 
     public void setPackConfiguration(GitPackConfiguration packConfiguration) {

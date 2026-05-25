@@ -48,6 +48,7 @@ But we can give you a rough outline of what we want to do:
   and `sshd-osgi` and using on newer Java versions the already built-in cryptographic algorithms
   for ChaCha20, ed25519, and ML-KEM.
 * **3.0.0-M3**: Bug fix release of 3.0.0-M2, and update base to 2.17.1.
+* **3.0.0-M4**: Update base to 2.18.0.
 
 Further possible milestones (the order might change, though):
 

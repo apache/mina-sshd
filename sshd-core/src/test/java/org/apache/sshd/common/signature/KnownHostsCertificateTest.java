@@ -20,6 +20,7 @@ package org.apache.sshd.common.signature;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.security.KeyPair;
 import java.util.Arrays;
 import java.util.Collections;
@@ -37,16 +38,19 @@ import org.apache.sshd.common.config.keys.OpenSshCertificate;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * Tests for KEX with host certificates with host key validation through a {@link KnownHostsServerKeyVerifier}.
@@ -90,6 +94,11 @@ class KnownHostsCertificateTest extends BaseTestSupport {
                 client = null;
             }
         }
+    }
+
+    @AfterEach
+    void resetCertificateProperty() {
+        CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(client, false);
     }
 
     private static Stream<String> markers() {
@@ -156,7 +165,21 @@ class KnownHostsCertificateTest extends BaseTestSupport {
     }
 
     @Test
+    void testHostCertificateWithoutPrincipalsFails() throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
+                new String[0]);
+        assertThrows(SshException.class, () -> {
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                    .getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+                s.auth().verify(AUTH_TIMEOUT);
+            }
+        });
+    }
+
+    @Test
     void testHostCertificateWithoutPrincipalsSucceeds() throws Exception {
+        CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.set(client, true);
         initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
                 new String[0]);
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
@@ -164,5 +187,37 @@ class KnownHostsCertificateTest extends BaseTestSupport {
             s.addPasswordIdentity(getCurrentTestName());
             s.auth().verify(AUTH_TIMEOUT);
         }
+    }
+
+    @ParameterizedTest(name = "test CA key with {0}")
+    @ValueSource(strings = { "loca?host,127.0.0.?", "loca*ost,127.?.?.*" })
+    void testHostCertificateWithWildcardSucceeds(String principals) throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority",
+                principals.split(","));
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            s.addPasswordIdentity(getCurrentTestName());
+            s.auth().verify(AUTH_TIMEOUT);
+        }
+    }
+
+    @Test
+    void testHostCertificateWithRejectedHostKeyFails() throws Exception {
+        initKeys(KeyUtils.EC_ALGORITHM, 256, KeyUtils.EC_ALGORITHM, 256, "ecdsa-sha2-nistp256", "cert-authority");
+        Path knownHosts = tmp.resolve("known_hosts");
+        StringBuilder line = new StringBuilder();
+        line.append("@revoked ");
+        line.append("[localhost]:").append(port).append(",[127.0.0.1]:").append(port).append(' ');
+        line.append(PublicKeyEntry.toString(hostKey.getPublic()));
+        line.append('\n');
+        Files.write(knownHosts, Collections.singletonList(line.toString()), StandardOpenOption.APPEND);
+        client.setServerKeyVerifier(new KnownHostsServerKeyVerifier(AcceptAllServerKeyVerifier.INSTANCE, knownHosts));
+        assertThrows(SshException.class, () -> {
+            try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                    .getSession()) {
+                s.addPasswordIdentity(getCurrentTestName());
+                s.auth().verify(AUTH_TIMEOUT);
+            }
+        });
     }
 }

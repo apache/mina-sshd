@@ -24,6 +24,8 @@ import java.security.PublicKey;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Objects;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.apache.sshd.client.session.AbstractClientSession;
 import org.apache.sshd.common.NamedFactory;
@@ -257,11 +259,15 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                     "KeyExchange CA signature verification failed for key type=" + keyAlg + " of key ID=" + keyId);
         }
 
+        // OpenSSH < 10.3:
+        //
         // "As a special case, a zero-length "valid principals" field means the certificate is valid for
         // any principal of the specified type."
         // See https://github.com/openssh/openssh-portable/blob/master/PROTOCOL.certkeys
         //
         // Empty principals in a host certificate mean the certificate is valid for any host.
+        //
+        // OpenSSH >= 10.3: such certificates are never valid.
         Collection<String> principals = openSshKey.getPrincipals();
         if (!GenericUtils.isEmpty(principals)) {
             /*
@@ -275,7 +281,7 @@ public class DHGClient extends AbstractDHClientKeyExchange {
 
             if (connectSocketAddress instanceof InetSocketAddress) {
                 String hostName = ((InetSocketAddress) connectSocketAddress).getHostString();
-                if (GenericUtils.isEmpty(principals) || (!principals.contains(hostName))) {
+                if (!hostMatches(principals, hostName)) {
                     throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                             "KeyExchange signature verification failed, invalid principal " + hostName + " for key ID=" + keyId
                                                                                              + " - allowed=" + principals);
@@ -284,6 +290,9 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                         "KeyExchange signature verification failed, could not determine connect host for key ID=" + keyId);
             }
+        } else if (!CoreModuleProperties.ALLOW_EMPTY_CERTIFICATE_PRINCIPALS.getRequired(session)) {
+            throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                    "KeyExchange signature verification failed because the certificate has no principals; key ID=" + keyId);
         }
 
         if (!openSshKey.getCriticalOptions().isEmpty()) {
@@ -294,5 +303,19 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                                                                                      + " for key ID="
                                                                                      + keyId);
         }
+    }
+
+    private Pattern wildcardToRegex(String wildcardPattern) {
+        String re = "^\\Q" + wildcardPattern + "\\E$";
+        re = re.replace("?", "\\E.\\Q").replaceAll("\\*+", Matcher.quoteReplacement("\\E.*?\\Q")).replace("\\Q\\E", "");
+        return Pattern.compile(re);
+    }
+
+    private boolean hostMatches(Collection<String> principals, String hostName) {
+        return principals.stream() //
+                .filter(s -> s != null && !s.isEmpty()) //
+                .anyMatch(principal -> (principal.contains("?") || principal.contains("*"))
+                        ? wildcardToRegex(principal).matcher(hostName).matches()
+                        : principal.equals(hostName));
     }
 }

@@ -32,6 +32,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
+import org.apache.sshd.git.AbstractGitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.pgm.CommandCatalog;
@@ -128,7 +129,7 @@ public class EmbeddedCommandRunner {
             throw new Die(true);
         }
 
-        gitdir = Objects.toString(rootDir.resolve(gitdir));
+        gitdir = Objects.toString(AbstractGitCommand.resolveGitRepo(rootDir, gitdir));
 
         TextBuiltin cmd = subcommand;
         set(cmd, "ins", in);

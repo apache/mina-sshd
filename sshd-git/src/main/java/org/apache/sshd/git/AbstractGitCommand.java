@@ -19,12 +19,17 @@
 
 package org.apache.sshd.git;
 
+import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
+import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 
@@ -138,5 +143,39 @@ public abstract class AbstractGitCommand
         }
 
         return list;
+    }
+
+    public static Path resolveGitRepo(Path serverRoot, String pathArg) throws IOException {
+        String originalPath = pathArg;
+        int len = GenericUtils.length(pathArg);
+        // Strip any leading path separator since we use relative to root
+        if ((len > 0) && (pathArg.charAt(0) == '/')) {
+            pathArg = pathArg.substring(1);
+        }
+        Path gitRepoPath;
+        try {
+            gitRepoPath = Paths.get(pathArg);
+        } catch (InvalidPathException e) {
+            throw new IOException("Invalid git repository path " + originalPath, e);
+        }
+        if (gitRepoPath.isAbsolute()) {
+            throw new IOException("Absolute git repository path not allowed: " + originalPath);
+        }
+        // Remove "." and ".." components
+        gitRepoPath = gitRepoPath.normalize();
+        int componentCount = gitRepoPath.getNameCount();
+        // Deny access to the server root directory itself.
+        if (componentCount == 0 || gitRepoPath.toString().isEmpty()) {
+            throw new IOException("Invalid git repository path " + originalPath);
+        }
+        // The first component might still be "." or "..". Double check all components.
+        for (int i = 0; i < componentCount; i++) {
+            String component = gitRepoPath.getName(i).toString();
+            if (".".equals(component) || "..".equals(component)) {
+                throw new IOException("Invalid git repository path " + originalPath);
+            }
+        }
+        return serverRoot.resolve(gitRepoPath);
+
     }
 }

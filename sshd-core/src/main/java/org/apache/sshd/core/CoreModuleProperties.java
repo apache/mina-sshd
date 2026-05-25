@@ -780,6 +780,12 @@ public final class CoreModuleProperties {
         }
     });
 
+    /**
+     * Whether to allow SSH user or host certificates without principals. OpenSSH < 10.3 considered such certificates to
+     * be valid for any principal; since OpenSSH 10.3 such certificates are rejected.
+     */
+    public static final Property<Boolean> ALLOW_EMPTY_CERTIFICATE_PRINCIPALS = Property.bool("empty-cert-principals", false);
+
     public static final int DEFAULT_MAX_MSGS_BEFORE_KEX_INIT = 1_000;
 
     /**
