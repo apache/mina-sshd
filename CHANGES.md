@@ -34,7 +34,7 @@ there are only two bug fixes from 3.0.0-M2.
 
 * [Change notes for 3.0.0-M3](./docs/changes/3.0.0-M3.md)
 
-## Milestone 3: Pre-Release 3.0.0-M4
+## Milestone 4: Pre-Release 3.0.0-M4
 
 Merges 2.18.0 into the 3.0.0 stream.
 
