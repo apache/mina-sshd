@@ -71,7 +71,7 @@
     </scm>
 
     <properties>
-        <japicmp-sshd-last-release>2.17.1</japicmp-sshd-last-release>
+        <japicmp-sshd-last-release>2.18.0</japicmp-sshd-last-release>
         <minimalJavaBuildVersion>24</minimalJavaBuildVersion>
         <surefireJdk>[${minimalJavaBuildVersion},)</surefireJdk>
         <minimalMavenBuildVersion>3.9.12</minimalMavenBuildVersion>
