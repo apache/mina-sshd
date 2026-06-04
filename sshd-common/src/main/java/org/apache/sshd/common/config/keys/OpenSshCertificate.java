@@ -77,6 +77,22 @@ public interface OpenSshCertificate extends SshPublicKey, PrivateKey {
     long INFINITY = 0xffff_ffff_ffff_ffffL;
 
     /**
+     * Critical option. If present, a signature made with the certified key must include the corresponding assertion.
+     */
+    String VERIFY_REQUIRED = "verify-required";
+
+    /**
+     * Critical option: if present a string value giving the forced command for "exec" or "shell" channel sessions, or
+     * for subsystems.
+     */
+    String FORCE_COMMAND = "force-command";
+
+    /**
+     * Critical option. Comma-separated list of CIDRs for allowed peers.
+     */
+    String SOURCE_ADDRESS = "source-address";
+
+    /**
      * Retrieves the raw SSH key type of this certificate.
      *
      * @return the key type, for instance "ssh-rsa" for a "ssh-rsa-cert-v01@openssh.com" certificate

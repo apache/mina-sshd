@@ -26,6 +26,7 @@ import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
@@ -110,7 +111,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
                     throw new CertificateException("expired");
                 }
                 verifyCertificateSignature(session, cert);
-                verifyCertificateSources(session, cert);
+                verifyCriticalOptions(session, cert);
             } catch (Exception e) {
                 warn("doAuth({}@{}): public key certificate (id={}) is not valid: {}", username, session, cert.getId(),
                         e.getMessage(), e);
@@ -217,8 +218,25 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         }
     }
 
+    protected void verifyCriticalOptions(ServerSession session, OpenSshCertificate cert) throws CertificateException {
+        Map<String, String> criticalOptions = cert.getCriticalOptionsMap();
+        for (String option : criticalOptions.keySet()) {
+            if (OpenSshCertificate.VERIFY_REQUIRED.equals(option)) {
+                throw new CertificateException(
+                        "Rejected by verify-required critical option: not implemented yet, have certificate type "
+                                               + cert.getKeyType());
+            } else if (OpenSshCertificate.SOURCE_ADDRESS.equals(option)) {
+                verifyCertificateSources(session, cert);
+            } else if (OpenSshCertificate.FORCE_COMMAND.equals(option)) {
+                throw new CertificateException("Rejected by force-command critical option: not implemented yet");
+            } else {
+                throw new CertificateException("Rejected by unknown critical option " + option);
+            }
+        }
+    }
+
     protected void verifyCertificateSources(ServerSession session, OpenSshCertificate cert) throws CertificateException {
-        String allowedSources = cert.getCriticalOptionsMap().get("source-address");
+        String allowedSources = cert.getCriticalOptionsMap().get(OpenSshCertificate.SOURCE_ADDRESS);
         if (allowedSources == null) {
             return;
         }
