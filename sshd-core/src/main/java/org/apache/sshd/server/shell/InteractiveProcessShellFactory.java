@@ -25,7 +25,15 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.server.channel.ChannelSession;
 
 /**
- * A simplistic interactive shell factory
+ * A simplistic interactive shell factory.
+ * <p>
+ * <b>Caveat:</b> Apache MINA SSHD does <em>not</em> provide privilege separation, and SSH users are by default
+ * <em>not</em> tied to OS users. The OS shell will run as the same OS user the process using Apache MINA SSHD runs. The
+ * shell will have the same access rights as the Apache MINA SSHD server process itself.
+ * </p>
+ * <p>
+ * It is in general <em>not</em> recommended to use this class as is in a production server.
+ * </p>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */

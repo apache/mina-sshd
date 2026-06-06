@@ -21,6 +21,7 @@ package org.apache.sshd.server.shell;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.time.Duration;
 
 import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.channel.ChannelShell;
@@ -30,6 +31,7 @@ import org.apache.sshd.server.SshServer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.CoreTestSupportUtils;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -76,9 +78,7 @@ public class ProcessShellTest extends BaseTestSupport {
      */
     @Test
     void testNoRedundantEchoOnStderr() throws Exception {
-        if (OsUtils.isWin32()) {
-            return;
-        }
+        Assumptions.assumeFalse(OsUtils.isWin32());
 
         try (SshServer localSshd = CoreTestSupportUtils.setupTestServer(getClass())) {
             localSshd.setShellFactory(new ProcessShellFactory("cat", "cat"));
@@ -100,7 +100,7 @@ public class ProcessShellTest extends BaseTestSupport {
                     pipe.write("hello\n".getBytes(StandardCharsets.UTF_8));
                     pipe.flush();
 
-                    Thread.sleep(1000);
+                    channel.waitFor(ClientSession.REMOTE_COMMAND_WAIT_EVENTS, Duration.ofSeconds(2));
 
                     String stderr = err.toString(StandardCharsets.UTF_8.name());
                     assertFalse(stderr.contains("hello"), "Redundant echo detected on stderr: " + stderr);
@@ -108,6 +108,26 @@ public class ProcessShellTest extends BaseTestSupport {
                     String stdout = out.toString(StandardCharsets.UTF_8.name());
                     assertTrue(stdout.contains("hello"), "Output should contain 'hello': " + stdout);
                 }
+            } finally {
+                localSshd.stop(true);
+            }
+        }
+    }
+
+    @Test
+    void testShellCommand() throws Exception {
+        Assumptions.assumeFalse(OsUtils.isWin32());
+
+        try (SshServer localSshd = CoreTestSupportUtils.setupTestServer(getClass())) {
+            localSshd.setCommandFactory(new ProcessShellCommandFactory());
+            localSshd.start();
+
+            try (ClientSession session = client.connect(getCurrentTestName(), "localhost", localSshd.getPort()).verify(10_000)
+                    .getSession()) {
+                session.addPasswordIdentity(getCurrentTestName());
+                session.auth().verify(10_000);
+
+                assertEquals("hello\nbye\n", session.executeRemoteCommand("echo 'hello'; echo 'bye'", Duration.ofSeconds(2)));
             } finally {
                 localSshd.stop(true);
             }
