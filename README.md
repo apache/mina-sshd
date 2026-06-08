@@ -1,3 +1,5 @@
+[![Quantum-Safe by QuantumScan](https://quantumscan.io/api/badge/apache/mina-sshd.svg)](https://quantumscan.io/en/share/26b7725c-fad8-46e7-9f83-1804fc08ec25)
+
 ![Apache MINA SSHD](https://mina.apache.org/assets/img/header-sshd.png "Apache MINA SSHD")
 # Apache MINA SSHD
 
