@@ -19,6 +19,7 @@
 
 package org.apache.sshd.git;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.InvalidPathException;
@@ -30,6 +31,7 @@ import java.util.Objects;
 
 import org.apache.sshd.common.channel.ChannelOutputStream;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.server.command.AbstractFileSystemCommand;
 
@@ -148,10 +150,17 @@ public abstract class AbstractGitCommand
     public static Path resolveGitRepo(Path serverRoot, String pathArg) throws IOException {
         String originalPath = pathArg;
         int len = GenericUtils.length(pathArg);
-        // Strip any leading path separator since we use relative to root
-        if ((len > 0) && (pathArg.charAt(0) == '/')) {
+        // Strip any leading separator since we use paths relative to root.
+        while ((len > 0) && (pathArg.charAt(0) == '/' || pathArg.charAt(0) == File.separatorChar)) {
             pathArg = pathArg.substring(1);
+            len--;
         }
+        if (OsUtils.isWin32() && pathArg.indexOf(':') >= 0) {
+            // Catches "C:/Something" or also "C:Something". Windows path name components may not contain colons.
+            // Windows drive specs are not allowed here.
+            throw new IOException("Invalid git repository path " + originalPath);
+        }
+
         Path gitRepoPath;
         try {
             gitRepoPath = Paths.get(pathArg);
@@ -161,7 +170,7 @@ public abstract class AbstractGitCommand
         if (gitRepoPath.isAbsolute()) {
             throw new IOException("Absolute git repository path not allowed: " + originalPath);
         }
-        // Remove "." and ".." components
+        // Remove "." and ".." components.
         gitRepoPath = gitRepoPath.normalize();
         int componentCount = gitRepoPath.getNameCount();
         // Deny access to the server root directory itself.
@@ -175,7 +184,10 @@ public abstract class AbstractGitCommand
                 throw new IOException("Invalid git repository path " + originalPath);
             }
         }
-        return serverRoot.resolve(gitRepoPath);
-
+        Path result = serverRoot.resolve(gitRepoPath).normalize();
+        if (!result.startsWith(serverRoot.normalize())) {
+            throw new IOException("Invalid git repository path " + originalPath);
+        }
+        return result;
     }
 }

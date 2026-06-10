@@ -344,7 +344,7 @@ public class GitPackCommandTest extends GitTestSupport {
     }
 
     @Test
-    void giCannotEscapeRoot() throws Exception {
+    void gitCannotEscapeRoot() throws Exception {
         Assumptions.assumeFalse(OsUtils.isWin32(), "On windows this activates TortoisePlink");
 
         Path gitRootDir = getTempTargetRelativeFile(getClass().getSimpleName());
