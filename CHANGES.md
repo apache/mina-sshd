@@ -36,6 +36,7 @@
 * [GH-902](https://github.com/apache/mina-sshd/pull/902) Fix client-side handling of sk-* public key signatures (also in the agent interfaces)
 * Limit size of decompressed SSH packets
 * Improve checking SSH user certificates in public-key authentication
+* Improve handling of repository paths in `sshd-git` on Windows.
 
 ## New Features
 
