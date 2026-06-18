@@ -71,14 +71,20 @@ public interface ScpFileOpener {
                 || fileName.indexOf('/') >= 0) {
             throw new InvalidPathException(fileName, "Not a valid SCP fileName");
         }
-        if (OsUtils.isWin32() && (fileName.indexOf('\\') >= 0 || fileName.indexOf(':') >= 0)) {
+        String name = fileName;
+        if (OsUtils.isWin32()) {
+            // OpenSSH replaces literal newlines in file names with "\^J" in the SCP protocol. The backslash is likely
+            // a bug in OpenSSH and causes trouble on Windows.
+            name = name.replace("\\^J", "^J");
+            if (name.indexOf('\\') >= 0 || name.indexOf(':') >= 0) {
+                throw new InvalidPathException(fileName, "Not a valid SCP fileName");
+            }
+        }
+        Path p = fs.getPath(name);
+        if (p.isAbsolute() || !name.equals(p.getFileName().toString())) {
             throw new InvalidPathException(fileName, "Not a valid SCP fileName");
         }
-        Path p = fs.getPath(fileName);
-        if (p.isAbsolute() || !fileName.equals(p.getFileName().toString())) {
-            throw new InvalidPathException(fileName, "Not a valid SCP fileName");
-        }
-        return fileName;
+        return name;
     }
 
     /**

@@ -38,6 +38,7 @@
 * Improve checking SSH user certificates in public-key authentication
 * Improve handling of repository paths in `sshd-git` on Windows.
 * Validate file names in SCP
+* Escape newlines in filenames in the SCP protocol
 
 ## New Features
 
