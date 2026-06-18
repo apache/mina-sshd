@@ -19,12 +19,12 @@
 
 package org.apache.sshd.scp.common.helpers;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.StreamCorruptedException;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.Files;
+import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
@@ -37,6 +37,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
+import org.apache.sshd.scp.common.ScpException;
 import org.apache.sshd.scp.common.ScpFileOpener;
 import org.apache.sshd.scp.common.ScpTargetStreamResolver;
 
@@ -70,8 +71,11 @@ public class LocalFileScpTargetStreamResolver extends AbstractLoggingBean implem
 
         LinkOption[] linkOptions = IoUtils.getLinkOptions(true);
         if (status && Files.isDirectory(path, linkOptions)) {
-            String localName = name.replace('/', File.separatorChar); // in case we are running on Windows
-            file = path.resolve(localName);
+            try {
+                file = path.resolve(opener.checkRemoteFileName(path.getFileSystem(), name));
+            } catch (InvalidPathException e) {
+                throw new ScpException("Invalid file name '" + name + "' received", e, ScpAckInfo.ERROR);
+            }
         } else if (status && Files.isRegularFile(path, linkOptions)) {
             file = path;
         } else if (!status) {
