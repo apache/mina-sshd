@@ -57,6 +57,15 @@ public final class GitModuleProperties {
     public static final Property<String> GIT_PROTOCOL_VERSION
             = Property.string("git-ssh-protocol-version");
 
+    /**
+     * Property defining whether only a subset of "safe" JGit command shall be allowed by the
+     * {@link org.apache.sshd.git.pgm.GitPgmCommand}. By default {@code true}. Setting this to {@code false} will allow
+     * any command supported by JGit, but this would be unsafe. The intent of these commands is to provide authorized
+     * users with some maintenance commands on (bare) git repositories stored in a git server.
+     */
+    public static final Property<Boolean> RESTRICT_COMMANDS
+            = Property.bool("git-commands-restricted", true);
+
     private GitModuleProperties() {
         // private
     }

@@ -28,6 +28,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.threads.CloseableExecutorService;
 import org.apache.sshd.git.AbstractGitCommand;
 import org.apache.sshd.git.GitLocationResolver;
+import org.apache.sshd.git.GitModuleProperties;
 
 /**
  * TODO Add javadoc
@@ -35,6 +36,7 @@ import org.apache.sshd.git.GitLocationResolver;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class GitPgmCommand extends AbstractGitCommand {
+
     /**
      * @param rootDirResolver Resolver for GIT root directory
      * @param command         Command to execute
@@ -69,7 +71,8 @@ public class GitPgmCommand extends AbstractGitCommand {
             Path rootDir = resolver.resolveRootDirectory(command, args, getServerSession(), getFileSystem());
             ValidateUtils.checkState(rootDir != null, "No root directory provided for %s command", command);
 
-            new EmbeddedCommandRunner(rootDir).execute(args, getInputStream(), getOutputStream(), err);
+            new EmbeddedCommandRunner(rootDir, GitModuleProperties.RESTRICT_COMMANDS.getRequired(getServerSession()))
+                    .execute(args, getInputStream(), getOutputStream(), err);
             onExit(0);
         } catch (Throwable t) {
             try {
