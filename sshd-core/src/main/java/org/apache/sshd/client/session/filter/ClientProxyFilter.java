@@ -65,6 +65,9 @@ public class ClientProxyFilter extends IoFilter {
 
     private final SshFutureListener<CloseFuture> closer;
 
+    // Concurrent access guarded by the monitor of 'queue'.
+    private boolean proxyProtocolDone;
+
     public ClientProxyFilter(AbstractClientSession session, ProxyData proxy, InetSocketAddress targetAddress) {
         this.session = Objects.requireNonNull(session);
         connector = proxy.getType() == Proxy.Type.SOCKS
@@ -120,7 +123,7 @@ public class ClientProxyFilter extends IoFilter {
                     }
                     input.set(null);
                     synchronized (queue) {
-                        output.set(null);
+                        proxyProtocolDone = true;
                         for (;;) {
                             Runnable send = queue.poll();
                             if (send == null) {
@@ -148,7 +151,7 @@ public class ClientProxyFilter extends IoFilter {
                 connector.start();
             }
             synchronized (queue) {
-                if (output.get() != null) {
+                if (!proxyProtocolDone) {
                     DefaultIoWriteFuture result = new DefaultIoWriteFuture(this, null);
                     queue.add(() -> {
                         try {
@@ -162,7 +165,7 @@ public class ClientProxyFilter extends IoFilter {
                     return result;
                 }
             }
-            return owner().send(cmd, message);
+            return owner().send(cmd, message).addListener(f -> output.set(null));
         }
 
     }
