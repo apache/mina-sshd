@@ -38,7 +38,6 @@ import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.config.keys.u2f.SkEcdsaPublicKey;
-import org.apache.sshd.common.forward.PortForwardingWithOpenSshTest;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.BuiltinSignatures;
@@ -164,7 +163,7 @@ public class SkPubKeyAuthTest extends BaseTestSupport {
         PublicKeyEntry.appendPublicKeyEntry(sb, fakeSkKey);
         AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(sb.toString());
 
-        SshServer server = CoreTestSupportUtils.setupTestServer(PortForwardingWithOpenSshTest.class);
+        SshServer server = CoreTestSupportUtils.setupTestServer(this.getClass());
         server.setPublickeyAuthenticator(PublickeyAuthenticator.fromAuthorizedEntries("test", null,
                 Collections.singleton(entry), PublicKeyEntryResolver.FAILING));
         server.start();
