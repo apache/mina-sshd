@@ -8,7 +8,7 @@ Please refer to each LICENSE.<component>.txt file for the
 license terms of the components that Apache MINA depends on.
 
 Message logging is provided by the SLF4J library package,
-which is open source software, written by Ceki GÃ¼lcÃ¼, and
+which is open source software, written by Ceki Gülcü, and
 copyright by SLF4J.ORG and QOS.ch.  The original software is
 available from
 

@@ -36,9 +36,10 @@ public abstract class AbstractSecurityKeySignature implements Signature {
 
     private static final int FLAG_VERIFIED = 1 << 2;
 
+    protected MessageDigest challengeDigest;
+
     private final String keyType;
     private SecurityKeyPublicKey<?> publicKey;
-    private MessageDigest challengeDigest;
 
     protected AbstractSecurityKeySignature(String keyType) {
         this.keyType = keyType;

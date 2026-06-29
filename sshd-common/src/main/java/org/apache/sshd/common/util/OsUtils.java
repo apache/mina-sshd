@@ -77,7 +77,7 @@ public final class OsUtils {
     public static final List<String> LINUX_COMMAND
             = Collections.unmodifiableList(Arrays.asList(LINUX_SHELL_COMMAND_NAME, "-i", "-l"));
     public static final List<String> WINDOWS_COMMAND
-            = Collections.unmodifiableList(Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME));
+            = Collections.singletonList(WINDOWS_SHELL_COMMAND_NAME);
 
     /**
      * System properties consulted in order to detect {@link #isAndroid() Android O/S}.

@@ -46,11 +46,15 @@ so it's mostly useful to launch the OS native shell. E.g.,
 
 ```java
 sshd.setShellFactory(new ProcessShellFactory(new String[] { "/bin/sh", "-i", "-l" }));
-
 ```
 
 There is an out-of-the-box `InteractiveProcessShellFactory` that detects the O/S and spawns the relevant shell. Note
 that the `ShellFactory` is not required. If none is configured, any request for an interactive shell will be denied to clients.
+
+**Caveat:** Apache MINA SSHD does _not_ provide privilege separation, and SSH users are by default _not_ tied to OS users.
+The OS shell created by `ProcessShellFactory` or `InteractiveProcessShellFactory` will run as the same OS user the process using
+Apache MINA SSHD runs. The shell will have the same access rights as the Apache MINA SSHD server process itself. It is in
+general _not_ recommended to use these shell factories as-is in a production system.
 
 Furthermore, one can select a specific factory based on the current session by using an `AggregateShellFactory` that
 wraps a group of `ShellFactorySelector` - each one tailored for a specific set of criteria. The simplest use-case is

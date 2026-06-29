@@ -561,7 +561,10 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         String octalPerms = ((!preserve) || GenericUtils.isEmpty(perms))
                 ? ScpReceiveFileCommandDetails.DEFAULT_FILE_OCTAL_PERMISSIONS
                 : ScpPathCommandDetailsSupport.getOctalPermissions(perms);
-        String fileName = resolver.getFileName();
+        // Replace literal \n in the fileName (may occur on Linux) like OpenSSH does. A newline in the file name would
+        // break the line-oriented SCP protocol. Note that OpenSSH actually produces \^J, but I believe this is a bug?
+        // In any case adding a backslash might cause trouble for Windows remotes.
+        String fileName = resolver.getFileName().replace("\n", "^J");
         String cmd = ScpReceiveFileCommandDetails.COMMAND_NAME + octalPerms + " " + fileSize + " " + fileName;
         if (debugEnabled) {
             log.debug("sendStream({})[{}] send 'C' command: {}", this, resolver, cmd);
@@ -675,8 +678,11 @@ public class ScpHelper extends AbstractLoggingBean implements SessionHolder<Sess
         String octalPerms = ((!preserve) || GenericUtils.isEmpty(perms))
                 ? ScpReceiveDirCommandDetails.DEFAULT_DIR_OCTAL_PERMISSIONS
                 : ScpPathCommandDetailsSupport.getOctalPermissions(perms);
-        String cmd = ScpReceiveDirCommandDetails.COMMAND_NAME + octalPerms + " " + "0" + " "
-                     + Objects.toString(path.getFileName(), null);
+        // Replace literal \n in the fileName (may occur on Linux) like OpenSSH does. A newline in the file name would
+        // break the line-oriented SCP protocol. Note that OpenSSH actually produces \^J, but I believe this is a bug?
+        // In any case adding a backslash might cause trouble for Windows remotes.
+        String fileName = Objects.toString(path.getFileName(), "").replace("\n", "^J");
+        String cmd = ScpReceiveDirCommandDetails.COMMAND_NAME + octalPerms + " 0 " + fileName;
         if (debugEnabled) {
             log.debug("sendDir({})[{}] send 'D' command: {}", this, path, cmd);
         }

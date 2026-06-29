@@ -20,7 +20,12 @@ package org.apache.sshd.agent;
 
 import java.io.IOException;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.PublicKey;
+import java.security.interfaces.ECPublicKey;
+import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -28,14 +33,18 @@ import org.apache.sshd.agent.common.AbstractAgentClient;
 import org.apache.sshd.agent.common.AbstractAgentProxy;
 import org.apache.sshd.agent.local.AgentImpl;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
+import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.signature.BuiltinSignatures;
 import org.apache.sshd.common.signature.Signature;
+import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -68,6 +77,46 @@ class AgentUnitTest extends BaseTestSupport {
         verifier.initVerifier(null, pair.getPublic());
         verifier.update(null, data);
         assertTrue(verifier.verify(null, signature), "Signature should validate");
+    }
+
+    @Test
+    void securityKeySignatureBlob() throws Exception {
+        KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator("EC");
+        generator.initialize(256);
+        KeyPair pair = generator.generateKeyPair();
+        ECPublicKey ecPublicKey = ValidateUtils.checkInstanceOf(
+                pair.getPublic(), ECPublicKey.class, "Expected an ECPublicKey");
+        SkEcdsaPublicKey key = new SkEcdsaPublicKey("ssh", false, false, ecPublicKey);
+
+        byte[] rawSignature = { 1, 2, 3, 4, 5 };
+        byte flags = 1;
+        long counter = 42;
+        byte[] signature = createSkSignature(rawSignature, flags, counter);
+
+        SshAgent agent = new StaticSignatureAgent(key, signature);
+        Server server = new Server(agent);
+        Client client = new Client(server);
+        server.setClient(client);
+
+        Map.Entry<String, byte[]> result = client.sign(null, key, key.getKeyType(), new byte[] { 'd', 'a', 't', 'a' });
+        assertEquals(key.getKeyType(), result.getKey(), "Unexpected signature algorithm");
+        assertSkSignature(rawSignature, flags, counter, result.getValue());
+    }
+
+    private static byte[] createSkSignature(byte[] rawSignature, byte flags, long counter) {
+        ByteArrayBuffer buffer = new ByteArrayBuffer();
+        buffer.putBytes(rawSignature);
+        buffer.putByte(flags);
+        buffer.putUInt(counter);
+        return buffer.getCompactData();
+    }
+
+    private static void assertSkSignature(byte[] rawSignature, byte flags, long counter, byte[] signature) {
+        ByteArrayBuffer buffer = new ByteArrayBuffer(signature);
+        assertArrayEquals(rawSignature, buffer.getBytes());
+        assertEquals(flags, buffer.getByte());
+        assertEquals(counter, buffer.getUInt());
+        assertEquals(0, buffer.available());
     }
 
     private static class Server extends AbstractAgentClient {
@@ -117,6 +166,51 @@ class AgentUnitTest extends BaseTestSupport {
 
         void setResult(byte[] data) {
             result = data;
+        }
+    }
+
+    private static class StaticSignatureAgent implements SshAgent {
+        private final PublicKey key;
+        private final byte[] signature;
+
+        StaticSignatureAgent(PublicKey key, byte[] signature) {
+            this.key = key;
+            this.signature = signature.clone();
+        }
+
+        @Override
+        public Iterable<? extends Map.Entry<PublicKey, String>> getIdentities() {
+            return Collections.singletonList(new SimpleImmutableEntry<>(key, "security key"));
+        }
+
+        @Override
+        public Map.Entry<String, byte[]> sign(SessionContext session, PublicKey key, String algo, byte[] data) {
+            return new SimpleImmutableEntry<>(KeyUtils.getKeyType(key), signature.clone());
+        }
+
+        @Override
+        public void addIdentity(KeyPair key, String comment, SshAgentKeyConstraint... constraints) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeIdentity(PublicKey key) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void removeAllIdentities() {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public boolean isOpen() {
+            return true;
+        }
+
+        @Override
+        public void close() {
+            // Nothing to close.
         }
     }
 }

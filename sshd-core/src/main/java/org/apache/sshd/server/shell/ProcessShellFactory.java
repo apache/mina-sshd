@@ -31,7 +31,15 @@ import org.apache.sshd.server.channel.ChannelSession;
 import org.apache.sshd.server.command.Command;
 
 /**
- * A {@link Factory} of {@link Command} that will create a new process and bridge the streams.
+ * A {@link Factory} of {@link Command} that will create a new process executing the given command in an OS shell.
+ * <p>
+ * <b>Caveat:</b> Apache MINA SSHD does <em>not</em> provide privilege separation, and SSH users are by default
+ * <em>not</em> tied to OS users. The OS shell will run as the same OS user the process using Apache MINA SSHD runs. The
+ * shell will have the same access rights as the Apache MINA SSHD server process itself.
+ * </p>
+ * <p>
+ * It is in general <em>not</em> recommended to use this class as is in a production server.
+ * </p>
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -86,25 +94,20 @@ public class ProcessShellFactory extends AbstractLoggingBean implements ShellFac
         return new ProcessShell(resolveEffectiveCommand(channel, getCommand(), getElements()));
     }
 
+    /**
+     * Determines the shell command to run. On Windows {@code cmd.exe /C} is used; on other systems {@code /bin/sh -c}.
+     *
+     * @param  channel        {@link ChannelSession} the shell will be executed in
+     * @param  rawCommand     the shell command passed
+     * @param  parsedElements legacy; unused
+     * @return                a list containing the full command to run to execute the given {@code rawCommand}
+     */
     protected List<String> resolveEffectiveCommand(
             ChannelSession channel, String rawCommand, List<String> parsedElements) {
-        if (!OsUtils.isWin32()) {
-            return ValidateUtils.checkNotNullAndNotEmpty(parsedElements, "No parsed command elements");
+        ValidateUtils.checkNotNullAndNotEmpty(rawCommand, "No command");
+        if (OsUtils.isWin32()) {
+            return Arrays.asList(OsUtils.WINDOWS_SHELL_COMMAND_NAME, "/C", rawCommand);
         }
-
-        // Turns out that running a command with no arguments works just fine in Windows
-        if (GenericUtils.size(parsedElements) <= 1) {
-            return ValidateUtils.checkNotNullAndNotEmpty(parsedElements, "No parsed command elements");
-        }
-
-        // For windows create a "cmd.exe /C "..."" string
-        String cmdName = parsedElements.get(0);
-        // If already using shell prefix then assume callers knows what they're doing
-        if (OsUtils.WINDOWS_SHELL_COMMAND_NAME.equalsIgnoreCase(cmdName)) {
-            return ValidateUtils.checkNotNullAndNotEmpty(parsedElements, "No parsed command elements");
-        }
-
-        return Arrays.asList(OsUtils.WINDOWS_SHELL_COMMAND_NAME, "/C",
-                ValidateUtils.checkNotNullAndNotEmpty(rawCommand, "No command"));
+        return Arrays.asList(OsUtils.LINUX_SHELL_COMMAND_NAME, "-c", rawCommand);
     }
 }

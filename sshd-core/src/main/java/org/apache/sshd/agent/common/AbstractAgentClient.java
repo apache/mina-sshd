@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.sshd.agent.SshAgent;
 import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -152,7 +153,11 @@ public abstract class AbstractAgentClient extends AbstractLoggingBean {
                 byte[] signature = result.getValue();
                 Buffer sig = new ByteArrayBuffer(algo.length() + signature.length + Long.SIZE, false);
                 sig.putString(algo);
-                sig.putBytes(signature);
+                if (signingKey instanceof SecurityKeyPublicKey<?>) {
+                    sig.putRawBytes(signature);
+                } else {
+                    sig.putBytes(signature);
+                }
                 rep.putByte(SshAgentConstants.SSH2_AGENT_SIGN_RESPONSE);
                 rep.putBytes(sig.array(), sig.rpos(), sig.available());
                 break;

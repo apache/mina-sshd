@@ -40,6 +40,7 @@ import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.OpenSshCertificate;
+import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.kex.extension.DefaultClientKexExtensionHandler;
 import org.apache.sshd.common.kex.extension.parser.HostBoundPubkeyAuthentication;
 import org.apache.sshd.common.signature.Signature;
@@ -452,7 +453,11 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
 
         bs.clear();
         bs.putString(signatureAlgo);
-        bs.putBytes(sig);
+        if (key instanceof SecurityKeyPublicKey<?>) {
+            bs.putRawBytes(sig);
+        } else {
+            bs.putBytes(sig);
+        }
         buffer.putBytes(bs.array(), bs.rpos(), bs.available());
         return sig;
     }

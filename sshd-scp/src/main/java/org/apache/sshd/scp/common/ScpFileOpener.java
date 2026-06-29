@@ -47,6 +47,7 @@ import org.apache.sshd.common.util.OsUtils;
 import org.apache.sshd.common.util.SelectorUtils;
 import org.apache.sshd.common.util.io.DirectoryScanner;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.scp.common.helpers.ScpAckInfo;
 import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
 
 /**
@@ -56,6 +57,35 @@ import org.apache.sshd.scp.common.helpers.ScpTimestampCommandDetails;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public interface ScpFileOpener {
+
+    /**
+     * Determines whether a file name received in a C or D command is valid.
+     *
+     * @param  fs                   the {@link FileSystem} used
+     * @param  fileName             to check
+     * @return                      the fileName, if it passes the checks
+     * @throws InvalidPathException if the path is not valid
+     */
+    default String checkRemoteFileName(FileSystem fs, String fileName) {
+        if (fileName == null || fileName.isEmpty() || ".".equals(fileName) || "..".equals(fileName)
+                || fileName.indexOf('/') >= 0) {
+            throw new InvalidPathException(fileName, "Not a valid SCP fileName");
+        }
+        String name = fileName;
+        if (OsUtils.isWin32()) {
+            // OpenSSH replaces literal newlines in file names with "\^J" in the SCP protocol. The backslash is likely
+            // a bug in OpenSSH and causes trouble on Windows.
+            name = name.replace("\\^J", "^J");
+            if (name.indexOf('\\') >= 0 || name.indexOf(':') >= 0) {
+                throw new InvalidPathException(fileName, "Not a valid SCP fileName");
+            }
+        }
+        Path p = fs.getPath(name);
+        if (p.isAbsolute() || !name.equals(p.getFileName().toString())) {
+            throw new InvalidPathException(fileName, "Not a valid SCP fileName");
+        }
+        return name;
+    }
 
     /**
      * Invoked when receiving a new file to via a directory command
@@ -82,8 +112,11 @@ public interface ScpFileOpener {
 
         Path file = null;
         if (status && Files.isDirectory(localPath, options)) {
-            String localName = name.replace('/', File.separatorChar);
-            file = localPath.resolve(localName);
+            try {
+                file = localPath.resolve(checkRemoteFileName(localPath.getFileSystem(), name));
+            } catch (InvalidPathException e) {
+                throw new ScpException("Invalid directory name '" + name + "' received", e, ScpAckInfo.ERROR);
+            }
         } else if (!status) {
             Path parent = localPath.getParent();
 

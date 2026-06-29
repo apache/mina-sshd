@@ -29,9 +29,13 @@ import java.lang.reflect.Method;
 import java.nio.file.Path;
 import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
+import org.apache.sshd.common.util.io.output.NoCloseOutputStream;
 import org.apache.sshd.git.AbstractGitCommand;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.lib.Repository;
@@ -41,7 +45,6 @@ import org.eclipse.jgit.pgm.Die;
 import org.eclipse.jgit.pgm.TextBuiltin;
 import org.eclipse.jgit.pgm.internal.CLIText;
 import org.eclipse.jgit.pgm.opt.CmdLineParser;
-import org.eclipse.jgit.pgm.opt.SubcommandHandler;
 import org.eclipse.jgit.util.io.ThrowingPrintWriter;
 import org.kohsuke.args4j.Argument;
 import org.kohsuke.args4j.CmdLineException;
@@ -54,6 +57,24 @@ import org.kohsuke.args4j.OptionHandlerFilter;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public class EmbeddedCommandRunner {
+
+    private static final Set<String> WHITELIST = new HashSet<>();
+
+    static {
+        WHITELIST.add("archive");
+        WHITELIST.add("blame");
+        WHITELIST.add("branch");
+        WHITELIST.add("describe");
+        WHITELIST.add("diff");
+        WHITELIST.add("gc");
+        WHITELIST.add("log");
+        WHITELIST.add("reflog");
+        WHITELIST.add("show");
+        WHITELIST.add("status");
+    }
+
+    private final boolean useWhitelist;
+
     @Option(name = "--help", usage = "usage_displayThisHelpText", aliases = { "-h" })
     private boolean help;
 
@@ -64,15 +85,20 @@ public class EmbeddedCommandRunner {
     private String gitdir;
 
     @Argument(index = 0, metaVar = "metaVar_command", required = true, handler = SubcommandHandler.class)
-    private TextBuiltin subcommand;
+    private CommandRef subcommand;
 
     @Argument(index = 1, metaVar = "metaVar_arg")
     private List<String> arguments = new ArrayList<>();
 
     private Path rootDir;
 
-    public EmbeddedCommandRunner(Path rootDir) {
+    public EmbeddedCommandRunner(Path rootDir, boolean useWhitelist) {
         this.rootDir = Objects.requireNonNull(rootDir, "No root directory specified");
+        this.useWhitelist = useWhitelist;
+    }
+
+    public EmbeddedCommandRunner(Path rootDir) {
+        this(rootDir, true);
     }
 
     /**
@@ -110,18 +136,22 @@ public class EmbeddedCommandRunner {
                 final CommandRef[] common = CommandCatalog.common();
                 int width = 0;
                 for (final CommandRef c : common) {
-                    width = Math.max(width, c.getName().length());
+                    if (!useWhitelist || WHITELIST.contains(c.getName())) {
+                        width = Math.max(width, c.getName().length());
+                    }
                 }
                 width += 2;
 
                 for (final CommandRef c : common) {
-                    writer.print(' ');
-                    writer.print(c.getName());
-                    for (int i = c.getName().length(); i < width; i++) {
+                    if (!useWhitelist || WHITELIST.contains(c.getName())) {
                         writer.print(' ');
+                        writer.print(c.getName());
+                        for (int i = c.getName().length(); i < width; i++) {
+                            writer.print(' ');
+                        }
+                        writer.print(CLIText.get().resourceBundle().getString(c.getUsage()));
+                        writer.println();
                     }
-                    writer.print(CLIText.get().resourceBundle().getString(c.getUsage()));
-                    writer.println();
                 }
                 writer.println();
             }
@@ -131,9 +161,18 @@ public class EmbeddedCommandRunner {
 
         gitdir = Objects.toString(AbstractGitCommand.resolveGitRepo(rootDir, gitdir));
 
-        TextBuiltin cmd = subcommand;
+        String subcommandName = subcommand.getName();
+        if (useWhitelist && !WHITELIST.contains(subcommandName)) {
+            throw new Die("JGit subcommand '" + subcommandName + "' not allowed by whitelist");
+        }
+        if ("archive".equals(subcommandName) && useWhitelist) {
+            // Make archive return the archive via stdout
+            arguments = removeOutput(arguments);
+        }
+        TextBuiltin cmd = subcommand.create();
+
         set(cmd, "ins", in);
-        set(cmd, "outs", out);
+        set(cmd, "outs", new NoCloseOutputStream(out)); // Archive closes the output stream!
         set(cmd, "errs", err);
 
         Boolean success = (Boolean) call(cmd, "requiresRepository");
@@ -152,6 +191,22 @@ public class EmbeddedCommandRunner {
                 ((ThrowingPrintWriter) get(cmd, "errw")).flush();
             }
         }
+    }
+
+    private List<String> removeOutput(List<String> args) {
+        List<String> result = new ArrayList<>(args.size());
+        Iterator<String> a = args.iterator();
+        while (a.hasNext()) {
+            String opt = a.next();
+            if ("--output".equals(opt) || "-o".equals(opt)) {
+                if (a.hasNext()) {
+                    a.next();
+                }
+            } else {
+                result.add(opt);
+            }
+        }
+        return result;
     }
 
     private Object get(Object obj, String name) throws IllegalAccessException, NoSuchFieldException {

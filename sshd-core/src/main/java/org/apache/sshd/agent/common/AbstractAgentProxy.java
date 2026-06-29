@@ -32,9 +32,11 @@ import org.apache.sshd.agent.SshAgentConstants;
 import org.apache.sshd.agent.SshAgentKeyConstraint;
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.config.keys.KeyUtils;
+import org.apache.sshd.common.config.keys.u2f.SecurityKeyPublicKey;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
+import org.apache.sshd.common.util.buffer.BufferException;
 import org.apache.sshd.common.util.buffer.BufferUtils;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.logging.AbstractLoggingBean;
@@ -175,13 +177,37 @@ public abstract class AbstractAgentProxy extends AbstractLoggingBean implements 
         } else {
             Buffer buf = new ByteArrayBuffer(signature);
             String algorithm = buf.getString();
-            signature = buf.getBytes();
+            if (key instanceof SecurityKeyPublicKey<?>) {
+                signature = getSecurityKeySignature(buf);
+            } else {
+                signature = buf.getBytes();
+                if (buf.available() > 0) {
+                    throw new SshException("Trailing garbage in signing response, got " + buf.available() + " extra bytes");
+                }
+            }
             if (debugEnabled) {
                 log.debug("sign({}/{})[{}] {}: {}",
                         algo, keyType, KeyUtils.getFingerPrint(key), algorithm, BufferUtils.toHex(':', signature));
             }
             return new SimpleImmutableEntry<>(algorithm, signature);
         }
+    }
+
+    private static byte[] getSecurityKeySignature(Buffer buf) throws SshException {
+        byte[] signature = buf.getCompactData();
+        Buffer verifier = new ByteArrayBuffer(signature);
+        try {
+            verifier.getBytes();
+            verifier.getByte();
+            verifier.getUInt();
+        } catch (BufferException e) {
+            throw new SshException("Signing response too short", e);
+        }
+        if (verifier.available() > 0) {
+            throw new SshException(
+                    "Trailing garbage in signing response, got " + verifier.available() + " extra bytes");
+        }
+        return signature;
     }
 
     @Override

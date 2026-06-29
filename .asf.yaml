@@ -1,4 +1,4 @@
-# See https://cwiki.apache.org/confluence/display/INFRA/Git+-+.asf.yaml+features
+# See https://github.com/apache/infrastructure-asfyaml/blob/main/README.md
 github:
   description: "Apache MINA sshd is a comprehensive Java library for client- and server-side SSH."
   homepage: https://mina.apache.org/sshd-project/

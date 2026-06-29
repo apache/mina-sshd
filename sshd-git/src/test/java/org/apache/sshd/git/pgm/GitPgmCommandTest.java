@@ -18,22 +18,22 @@
  */
 package org.apache.sshd.git.pgm;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
+import java.rmi.RemoteException;
 import java.util.Collections;
-import java.util.EnumSet;
-import java.util.concurrent.TimeUnit;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import org.apache.sshd.client.SshClient;
-import org.apache.sshd.client.channel.ChannelExec;
-import org.apache.sshd.client.channel.ClientChannelEvent;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.util.net.SshdSocketAddress;
 import org.apache.sshd.git.GitLocationResolver;
 import org.apache.sshd.git.GitTestSupport;
 import org.apache.sshd.server.SshServer;
-import org.apache.sshd.sftp.server.SftpSubsystemFactory;
 import org.apache.sshd.util.test.CommonTestSupportUtils;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.util.SystemReader;
@@ -56,35 +56,13 @@ class GitPgmCommandTest extends GitTestSupport {
         Path serverDir = getTempTargetRelativeFile(getClass().getSimpleName());
         SystemReader defaultSystemReader = mockGitConfig(serverDir.getParent());
         try (SshServer sshd = setupTestServer()) {
-            sshd.setSubsystemFactories(Collections.singletonList(new SftpSubsystemFactory()));
             sshd.setCommandFactory(new GitPgmCommandFactory(GitLocationResolver.constantPath(serverDir)));
             sshd.start();
 
             int port = sshd.getPort();
             try {
                 CommonTestSupportUtils.deleteRecursive(serverDir);
-
-                try (SshClient client = setupTestClient()) {
-                    client.start();
-
-                    try (ClientSession session = client.connect(getCurrentTestName(), SshdSocketAddress.LOCALHOST_IPV4, port)
-                            .verify(CONNECT_TIMEOUT).getSession()) {
-                        session.addPasswordIdentity(getCurrentTestName());
-                        session.auth().verify(AUTH_TIMEOUT);
-
-                        Path repo = serverDir.resolve(getCurrentTestName());
-                        Git.init().setDirectory(repo.toFile()).call();
-                        Git git = Git.open(repo.toFile());
-                        git.commit().setMessage("First Commit").setCommitter(getCurrentTestName(), "sshd@apache.org").call();
-
-                        Path readmeFile = Files.createFile(repo.resolve("readme.txt"));
-                        String commandPrefix = "git --git-dir " + repo.getFileName();
-                        execute(session, commandPrefix + " add " + readmeFile.getFileName());
-                        execute(session, commandPrefix + " commit -m \"readme\"");
-                    } finally {
-                        client.stop();
-                    }
-                }
+                runGitCommands(getCurrentTestName(), port, serverDir);
             } finally {
                 sshd.stop();
             }
@@ -93,19 +71,61 @@ class GitPgmCommandTest extends GitTestSupport {
         }
     }
 
-    private void execute(ClientSession session, String command) throws Exception {
-        try (ChannelExec channel = session.createExecChannel(command)) {
-            channel.setOut(System.out);
-            channel.setErr(System.err);
-            channel.open().verify(OPEN_TIMEOUT);
+    private void runGitCommands(String testName, int port, Path serverDir) throws Exception {
+        try (SshClient client = setupTestClient()) {
+            client.start();
+            try (ClientSession session = client.connect(testName, SshdSocketAddress.LOCALHOST_IPV4, port)
+                    .verify(CONNECT_TIMEOUT).getSession()) {
+                session.addPasswordIdentity(testName);
+                session.auth().verify(AUTH_TIMEOUT);
 
-            Collection<ClientChannelEvent> result
-                    = channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), TimeUnit.MINUTES.toMillis(1L));
-            assertTrue(result.contains(ClientChannelEvent.CLOSED), "Command '" + command + "'not completed on time: " + result);
-
-            Integer status = channel.getExitStatus();
-            if (status != null) {
-                assertEquals(0, status.intValue(), "Failed (" + status + ") " + command);
+                Path repo = serverDir.resolve(testName);
+                Path readmeFile;
+                try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
+                    readmeFile = Files.write(repo.resolve("readme.txt"), Collections.singletonList("README"));
+                    git.add().addFilepattern("readme.txt").call();
+                    git.commit() //
+                            .setMessage("First Commit") //
+                            .setCommitter(testName, "sshd@apache.org") //
+                            .setAuthor(testName, "sshd@apache.org") //
+                            .call();
+                }
+                String commandPrefix = "git --git-dir " + repo.getFileName();
+                ByteArrayOutputStream out = new ByteArrayOutputStream();
+                ByteArrayOutputStream err = new ByteArrayOutputStream();
+                RemoteException ex = assertThrows(RemoteException.class,
+                        () -> session.executeRemoteCommand(commandPrefix + " add " + readmeFile.getFileName(), out, err,
+                                StandardCharsets.UTF_8, AUTH_TIMEOUT));
+                assertTrue(ex.getMessage().contains("Remote command failed"));
+                assertTrue(err.toString().contains("not allowed"));
+                out.reset();
+                err.reset();
+                session.executeRemoteCommand(commandPrefix + " log ", out, err, StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                String log = out.toString();
+                assertTrue(log.contains("First Commit"));
+                assertTrue(log.contains(testName));
+                assertTrue(log.contains("sshd@apache.org"));
+                out.reset();
+                err.reset();
+                session.executeRemoteCommand(commandPrefix + " archive -o archive.zip --format zip HEAD", out, err,
+                        StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                assertFalse(Files.exists(repo.resolve("archive.zip")));
+                assertFalse(Files.exists(serverDir.resolve("archive.zip")));
+                ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
+                try (ZipInputStream zIn = new ZipInputStream(in)) {
+                    ZipEntry entry = zIn.getNextEntry();
+                    assertEquals(readmeFile.getFileName().toString(), entry.getName());
+                    ByteArrayOutputStream content = new ByteArrayOutputStream();
+                    byte[] chunk = new byte[1024];
+                    int n = 0;
+                    while ((n = zIn.read(chunk)) >= 0) {
+                        content.write(chunk, 0, n);
+                    }
+                    zIn.closeEntry();
+                    assertEquals(Files.size(readmeFile), content.size());
+                }
+            } finally {
+                client.stop();
             }
         }
     }
