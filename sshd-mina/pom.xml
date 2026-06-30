@@ -201,7 +201,7 @@
                                         <additionalClasspathDependency>
                                             <groupId>org.apache.mina</groupId>
                                             <artifactId>mina-core</artifactId>
-                                            <version>2.2.4</version>
+                                            <version>2.2.9</version>
                                         </additionalClasspathDependency>
                                     </additionalClasspathDependencies>
                                 </configuration>
