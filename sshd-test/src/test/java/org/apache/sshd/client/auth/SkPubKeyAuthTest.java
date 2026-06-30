@@ -95,8 +95,9 @@ public class SkPubKeyAuthTest extends BaseTestSupport {
         try {
             Files.write(authorizedKeyFile, Collections.singleton(sb.toString()));
 
-            sshdContainer = new GenericContainer<>(new ImageFromDockerfile()
-                    .withDockerfileFromBuilder(builder -> builder.from("alpine:3.24") //
+            sshdContainer = new GenericContainer<>(new ImageFromDockerfile().withDockerfileFromBuilder(
+                    // 3.24
+                    builder -> builder.from("alpine@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b") //
                             .run("apk --update add openssh-server") //
                             .run("ssh-keygen -A") // Generate multiple host keys
                             .run("adduser -D bob") // Add a user
