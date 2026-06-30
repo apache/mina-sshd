@@ -40,6 +40,12 @@ Merges 2.18.0 into the 3.0.0 stream.
 
 * [Change notes for 3.0.0-M4](./docs/changes/3.0.0-M4.md)
 
+## Milestone 4: Pre-Release 3.0.0-M5
+
+Merges 2.19.0 into the 3.0.0 stream.
+
+* [Change notes for 3.0.0-M5](./docs/changes/3.0.0-M5.md)
+
 # Planned for the Next Milestone Release
 
 ## Bug Fixes
