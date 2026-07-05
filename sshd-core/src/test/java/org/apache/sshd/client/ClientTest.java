@@ -1027,7 +1027,7 @@ public class ClientTest extends BaseTestSupport {
             CloseFuture closeFuture = session.close(false);
             assertTrue(openFuture.await(DEFAULT_TIMEOUT), "Channel not open in time");
             assertTrue(closeFuture.await(DEFAULT_TIMEOUT), "Session closing not complete in time");
-            assertTrue(openFuture.isOpened(), "Not open");
+            assertFalse(channel.isOpen(), "Channel still open");
             assertTrue(closeFuture.isClosed(), "Not closed");
         } finally {
             client.stop();
