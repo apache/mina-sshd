@@ -33,6 +33,7 @@
 
 ## Bug Fixes
 
+* [GH-906](https://github.com/apache/mina-sshd/issues/906) Fix finding a signature factory for BC ed25519 keys
 
 ## New Features
 
