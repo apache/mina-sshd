@@ -37,6 +37,7 @@
 
 ## New Features
 
+* [GH-905](https://github.com/apache/mina-sshd/issues/905) Implement the "from" and "expiry-time" options in `authorized_keys` handling in public key authentication
 
 ## Potential Compatibility Issues
 
