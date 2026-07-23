@@ -190,12 +190,18 @@ class KexOutputHandler implements OutputHandler {
      */
     public void shutdown() {
         shutDown.set(true);
-        SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> items = updateState(() -> {
+        Supplier<SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture>> update = () -> {
             kexFlushed.set(true);
             return new SimpleImmutableEntry<>(
                     Integer.valueOf(pendingPackets.size()),
                     kexFlushedFuture.get());
-        });
+        };
+        // A synchronous write failure in writeOrEnqueue() can close the session - and thus call this
+        // shutdown() - inline on a thread that still holds the read lock. Acquiring the write lock then would
+        // be an illegal read-to-write upgrade and would self-deadlock. Holding the read lock already excludes
+        // writers, so in that reentrant case we update the state without acquiring the exclusive lock.
+        SimpleImmutableEntry<Integer, DefaultKeyExchangeFuture> items
+                = (lock.getReadHoldCount() > 0) ? update.get() : updateState(update);
         items.getValue().setValue(Boolean.valueOf(items.getKey().intValue() == 0));
     }
 
