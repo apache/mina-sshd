@@ -18,6 +18,7 @@
  */
 package org.apache.sshd;
 
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -51,6 +52,7 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -317,6 +319,95 @@ public class ProxyTest extends BaseTestSupport {
                 // expected
             }
         }
+    }
+
+    @Test
+    void socks5HandlesFragmentedIPv4ConnectRequest() throws Exception {
+        final byte[] request = {
+                5, 1, 0, 1, 127, 0, 0, 1,
+                (byte) (echoPort >>> Byte.SIZE), (byte) echoPort
+        };
+
+        assertFragmentedSocks5Connect(request);
+    }
+
+    @Test
+    void socks5HandlesFragmentedDomainConnectRequest() throws Exception {
+        final byte[] host = TEST_LOCALHOST.getBytes(StandardCharsets.US_ASCII);
+        final byte[] request = new byte[5 + host.length + 2];
+
+        request[0] = 5;
+        request[1] = 1;
+        request[2] = 0;
+        request[3] = 3;
+        request[4] = (byte) host.length;
+
+        System.arraycopy(host, 0, request, 5, host.length);
+
+        request[request.length - 2] = (byte) (echoPort >>> Byte.SIZE);
+        request[request.length - 1] = (byte) echoPort;
+
+        assertFragmentedSocks5Connect(request);
+    }
+
+    @Test
+    void socks5HandlesFragmentedIPv6ConnectRequest() throws Exception {
+        byte[] request = {
+                5, 1, 0, 4,
+                0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, // ::1
+                (byte) (echoPort >>> Byte.SIZE), (byte) echoPort
+        };
+        assertFragmentedSocks5Connect(request);
+    }
+
+    /**
+     * Sends a SOCKS5 greeting and CONNECT request one byte at a time, in separate write() calls, so the address and
+     * port are each split across multiple I/O callbacks, then sends application data without waiting for the CONNECT
+     * reply. Verifies that the proxy produces exactly one clean CONNECT reply and that the payload reaches the
+     * destination.
+     */
+    private void assertFragmentedSocks5Connect(final byte[] request) throws Exception {
+        final byte[] payload = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
+
+        try (ClientSession session = createNativeSession(null);
+             DynamicPortForwardingTracker tracker
+                     = session.createDynamicPortForwardingTracker(new SshdSocketAddress(TEST_LOCALHOST, 0));
+
+             Socket socket = new Socket(TEST_LOCALHOST, tracker.getBoundAddress().getPort())) {
+            socket.setSoTimeout((int) TimeUnit.SECONDS.toMillis(10L));
+
+            final OutputStream output = socket.getOutputStream();
+            final DataInputStream input = new DataInputStream(socket.getInputStream());
+
+            output.write(5); // version
+            output.flush();
+            output.write(1); // method count
+            output.flush();
+            output.write(0); // no-auth
+            output.flush();
+
+            assertArrayEquals(new byte[] { 5, 0 }, readNBytes(input, 2), "Unexpected greeting reply");
+
+            for (byte b : request) {
+                output.write(b);
+                output.flush();
+            }
+            output.write(payload); // application data sent before the CONNECT reply is received
+            output.flush();
+
+            assertArrayEquals(new byte[] { 5, 0, 0, 1, 0, 0, 0, 0, 0, 0 }, readNBytes(input, 10),
+                    "Unexpected SOCKS5 CONNECT reply");
+
+            assertArrayEquals(payload, readNBytes(input, payload.length),
+                    "Payload was not forwarded intact exactly once");
+        }
+    }
+
+    private static byte[] readNBytes(final DataInputStream input, final int len) throws IOException {
+        final byte[] data = new byte[len];
+        input.readFully(data);
+
+        return data;
     }
 
     protected ClientSession createNativeSession(PortForwardingEventListener listener) throws Exception {

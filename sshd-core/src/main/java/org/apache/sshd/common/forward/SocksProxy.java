@@ -201,12 +201,20 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         }
     }
 
+    private enum Socks5State {
+        GREETING,
+        CONNECT_REQUEST,
+        OPENING_CHANNEL,
+        FORWARDING,
+        CLOSED
+    }
+
     /**
      * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS5">SOCKS5</A>
      */
     public class Socks5 extends Proxy {
-        private byte[] authMethods;
-        private Buffer response;
+        private Socks5State state = Socks5State.GREETING;
+        private Buffer pending = new ByteArrayBuffer();
 
         public Socks5(IoSession session) {
             super(session);
@@ -214,65 +222,115 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
 
         @SuppressWarnings("synthetic-access")
         @Override
-        protected void onMessage(Buffer buffer) throws IOException {
-            boolean debugEnabled = log.isDebugEnabled();
-            if (authMethods == null) {
-                int nbAuthMethods = getUByte(buffer);
-                authMethods = new byte[nbAuthMethods];
-                buffer.getRawBytes(authMethods);
-                boolean foundNoAuth = false;
-                for (int i = 0; i < nbAuthMethods; i++) {
-                    foundNoAuth |= authMethods[i] == 0;
+        protected synchronized void onMessage(Buffer buffer) throws IOException {
+            if (state == Socks5State.FORWARDING && pending.available() == 0) {
+                super.onMessage(buffer);
+                return;
+            }
+            pending.putBuffer(buffer);
+            processPending();
+        }
+
+        protected void processPending() throws IOException {
+            if (state == Socks5State.OPENING_CHANNEL || state == Socks5State.CLOSED) {
+                return;
+            }
+
+            if (state == Socks5State.FORWARDING) {
+                forwardPending();
+                return;
+            }
+
+            if (state == Socks5State.GREETING) {
+                if (pending.available() < 1) {
+                    return;
                 }
-                buffer = new ByteArrayBuffer(Byte.SIZE, false);
-                buffer.putByte((byte) 0x05);
-                buffer.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
-                session.writeBuffer(buffer);
+                int authMethodsCount = pending.rawByte(pending.rpos()) & 0xFF;
+                if (pending.available() < authMethodsCount + 1) {
+                    return;
+                }
+
+                pending.getUByte();
+                boolean foundNoAuth = false;
+                for (int index = 0; index < authMethodsCount; index++) {
+                    foundNoAuth |= pending.getUByte() == 0;
+                }
+                pending.compact();
+                Buffer response = new ByteArrayBuffer(2, false);
+                response.putByte((byte) 0x05);
+                response.putByte((byte) (foundNoAuth ? 0x00 : 0xFF));
+                session.writeBuffer(response);
                 if (!foundNoAuth) {
                     throw new IllegalStateException("Received socks5 greeting without NoAuth method");
-                } else if (debugEnabled) {
+                } else if (log.isDebugEnabled()) {
                     log.debug("Received socks5 greeting");
                 }
-            } else if (channel == null) {
-                response = buffer;
-                int version = getUByte(buffer);
+                state = Socks5State.CONNECT_REQUEST;
+            }
+
+            if (state == Socks5State.CONNECT_REQUEST) {
+                if (pending.available() < 4) {
+                    return;
+                }
+                int offset = pending.rpos();
+                int version = pending.rawByte(offset) & 0xFF;
                 if (version != 0x05) {
                     throw new IllegalStateException("Unexpected version: " + version);
                 }
-                int cmd = buffer.getUByte();
+                int cmd = pending.rawByte(offset + 1) & 0xFF;
                 if (cmd != 1) { // establish a TCP/IP stream connection
                     throw new IllegalStateException("Unsupported socks command: " + cmd);
                 }
-                int res = buffer.getUByte();
+                int res = pending.rawByte(offset + 2) & 0xFF;
                 if (res != 0) {
-                    if (debugEnabled) {
+                    if (log.isDebugEnabled()) {
                         log.debug("No zero reserved value: {}", res);
                     }
                 }
-
-                int type = buffer.getUByte();
-                String host;
+                int type = pending.rawByte(offset + 3) & 0xFF;
+                int addressLength;
                 if (type == 0x01) {
-                    host = Integer.toString(getUByte(buffer)) + "."
-                           + Integer.toString(getUByte(buffer)) + "."
-                           + Integer.toString(getUByte(buffer)) + "."
-                           + Integer.toString(getUByte(buffer));
+                    addressLength = 4;
                 } else if (type == 0x03) {
-                    host = getBLString(buffer);
+                    if (pending.available() < 5) {
+                        return;
+                    }
+                    addressLength = pending.rawByte(offset + 4) & 0xFF;
                 } else if (type == 0x04) {
-                    host = Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer)) + ":"
-                           + Integer.toHexString(getUShort(buffer));
+                    addressLength = 16;
                 } else {
                     throw new IllegalStateException("Unsupported address type: " + type);
                 }
-                int port = getUShort(buffer);
-                if (debugEnabled) {
+                int requestLength = 4 + (type == 0x03 ? 1 : 0) + addressLength + 2;
+                if (pending.available() < requestLength) {
+                    return;
+                }
+
+                getUByte(pending); // version already checked above
+                getUByte(pending); // command already checked above
+                getUByte(pending); // reserved byte
+                getUByte(pending); // address type
+                String host;
+                if (type == 0x01) {
+                    host = Integer.toString(getUByte(pending)) + "."
+                           + Integer.toString(getUByte(pending)) + "."
+                           + Integer.toString(getUByte(pending)) + "."
+                           + Integer.toString(getUByte(pending));
+                } else if (type == 0x03) {
+                    host = getBLString(pending);
+                } else {
+                    StringBuilder address = new StringBuilder();
+                    for (int index = 0; index < 8; index++) {
+                        if (index > 0) {
+                            address.append(':');
+                        }
+                        address.append(Integer.toHexString(getUShort(pending)));
+                    }
+                    host = address.toString();
+                }
+                int port = getUShort(pending);
+                pending.compact();
+                if (log.isDebugEnabled()) {
                     log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
                 SshdSocketAddress remote = new SshdSocketAddress(host, port);
@@ -280,36 +338,73 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 channel.setStreaming(Streaming.Async);
                 session.suspendRead();
                 service.registerChannel(channel);
+                state = Socks5State.OPENING_CHANNEL;
                 channel.open().addListener(this::onChannelOpened);
-            } else {
-                if (debugEnabled) {
-                    log.debug("Received socks5 connection message");
-                }
-                super.onMessage(buffer);
             }
         }
 
         @SuppressWarnings("synthetic-access")
-        protected void onChannelOpened(OpenFuture future) {
-            session.resumeRead();
-            int wpos = response.wpos();
-            response.rpos(0);
-            response.wpos(1);
+        protected synchronized void onChannelOpened(OpenFuture future) {
             Throwable t = future.getException();
             if (t != null) {
                 service.unregisterChannel(channel);
                 channel.close(true);
-                response.putByte((byte) 0x01);
-            } else {
-                response.putByte((byte) 0x00);
+                pending.clear(true);
+                state = Socks5State.CLOSED;
+                sendReply((byte) 0x01, () -> session.close(false));
+                return;
             }
-            response.wpos(wpos);
+
+            state = Socks5State.FORWARDING;
+            sendReply((byte) 0x00, this::forwardPending);
+        }
+
+        protected void sendReply(byte status, Runnable completion) {
+            Buffer response = new ByteArrayBuffer(10, false);
+            // VER, REP, RSV, ATYP=IPv4, BND.ADDR=0.0.0.0, BND.PORT=0
+            response.putRawBytes(new byte[] { 0x05, status, 0x00, 0x01, 0, 0, 0, 0, 0, 0 });
             try {
-                session.writeBuffer(response);
+                session.writeBuffer(response).addListener(future -> {
+                    if (future.isWritten()) {
+                        completion.run();
+                    } else {
+                        session.close(true);
+                    }
+                });
             } catch (IOException e) {
                 log.error("Failed ({}) to send channel open response for {}: {}", e.getClass().getSimpleName(), channel,
                         e.getMessage());
-                throw new IllegalStateException("Failed to send packet", e);
+                session.close(true);
+            }
+        }
+
+        protected synchronized void forwardPending() {
+            if (state != Socks5State.FORWARDING) {
+                return;
+            }
+            Buffer payload = pending;
+            pending = new ByteArrayBuffer();
+            if (payload.available() == 0) {
+                session.resumeRead();
+                return;
+            }
+            int payloadSize = payload.available();
+            session.suspendRead();
+            try {
+                ThreadUtils.runAsInternal(channel.getAsyncIn(), out -> out.writeBuffer(payload).addListener(future -> {
+                    if (future.getException() == null) {
+                        if (log.isDebugEnabled()) {
+                            log.debug("Forwarded {} queued socks5 bytes", payloadSize);
+                        }
+                        session.resumeRead();
+                    } else {
+                        session.close(true);
+                    }
+                }));
+            } catch (IOException e) {
+                log.error("Failed ({}) to forward {} queued bytes for {}: {}", e.getClass().getSimpleName(), payloadSize,
+                        channel, e.getMessage());
+                session.close(true);
             }
         }
 
