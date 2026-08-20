@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive;
+import org.apache.sshd.client.auth.password.UserAuthPassword;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
@@ -185,8 +187,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             try {
                 authed = currentAuth.next(buffer);
             } catch (AsyncAuthException async) {
-                async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
-                return;
+                String authName = currentAuth.getName();
+                if (UserAuthPassword.NAME.equals(authName) || UserAuthKeyboardInteractive.NAME.equals(authName)) {
+                    async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
+                    return;
+                }
+                throw new IllegalStateException(
+                        "Async authentication only allowed for password or keyboard-interactive authentication", async);
             } catch (Exception e) {
                 // Continue
                 warn("process({}) Failed ({}) to authenticate using current method={}: {}",
@@ -331,8 +338,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             Boolean authed = currentAuth.auth(session, username, service, buffer);
             authHolder.set(authed);
         } catch (AsyncAuthException async) {
-            async.addListener(authenticated -> asyncAuth(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer, authenticated));
-            return false;
+            String authName = currentAuth.getName();
+            if (UserAuthPassword.NAME.equals(authName) || UserAuthKeyboardInteractive.NAME.equals(authName)) {
+                async.addListener(authenticated -> asyncAuth(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer, authenticated));
+                return false;
+            }
+            throw new IllegalStateException(
+                    "Async authentication only allowed for password or keyboard-interactive authentication", async);
         } catch (Exception e) {
             warn("handleUserAuthRequestMessage({}) Failed ({}) to authenticate using factory method={}: {}",
                     session, e.getClass().getSimpleName(), method, e.getMessage(), e);
