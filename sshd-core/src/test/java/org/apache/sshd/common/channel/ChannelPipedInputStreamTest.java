@@ -19,11 +19,13 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Collections;
 
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.apache.sshd.util.test.BogusChannel;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
@@ -61,6 +63,34 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
     }
 
     @Test
+    void bufferShrinksAfterAllDataRead() throws Exception {
+        try (ChannelPipedInputStream stream = createTestStream()) {
+            int dataLen = 64 * 1024;
+            byte[] data = new byte[dataLen];
+            Arrays.fill(data, (byte) 'x');
+            stream.receive(data, 0, data.length);
+            stream.eof();
+
+            ByteArrayBuffer buffer = getInternalBuffer(stream);
+            assertEquals(dataLen, buffer.array().length, "Buffer should grow to hold received data");
+
+            byte[] readBuf = new byte[dataLen];
+            int totalRead = 0;
+            while (totalRead < dataLen) {
+                int n = stream.read(readBuf, totalRead, dataLen - totalRead);
+                if (n < 0) {
+                    fail("Unexpected EOF before all data read");
+                }
+                totalRead += n;
+            }
+            assertEquals(-1, stream.read(), "Unexpectedly not at EOF");
+
+            assertEquals(ByteArrayBuffer.DEFAULT_SIZE, getInternalBuffer(stream).array().length,
+                    "Buffer should shrink after all data has been read");
+        }
+    }
+
+    @Test
     void idempotentClose() throws IOException {
         try (ChannelPipedInputStream stream = createTestStream()) {
             byte[] b = getCurrentTestName().getBytes(StandardCharsets.UTF_8);
@@ -78,6 +108,12 @@ public class ChannelPipedInputStreamTest extends BaseTestSupport {
         LocalWindow window = new LocalWindow(channel, true);
         window.init(PropertyResolverUtils.toPropertyResolver(Collections.emptyMap()));
         return new ChannelPipedInputStream(channel, window);
+    }
+
+    private static ByteArrayBuffer getInternalBuffer(ChannelPipedInputStream stream) throws Exception {
+        Field f = ChannelPipedInputStream.class.getDeclaredField("buffer");
+        f.setAccessible(true);
+        return (ByteArrayBuffer) f.get(stream);
     }
 
     private static void assertStreamEquals(byte[] expected, byte[] read) {
