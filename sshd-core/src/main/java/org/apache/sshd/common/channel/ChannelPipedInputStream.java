@@ -153,7 +153,9 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
                 len = buffer.available();
             }
             buffer.getRawBytes(b, off, len);
-            if ((buffer.rpos() > localWindow.getPacketSize()) || (buffer.available() == 0)) {
+            if (buffer.available() == 0) {
+                buffer = new ByteArrayBuffer();
+            } else if (buffer.rpos() > localWindow.getPacketSize()) {
                 buffer.compact();
             }
         } finally {
@@ -170,6 +172,9 @@ public class ChannelPipedInputStream extends InputStream implements ChannelPiped
         lock.lock();
         try {
             writerClosed.set(true);
+            if (buffer != null && buffer.available() == 0) {
+                buffer = new ByteArrayBuffer();
+            }
             dataAvailable.signalAll();
         } finally {
             lock.unlock();
