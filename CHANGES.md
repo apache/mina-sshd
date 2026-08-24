@@ -33,7 +33,9 @@
 
 ## Bug Fixes
 
+* [GH-656](https://github.com/apache/mina-sshd/issues/656) `ChannelPipedInputStream`: shrink buffer when emptied
 * [GH-906](https://github.com/apache/mina-sshd/issues/906) Fix finding a signature factory for BC ed25519 keys
+* [GH-911](https://github.com/apache/mina-sshd/issues/911) Fix server-side SOCKS5 proxy for fragmented and pipelined CONNECT requests
 
 ## New Features
 
