@@ -24,10 +24,12 @@ import java.net.SocketAddress;
 import java.security.PublicKey;
 import java.security.SignatureException;
 import java.security.cert.CertificateException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.sshd.common.AttributeRepository;
 import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.RuntimeSshException;
@@ -55,6 +57,9 @@ import org.apache.sshd.server.session.ServerSession;
  */
 public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFactoriesManager {
     public static final String NAME = UserAuthPublicKeyFactory.NAME;
+
+    public static final AttributeRepository.AttributeKey<List<PublicKey>> AUTHENTICATED_KEYS
+            = new AttributeRepository.AttributeKey<>();
 
     private List<NamedFactory<Signature>> factories;
 
@@ -99,6 +104,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
         buffer.wpos(buffer.rpos() + len);
 
         PublicKey key = buffer.getRawPublicKey();
+
         PublicKey verifyKey = key;
 
         if (key instanceof OpenSshCertificate) {
@@ -119,6 +125,11 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             }
             // Need to use the certified public key for signature verification, not the certificate itself
             verifyKey = cert.getCertPubKey();
+        }
+
+        List<PublicKey> previouslyAuthenticatedKeys = session.getAttribute(AUTHENTICATED_KEYS);
+        if (alreadyAuthenticated(verifyKey, previouslyAuthenticatedKeys)) {
+            return Boolean.FALSE;
         }
 
         Collection<NamedFactory<Signature>> factories = ValidateUtils.checkNotNullAndNotEmpty(
@@ -173,6 +184,7 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             return null;
         }
 
+        PublicKey presentedKey = verifyKey;
         if (verifyKey instanceof SecurityKeyPublicKey<?>) {
             AuthorizedKeyEntry entry = session.getAttribute(AuthorizedKeyEntriesPublickeyAuthenticator.AUTHORIZED_KEY);
             if (entry != null) {
@@ -188,12 +200,25 @@ public class UserAuthPublicKey extends AbstractUserAuth implements SignatureFact
             throw new SignatureException("Key verification failed");
         }
 
+        if (previouslyAuthenticatedKeys == null) {
+            previouslyAuthenticatedKeys = new ArrayList<>();
+            session.setAttribute(AUTHENTICATED_KEYS, previouslyAuthenticatedKeys);
+        }
+        previouslyAuthenticatedKeys.add(presentedKey);
+
         if (debugEnabled) {
             log.debug("doAuth({}@{}) key type={}, fingerprint={} - verified",
                     username, session, alg, KeyUtils.getFingerPrint(key));
         }
 
         return Boolean.TRUE;
+    }
+
+    protected boolean alreadyAuthenticated(PublicKey key, List<PublicKey> previouslyAuthenticatedKeys) {
+        if (GenericUtils.isEmpty(previouslyAuthenticatedKeys)) {
+            return false;
+        }
+        return previouslyAuthenticatedKeys.stream().anyMatch(k -> KeyUtils.compareKeys(key, k));
     }
 
     protected void verifyCertificateSignature(ServerSession session, OpenSshCertificate cert) throws Exception {
