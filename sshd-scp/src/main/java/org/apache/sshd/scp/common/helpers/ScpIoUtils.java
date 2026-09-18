@@ -45,6 +45,14 @@ import org.slf4j.Logger;
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public final class ScpIoUtils {
+
+    /**
+     * The SCP protocol uses LF-terminated lines. OpenSSH limits this line length to at most 2048 characters / bytes. We
+     * permit UTF-8 encoding for file names, so our buffer should be considerably larger. If we receive a protocol line
+     * longer than this limit, {@link #readLine(InputStream, Charset)} will throw an {@link IOException}.
+     */
+    public static final int MAX_PROTOCOL_LINE_LENGTH = 16 * 1024;
+
     public static final Set<ClientChannelEvent> COMMAND_WAIT_EVENTS
             = Collections.unmodifiableSet(EnumSet.of(ClientChannelEvent.EXIT_STATUS, ClientChannelEvent.CLOSED));
 
@@ -68,6 +76,9 @@ public final class ScpIoUtils {
                     }
                     return null;
                 } else {
+                    if (baos.size() >= MAX_PROTOCOL_LINE_LENGTH) {
+                        throw new IOException("SCP protocol line too long");
+                    }
                     baos.write(c);
                 }
             }
