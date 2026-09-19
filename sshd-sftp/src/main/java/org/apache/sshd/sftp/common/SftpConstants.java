@@ -21,6 +21,7 @@ package org.apache.sshd.sftp.common;
 import java.util.Collections;
 import java.util.Map;
 
+import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.logging.LoggingUtils;
 
@@ -273,6 +274,8 @@ public final class SftpConstants {
     public static final int SSH_ACL_CAP_ALARM = 0x00000008;
     public static final int SSH_ACL_CAP_INHERIT_ACCESS = 0x00000010;
     public static final int SSH_ACL_CAP_INHERIT_AUDIT_ALARM = 0x00000020;
+
+    public static final int MAX_SFTP_MESSAGE_LENGTH = 8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT; // 256kB
 
     private SftpConstants() {
         throw new UnsupportedOperationException("No instance");

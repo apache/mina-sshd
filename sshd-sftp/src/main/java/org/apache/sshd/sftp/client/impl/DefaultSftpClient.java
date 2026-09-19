@@ -230,7 +230,7 @@ public class DefaultSftpClient extends AbstractSftpClient {
             if (length < 5) {
                 throw new IOException("Illegal sftp packet length: " + length);
             }
-            if (length > (8 * SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
+            if (length > SftpConstants.MAX_SFTP_MESSAGE_LENGTH) {
                 throw new StreamCorruptedException("Illogical sftp packet length: " + length);
             }
             if ((wpos - rpos) >= (length + 4)) {
