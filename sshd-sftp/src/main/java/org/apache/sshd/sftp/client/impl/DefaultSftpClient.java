@@ -26,16 +26,20 @@ import java.io.StreamCorruptedException;
 import java.net.SocketTimeoutException;
 import java.nio.charset.Charset;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableMap;
 import java.util.Objects;
 import java.util.TreeMap;
+import java.util.concurrent.CancellationException;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -75,7 +79,7 @@ import org.apache.sshd.sftp.server.SftpSubsystemEnvironment;
 public class DefaultSftpClient extends AbstractSftpClient {
     private final ClientSession clientSession;
     private final ChannelSubsystem channel;
-    private final Map<Integer, Buffer> messages = new ConcurrentHashMap<>();
+    private final Map<Integer, CompletableFuture<Buffer>> messages = new ConcurrentHashMap<>();
     private final AtomicInteger cmdId = new AtomicInteger(100);
     private final Buffer receiveBuffer = new ByteArrayBuffer();
     private final AtomicInteger versionHolder = new AtomicInteger(0);
@@ -107,10 +111,8 @@ public class DefaultSftpClient extends AbstractSftpClient {
         Duration initializationTimeout = SftpModuleProperties.SFTP_CHANNEL_OPEN_TIMEOUT.getRequired(clientSession);
         this.channel.open().verify(initializationTimeout);
         this.channel.onClose(() -> {
-            synchronized (messages) {
-                closing.set(true);
-                messages.notifyAll();
-            }
+            closing.set(true);
+            messages.forEach((i, future) -> future.cancel(true));
 
             if (versionHolder.get() <= 0) {
                 log.warn("onClose({}) closed before version negotiated", channel);
@@ -266,10 +268,16 @@ public class DefaultSftpClient extends AbstractSftpClient {
                     getClientChannel(), id, SftpConstants.getCommandMessageName(type), length);
         }
 
-        synchronized (messages) {
-            messages.put(id, buffer);
-            messages.notifyAll();
+        CompletableFuture<Buffer> request = messages.get(id);
+        if (request == null) {
+            throw new IOException("SFTP: received a reply " + SftpConstants.getCommandMessageName(type) //
+                                  + " of length " + length + " for a request never sent; id = " + id);
         }
+        if (request.isDone()) {
+            throw new IOException("SFTP: received a duplicate reply " + SftpConstants.getCommandMessageName(type)
+                                  + " of length " + length + " for request  id = " + id);
+        }
+        request.complete(buffer);
     }
 
     @Override
@@ -320,7 +328,15 @@ public class DefaultSftpClient extends AbstractSftpClient {
             if (msg != null) {
                 msg.waitUntilSent();
             }
-            IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
+            messages.put(id, new CompletableFuture<>());
+            IoWriteFuture writeFuture = asyncIn.writeBuffer(buf).addListener(future -> {
+                if (!future.isWritten()) {
+                    CompletableFuture<Buffer> reply = messages.remove(id);
+                    if (reply != null) {
+                        reply.cancel(true);
+                    }
+                }
+            });
             Duration sendTimeout = SFTP_CLIENT_CMD_TIMEOUT.getRequired(clientChannel);
             msg = new SftpMessage(id, writeFuture, sendTimeout);
             lastMessage.set(msg);
@@ -350,30 +366,46 @@ public class DefaultSftpClient extends AbstractSftpClient {
 
     @Override
     public Buffer receive(int id, Duration idleTimeout) throws IOException {
-        synchronized (messages) {
-            if (GenericUtils.isPositive(idleTimeout)) {
-                Instant waitUntil = Instant.now().plus(idleTimeout);
-                for (;;) {
-                    if (isClosing() || !isOpen()) {
-                        throw new SshException("Channel is being closed");
-                    }
-                    Buffer buffer = messages.remove(id);
-                    if (buffer != null) {
-                        return buffer;
-                    }
-                    Duration waitFor = Duration.between(Instant.now(), waitUntil);
-                    if (!GenericUtils.isPositive(waitFor)) {
-                        break; // Timeout expired
-                    }
-                    try {
-                        messages.wait(waitFor.toMillis(), waitFor.getNano() % 1_000_000);
-                    } catch (InterruptedException e) {
-                        throw (IOException) new InterruptedIOException("Interrupted while waiting for messages").initCause(e);
-                    }
+        if (!GenericUtils.isPositive(idleTimeout)) {
+            // Immediate check
+            CompletableFuture<Buffer> reply = messages.get(id);
+            if (reply != null && reply.isDone()) {
+                messages.remove(id);
+                try {
+                    return reply.getNow(null);
+                } catch (CancellationException e) {
+                    return null;
+                } catch (CompletionException e) {
+                    // Future was completed exceptionally. Should not occur.
+                    Throwable t = e.getCause();
+                    throw new IOException("Reply for request was terminated exceptionally", t);
                 }
             }
-            // Try one last time.
-            return messages.remove(id);
+            return null;
+        }
+        try {
+            if (isClosing() || !isOpen()) {
+                throw new SshException("Channel is being closed");
+            }
+            CompletableFuture<Buffer> reply = messages.get(id);
+            if (reply == null) {
+                return null;
+            }
+            try {
+                return reply.get(idleTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            } finally {
+                messages.remove(id);
+            }
+        } catch (CancellationException | TimeoutException e) {
+            return null;
+        } catch (ExecutionException e) {
+            // Future was completed exceptionally. Should not occur.
+            Throwable t = e.getCause();
+            throw new IOException("Reply for request was terminated exceptionally", t);
+        } catch (InterruptedException e) {
+            IOException e0 = new InterruptedIOException("Interrupted while waiting for messages");
+            e0.initCause(e);
+            throw e0;
         }
     }
 
@@ -399,13 +431,31 @@ public class DefaultSftpClient extends AbstractSftpClient {
             log.trace("init({}) send SSH_FXP_INIT - initial version={}", clientChannel, initialVersion);
         }
 
-        IoWriteFuture writeFuture = asyncIn.writeBuffer(buf);
-        writeFuture.verify(initializationTimeout);
-
-        if (traceEnabled) {
-            log.trace("init({}) wait for SSH_FXP_INIT respose (timeout={})", clientChannel, initializationTimeout);
+        // The initial message from the peer will have the SFTP version number in place of the requestId. So it may
+        // appear in positions 3, 4, 5, or 6 in the map. Hence we have to set our future in all these places.
+        CompletableFuture<Buffer> reply = new CompletableFuture<>();
+        for (int i = 0; i <= SftpConstants.SFTP_V6; i++) {
+            messages.put(i, reply);
         }
-        Buffer buffer = waitForInitResponse(initializationTimeout);
+        IoWriteFuture writeFuture = asyncIn.writeBuffer(buf).addListener(future -> {
+            if (!future.isWritten()) {
+                messages.clear();
+                reply.cancel(true);
+            }
+        });
+        Buffer buffer;
+        try {
+            writeFuture.verify(initializationTimeout);
+
+            if (traceEnabled) {
+                log.trace("init({}) wait for SSH_FXP_INIT respose (timeout={})", clientChannel, initializationTimeout);
+            }
+
+            buffer = waitForInitResponse(reply, initializationTimeout);
+        } finally {
+            messages.clear();
+        }
+
         handleInitResponse(buffer);
     }
 
@@ -453,43 +503,29 @@ public class DefaultSftpClient extends AbstractSftpClient {
         }
     }
 
-    protected Buffer waitForInitResponse(Duration initializationTimeout) throws IOException {
+    protected Buffer waitForInitResponse(CompletableFuture<Buffer> reply, Duration initializationTimeout) throws IOException {
         ValidateUtils.checkTrue(GenericUtils.isPositive(initializationTimeout), "Invalid initialization timeout: %d",
-                initializationTimeout);
+                initializationTimeout.toMillis());
 
-        synchronized (messages) {
-            /*
-             * We need to use a timeout since if the remote server does not support SFTP, we will not know it
-             * immediately. This is due to the fact that the request for the subsystem does not contain a reply as to
-             * its success or failure. Thus, the SFTP channel is created by the client, but there is no one on the other
-             * side to reply - thus the need for the timeout
-             */
-            Instant now = Instant.now();
-            Instant max = now.plus(initializationTimeout);
-            while ((now.compareTo(max) < 0) && messages.isEmpty() && (!isClosing()) && isOpen()) {
-                try {
-                    Duration rem = Duration.between(now, max);
-                    messages.wait(rem.toMillis(), rem.getNano() % 1_000_000);
-                    now = Instant.now();
-                } catch (InterruptedException e) {
-                    throw (IOException) new InterruptedIOException(
-                            "Interrupted init() while " + Duration.between(now, max) + " remaining").initCause(e);
-                }
-            }
-
-            if (isClosing() || (!isOpen())) {
+        try {
+            Buffer buffer = reply.get(initializationTimeout.toNanos(), TimeUnit.NANOSECONDS);
+            if (isClosing() || !isOpen()) {
                 throw new EOFException("Closing while await init message");
             }
-
-            if (messages.isEmpty()) {
-                throw new SocketTimeoutException(
-                        "No incoming initialization response received within " + initializationTimeout + " msec.");
-            }
-
-            Collection<Integer> ids = messages.keySet();
-            Iterator<Integer> iter = ids.iterator();
-            Integer reqId = iter.next();
-            return messages.remove(reqId);
+            return buffer;
+        } catch (CancellationException e) {
+            throw new EOFException("Closing while await init message");
+        } catch (TimeoutException e) {
+            throw new SocketTimeoutException(
+                    "No incoming initialization response received within " + initializationTimeout.toMillis() + " msec.");
+        } catch (ExecutionException e) {
+            // Future was completed exceptionally. Should not occur.
+            Throwable t = e.getCause();
+            throw new IOException("Initialization request was terminated exceptionally", t);
+        } catch (InterruptedException e) {
+            IOException e0 = new InterruptedIOException("Interrupted while waiting for initial reply");
+            e0.initCause(e);
+            throw e0;
         }
     }
 

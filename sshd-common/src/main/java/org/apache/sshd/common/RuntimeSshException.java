@@ -35,7 +35,7 @@ public class RuntimeSshException extends RuntimeException {
     }
 
     public RuntimeSshException(Throwable cause) {
-        this(null, cause);
+        this(cause.toString(), cause);
     }
 
     public RuntimeSshException(String message, Throwable cause) {
