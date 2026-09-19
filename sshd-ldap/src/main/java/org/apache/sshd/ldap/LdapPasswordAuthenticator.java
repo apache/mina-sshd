@@ -75,10 +75,6 @@ public class LdapPasswordAuthenticator extends LdapAuthenticator implements Pass
 
     protected boolean authenticate(
             String username, String password, ServerSession session, Map<String, ?> attrs) {
-        /*
-         * By default we assume that the user + password are the same for accessing the LDAP as the user's account, so
-         * the very LDAP query success is enough
-         */
-        return true;
+        return attrs != null && !attrs.isEmpty();
     }
 }

@@ -35,9 +35,6 @@ import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
@@ -73,6 +70,13 @@ public class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
         usersMap.forEach((username, password) -> {
             outputDebugMessage("Authenticate: user=%s, password=%s", username, password);
             assertTrue(auth.authenticate(username, password, session), "Failed to authenticate " + username);
+            String otherPassword = password + "bar";
+            outputDebugMessage("Authenticate: user=%s, password=%s", username, otherPassword);
+            assertFalse(auth.authenticate(username, otherPassword, session), "Should not have authenticated " + username);
         });
+        String otherUser = "other";
+        assertFalse(usersMap.containsKey(otherUser));
+        assertFalse(auth.authenticate(otherUser, otherUser, session), "Should not have authenticated other");
+        assertFalse(auth.authenticate("*", "*", session), "Should not have authenticated *");
     }
 }
