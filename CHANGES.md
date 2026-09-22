@@ -36,6 +36,14 @@
 * [GH-656](https://github.com/apache/mina-sshd/issues/656) `ChannelPipedInputStream`: shrink buffer when emptied
 * [GH-906](https://github.com/apache/mina-sshd/issues/906) Fix finding a signature factory for BC ed25519 keys
 * [GH-911](https://github.com/apache/mina-sshd/issues/911) Fix server-side SOCKS5 proxy for fragmented and pipelined CONNECT requests
+* Allow asynchronous authentication only for password and keyboard-interactive authentication schemes
+* Fix authentication requiring multiple public keys (server-side)
+* Better argument handling in sshd-git
+* More checks in authentication (server-side)
+* Better SCP command handling
+* Simplify SFTP response message handling
+* Fix check-file-name/check-file-handle SFTP v6 extension
+* Improve LDAP authentication (sshd-ldap)
 
 ## New Features
 
