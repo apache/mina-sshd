@@ -57,6 +57,11 @@ public class HttpProxyConnector extends AbstractProxyConnector {
 
     private static final String HTTP_HEADER_PROXY_AUTHORIZATION = "Proxy-Authorization:";
 
+    /**
+     * Maximum allowed length of the HTTP reply (status line + headers, including the final CRLF).
+     */
+    private static final int MAX_REPLY_LENGTH = 32 * 1024;
+
     private HttpAuthenticationHandler basic;
 
     private HttpAuthenticationHandler negotiate;
@@ -68,6 +73,8 @@ public class HttpProxyConnector extends AbstractProxyConnector {
     private HttpAuthenticationHandler authenticator;
 
     private boolean ongoing;
+
+    private Accumulator data;
 
     /**
      * Creates a new {@link HttpProxyConnector}. The connector supports anonymous proxy connections as well as Basic and
@@ -88,6 +95,7 @@ public class HttpProxyConnector extends AbstractProxyConnector {
         availableAuthentications.add(negotiate);
         availableAuthentications.add(basic);
         clientAuthentications = availableAuthentications.iterator();
+        data = new Accumulator(MAX_REPLY_LENGTH, new byte[] { '\r', '\n', '\r', '\n' }, "HTTP headers too large");
     }
 
     @Override
@@ -147,24 +155,18 @@ public class HttpProxyConnector extends AbstractProxyConnector {
     @Override
     public Buffer received(Readable buffer) throws Exception {
         try {
-            int length = buffer.available();
-            byte[] data = new byte[length];
-            buffer.getRawBytes(data, 0, length);
+            if (!data.accumulate(buffer)) {
+                // Need more input
+                return null;
+            }
+            byte[] headers = data.getData();
+            byte[] body = data.getRest();
+            data.clear();
             Buffer rest = null;
-            // HTTP responses end with two CRLFs. Find them.
-            String msg = new String(data, US_ASCII);
-            int end = msg.indexOf("\r\n\r\n");
-            if (end < 0) {
-                end = data.length;
-            } else {
-                end += 4;
+            if (body.length > 0) {
+                rest = new ByteArrayBuffer(body);
             }
-            if (end < data.length) {
-                msg = msg.substring(0, end);
-                data = Arrays.copyOfRange(data, end, data.length);
-                rest = new ByteArrayBuffer(data);
-            }
-            String[] reply = msg.split("\r\n");
+            String[] reply = new String(headers, US_ASCII).split("\r\n");
             handleMessage(Arrays.asList(reply));
             return rest;
         } catch (Exception e) {

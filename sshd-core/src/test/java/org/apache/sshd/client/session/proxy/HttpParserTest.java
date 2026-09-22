@@ -24,11 +24,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.apache.sshd.util.test.JUnitTestSupport;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 
 /**
  * Basic tests for {@link HttpParser}.
  */
+@Tag("NoIoTestCase")
 class HttpParserTest extends JUnitTestSupport {
 
     private static final String STATUS_LINE = "HTTP/1.1. 407 Authentication required";
