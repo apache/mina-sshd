@@ -39,6 +39,11 @@ import org.apache.sshd.core.CoreModuleProperties;
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public static final String NAME = UserAuthKeyboardInteractiveFactory.NAME;
 
+    // Still way too high to be practical (typical servers send maybe 1 to 3 challenges), but high enough to allow even
+    // really esoteric use cases while being low enough to be very comfortably able to allocate the arrays for the
+    // prompts and echo flags.
+    private static final int MAX_PROMPTS = 100;
+
     private final AtomicBoolean requestPending = new AtomicBoolean(false);
     private Iterator<String> passwords;
     private int maxAttempts;
@@ -120,11 +125,17 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         String instruction = buffer.getString();
         String lang = buffer.getString();
         int num = buffer.getInt();
+        // Minimum length for one prompt is 6 bytes: 4 bytes string length of the prompt and at least one byte of data,
+        // plus one byte for the echo boolean.
+        int maxPrompts = buffer.available() / 6;
+        // Now maxPrompts can still be rather large (roughly 43690 -- we accept SSH packets up to 256kB). That many
+        // prompts make no sense.
+        maxPrompts = Math.min(maxPrompts, MAX_PROMPTS);
         // Protect against malicious or corrupted packets
-        if ((num < 0) || (num > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
-            log.error("processAuthDataRequest({})[{}] illogical challenges count ({}) for name={}, instruction={}",
+        if ((num < 0) || (num > maxPrompts)) {
+            log.warn("processAuthDataRequest({})[{}] illogical challenges count ({}) for name={}, instruction={}",
                     session, service, num, name, instruction);
-            throw new IndexOutOfBoundsException("Illogical challenges count: " + num);
+            return false;
         }
 
         boolean debugEnabled = log.isDebugEnabled();
@@ -148,6 +159,11 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
             }
         }
 
+        if (buffer.available() > 0) {
+            log.warn("processAuthDataRequest({})[{}] {} trailing garbage bytes at end of SSH_MSG_USERAUTH_INFO_REQUEST",
+                    session, service, num, buffer.available());
+            return false;
+        }
         String[] rep = getUserResponses(name, instruction, lang, prompt, echo);
         if (rep == null) {
             if (debugEnabled) {
