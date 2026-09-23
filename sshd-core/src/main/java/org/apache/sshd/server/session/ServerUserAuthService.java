@@ -317,7 +317,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return false;
         }
 
-        // TODO: verify that the service is supported
+        if ("none".equals(method)) {
+            return true;
+        } else if (!authMethods.stream().filter(GenericUtils::isNotEmpty).map(l -> l.get(0)).anyMatch(s -> method.equals(s))) {
+            log.warn("handleUserAuthRequestMessage({}) client sent method={} not in methods that can proceed {}", session,
+                    method, authMethods);
+            return true;
+        }
         this.authMethod = method;
         if (debugEnabled) {
             log.debug(
