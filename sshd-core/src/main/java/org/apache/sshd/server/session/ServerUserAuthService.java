@@ -78,6 +78,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private String authMethod;
     private String authService;
     private UserAuth currentAuth;
+    private AsyncAuthException pendingAuth;
 
     private int maxAuthRequests;
     private int nbAuthRequests;
@@ -156,6 +157,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
     @Override
     public synchronized void process(int cmd, Buffer buffer) throws Exception {
+        // A new request or continuation supersedes any pending result, even on the same authenticator.
+        pendingAuth = null;
         Boolean authed = Boolean.FALSE;
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
@@ -189,7 +192,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             } catch (AsyncAuthException async) {
                 String authName = currentAuth.getName();
                 if (UserAuthPassword.NAME.equals(authName) || UserAuthKeyboardInteractive.NAME.equals(authName)) {
-                    async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
+                    addAsyncAuthListener(async, cmd, buffer);
                     return;
                 }
                 throw new IllegalStateException(
@@ -340,7 +343,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         } catch (AsyncAuthException async) {
             String authName = currentAuth.getName();
             if (UserAuthPassword.NAME.equals(authName) || UserAuthKeyboardInteractive.NAME.equals(authName)) {
-                async.addListener(authenticated -> asyncAuth(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer, authenticated));
+                addAsyncAuthListener(async, SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer);
                 return false;
             }
             throw new IllegalStateException(
@@ -351,6 +354,24 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
         }
 
         return true;
+    }
+
+    private void addAsyncAuthListener(AsyncAuthException async, int cmd, Buffer buffer) {
+        UserAuth auth = currentAuth;
+        pendingAuth = async;
+        async.addListener(authenticated -> {
+            synchronized (ServerUserAuthService.this) {
+                if (pendingAuth != async) {
+                    return;
+                }
+                pendingAuth = null;
+                ServerSession session = getServerSession();
+                if (currentAuth != auth || isClosing() || session.isClosing() || session.isAuthenticated()) {
+                    return;
+                }
+                asyncAuth(cmd, buffer, authenticated);
+            }
+        });
     }
 
     protected synchronized void asyncAuth(int cmd, Buffer buffer, boolean authed) {
