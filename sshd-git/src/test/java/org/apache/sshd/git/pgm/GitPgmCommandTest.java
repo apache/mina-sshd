@@ -20,6 +20,7 @@ package org.apache.sshd.git.pgm;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -72,6 +73,8 @@ class GitPgmCommandTest extends GitTestSupport {
     }
 
     private void runGitCommands(String testName, int port, Path serverDir) throws Exception {
+        Path repo = serverDir.resolve(testName);
+        Path cwd = new File(".").getCanonicalFile().toPath();
         try (SshClient client = setupTestClient()) {
             client.start();
             try (ClientSession session = client.connect(testName, SshdSocketAddress.LOCALHOST_IPV4, port)
@@ -79,7 +82,6 @@ class GitPgmCommandTest extends GitTestSupport {
                 session.addPasswordIdentity(testName);
                 session.auth().verify(AUTH_TIMEOUT);
 
-                Path repo = serverDir.resolve(testName);
                 Path readmeFile;
                 try (Git git = Git.init().setDirectory(repo.toFile()).call()) {
                     readmeFile = Files.write(repo.resolve("readme.txt"), Collections.singletonList("README"));
@@ -111,22 +113,79 @@ class GitPgmCommandTest extends GitTestSupport {
                         StandardCharsets.UTF_8, AUTH_TIMEOUT);
                 assertFalse(Files.exists(repo.resolve("archive.zip")));
                 assertFalse(Files.exists(serverDir.resolve("archive.zip")));
-                ByteArrayInputStream in = new ByteArrayInputStream(out.toByteArray());
-                try (ZipInputStream zIn = new ZipInputStream(in)) {
-                    ZipEntry entry = zIn.getNextEntry();
-                    assertEquals(readmeFile.getFileName().toString(), entry.getName());
-                    ByteArrayOutputStream content = new ByteArrayOutputStream();
-                    byte[] chunk = new byte[1024];
-                    int n = 0;
-                    while ((n = zIn.read(chunk)) >= 0) {
-                        content.write(chunk, 0, n);
-                    }
-                    zIn.closeEntry();
-                    assertEquals(Files.size(readmeFile), content.size());
-                }
+                assertFalse(Files.exists(cwd.resolve("archive.zip")));
+                checkStream(out.toByteArray(), readmeFile);
+                out.reset();
+                err.reset();
+                session.executeRemoteCommand(commandPrefix + " archive --output archive.zip --format zip HEAD", out, err,
+                        StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                assertFalse(Files.exists(repo.resolve("archive.zip")));
+                assertFalse(Files.exists(serverDir.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("archive.zip")));
+                checkStream(out.toByteArray(), readmeFile);
+                out.reset();
+                err.reset();
+                session.executeRemoteCommand(commandPrefix + " archive -o=archive.zip --format zip HEAD", out, err,
+                        StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                assertFalse(Files.exists(repo.resolve("archive.zip")));
+                assertFalse(Files.exists(serverDir.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("archive.zip")));
+                checkStream(out.toByteArray(), readmeFile);
+                out.reset();
+                err.reset();
+                session.executeRemoteCommand(commandPrefix + " archive --output=archive.zip --format zip HEAD", out, err,
+                        StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                assertFalse(Files.exists(repo.resolve("archive.zip")));
+                assertFalse(Files.exists(serverDir.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("archive.zip")));
+                checkStream(out.toByteArray(), readmeFile);
+                out.reset();
+                err.reset();
+                // JGit's Archive command uses Kohsuke's args4j, which has a bug: it also attempts to handle single
+                // command line arguments using a blank as delimiter between key and value, but then takes the whole
+                // argument as value. If the single "--output archive.zip" argument is not removed from the following
+                // command, Archive will actually write a file at cwd named "--output archive.zip".
+                session.executeRemoteCommand(commandPrefix + " archive \"--output archive.zip\" --format zip HEAD", out, err,
+                        StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                assertFalse(Files.exists(repo.resolve("archive.zip")));
+                assertFalse(Files.exists(serverDir.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("--output archive.zip")));
+                checkStream(out.toByteArray(), readmeFile);
+                out.reset();
+                err.reset();
+                session.executeRemoteCommand(commandPrefix + " archive \"-o archive.zip\" --format zip HEAD", out, err,
+                        StandardCharsets.UTF_8, AUTH_TIMEOUT);
+                assertFalse(Files.exists(repo.resolve("archive.zip")));
+                assertFalse(Files.exists(serverDir.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("archive.zip")));
+                assertFalse(Files.exists(cwd.resolve("-o archive.zip")));
+                checkStream(out.toByteArray(), readmeFile);
             } finally {
                 client.stop();
+                Files.deleteIfExists(repo.resolve("archive.zip"));
+                Files.deleteIfExists(serverDir.resolve("archive.zip"));
+                Files.deleteIfExists(cwd.resolve("archive.zip"));
+                Files.deleteIfExists(cwd.resolve("--output archive.zip"));
+                Files.deleteIfExists(cwd.resolve("-o archive.zip"));
             }
+        }
+    }
+
+    private void checkStream(byte[] stdout, Path readmeFile) throws Exception {
+        ByteArrayInputStream in = new ByteArrayInputStream(stdout);
+        try (ZipInputStream zIn = new ZipInputStream(in)) {
+            ZipEntry entry = zIn.getNextEntry();
+            assertNotNull(entry);
+            assertEquals(readmeFile.getFileName().toString(), entry.getName());
+            ByteArrayOutputStream content = new ByteArrayOutputStream();
+            byte[] chunk = new byte[1024];
+            int n = 0;
+            while ((n = zIn.read(chunk)) >= 0) {
+                content.write(chunk, 0, n);
+            }
+            zIn.closeEntry();
+            assertEquals(Files.size(readmeFile), content.size());
         }
     }
 }

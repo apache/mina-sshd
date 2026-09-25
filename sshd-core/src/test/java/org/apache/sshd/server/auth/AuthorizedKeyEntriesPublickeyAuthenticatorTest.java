@@ -18,6 +18,7 @@
  */
 package org.apache.sshd.server.auth;
 
+import java.net.InetSocketAddress;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.interfaces.ECPublicKey;
@@ -30,11 +31,14 @@ import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.config.keys.u2f.SkEcdsaPublicKey;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.server.auth.pubkey.AuthorizedKeyEntriesPublickeyAuthenticator;
+import org.apache.sshd.server.session.ServerSession;
 import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.Tag;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.Mockito;
 
 @Tag("NoIoTestCase")
 class AuthorizedKeyEntriesPublickeyAuthenticatorTest extends BaseTestSupport {
@@ -67,5 +71,84 @@ class AuthorizedKeyEntriesPublickeyAuthenticatorTest extends BaseTestSupport {
         AuthorizedKeyEntriesPublickeyAuthenticator auth = new AuthorizedKeyEntriesPublickeyAuthenticator("test", null,
                 Collections.singletonList(entry), PublicKeyEntryResolver.FAILING);
         assertTrue(auth.authenticate("user", pubKey, null));
+    }
+
+    @Test
+    void fromAllowsMatchingAddress() throws Exception {
+        KeyPair pair = generateKeyPair();
+        ServerSession session = session(new InetSocketAddress("127.0.0.1", 12345));
+
+        assertTrue(authenticate("from=\"127.0.0.1\"", pair, session));
+    }
+
+    @Test
+    void fromRejectsDifferentAddress() throws Exception {
+        KeyPair pair = generateKeyPair();
+        ServerSession session = session(new InetSocketAddress("203.0.113.10", 12345));
+
+        assertFalse(authenticate("from=\"127.0.0.1\"", pair, session));
+    }
+
+    @Test
+    void fromAllowsMatchingCidr() throws Exception {
+        KeyPair pair = generateKeyPair();
+        ServerSession session = session(new InetSocketAddress("192.0.2.25", 12345));
+
+        assertTrue(authenticate("from=\"192.0.2.0/24\"", pair, session));
+    }
+
+    @Test
+    void fromRejectsNegatedAddress() throws Exception {
+        KeyPair pair = generateKeyPair();
+        ServerSession session = session(new InetSocketAddress("203.0.113.10", 12345));
+
+        assertFalse(authenticate("from=\"*,!203.0.113.10\"", pair, session));
+    }
+
+    @Test
+    void fromRejectsInvalidPattern() throws Exception {
+        KeyPair pair = generateKeyPair();
+        ServerSession session = session(new InetSocketAddress("203.0.113.10", 12345));
+
+        assertFalse(authenticate("from=\"203.0.113.0/33\"", pair, session));
+    }
+
+    @Test
+    void expiryTimeAllowsFutureTime() throws Exception {
+        KeyPair pair = generateKeyPair();
+
+        assertTrue(authenticate("expiry-time=\"29991231235959Z\"", pair, null));
+    }
+
+    @Test
+    void expiryTimeRejectsPastTime() throws Exception {
+        KeyPair pair = generateKeyPair();
+
+        assertFalse(authenticate("expiry-time=\"19700101000000Z\"", pair, null));
+    }
+
+    private static boolean authenticate(String options, KeyPair pair, ServerSession session) throws Exception {
+        String line = options;
+        if (!line.isEmpty()) {
+            line += ' ';
+        }
+        line += PublicKeyEntry.toString(pair.getPublic());
+        AuthorizedKeyEntry entry = AuthorizedKeyEntry.parseAuthorizedKeyEntry(line);
+        AuthorizedKeyEntriesPublickeyAuthenticator auth = new AuthorizedKeyEntriesPublickeyAuthenticator("test", session,
+                Collections.singletonList(entry), PublicKeyEntryResolver.FAILING);
+        return auth.authenticate("user", pair.getPublic(), session);
+    }
+
+    private static KeyPair generateKeyPair() throws Exception {
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("EC");
+        gen.initialize(256);
+        return gen.generateKeyPair();
+    }
+
+    private static ServerSession session(InetSocketAddress remote) {
+        ServerSession session = Mockito.mock(ServerSession.class);
+        Mockito.when(session.getClientAddress()).thenReturn(remote);
+        Mockito.when(session.getRemoteAddress()).thenReturn(remote);
+        return session;
     }
 }

@@ -19,6 +19,8 @@
 
 package org.apache.sshd.ldap;
 
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.PublicKey;
 import java.util.Collections;
 import java.util.Comparator;
@@ -85,12 +87,19 @@ class LdapPublickeyAuthenticatorTest extends BaseAuthenticatorTest {
         auth.setKeyAttributeName(TEST_ATTR_NAME);
         auth.setRetrievedAttributes(TEST_ATTR_NAME);
 
+        KeyPairGenerator gen = KeyPairGenerator.getInstance("RSA");
+        gen.initialize(1024);
+        KeyPair bogus = gen.generateKeyPair();
         ServerSession session = Mockito.mock(ServerSession.class);
         outputDebugMessage("%s: %s", getCurrentTestName(), auth);
         KEYS_MAP.forEach((username, key) -> {
             outputDebugMessage("Authenticate: user=%s, key-type=%s, fingerprint=%s",
                     username, KeyUtils.getKeyType(key), KeyUtils.getFingerPrint(key));
-            assertTrue(auth.authenticate(username, key, session), "Failed to authenticate user=" + username);
+            assertTrue(auth.authenticate(username, key, session), "Failed to authenticate user = " + username);
+            assertFalse(auth.authenticate(username, bogus.getPublic(), session),
+                    "Should not have authenticated user = " + username);
+            assertFalse(auth.authenticate("other", key, session), "Should not have authenticated user = other");
+            assertFalse(auth.authenticate("*", key, session), "Should not have authenticated user = *");
         });
     }
 }

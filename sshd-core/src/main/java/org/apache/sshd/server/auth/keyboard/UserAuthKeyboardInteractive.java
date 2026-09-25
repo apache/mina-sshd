@@ -39,6 +39,8 @@ import org.apache.sshd.server.session.ServerSession;
 public class UserAuthKeyboardInteractive extends AbstractUserAuth {
     public static final String NAME = UserAuthKeyboardInteractiveFactory.NAME;
 
+    private int numberOfPrompts = -1;
+
     public UserAuthKeyboardInteractive() {
         super(NAME);
     }
@@ -93,6 +95,7 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
                     challenge.getLanguageTag(), GenericUtils.size(challenge.getPrompts()));
         }
 
+        numberOfPrompts = challenge.getPrompts().size();
         // Prompt for password
         buffer = session.createBuffer(SshConstants.SSH_MSG_USERAUTH_INFO_REQUEST);
         challenge.append(buffer);
@@ -109,10 +112,10 @@ public class UserAuthKeyboardInteractive extends AbstractUserAuth {
         }
 
         int num = buffer.getInt();
-        // Protect against malicious or corrupted packets
-        if ((num < 0) || (num > SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT)) {
-            log.error("doValidateAuthResponse({}@{}) illogical response count: {}", username, session, num);
-            throw new IndexOutOfBoundsException("Illogical response count: " + num);
+        if (num != numberOfPrompts) {
+            // RFC 4256: if the num-responses field does not match the num-prompts field in the request message, the
+            // server MUST send a failure message.
+            return false;
         }
 
         List<String> responses = (num <= 0) ? Collections.emptyList() : new ArrayList<>(num);

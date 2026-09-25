@@ -40,6 +40,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import org.apache.sshd.client.auth.keyboard.UserAuthKeyboardInteractive;
+import org.apache.sshd.client.auth.password.UserAuthPassword;
 import org.apache.sshd.common.NamedResource;
 import org.apache.sshd.common.Service;
 import org.apache.sshd.common.SshConstants;
@@ -76,6 +78,7 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
     private String authMethod;
     private String authService;
     private UserAuth currentAuth;
+    private AsyncAuthException pendingAuth;
 
     private int maxAuthRequests;
     private int nbAuthRequests;
@@ -154,6 +157,8 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
 
     @Override
     public synchronized void process(int cmd, Buffer buffer) throws Exception {
+        // A new request or continuation supersedes any pending result, even on the same authenticator.
+        pendingAuth = null;
         Boolean authed = Boolean.FALSE;
         ServerSession session = getServerSession();
         boolean debugEnabled = log.isDebugEnabled();
@@ -185,8 +190,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             try {
                 authed = currentAuth.next(buffer);
             } catch (AsyncAuthException async) {
-                async.addListener(authenticated -> asyncAuth(cmd, buffer, authenticated));
-                return;
+                String authName = currentAuth.getName();
+                if (UserAuthPassword.NAME.equals(authName) || UserAuthKeyboardInteractive.NAME.equals(authName)) {
+                    addAsyncAuthListener(async, cmd, buffer);
+                    return;
+                }
+                throw new IllegalStateException(
+                        "Async authentication only allowed for password or keyboard-interactive authentication", async);
             } catch (Exception e) {
                 // Continue
                 warn("process({}) Failed ({}) to authenticate using current method={}: {}",
@@ -307,7 +317,13 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             return false;
         }
 
-        // TODO: verify that the service is supported
+        if ("none".equals(method)) {
+            return true;
+        } else if (!authMethods.stream().filter(GenericUtils::isNotEmpty).map(l -> l.get(0)).anyMatch(s -> method.equals(s))) {
+            log.warn("handleUserAuthRequestMessage({}) client sent method={} not in methods that can proceed {}", session,
+                    method, authMethods);
+            return true;
+        }
         this.authMethod = method;
         if (debugEnabled) {
             log.debug(
@@ -331,14 +347,37 @@ public class ServerUserAuthService extends AbstractCloseable implements Service,
             Boolean authed = currentAuth.auth(session, username, service, buffer);
             authHolder.set(authed);
         } catch (AsyncAuthException async) {
-            async.addListener(authenticated -> asyncAuth(SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer, authenticated));
-            return false;
+            String authName = currentAuth.getName();
+            if (UserAuthPassword.NAME.equals(authName) || UserAuthKeyboardInteractive.NAME.equals(authName)) {
+                addAsyncAuthListener(async, SshConstants.SSH_MSG_USERAUTH_REQUEST, buffer);
+                return false;
+            }
+            throw new IllegalStateException(
+                    "Async authentication only allowed for password or keyboard-interactive authentication", async);
         } catch (Exception e) {
             warn("handleUserAuthRequestMessage({}) Failed ({}) to authenticate using factory method={}: {}",
                     session, e.getClass().getSimpleName(), method, e.getMessage(), e);
         }
 
         return true;
+    }
+
+    private void addAsyncAuthListener(AsyncAuthException async, int cmd, Buffer buffer) {
+        UserAuth auth = currentAuth;
+        pendingAuth = async;
+        async.addListener(authenticated -> {
+            synchronized (ServerUserAuthService.this) {
+                if (pendingAuth != async) {
+                    return;
+                }
+                pendingAuth = null;
+                ServerSession session = getServerSession();
+                if (currentAuth != auth || isClosing() || session.isClosing() || session.isAuthenticated()) {
+                    return;
+                }
+                asyncAuth(cmd, buffer, authenticated);
+            }
+        });
     }
 
     protected synchronized void asyncAuth(int cmd, Buffer buffer, boolean authed) {

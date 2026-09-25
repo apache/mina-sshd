@@ -70,6 +70,13 @@ class LdapPasswordAuthenticatorTest extends BaseAuthenticatorTest {
         usersMap.forEach((username, password) -> {
             outputDebugMessage("Authenticate: user=%s, password=%s", username, password);
             assertTrue(auth.authenticate(username, password, session), "Failed to authenticate " + username);
+            String otherPassword = password + "bar";
+            outputDebugMessage("Authenticate: user=%s, password=%s", username, otherPassword);
+            assertFalse(auth.authenticate(username, otherPassword, session), "Should not have authenticated " + username);
         });
+        String otherUser = "other";
+        assertFalse(usersMap.containsKey(otherUser));
+        assertFalse(auth.authenticate(otherUser, otherUser, session), "Should not have authenticated other");
+        assertFalse(auth.authenticate("*", "*", session), "Should not have authenticated *");
     }
 }

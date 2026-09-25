@@ -258,6 +258,30 @@ class MultiAuthTest extends BaseTestSupport {
         assertEquals(expected, sb.toString());
     }
 
+    @Test
+    void testConnect6() throws Exception {
+        CoreModuleProperties.AUTH_METHODS.set(sshd, "publickey,publickey publickey,password");
+        StringBuilder sb = new StringBuilder();
+        try (ClientSession session = createClientSession(USER_NAME, client, port)) {
+            session.setKeyIdentityProvider(ctx -> {
+                List<KeyPair> result = new ArrayList<>();
+                result.add(rsaKeyUser);
+                return result;
+            });
+            session.setPasswordIdentityProvider(PasswordIdentityProvider.wrapPasswords(PASSWORD));
+            session.setPublicKeyAuthenticationReporter(new PubkeyReporter(sb));
+            session.setPasswordAuthenticationReporter(new PasswordReporter(sb));
+            session.auth().verify(AUTH_TIMEOUT);
+        } catch (Exception e) {
+            throw new RuntimeException(e.getMessage() + '\n' + sb.toString(), e);
+        }
+        String expected = "publickey TRY RSA rsa-sha2-512\n" //
+                          + "publickey PARTIAL RSA\n" //
+                          + "password TRY pass\n" //
+                          + "password SUCCESS pass\n";
+        assertEquals(expected, sb.toString());
+    }
+
     private static class PubkeyReporter implements PublicKeyAuthenticationReporter {
 
         private final StringBuilder out;

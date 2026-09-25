@@ -182,7 +182,7 @@ public class ScpCommand extends AbstractFileSystemCommand implements ServerChann
             } else {
                 throw new IOException("Unsupported mode");
             }
-        } catch (IOException e) {
+        } catch (Throwable e) {
             boolean debugEnabled = log.isDebugEnabled();
             try {
                 Integer statusCode = null;

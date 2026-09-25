@@ -26,7 +26,6 @@ import java.util.Collection;
 import org.apache.sshd.common.config.keys.AuthorizedKeyEntry;
 import org.apache.sshd.common.config.keys.PublicKeyEntryResolver;
 import org.apache.sshd.common.util.GenericUtils;
-import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.session.ServerSession;
 
 /**
@@ -45,13 +44,12 @@ public interface PublickeyAuthenticator {
      * certificate authority, and that the given user name is listed in the certificate's principals.
      * </p>
      *
-     * @param  username           the username
-     * @param  key                the key
-     * @param  session            the server session
-     * @return                    {@code true} if the key may be used; {@code false} otherwise
-     * @throws AsyncAuthException If the authentication is performed asynchronously
+     * @param  username the username
+     * @param  key      the key
+     * @param  session  the server session
+     * @return          {@code true} if the key may be used; {@code false} otherwise
      */
-    boolean authenticate(String username, PublicKey key, ServerSession session) throws AsyncAuthException;
+    boolean authenticate(String username, PublicKey key, ServerSession session);
 
     /**
      * @param  id                       Some kind of mnemonic identifier for the authenticator - used also in

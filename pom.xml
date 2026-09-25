@@ -92,7 +92,7 @@
         <required.java.version>[${java.sdk.version},)</required.java.version>
 
         <groovy.version>4.0.17</groovy.version>
-        <bouncycastle.version>1.84</bouncycastle.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
         <!-- BC FIPS has version numbers 2.x.y. -->
         <bouncycastle.upper.bound>3</bouncycastle.upper.bound>
             <!-- NOTE: upgrading slf4j beyond this version causes

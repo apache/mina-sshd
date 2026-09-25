@@ -18,7 +18,7 @@
  */
 package org.apache.sshd.common.util.security.bouncycastle;
 
-import org.bouncycastle.pqc.crypto.mlkem.MLKEMParameters;
+import org.bouncycastle.crypto.params.MLKEMParameters;
 
 final class BouncyCastleKEMAccessor {
 

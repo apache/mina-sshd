@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.net.URL;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
+import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
@@ -32,8 +33,11 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Stream;
 
 import org.apache.sshd.certificate.OpenSshCertificateBuilder;
@@ -60,6 +64,7 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.io.resource.URLResource;
 import org.apache.sshd.common.util.security.SecurityUtils;
+import org.apache.sshd.server.auth.AsyncAuthException;
 import org.apache.sshd.server.auth.keyboard.KeyboardInteractiveAuthenticator;
 import org.apache.sshd.server.auth.password.RejectAllPasswordAuthenticator;
 import org.apache.sshd.server.auth.pubkey.RejectAllPublickeyAuthenticator;
@@ -421,6 +426,49 @@ class PublicKeyAuthenticationTest extends AuthenticationTestSupport {
 
         assertEquals(1, exhaustedCount.getAndSet(0), "Mismatched invocation count");
         assertEquals(4 /* 3 attempts + null */, attemptsCount.getAndSet(0), "Mismatched retries count");
+    }
+
+    @Test
+    void testAsyncAuth() throws Exception {
+        KeyPair clientIdentity = CommonTestSupportUtils.generateKeyPair(KeyUtils.EC_ALGORITHM, 256);
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        try {
+            sshd.setPublickeyAuthenticator((username, key, session) -> {
+                AsyncAuthException async = new AsyncAuthException();
+                scheduler.schedule(() -> async.setAuthed(KeyUtils.compareKeys(clientIdentity.getPublic(), key)), 100,
+                        TimeUnit.MILLISECONDS);
+                throw async;
+            });
+            try (SshClient client = setupTestClient()) {
+                client.start();
+                AtomicReference<PrivateKey> signingKey = new AtomicReference<>();
+                PublicKeyAuthenticationReporter reporter = new PublicKeyAuthenticationReporter() {
+                    @Override
+                    public void signalSignatureAttempt(
+                            ClientSession session, String service, KeyPair identity,
+                            String signature, byte[] signed) throws Exception {
+                        signingKey.set(identity.getPrivate());
+                    }
+                };
+                ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                        .getSession();
+                try {
+                    s.addPublicKeyIdentity(clientIdentity);
+                    s.setPublicKeyAuthenticationReporter(reporter);
+                    s.auth().verify(AUTH_TIMEOUT);
+                    assertTrue(KeyUtils.compareKeys(clientIdentity.getPrivate(), signingKey.get()));
+                } catch (SshException e) {
+                    assertFalse(s.isOpen());
+                } finally {
+                    if (s.isOpen()) {
+                        s.close();
+                    }
+                    client.stop();
+                }
+            }
+        } finally {
+            scheduler.shutdownNow();
+        }
     }
 
     @Test

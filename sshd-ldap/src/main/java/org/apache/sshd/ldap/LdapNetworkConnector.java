@@ -19,6 +19,7 @@
 
 package org.apache.sshd.ldap;
 
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -87,6 +88,9 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
             = "photo,personalSignature,audio,jpegPhoto,javaSerializedData,thumbnailPhoto,thumbnailLogo"
               + ",userPassword,userCertificate,cACertificate,authorityRevocationList,certificateRevocationList"
               + ",crossCertificatePair,x500UniqueIdentifier";
+
+    private static final char[] HEX = new char[] {
+            '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F' };
 
     protected final SearchControls searchControls = new SearchControls();
     protected final Map<String, Object> ldapEnv = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
@@ -435,13 +439,14 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
         String mode = Objects.toString(env.get(Context.SECURITY_AUTHENTICATION), null);
         boolean anonymous = GenericUtils.isEmpty(mode) || PropertyResolverUtils.isNoneValue(mode);
         if (!anonymous) {
-            Object[] bindParams = { username, password };
             if (!env.containsKey(Context.SECURITY_PRINCIPAL)) {
+                Object[] bindParams = { encodeDistinguishedName(username), encodeDistinguishedName(password) };
                 String bindDN = Objects.requireNonNull(bindDNPattern, "No bind DN pattern").format(bindParams);
                 env.put(Context.SECURITY_PRINCIPAL, ValidateUtils.checkNotNullAndNotEmpty(bindDN, "No bind DN"));
             }
 
             if (!env.containsKey(Context.SECURITY_CREDENTIALS)) {
+                Object[] bindParams = { username, password };
                 String bindPassword
                         = Objects.requireNonNull(bindPasswordPattern, "No bind password pattern").format(bindParams);
                 env.put(Context.SECURITY_CREDENTIALS, ValidateUtils.checkNotNullAndNotEmpty(bindPassword, "No bind password"));
@@ -453,13 +458,13 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
     protected String resolveBaseDN(C queryContext, Map<?, ?> ldapConfig, String username, String password)
             throws NamingException {
-        Object[] bindParams = { username, password };
+        Object[] bindParams = { encodeDistinguishedName(username), encodeDistinguishedName(password) };
         return Objects.requireNonNull(baseDNPattern, "No base DN pattern").format(bindParams);
     }
 
     protected String resolveSearchFilter(C queryContext, Map<?, ?> ldapConfig, String username, String password)
             throws NamingException {
-        Object[] bindParams = { username, password };
+        Object[] bindParams = { encodeFilter(username), encodeFilter(password) };
         return Objects.requireNonNull(searchFilterPattern, "No search filter pattern").format(bindParams);
     }
 
@@ -552,4 +557,68 @@ public class LdapNetworkConnector<C> extends NetworkConnector {
 
         return attrVal.toString();
     }
+
+    /**
+     * Encodes a value following RFC 4515 for use in an LDAP filter template.
+     *
+     * @param  value to encode
+     * @return       the encoded value
+     * @see          <a href="https://www.rfc-editor.org/info/rfc4515/">RFC 4515</a>
+     */
+    public static String encodeFilter(String value) {
+        if (value == null) {
+            return "";
+        }
+        byte[] utf8 = value.getBytes(StandardCharsets.UTF_8);
+        StringBuilder sb = new StringBuilder(utf8.length);
+        for (byte b : utf8) {
+            int ch = b & 0xFF;
+            if (ch < ' ' || ch == '*' || ch == '(' || ch == ')' || ch == '\\' || ch >= 0x7F) {
+                sb.append('\\').append(HEX[ch >>> 4]).append(HEX[ch & 0x0F]);
+            } else {
+                sb.append((char) ch);
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Encodes a value following RFC 4514 for use in an LDAP Distinguished Name.
+     *
+     * @param  value to encode
+     * @return       the encoded value
+     * @see          <a href="https://www.rfc-editor.org/info/rfc4514/">RFC 4514</a>
+     */
+    public static String encodeDistinguishedName(String value) {
+        if (value == null) {
+            return "";
+        }
+        // Note: javax.naming.ldap.Rdn.escapeValue() does not escape NUL nor other control characters. It escapes _all_
+        // leading and trailing spaces (and \r), and _all_ hashes. It implements RFC 2553, which didn't mention NUL and
+        // which was obsoleted by RFC 4514.
+        byte[] utf8 = value.getBytes(StandardCharsets.UTF_8);
+        StringBuilder sb = new StringBuilder(utf8.length);
+        for (int i = 0; i < utf8.length; i++) {
+            int ch = utf8[i] & 0xFF;
+            if (ch == ' ') {
+                if (i == 0 || i == utf8.length - 1) {
+                    sb.append('\\');
+                }
+                sb.append((char) ch);
+            } else if (ch == '#') {
+                if (i == 0) {
+                    sb.append('\\');
+                }
+                sb.append((char) ch);
+            } else if (ch == '"' || ch == '+' || ch == ',' || ch == ';' || ch == '<' || ch == '>' || ch == '\\') {
+                sb.append('\\').append((char) ch);
+            } else if (ch < ' ' || ch >= 0x7F) {
+                sb.append('\\').append(HEX[ch >>> 4]).append(HEX[ch & 0x0F]);
+            } else {
+                sb.append((char) ch);
+            }
+        }
+        return sb.toString();
+    }
+
 }

@@ -911,14 +911,14 @@ public abstract class AbstractSftpSubsystemHelper
         String[] algos = GenericUtils.split(algList, ',');
         long startOffset = buffer.getLong();
         long length = buffer.getLong();
-        int blockSize = buffer.getInt();
+        long blockSize = buffer.getUInt();
         try {
             buffer = prepareReply(buffer);
             buffer.putByte((byte) SftpConstants.SSH_FXP_EXTENDED_REPLY);
             buffer.putInt(id);
             buffer.putString(SftpConstants.EXT_CHECK_FILE);
             doCheckFileHash(id, targetType, target,
-                    Arrays.asList(algos), startOffset, length, blockSize, buffer);
+                    Arrays.asList(algos), startOffset, length, (int) blockSize, buffer);
         } catch (Exception e) {
             sendStatus(prepareReply(buffer), id, e,
                     SftpConstants.SSH_FXP_EXTENDED, targetType, target,
@@ -929,14 +929,18 @@ public abstract class AbstractSftpSubsystemHelper
         send(buffer);
     }
 
+    protected abstract void doCheckFileHash(
+            int id, String targetType, String target, Collection<String> algos,
+            long startOffset, long length, int blockSize, Buffer buffer) throws Exception;
+
     protected void doCheckFileHash(
             int id, Path file, NamedFactory<? extends Digest> factory,
-            long startOffset, long length, int blockSize, Buffer buffer)
+            long startOffset, long length, int unsignedBlockSize, Buffer buffer)
             throws Exception {
         ValidateUtils.checkTrue(startOffset >= 0L, "Invalid start offset: %d", startOffset);
         ValidateUtils.checkTrue(length >= 0L, "Invalid length: %d", length);
-        ValidateUtils.checkTrue(
-                (blockSize == 0) || (blockSize >= SftpConstants.MIN_CHKFILE_BLOCKSIZE),
+        long blockSize = unsignedBlockSize & 0xFFFF_FFFFL;
+        ValidateUtils.checkTrue(blockSize == 0 || blockSize >= SftpConstants.MIN_CHKFILE_BLOCKSIZE,
                 "Invalid block size: %d", blockSize);
         Objects.requireNonNull(factory, "No digest factory provided");
         buffer.putString(factory.getName());
@@ -954,14 +958,11 @@ public abstract class AbstractSftpSubsystemHelper
         ValidateUtils.checkTrue(effectiveLength > 0L,
                 "Non-positive effective hash data length: %d", effectiveLength);
 
-        byte[] digestBuf = (blockSize == 0)
-                ? new byte[Math.min((int) effectiveLength, IoUtils.DEFAULT_COPY_SIZE)]
-                : new byte[Math.min((int) effectiveLength, blockSize)];
+        byte[] digestBuf = new byte[IoUtils.DEFAULT_COPY_SIZE];
         ByteBuffer wb = ByteBuffer.wrap(digestBuf);
         SftpFileSystemAccessor accessor = getFileSystemAccessor();
         ServerSession session = getServerSession();
-        try (SeekableByteChannel channel = accessor.openFile(
-                this, null, file, null, Collections.emptySet())) {
+        try (SeekableByteChannel channel = accessor.openFile(this, null, file, null, Collections.emptySet())) {
             channel.position(startOffset);
 
             Digest digest = factory.create();
@@ -969,59 +970,62 @@ public abstract class AbstractSftpSubsystemHelper
 
             boolean traceEnabled = log.isTraceEnabled();
             if (blockSize == 0) {
-                while (effectiveLength > 0L) {
-                    int remainLen = Math.min(digestBuf.length, (int) effectiveLength);
-                    ByteBuffer bb = wb;
-                    if (remainLen < digestBuf.length) {
-                        bb = ByteBuffer.wrap(digestBuf, 0, remainLen);
-                    }
-                    bb.clear(); // prepare for next read
+                blockSize = effectiveLength;
+            }
 
-                    int readLen = channel.read(bb);
-                    if (readLen < 0) {
-                        break;
-                    }
-
-                    effectiveLength -= readLen;
-                    digest.update(digestBuf, 0, readLen);
+            long originalLength = effectiveLength;
+            for (int count = 0; effectiveLength > 0L; count++) {
+                if (buffer.available() > SftpConstants.MAX_SFTP_MESSAGE_LENGTH) {
+                    throw new IllegalArgumentException(
+                            "Too many file hashes. Use a larger block size or a smaller file chunk. (Block size = "
+                                                       + blockSize + ", chunk size = " + originalLength + ')');
                 }
-
-                byte[] hashValue = digest.digest();
+                long toHash = Math.min(blockSize, effectiveLength);
+                long hashed = hashOneBlock(digest, channel, digestBuf, wb, toHash);
+                if (hashed == 0 && channel.position() >= startOffset) {
+                    // Last block had exhausted the file; no need to write a digest for a zero-length input.
+                    break;
+                } else if (hashed < toHash) {
+                    // Hashed the last bit, then hit (early) EOF: we're done once we've written the last digest
+                    effectiveLength = 0;
+                } else {
+                    effectiveLength -= toHash;
+                }
+                byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
                 if (traceEnabled) {
-                    log.trace("doCheckFileHash({})[{}] offset={}, length={} - algo={}, hash={}",
-                            session, file, startOffset, length,
-                            digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
+                    log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - algo={}, hash={}", session, count, file,
+                            startOffset, length, digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
                 }
                 buffer.putBytes(hashValue);
-            } else {
-                for (int count = 0; effectiveLength > 0L; count++) {
-                    int remainLen = Math.min(digestBuf.length, (int) effectiveLength);
-                    ByteBuffer bb = wb;
-                    if (remainLen < digestBuf.length) {
-                        bb = ByteBuffer.wrap(digestBuf, 0, remainLen);
-                    }
-                    bb.clear(); // prepare for next read
-
-                    int readLen = channel.read(bb);
-                    if (readLen < 0) {
-                        break;
-                    }
-
-                    effectiveLength -= readLen;
-                    digest.update(digestBuf, 0, readLen);
-
-                    byte[] hashValue = digest.digest(); // NOTE: this also resets the hash for the next read
-                    if (traceEnabled) {
-                        log.trace("doCheckFileHash({})({})[{}] offset={}, length={} - algo={}, hash={}",
-                                session, file, count, startOffset, length,
-                                digest.getAlgorithm(), BufferUtils.toHex(':', hashValue));
-                    }
-                    buffer.putBytes(hashValue);
-                }
             }
 
             accessor.closeFile(this, null, file, null, channel, Collections.emptySet());
         }
+    }
+
+    private long hashOneBlock(
+            Digest digest, SeekableByteChannel channel, byte[] digestBuf, ByteBuffer fullBuffer,
+            long blockSize) throws Exception {
+        long effectiveLength = blockSize;
+        long hashed = 0;
+        while (effectiveLength > 0L) {
+            int remainLen = (int) Math.min(digestBuf.length, effectiveLength);
+            ByteBuffer bb = fullBuffer;
+            if (remainLen < digestBuf.length) {
+                bb = ByteBuffer.wrap(digestBuf, 0, remainLen);
+            }
+            bb.clear(); // prepare for next read
+
+            int readLen = channel.read(bb);
+            if (readLen < 0) {
+                break;
+            }
+
+            effectiveLength -= readLen;
+            digest.update(digestBuf, 0, readLen);
+            hashed += readLen;
+        }
+        return hashed;
     }
 
     protected void doMD5Hash(Buffer buffer, int id, String targetType) throws IOException {
@@ -1163,11 +1167,6 @@ public abstract class AbstractSftpSubsystemHelper
 
         return hashValue;
     }
-
-    protected abstract void doCheckFileHash(
-            int id, String targetType, String target, Collection<String> algos,
-            long startOffset, long length, int blockSize, Buffer buffer)
-            throws Exception;
 
     protected void doReadLink(Buffer buffer, int id) throws IOException {
         String path = buffer.getString();

@@ -202,7 +202,8 @@ public class EmbeddedCommandRunner {
                 if (a.hasNext()) {
                     a.next();
                 }
-            } else {
+            } else if (!opt.startsWith("--output=") && !opt.startsWith("-o=") //
+                    && !opt.startsWith("--output ") && !opt.startsWith("-o ")) {
                 result.add(opt);
             }
         }
