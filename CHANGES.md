@@ -50,6 +50,8 @@ Merges 2.19.0 into the 3.0.0 stream.
 
 ## Bug Fixes
 
+* `HttpProxyConnector`: handle fragmented responses from the proxy
+
 ## Major Code Re-factoring
 
 ## New Features
