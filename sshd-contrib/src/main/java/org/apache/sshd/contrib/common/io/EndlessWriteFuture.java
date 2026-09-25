@@ -22,6 +22,7 @@ package org.apache.sshd.contrib.common.io;
 import java.io.IOException;
 
 import org.apache.sshd.common.future.CancelOption;
+import org.apache.sshd.common.future.CancelFuture;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 
@@ -86,6 +87,26 @@ public class EndlessWriteFuture implements IoWriteFuture {
 
     @Override
     public Throwable getException() {
+        return null;
+    }
+
+    @Override
+    public void setException(Throwable exception) {
+        // This future intentionally never completes.
+    }
+
+    @Override
+    public CancelFuture cancel() {
+        return null;
+    }
+
+    @Override
+    public boolean isCanceled() {
+        return false;
+    }
+
+    @Override
+    public CancelFuture getCancellation() {
         return null;
     }
 }

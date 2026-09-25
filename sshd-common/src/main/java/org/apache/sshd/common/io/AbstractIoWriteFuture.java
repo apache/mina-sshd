@@ -24,13 +24,13 @@ import java.util.Objects;
 
 import org.apache.sshd.common.SshException;
 import org.apache.sshd.common.future.CancelOption;
-import org.apache.sshd.common.future.DefaultVerifiableSshFuture;
+import org.apache.sshd.common.future.DefaultCancellableSshFuture;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
  */
 public abstract class AbstractIoWriteFuture
-        extends DefaultVerifiableSshFuture<IoWriteFuture>
+        extends DefaultCancellableSshFuture<IoWriteFuture>
         implements IoWriteFuture {
     protected AbstractIoWriteFuture(Object id, Object lock) {
         super(id, lock);
@@ -38,7 +38,7 @@ public abstract class AbstractIoWriteFuture
 
     @Override
     public IoWriteFuture verify(long timeout, CancelOption... options) throws IOException {
-        Boolean result = verifyResult(Boolean.class, timeout);
+        Boolean result = verifyResult(Boolean.class, timeout, options);
         if (!result) {
             throw formatExceptionMessage(
                     SshException::new,
