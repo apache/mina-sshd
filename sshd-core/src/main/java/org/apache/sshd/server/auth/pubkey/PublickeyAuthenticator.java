@@ -44,10 +44,10 @@ public interface PublickeyAuthenticator {
      * certificate authority, and that the given user name is listed in the certificate's principals.
      * </p>
      *
-     * @param  username           the username
-     * @param  key                the key
-     * @param  session            the server session
-     * @return                    {@code true} if the key may be used; {@code false} otherwise
+     * @param  username the username
+     * @param  key      the key
+     * @param  session  the server session
+     * @return          {@code true} if the key may be used; {@code false} otherwise
      */
     boolean authenticate(String username, PublicKey key, ServerSession session);
 
