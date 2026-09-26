@@ -1,3 +1,33 @@
+# Apache MINA SSHD 2.20.0
+
+Changes since [version 2.19.0](./docs/changes/2.19.0.md):
+
+## Bug Fixes
+
+* [GH-656](https://github.com/apache/mina-sshd/issues/656) `ChannelPipedInputStream`: shrink buffer when emptied
+* [GH-906](https://github.com/apache/mina-sshd/issues/906) Fix finding a signature factory for BC ed25519 keys
+* [GH-911](https://github.com/apache/mina-sshd/issues/911) Fix server-side SOCKS5 proxy for fragmented and pipelined CONNECT requests
+* Allow asynchronous authentication only for password and keyboard-interactive authentication schemes
+* Fix authentication requiring multiple public keys (server-side)
+* Better argument handling in sshd-git
+* More checks in authentication (server-side)
+* Better SCP command handling
+* SFTP client: simplify response message handling
+* Fix check-file-name/check-file-handle SFTP v6 extension (server-side)
+* Improve LDAP authentication (sshd-ldap)
+
+## New Features
+
+* [GH-905](https://github.com/apache/mina-sshd/issues/905) Implement the "from" and "expiry-time" options in `authorized_keys` handling in public key authentication (server side)
+
+## Potential Compatibility Issues
+
+None.
+
+## Major Code Re-factoring
+
+None.
+
 # Previous Versions
 
 * [Version 2.1.0 to 2.2.0](./docs/changes/2.2.0.md)
@@ -24,33 +54,4 @@
 * [Version 2.16.0 to 2.17.0](./docs/changes/2.17.0.md)
 * [Version 2.17.0 to 2.17.1](./docs/changes/2.17.1.md)
 * [Version 2.17.1 to 2.18.0](./docs/changes/2.18.0.md)
-
-# Latest Version
-
-* **[Version 2.18.0 to 2.19.0](./docs/changes/2.19.0.md)**
-
-# Planned for Next Version
-
-## Bug Fixes
-
-* [GH-656](https://github.com/apache/mina-sshd/issues/656) `ChannelPipedInputStream`: shrink buffer when emptied
-* [GH-906](https://github.com/apache/mina-sshd/issues/906) Fix finding a signature factory for BC ed25519 keys
-* [GH-911](https://github.com/apache/mina-sshd/issues/911) Fix server-side SOCKS5 proxy for fragmented and pipelined CONNECT requests
-* Allow asynchronous authentication only for password and keyboard-interactive authentication schemes
-* Fix authentication requiring multiple public keys (server-side)
-* Better argument handling in sshd-git
-* More checks in authentication (server-side)
-* Better SCP command handling
-* Simplify SFTP response message handling
-* Fix check-file-name/check-file-handle SFTP v6 extension
-* Improve LDAP authentication (sshd-ldap)
-
-## New Features
-
-* [GH-905](https://github.com/apache/mina-sshd/issues/905) Implement the "from" and "expiry-time" options in `authorized_keys` handling in public key authentication
-
-## Potential Compatibility Issues
-
-
-## Major Code Re-factoring
-
+* [Version 2.18.0 to 2.19.0](./docs/changes/2.19.0.md)
