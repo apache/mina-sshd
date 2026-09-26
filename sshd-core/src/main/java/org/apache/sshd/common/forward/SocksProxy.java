@@ -113,6 +113,20 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
             }
         }
 
+        protected void openChannel(String host, int port) throws IOException {
+            SshdSocketAddress remote = new SshdSocketAddress(host, port);
+            channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
+            channel.setStreaming(Streaming.Async);
+            session.suspendRead();
+            service.registerChannel(channel);
+            // Open the channel, but don't accept input data yet!
+            LocalWindow window = channel.getLocalWindow();
+            long windowSize = window.consumeAll();
+            channel.open().addListener(f -> onChannelOpened(f, window, windowSize));
+        }
+
+        protected abstract void onChannelOpened(OpenFuture future, LocalWindow window, long windowSize);
+
         protected void sendReply(Buffer message, boolean success, Runnable completion, LocalWindow window, long windowSize) {
             try {
                 session.writeBuffer(message).addListener(future -> {
@@ -154,6 +168,7 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
      * @see <A HREF="https://en.wikipedia.org/wiki/SOCKS#SOCKS4">SOCKS4</A>
      */
     public class Socks4 extends Proxy {
+
         public Socks4(IoSession session) {
             super(session);
         }
@@ -180,35 +195,30 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                     log.debug("Received socks4 connection request for {} to {}:{}", userId, host, port);
                 }
 
-                SshdSocketAddress remote = new SshdSocketAddress(host, port);
-                channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
-                channel.setStreaming(Streaming.Async);
-                session.suspendRead();
-                service.registerChannel(channel);
-                // Open the channel, but don't accept input data yet!
-                LocalWindow window = channel.getLocalWindow();
-                long windowSize = window.consumeAll();
-                channel.open().addListener(f -> onChannelOpened(f, window, windowSize));
+                openChannel(host, port);
             } else {
                 super.onMessage(buffer);
             }
         }
 
+        @Override
         @SuppressWarnings("synthetic-access")
         protected void onChannelOpened(OpenFuture future, LocalWindow window, long windowSize) {
+            boolean success = future.isOpened();
+            Runnable completion = null;
             Buffer buffer = new ByteArrayBuffer(Long.SIZE, false);
             buffer.putByte((byte) 0x00);
-            Throwable t = future.getException();
-            if (t != null) {
+            if (success) {
+                buffer.putByte(SocksConstants.Socks4.REPLY_SUCCESS);
+            } else {
                 service.unregisterChannel(channel);
                 channel.close(true);
                 buffer.putByte(SocksConstants.Socks4.REPLY_FAILURE);
-            } else {
-                buffer.putByte(SocksConstants.Socks4.REPLY_SUCCESS);
+                completion = () -> session.close(false);
             }
             buffer.putInt(0);
             buffer.putShort(0);
-            sendReply(buffer, t == null, () -> session.close(false), window, windowSize);
+            sendReply(buffer, success, completion, window, windowSize);
         }
 
         protected String getNTString(Buffer buffer) {
@@ -245,10 +255,10 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
         protected synchronized void onMessage(Buffer buffer) throws IOException {
             if (state == Socks5State.FORWARDING && pending.available() == 0) {
                 super.onMessage(buffer);
-                return;
+            } else {
+                pending.putBuffer(buffer);
+                processPending();
             }
-            pending.putBuffer(buffer);
-            processPending();
         }
 
         protected void processPending() throws IOException {
@@ -350,42 +360,36 @@ public class SocksProxy extends AbstractCloseable implements IoHandler {
                 if (log.isDebugEnabled()) {
                     log.debug("Received socks5 connection request to {}:{}", host, port);
                 }
-                SshdSocketAddress remote = new SshdSocketAddress(host, port);
-                channel = new TcpipClientChannel(TcpipClientChannel.Type.Direct, session, remote);
-                channel.setStreaming(Streaming.Async);
-                session.suspendRead();
-                service.registerChannel(channel);
+
                 state = Socks5State.OPENING_CHANNEL;
-                // Open the channel, but don't accept input data yet!
-                LocalWindow window = channel.getLocalWindow();
-                long windowSize = window.consumeAll();
-                channel.open().addListener(f -> onChannelOpened(f, window, windowSize));
+                openChannel(host, port);
             }
         }
 
+        @Override
         @SuppressWarnings("synthetic-access")
         protected synchronized void onChannelOpened(OpenFuture future, LocalWindow window, long windowSize) {
-            Buffer response = new ByteArrayBuffer(10, false);
-            response.putByte(SocksConstants.Socks5.VERSION);
-            Throwable t = future.getException();
+            boolean success = future.isOpened();
             Runnable completion;
-            if (t != null) {
+            if (success) {
+                state = Socks5State.FORWARDING;
+                completion = () -> forwardPending(false);
+            } else {
                 service.unregisterChannel(channel);
                 channel.close(true);
                 pending.clear(true);
                 state = Socks5State.CLOSED;
-                response.putByte(SocksConstants.Socks5.REPLY_FAILURE);
                 completion = () -> session.close(false);
-            } else {
-                state = Socks5State.FORWARDING;
-                response.putByte(SocksConstants.Socks5.REPLY_SUCCESS);
-                completion = () -> forwardPending(false);
             }
-            response.putByte((byte) 0x00); // reserved
-            response.putByte(SocksConstants.Socks5.ADDRESS_IPV4);
-            response.putInt(0);
-            response.putShort(0);
-            sendReply(response, t == null, completion, window, windowSize);
+            byte[] answer = {
+                    SocksConstants.Socks5.VERSION,
+                    success ? SocksConstants.Socks5.REPLY_SUCCESS : SocksConstants.Socks5.REPLY_FAILURE,
+                    0, // reserved
+                    SocksConstants.Socks5.ADDRESS_IPV4,
+                    0, 0, 0, 0, // IP address
+                    0, 0 // port
+            };
+            sendReply(new ByteArrayBuffer(answer), success, completion, window, windowSize);
         }
 
         protected synchronized void forwardPending(boolean suspend) {
