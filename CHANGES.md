@@ -40,18 +40,24 @@ Merges 2.18.0 into the 3.0.0 stream.
 
 * [Change notes for 3.0.0-M4](./docs/changes/3.0.0-M4.md)
 
-## Milestone 4: Pre-Release 3.0.0-M5
+## Milestone 5: Pre-Release 3.0.0-M5
 
 Merges 2.19.0 into the 3.0.0 stream.
 
 * [Change notes for 3.0.0-M5](./docs/changes/3.0.0-M5.md)
 
+## Milestone 6: Pre-Release 3.0.0-M6
+
+Merges 2.20.0 into the 3.0.0 stream and fixes a regression introduced in 3.0.0-M1.
+
+* [Change notes for 3.0.0-M6](./docs/changes/3.0.0-M6.md)
+
 # Planned for the Next Milestone Release
 
 ## Bug Fixes
 
-* `HttpProxyConnector`: handle fragmented responses from the proxy
 
 ## Major Code Re-factoring
+
 
 ## New Features
