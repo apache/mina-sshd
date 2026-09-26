@@ -82,7 +82,6 @@
 
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.build.outputTimestamp>2026-06-30T22:29:09Z</project.build.outputTimestamp>
-
         <java.sdk.version>8</java.sdk.version>
         <javac.release>${java.sdk.version}</javac.release>
         <maven.compiler.release>${java.sdk.version}</maven.compiler.release>
