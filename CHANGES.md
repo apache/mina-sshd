@@ -37,6 +37,7 @@
 
 ## New Features
 
+* [GH-904]() Log local port in `ClientSessionImpl.toString()` to be able to distinguish multiple sessions to the same host in logs
 
 ## Potential Compatibility Issues
 
