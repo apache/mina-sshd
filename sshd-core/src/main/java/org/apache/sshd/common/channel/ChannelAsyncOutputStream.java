@@ -115,7 +115,12 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             writeState.writeInProgress = true;
         }
         lastWrite.set(future);
-        future.addListener(f -> lastWrite.compareAndSet(f, null));
+        future.addListener(f -> {
+            lastWrite.compareAndSet(f, null);
+            if (f.isCanceled()) {
+                cancelWrite(future);
+            }
+        });
         doWriteIfPossible(false);
         return future;
     }
@@ -178,6 +183,24 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             } else {
                 future.setValue(Boolean.TRUE);
             }
+        }
+    }
+
+    protected void cancelWrite(IoWriteFutureImpl future) {
+        IoWriteFutureImpl pending;
+        IoWriteFuture packetWrite;
+        synchronized (writeState) {
+            pending = writeState.pendingWrite;
+            writeState.pendingWrite = null;
+            writeState.writeInProgress = false;
+            packetWrite = writeState.packetWrite;
+            writeState.packetWrite = null;
+        }
+        if (pending != null && pending != future && !pending.isDone()) {
+            pending.cancel();
+        }
+        if (packetWrite != null && !packetWrite.isDone()) {
+            packetWrite.cancel();
         }
     }
 
@@ -353,6 +376,17 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             f.setValue(e);
             return null;
         }
+        synchronized (writeState) {
+            if (future.isCanceled()) {
+                writeState.writeInProgress = false;
+                return null;
+            }
+            writeState.packetWrite = writeFuture;
+        }
+        if (future.isCanceled()) {
+            writeFuture.cancel();
+            return null;
+        }
         IoWriteFutureImpl thisFuture = f;
         writeFuture.addListener(w -> onWritten(thisFuture, stillToSend, chunkLength, w));
         // If something remains it will be written via the listener we just added.
@@ -360,6 +394,11 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
     }
 
     protected void onWritten(IoWriteFutureImpl future, int total, int length, IoWriteFuture f) {
+        synchronized (writeState) {
+            if (writeState.packetWrite == f) {
+                writeState.packetWrite = null;
+            }
+        }
         if (f.isWritten()) {
             if (total > length) {
                 if (log.isTraceEnabled()) {
@@ -382,6 +421,12 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                     log.trace("onWritten({}) completed write len={}", this, total);
                 }
                 future.setValue(Boolean.TRUE);
+            }
+        } else if (f.isCanceled()) {
+            future.cancel();
+            synchronized (writeState) {
+                writeState.pendingWrite = null;
+                writeState.writeInProgress = false;
             }
         } else {
             Throwable reason = f.getException();
@@ -452,6 +497,9 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
          * {@link ChannelAsyncOutputStream#writePacket(IoWriteFutureImpl, boolean)} is running.
          */
         protected IoWriteFutureImpl pendingWrite;
+
+        /** The packet-level write currently backing {@link #pendingWrite}. */
+        protected IoWriteFuture packetWrite;
 
         /**
          * Flag to throw an exception if non-sequential {@link ChannelAsyncOutputStream#writeBuffer(Buffer)} calls

@@ -495,16 +495,27 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     }
 
     protected void startWriting() {
-        Nio2DefaultIoWriteFuture future = writes.peek();
-        if (future == null) {
-            return;
-        }
+        Nio2DefaultIoWriteFuture future;
+        do {
+            future = writes.peek();
+            if (future == null) {
+                return;
+            }
+            if (future.isCanceled() && writes.remove(future)) {
+                continue;
+            }
+            break;
+        } while (true);
 
         if (!currentWrite.compareAndSet(null, future)) {
             return;
         }
 
         try {
+            if (future.isCanceled()) {
+                finishWrite(future);
+                return;
+            }
             AsynchronousSocketChannel socket = getSocket();
             ByteBuffer buffer = future.getBuffer();
             if (buffer == null) {
@@ -513,7 +524,11 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
             } else {
                 Nio2CompletionHandler<Integer, Object> handler = Objects.requireNonNull(
                         createWriteCycleCompletionHandler(future, socket, buffer), "No write cycle completion handler created");
-                doWriteCycle(buffer, handler);
+                if (future.isCanceled()) {
+                    finishWrite(future);
+                } else {
+                    doWriteCycle(buffer, handler);
+                }
             }
         } catch (Throwable e) {
             future.setException(e);
@@ -554,7 +569,7 @@ public class Nio2Session extends AbstractCloseable implements IoSession {
     protected void handleCompletedWriteCycle(
             Nio2DefaultIoWriteFuture future, AsynchronousSocketChannel socket, ByteBuffer buffer, int writeLen,
             Nio2CompletionHandler<Integer, Object> completionHandler, Integer result, Object attachment) {
-        if (buffer.hasRemaining()) {
+        if (buffer.hasRemaining() && !future.isCanceled()) {
             try {
                 if (log.isDebugEnabled()) {
                     log.debug(

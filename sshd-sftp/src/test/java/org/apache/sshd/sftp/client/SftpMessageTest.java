@@ -16,29 +16,27 @@
  * specific language governing permissions and limitations
  * under the License.
  */
-package org.apache.sshd.common.io.nio2;
 
-import java.nio.ByteBuffer;
+package org.apache.sshd.sftp.client;
 
-import org.apache.sshd.common.io.AbstractIoWriteFuture;
+import java.io.IOException;
+import java.time.Duration;
 
-/**
- * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
- */
-public class Nio2DefaultIoWriteFuture extends AbstractIoWriteFuture {
-    private final ByteBuffer buffer;
+import org.apache.sshd.common.channel.IoWriteFutureImpl;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
+import org.junit.jupiter.api.Test;
 
-    public Nio2DefaultIoWriteFuture(Object id, Object lock, ByteBuffer buffer) {
-        super(id, lock);
-        this.buffer = buffer;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+class SftpMessageTest {
+
+    @Test
+    void waitUntilSentCancelsWriteOnTimeout() {
+        IoWriteFutureImpl future = new IoWriteFutureImpl("test", new ByteArrayBuffer());
+        SftpMessage message = new SftpMessage(1, future, Duration.ofMillis(1));
+
+        assertThrows(IOException.class, message::waitUntilSent);
+        assertTrue(future.isCanceled(), "A timed-out SFTP write should be canceled");
     }
-
-    public ByteBuffer getBuffer() {
-        return buffer;
-    }
-
-    public void setWritten() {
-        setValue(Boolean.TRUE);
-    }
-
 }
