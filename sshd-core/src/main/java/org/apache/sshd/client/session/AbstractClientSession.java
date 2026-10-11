@@ -26,7 +26,6 @@ import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
 import java.security.PublicKey;
 import java.util.Collections;
-import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -59,7 +58,6 @@ import org.apache.sshd.common.cipher.BuiltinCiphers;
 import org.apache.sshd.common.cipher.CipherNone;
 import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.forward.Forwarder;
-import org.apache.sshd.common.future.DefaultKeyExchangeFuture;
 import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoSession;
 import org.apache.sshd.common.io.IoWriteFuture;
@@ -73,7 +71,6 @@ import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.session.SessionDisconnectHandler;
 import org.apache.sshd.common.session.helpers.AbstractConnectionService;
 import org.apache.sshd.common.session.helpers.AbstractSession;
-import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
@@ -104,6 +101,8 @@ public abstract class AbstractClientSession extends AbstractSession implements C
     private List<UserAuthFactory> userAuthFactories;
     private SocketAddress connectAddress;
     private ClientProxyConnector proxyConnector;
+
+    private volatile boolean useNoneCipher;
 
     protected AbstractClientSession(ClientFactoryManager factoryManager, IoSession ioSession) {
         super(false, factoryManager, ioSession);
@@ -636,67 +635,31 @@ public abstract class AbstractClientSession extends AbstractSession implements C
             throw new IllegalStateException("The switch to the none cipher must be done immediately after authentication");
         }
 
-        if (kexState.compareAndSet(KexState.DONE, KexState.INIT)) {
-            DefaultKeyExchangeFuture kexFuture = new DefaultKeyExchangeFuture(toString(), null);
-            DefaultKeyExchangeFuture prev = kexFutureHolder.getAndSet(kexFuture);
-            if (prev != null) {
-                prev.setValue(new SshException("Switch to none cipher while previous KEX is ongoing"));
-            }
-
-            String c2sEncServer;
-            String s2cEncServer;
-            synchronized (serverProposal) {
-                c2sEncServer = serverProposal.get(KexProposalOption.C2SENC);
-                s2cEncServer = serverProposal.get(KexProposalOption.S2CENC);
-            }
-            boolean c2sEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncServer);
-            boolean s2cEncServerNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncServer);
-
-            String c2sEncClient;
-            String s2cEncClient;
-            synchronized (clientProposal) {
-                c2sEncClient = clientProposal.get(KexProposalOption.C2SENC);
-                s2cEncClient = clientProposal.get(KexProposalOption.S2CENC);
-            }
-
-            boolean c2sEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(c2sEncClient);
-            boolean s2cEncClientNone = BuiltinCiphers.Constants.isNoneCipherIncluded(s2cEncClient);
-
-            if ((!c2sEncServerNone) || (!s2cEncServerNone)) {
-                kexFuture.setValue(new SshException("Server does not support none cipher"));
-            } else if ((!c2sEncClientNone) || (!s2cEncClientNone)) {
-                kexFuture.setValue(new SshException("Client does not support none cipher"));
-            } else {
-                log.info("switchToNoneCipher({}) switching", this);
-
-                Map<KexProposalOption, String> proposal = new EnumMap<>(KexProposalOption.class);
-                synchronized (clientProposal) {
-                    proposal.putAll(clientProposal);
-                }
-
-                proposal.put(KexProposalOption.C2SENC, BuiltinCiphers.Constants.NONE);
-                proposal.put(KexProposalOption.S2CENC, BuiltinCiphers.Constants.NONE);
-
-                synchronized (kexState) {
-                    DefaultKeyExchangeFuture initFuture = kexInitializedFuture;
-                    if (initFuture == null) {
-                        initFuture = new DefaultKeyExchangeFuture(toString(), null);
-                        kexInitializedFuture = initFuture;
-                    }
-                    try {
-                        byte[] seed = sendKexInit(proposal);
-                        setKexSeed(seed);
-                        initFuture.setValue(Boolean.TRUE);
-                    } catch (Exception e) {
-                        initFuture.setValue(e);
-                        ExceptionUtils.rethrowAsIoException(e);
-                    }
-                }
-            }
-
-            return Objects.requireNonNull(kexFutureHolder.get(), "No current KEX future");
-        } else {
-            throw new SshException("In flight key exchange");
+        Map<KexProposalOption, String> serverProposal = getServerKexProposals();
+        Map<KexProposalOption, String> clientProposal = getClientKexProposals();
+        // Figure out whether both do support the none cipher in both directions
+        boolean c2sEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(serverProposal.get(KexProposalOption.C2SENC));
+        boolean s2cEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(serverProposal.get(KexProposalOption.S2CENC));
+        if (!c2sEncNone || !s2cEncNone) {
+            throw new SshException("Server does not support none cipher");
         }
+        c2sEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(clientProposal.get(KexProposalOption.C2SENC));
+        s2cEncNone = BuiltinCiphers.Constants.isNoneCipherIncluded(clientProposal.get(KexProposalOption.S2CENC));
+        if (!c2sEncNone || !s2cEncNone) {
+            throw new SshException("Client does not support none cipher");
+        }
+        useNoneCipher = true;
+        return reExchangeKeys();
     }
+
+    @Override
+    protected Map<KexProposalOption, String> getKexProposal() throws Exception {
+        Map<KexProposalOption, String> result = super.getKexProposal();
+        if (useNoneCipher) {
+            result.put(KexProposalOption.C2SENC, BuiltinCiphers.none.getName());
+            result.put(KexProposalOption.S2CENC, BuiltinCiphers.none.getName());
+        }
+        return result;
+    }
+
 }

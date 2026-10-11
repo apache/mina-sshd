@@ -174,6 +174,10 @@ public abstract class AbstractSession extends SessionHelper {
     // synchronized on kexState.
     protected DefaultKeyExchangeFuture kexInitializedFuture;
 
+    // The kexPreparedFuture is fulfilled once the kex KeyExchange object is initialized. Access is synchronized on
+    // kexState.
+    protected DefaultKeyExchangeFuture kexPreparedFuture;
+
     /*
      * SSH packets encoding / decoding support
      */
@@ -774,16 +778,41 @@ public abstract class AbstractSession extends SessionHelper {
     protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
         validateKexState(cmd, KexState.RUN);
 
-        boolean debugEnabled = log.isDebugEnabled();
+        // Run kex.next() only once the KeyExchange kex is initialized!
+        DefaultKeyExchangeFuture prepared;
+        synchronized (kexState) {
+            prepared = kexPreparedFuture;
+        }
+        if (prepared == null) {
+            doKexNext(cmd, buffer);
+        } else {
+            Buffer copied = new ByteArrayBuffer(buffer.available(), false);
+            copied.putBuffer(buffer, false);
+
+            prepared.addListener(f -> {
+                if (f.isDone()) {
+                    try {
+                        doKexNext(cmd, copied);
+                    } catch (Exception ex) {
+                        exceptionCaught(ex);
+                    }
+                } else {
+                    exceptionCaught(f.getException());
+                }
+            });
+        }
+    }
+
+    private void doKexNext(int cmd, Buffer buffer) throws Exception {
         if (kex.next(cmd, buffer)) {
-            if (debugEnabled) {
+            if (log.isDebugEnabled()) {
                 log.debug("handleKexMessage({})[{}] KEX processing complete after cmd={}",
                         this, kex.getName(), cmd);
             }
             checkKeys();
             sendNewKeys();
         } else {
-            if (debugEnabled) {
+            if (log.isDebugEnabled()) {
                 log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}",
                         this, kex.getName(), cmd);
             }
@@ -920,6 +949,7 @@ public abstract class AbstractSession extends SessionHelper {
             if (initFuture == null) {
                 initFuture = new DefaultKeyExchangeFuture(toString(), null);
                 kexInitializedFuture = initFuture;
+                kexPreparedFuture = new DefaultKeyExchangeFuture(toString(), null);
             }
         }
         initFuture.addListener(f -> {
@@ -955,9 +985,12 @@ public abstract class AbstractSession extends SessionHelper {
         kex = kexFactory.createKeyExchange(this);
         kex.init(v_s, v_c, i_s, i_c);
 
+        DefaultKeyExchangeFuture prepared = null;
         synchronized (kexState) {
             kexInitializedFuture = null;
+            prepared = kexPreparedFuture;
         }
+        prepared.setValue(Boolean.TRUE);
         signalSessionEvent(SessionListener.Event.KexCompleted);
     }
 
@@ -976,6 +1009,7 @@ public abstract class AbstractSession extends SessionHelper {
 
         synchronized (kexState) {
             kexInitializedFuture = null;
+            kexPreparedFuture = null;
         }
 
         initialKexDone = true;
@@ -1017,11 +1051,16 @@ public abstract class AbstractSession extends SessionHelper {
     @Override
     protected void preClose() {
         DefaultKeyExchangeFuture initFuture;
+        DefaultKeyExchangeFuture preparedFuture;
         synchronized (kexState) {
             initFuture = kexInitializedFuture;
+            preparedFuture = kexPreparedFuture;
         }
         if (initFuture != null) {
             initFuture.setValue(new SshException("Session closing while KEX in progress"));
+        }
+        if (preparedFuture != null) {
+            preparedFuture.setValue(new SshException("Session closing while KEX in progress"));
         }
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
@@ -2738,6 +2777,7 @@ public abstract class AbstractSession extends SessionHelper {
             if (initFuture == null) {
                 initFuture = new DefaultKeyExchangeFuture(toString(), null);
                 kexInitializedFuture = initFuture;
+                kexPreparedFuture = new DefaultKeyExchangeFuture(toString(), null);
             }
             try {
                 seed = sendKexInit(proposal);
