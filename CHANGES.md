@@ -34,10 +34,11 @@
 
 ## Bug Fixes
 
+* Fixed a race condition in key exchanges
 
 ## New Features
 
-* [GH-904]() Log local port in `ClientSessionImpl.toString()` to be able to distinguish multiple sessions to the same host in logs
+* [GH-904](https://github.com/apache/mina-sshd/issues/904) Log local port in `ClientSessionImpl.toString()` to be able to distinguish multiple sessions to the same host in logs
 
 ## Potential Compatibility Issues
 
