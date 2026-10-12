@@ -19,6 +19,8 @@
 package org.apache.sshd.client.session;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.SocketAddress;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -330,6 +332,23 @@ public class ClientSessionImpl extends AbstractClientSession {
     @Override
     public Map<Object, Object> getMetadataMap() {
         return metadataMap;
+    }
+
+    @Override
+    public String toString() {
+        String id = super.toString();
+        IoSession networkSession = getIoSession();
+        if (networkSession != null) {
+            SocketAddress localAddress = networkSession.getLocalAddress();
+            String suffix = null;
+            if (localAddress instanceof InetSocketAddress) {
+                suffix = ":" + ((InetSocketAddress) localAddress).getPort();
+            } else if (localAddress != null) {
+                suffix = localAddress.toString();
+            }
+            return id + '[' + suffix + ']';
+        }
+        return id;
     }
 
     /**

@@ -28,6 +28,7 @@ import org.apache.sshd.client.SshClient;
 import org.apache.sshd.client.session.ClientSession;
 import org.apache.sshd.common.SshConstants;
 import org.apache.sshd.common.SshException;
+import org.apache.sshd.common.future.KeyExchangeFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.session.Session;
@@ -208,11 +209,14 @@ class StrictKexTest extends BaseTestSupport {
         try (ClientSession session = obtainInitialTestClientSession()) {
             assertTrue(session.isOpen(), "Session should be stablished");
             sendDebug.set(true);
-            assertTrue(session.reExchangeKeys().verify(CONNECT_TIMEOUT).isDone(), "KEX not done");
+            KeyExchangeFuture kexFuture = session.reExchangeKeys().verify(CONNECT_TIMEOUT);
+            assertTrue(kexFuture.isDone(), "KEX not done");
+            assertNull(kexFuture.getException(), "KEX had an exception");
             IoWriteFuture future = debugMsg.get();
             assertNotNull(future, "No SSH_MSG_DEBUG");
             assertTrue(future.isWritten(), "SSH_MSG_DEBUG should have been sent");
             assertTrue(session.isOpen());
+            session.close(false);
         }
     }
 

@@ -190,8 +190,7 @@ public class KexFilter extends IoFilter {
     private final KexOutputHandler output = new KexOutputHandler(this, LOG);
 
     /**
-     * Handles sending through the next filter below this one in the filter chain. Checks for wrap-around on the
-     * outgoing sequence number during initial KEX.
+     * Handles sending through the next filter below this one in the filter chain.
      */
     private final Sender forward = new Sender();
 
@@ -226,8 +225,22 @@ public class KexFilter extends IoFilter {
     // Set and checked on the input chain
     private boolean firstKexPacketFollows;
 
-    // Guarded by synchronized(KexFilter.this)
+    /**
+     * Guarded by synchronized(KexFilter.this). Set when our proposal is ready and our own KEX_INIT has been sent. The
+     * peer's proposal arriving sets the peer proposal and then queues actually creating and initializing the KeyFactory
+     * kex as a listener on this future. So the KeyExchange is created and initialized once both proposals are here,
+     * irrespective of which comes first.
+     */
     private DefaultKeyExchangeFuture myProposalReady;
+
+    /**
+     * Guarded by synchronized(KexFilter.this). Fulfilled once the kex KeyExchange object is initialized. If we're the
+     * server and get the client's first KEX message before kex.init() has run, we queue up calling kex.next() as a
+     * listener on this future to delay it until kex.init() has run. Note that it's always the client who sends the
+     * first KEX message. (So exchanging the proposals via KEX_INIT is symmetric, but then the actual KEX protocol is
+     * asymmetric and always initiated by the client.)
+     */
+    private DefaultKeyExchangeFuture kexIsReady;
 
     private volatile boolean initialKexDone;
 
@@ -329,25 +342,32 @@ public class KexFilter extends IoFilter {
     }
 
     public void shutdown() {
-        synchronized (this) {
-            DefaultKeyExchangeFuture initFuture = myProposalReady;
-            if (initFuture != null) {
-                initFuture.setValue(new SshException("Session closing while KEX in progress"));
-            }
-        }
-        DefaultKeyExchangeFuture globalFuture = kexFuture.get();
-        if (globalFuture != null) {
-            globalFuture.setValue(new SshException("Session closing while KEX in progress"));
-        }
+        failFutures(new SshException("Session closing while KEX in progress"));
         output.shutdown();
     }
 
     private void exceptionCaught(Throwable t) {
+        failFutures(t);
+        session.exceptionCaught(t);
+    }
+
+    private void failFutures(Throwable t) {
+        DefaultKeyExchangeFuture initFuture;
+        DefaultKeyExchangeFuture kexReadyFuture;
+        synchronized (this) {
+            initFuture = myProposalReady;
+            kexReadyFuture = kexIsReady;
+        }
+        if (initFuture != null) {
+            initFuture.setValue(t);
+        }
+        if (kexReadyFuture != null) {
+            kexReadyFuture.setValue(t);
+        }
         DefaultKeyExchangeFuture globalFuture = kexFuture.get();
         if (globalFuture != null) {
             globalFuture.setValue(t);
         }
-        session.exceptionCaught(t);
     }
 
     // Receiving
@@ -394,6 +414,7 @@ public class KexFilter extends IoFilter {
             if (initFuture == null) {
                 initFuture = new DefaultKeyExchangeFuture(session.toString(), null);
                 myProposalReady = initFuture;
+                kexIsReady = new DefaultKeyExchangeFuture(session.toString(), null);
             }
         }
         initFuture.addListener(f -> {
@@ -511,6 +532,7 @@ public class KexFilter extends IoFilter {
                 if (initFuture == null) {
                     initFuture = new DefaultKeyExchangeFuture(session.toString(), null);
                     myProposalReady = initFuture;
+                    kexIsReady = new DefaultKeyExchangeFuture(session.toString(), null);
                 }
             }
 
@@ -715,9 +737,12 @@ public class KexFilter extends IoFilter {
         kex.set(k);
         k.init(vS, vC, iS, iC);
 
+        DefaultKeyExchangeFuture prepared = null;
         synchronized (this) {
             myProposalReady = null;
+            prepared = kexIsReady;
         }
+        prepared.setValue(Boolean.TRUE);
         signals.sessionEvent(session, SessionListener.Event.KexCompleted);
     }
 
@@ -955,6 +980,7 @@ public class KexFilter extends IoFilter {
 
         synchronized (this) {
             myProposalReady = null;
+            kexIsReady = null;
         }
 
         initialKexDone = true;
@@ -1267,6 +1293,33 @@ public class KexFilter extends IoFilter {
                     }
                 }
             }
+            // Run kex.next() only once the KeyExchange kex is initialized!
+            DefaultKeyExchangeFuture prepared;
+            synchronized (KexFilter.this) {
+                prepared = kexIsReady;
+            }
+            if (prepared == null) {
+                doKexNext(cmd, message);
+            } else {
+                Buffer copied = new ByteArrayBuffer(message.available(), false);
+                copied.putBuffer(message, false);
+
+                prepared.addListener(f -> {
+                    Throwable t = f.getException();
+                    if (t != null) {
+                        exceptionCaught(t);
+                    } else {
+                        try {
+                            doKexNext(cmd, copied);
+                        } catch (Exception e) {
+                            exceptionCaught(e);
+                        }
+                    }
+                });
+            }
+        }
+
+        private void doKexNext(int cmd, Buffer message) throws Exception {
             KeyExchange exchange = kex.get();
             if (exchange == null) {
                 throw new SshException(SshConstants.SSH2_DISCONNECT_PROTOCOL_ERROR, MessageFormat
@@ -1280,7 +1333,7 @@ public class KexFilter extends IoFilter {
                 prepareNewSettings();
                 sendNewKeys();
             } else if (LOG.isDebugEnabled()) {
-                LOG.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}", session, exchange.getName(), cmd);
+                LOG.debug("doKexNext({})[{}] more KEX packets expected after cmd={}", session, exchange.getName(), cmd);
             }
         }
     }
