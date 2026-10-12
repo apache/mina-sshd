@@ -35,6 +35,7 @@
 ## Bug Fixes
 
 * Fixed a race condition in key exchanges
+* [GH-925](https://github.com/apache/mina-sshd/issues/925) Re-allow "none" authentication (regression in 2.20.0)
 
 ## New Features
 
