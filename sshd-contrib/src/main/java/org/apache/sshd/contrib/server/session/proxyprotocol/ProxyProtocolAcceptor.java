@@ -42,8 +42,7 @@ public class ProxyProtocolAcceptor extends AbstractLoggingBean {
     public static final int MAX_PROXY_HEADER_LENGTH = Byte.MAX_VALUE;
     public static final String PROX_PROTOCOL_PREFIX = "PROXY";
 
-    // 'P' 'R' 'O' 'X' 'Y' ' '
-    private static final byte[] PROXY_HEADER = new byte[] { 0x50, 0x52, 0x4F, 0x58, 0x59, 0x20 };
+    private static final byte[] PROXY_HEADER = new byte[] { 'P', 'R', 'O', 'X', 'Y', ' ' };
 
     public ProxyProtocolAcceptor() {
         super();

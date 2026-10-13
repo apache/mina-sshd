@@ -121,6 +121,7 @@ class ServerProxyAcceptorTest extends BaseTestSupport {
     void clientAddressOverride(String name, byte[] proxyMessage, boolean combine) throws Exception {
         AtomicReference<SocketAddress> actualClientAddress1 = new AtomicReference<>();
         AtomicReference<SocketAddress> actualClientAddress2 = new AtomicReference<>();
+        CountDownLatch sessionClosed = new CountDownLatch(1);
         sshd.addSessionListener(new SessionListener() {
 
             @Override
@@ -144,6 +145,7 @@ class ServerProxyAcceptorTest extends BaseTestSupport {
                 if (session instanceof ServerSession) {
                     actualClientAddress2.set(((ServerSession) session).getClientAddress());
                 }
+                sessionClosed.countDown();
             }
         });
         sshd.start();
@@ -185,12 +187,11 @@ class ServerProxyAcceptorTest extends BaseTestSupport {
         });
         client.start();
 
-        CountDownLatch sessionClosed = new CountDownLatch(1);
         try (ClientSession session
                 = client.connect(getCurrentTestName(), TEST_LOCALHOST, sshd.getPort()).verify(CONNECT_TIMEOUT).getSession()) {
             session.addPasswordIdentity(getCurrentTestName());
             session.auth().verify(AUTH_TIMEOUT);
-            session.close(false).addListener(f -> sessionClosed.countDown());
+            session.close(false).await(CLOSE_TIMEOUT.toMillis(), TimeUnit.MILLISECONDS);
         } finally {
             client.stop();
         }
