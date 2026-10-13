@@ -790,14 +790,15 @@ public abstract class AbstractSession extends SessionHelper {
             copied.putBuffer(buffer, false);
 
             prepared.addListener(f -> {
-                if (f.isDone()) {
+                Throwable t = f.getException();
+                if (t != null) {
+                    exceptionCaught(t);
+                } else {
                     try {
                         doKexNext(cmd, copied);
-                    } catch (Exception ex) {
-                        exceptionCaught(ex);
+                    } catch (Exception e) {
+                        exceptionCaught(e);
                     }
-                } else {
-                    exceptionCaught(f.getException());
                 }
             });
         }
