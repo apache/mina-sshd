@@ -47,9 +47,9 @@ import org.apache.sshd.server.x11.X11ForwardSupport;
 public class ClientConnectionService
         extends AbstractConnectionService
         implements ClientSessionHolder {
-    protected final String heartbeatRequest;
-    protected final Duration heartbeatInterval;
-    protected final int heartbeatMaxNoReply;
+    protected volatile String heartbeatRequest;
+    protected volatile Duration heartbeatInterval;
+    protected volatile int heartbeatMaxNoReply;
 
     protected final AtomicInteger outstandingHeartbeats = new AtomicInteger();
 
@@ -122,6 +122,9 @@ public class ClientConnectionService
 
     @Override
     protected synchronized ScheduledFuture<?> startHeartBeat() {
+        heartbeatRequest = CoreModuleProperties.HEARTBEAT_REQUEST.getRequired(this);
+        heartbeatInterval = CoreModuleProperties.HEARTBEAT_INTERVAL.getRequired(this);
+        heartbeatMaxNoReply = configureMaxNoReply();
         if (!GenericUtils.isNegativeOrNull(heartbeatInterval) && GenericUtils.isNotEmpty(heartbeatRequest)) {
             stopHeartBeat();
 
