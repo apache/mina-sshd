@@ -249,6 +249,49 @@ public class KeepAliveTest extends BaseTestSupport {
         }
     }
 
+    // see GH-929
+    @Test
+    void testPerSessionHeartbeatConfiguration() throws Exception {
+        CoreModuleProperties.IDLE_TIMEOUT.set(sshd, Duration.ofSeconds(30));
+        String customRequest = "keepalive-" + getCurrentTestName() + "@sshd.apache.org";
+        CountDownLatch customRequestReceived = new CountDownLatch(1);
+        List<RequestHandler<ConnectionService>> globalHandlers = sshd.getGlobalRequestHandlers();
+        sshd.setGlobalRequestHandlers(Collections.singletonList(new AbstractConnectionServiceRequestHandler() {
+            @Override
+            public Result process(ConnectionService connectionService, String request, boolean wantReply, Buffer buffer)
+                    throws Exception {
+                if (customRequest.equals(request)) {
+                    customRequestReceived.countDown();
+                }
+                // Return Replied without writing a packet so sendGlobalResponse() does not send a reply
+                return Result.Replied;
+            }
+        }));
+        Duration heartbeat = Duration.ofMillis(500L);
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port).verify(CONNECT_TIMEOUT)
+                .getSession()) {
+            CoreModuleProperties.HEARTBEAT_REQUEST.set(session, customRequest);
+            CoreModuleProperties.HEARTBEAT_INTERVAL.set(session, heartbeat);
+            CoreModuleProperties.HEARTBEAT_NO_REPLY_MAX.set(session, 1);
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            try (ClientChannel channel = session.createChannel(Channel.CHANNEL_SHELL)) {
+                channel.open().verify(OPEN_TIMEOUT);
+                long waitStart = System.currentTimeMillis();
+                Collection<ClientChannelEvent> result = channel.waitFor(
+                        EnumSet.of(ClientChannelEvent.CLOSED), heartbeat.multipliedBy(4L));
+                long waitEnd = System.currentTimeMillis();
+                assertTrue(result.containsAll(EnumSet.of(ClientChannelEvent.CLOSED, ClientChannelEvent.OPENED)),
+                        "Wrong channel state after wait of " + (waitEnd - waitStart) + " ms: " + result);
+                assertTrue(customRequestReceived.await(1L, TimeUnit.SECONDS),
+                        "Expected custom per-session heartbeat request: " + customRequest);
+            }
+        } finally {
+            sshd.setGlobalRequestHandlers(globalHandlers); // restore original
+        }
+    }
+
     public static class TestEchoShellFactory extends EchoShellFactory {
         public TestEchoShellFactory() {
             super();
