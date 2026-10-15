@@ -52,6 +52,12 @@ Merges 2.20.0 into the 3.0.0 stream and fixes a regression introduced in 3.0.0-M
 
 * [Change notes for 3.0.0-M6](./docs/changes/3.0.0-M6.md)
 
+## Milestone 7: Pre-Release 3.0.0-M7
+
+Merges 2.20.1 into the 3.0.0 stream, bringing in two bug fixes; one a regression from 2.20.0 that made its way into 3.0.0 in 3.0.0-M6.
+
+* [Change notes for 3.0.0-M7](./docs/changes/3.0.0-M7.md)
+
 # Planned for the Next Milestone Release
 
 ## Bug Fixes
