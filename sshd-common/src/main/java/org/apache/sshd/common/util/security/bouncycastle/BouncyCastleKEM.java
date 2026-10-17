@@ -30,7 +30,9 @@ enum BouncyCastleKEM implements KEMFactory {
 
     @Override
     public KEM get(String algorithm, Provider provider) throws NoSuchAlgorithmException {
-        if (KEM.ML_KEM_768.equalsIgnoreCase(algorithm)) {
+        if (KEM.ML_KEM_512.equalsIgnoreCase(algorithm)) {
+            return MLKEM.ML_KEM_512;
+        } else if (KEM.ML_KEM_768.equalsIgnoreCase(algorithm)) {
             return MLKEM.ML_KEM_768;
         } else if (KEM.ML_KEM_1024.equalsIgnoreCase(algorithm)) {
             return MLKEM.ML_KEM_1024;

@@ -30,6 +30,8 @@ import org.apache.sshd.common.util.security.SecurityUtils;
  */
 public enum BuiltinKEM implements KEM, NamedResource, OptionalFeature {
 
+    mlkem512("mlkem512", KEM.ML_KEM_512),
+
     mlkem768("mlkem768", KEM.ML_KEM_768),
 
     mlkem1024("mlkem1024", KEM.ML_KEM_1024),

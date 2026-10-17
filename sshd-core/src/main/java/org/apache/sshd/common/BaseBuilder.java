@@ -92,6 +92,10 @@ public class BaseBuilder<T extends AbstractFactoryManager, S extends BaseBuilder
                     BuiltinDHFactories.sntrup761x25519_openssh,
                     BuiltinDHFactories.mlkem1024nistp384,
                     BuiltinDHFactories.mlkem768nistp256,
+                    BuiltinDHFactories.mlkem1024,
+                    BuiltinDHFactories.mlkem768,
+                    BuiltinDHFactories.mlkem512,
+
                     BuiltinDHFactories.curve25519,
                     BuiltinDHFactories.curve25519_libssh,
                     BuiltinDHFactories.curve448,

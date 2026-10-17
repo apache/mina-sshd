@@ -68,3 +68,7 @@ Merges 2.20.1 into the 3.0.0 stream, bringing in two bug fixes; one a regression
 
 
 ## New Features
+
+* Pure ML-KEM key exchanges `mlkem512-sha256`, `mlkem768-sha256`, `mlkem1024-sha384` if Bouncy Castle is present or if running on Java >= 24.
+    * Implements IETF RFC draft [draft-harrison-sshm-mlkem-02](https://datatracker.ietf.org/doc/draft-harrison-sshm-mlkem/02/), "Module-Lattice Key Exchange in SSH"
+

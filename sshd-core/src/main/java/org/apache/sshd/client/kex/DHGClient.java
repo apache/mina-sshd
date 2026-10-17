@@ -37,6 +37,7 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.CurveSizeIndicator;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KEMOnlyDH;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
@@ -110,10 +111,12 @@ public class DHGClient extends AbstractDHClientKeyExchange {
             kemClient = kem.getClient();
             kemClient.init();
             e = kemClient.getPublicKey();
-            byte[] dhE = dh.getE();
-            int l = e.length;
-            e = Arrays.copyOf(e, l + dhE.length);
-            System.arraycopy(dhE, 0, e, l, dhE.length);
+            if (!(dh instanceof KEMOnlyDH)) {
+                byte[] dhE = dh.getE();
+                int l = e.length;
+                e = Arrays.copyOf(e, l + dhE.length);
+                System.arraycopy(dhE, 0, e, l, dhE.length);
+            }
             e = updateE(e);
         }
 
@@ -161,16 +164,31 @@ public class DHGClient extends AbstractDHClientKeyExchange {
                         throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                                 "Wrong F length (should be " + expectedLength + " bytes): " + f.length);
                     }
+                } else if (dh instanceof KEMOnlyDH) {
+                    if (f.length != l) {
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                                "Wrong F length (should be " + l + " bytes): " + f.length);
+                    }
                 } else if (f.length <= l) {
                     throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                             "Strange F length: " + f.length + "  <= " + l);
                 }
                 dh.setF(Arrays.copyOfRange(f, l, f.length));
-                Digest keyHash = dh.getHash();
-                keyHash.init();
-                keyHash.update(kemClient.extractSecret(Arrays.copyOf(f, l)));
-                keyHash.update(dh.getK());
-                k = keyHash.digest();
+                if (dh instanceof KEMOnlyDH) {
+                    k = kemClient.extractSecret(f);
+                    // https://datatracker.ietf.org/doc/html/draft-harrison-sshm-mlkem-02 states "K_PQ is encoded as
+                    // mpint [RFC4251]". We treat is as a byte array, and apparently so does oqs-openssh.
+                    // Interoperability with oqs-openssh is given irrespective of the value of the high bit of K (k[0] &
+                    // 0x80). As an mpint one would be supposed to add a zero byte in front if the high bit is set (k =
+                    // normalize(k)), but that doesn't add any value to the key exchange security and would not interop
+                    // with oqs-openssh.
+                } else {
+                    Digest keyHash = dh.getHash();
+                    keyHash.init();
+                    keyHash.update(kemClient.extractSecret(Arrays.copyOf(f, l)));
+                    keyHash.update(dh.getK());
+                    k = keyHash.digest();
+                }
             } catch (IllegalArgumentException ex) {
                 log.error("Key encapsulation error", ex);
                 throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,

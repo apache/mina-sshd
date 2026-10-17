@@ -25,6 +25,8 @@ import org.apache.sshd.common.OptionalFeature;
  */
 public interface KEM extends OptionalFeature {
 
+    String ML_KEM_512 = "ML-KEM-512";
+
     String ML_KEM_768 = "ML-KEM-768";
 
     String ML_KEM_1024 = "ML-KEM-1024";

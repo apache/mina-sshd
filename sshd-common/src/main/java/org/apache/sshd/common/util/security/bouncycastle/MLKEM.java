@@ -35,8 +35,8 @@ import org.bouncycastle.crypto.params.MLKEMPrivateKeyParameters;
 import org.bouncycastle.crypto.params.MLKEMPublicKeyParameters;
 
 /**
- * An implementation of the mlkem768 key encapsulation method (KEM), formerly known as Kyber, using Bouncy Castle. But
- * see appendix C of FIPS 203 ("Differences From the CRYSTALS-Kyber Submission").
+ * An implementation of the ML-KEM key encapsulation method (KEM), formerly known as Kyber, using Bouncy Castle. But see
+ * appendix C of FIPS 203 ("Differences From the CRYSTALS-Kyber Submission").
  * <p>
  * NIST specifies that they removed a hash in the encapsulation/decapsulation methods.
  * </p>
@@ -44,6 +44,24 @@ import org.bouncycastle.crypto.params.MLKEMPublicKeyParameters;
  * @see <a href="https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.203.pdf">NIST FIPS 203</a>
  */
 enum MLKEM implements KEM {
+
+    ML_KEM_512 {
+
+        @Override
+        public Client getClient() {
+            return new Client(Parameters.mlkem512);
+        }
+
+        @Override
+        public Server getServer() {
+            return new Server(Parameters.mlkem512);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return Parameters.mlkem512.isSupported();
+        }
+    },
 
     ML_KEM_768 {
 
@@ -84,6 +102,13 @@ enum MLKEM implements KEM {
     enum Parameters implements OptionalFeature {
         // For key sizes see NIST FIPS 203, section 8, table 3. Bouncy Castle does not expose the
         // public key sizes through its API. (Though they compute them internally.)
+        mlkem512(800) {
+
+            @Override
+            Object getMLKEMParameters() {
+                return MLKEMParameters.ml_kem_512;
+            }
+        },
         mlkem768(1184) {
 
             @Override

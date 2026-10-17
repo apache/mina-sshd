@@ -39,6 +39,10 @@ enum JceKEM implements KEMFactory {
 
     // See https://datatracker.ietf.org/doc/html/draft-ietf-lamps-kyber-certificates-11
 
+    // Sequence, length 818 (3 bytes), Sequence, length 11, OID, length 9, 9 bytes OID, Bit String, length 801 (3
+    // bytes), zero unused bits. OID = 2.16.840.101.3.4.4.1
+    private static final byte[] ML512_X509_PREFIX = { 0x30, (byte) 0x82, 0x03, (byte) 0x32, 0x30, 0x0b, 0x06, 0x09, 0x60,
+            (byte) 0x86, 0x48, 0x01, 0x65, 0x03, 0x04, 0x04, 0x01, 0x03, (byte) 0x82, 0x03, 0x21, 0x00 };
     // Sequence, length 1202 (3 bytes), Sequence, length 11, OID, length 9, 9 bytes OID, Bit String, length 1185 (3
     // bytes), zero unused bits. OID = 2.16.840.101.3.4.4.2
     private static final byte[] ML768_X509_PREFIX = { 0x30, (byte) 0x82, 0x04, (byte) 0xb2, 0x30, 0x0b, 0x06, 0x09, 0x60,
@@ -53,7 +57,9 @@ enum JceKEM implements KEMFactory {
         javax.crypto.KEM kem = provider == null
                 ? javax.crypto.KEM.getInstance(algorithm)
                 : javax.crypto.KEM.getInstance(algorithm, provider);
-        if (KEM.ML_KEM_768.equalsIgnoreCase(algorithm)) {
+        if (KEM.ML_KEM_512.equalsIgnoreCase(algorithm)) {
+            return new KEMWrapper(kem, KEM.ML_KEM_512, provider, 800, 768, ML512_X509_PREFIX);
+        } else if (KEM.ML_KEM_768.equalsIgnoreCase(algorithm)) {
             return new KEMWrapper(kem, KEM.ML_KEM_768, provider, 1184, 1088, ML768_X509_PREFIX);
         } else if (KEM.ML_KEM_1024.equalsIgnoreCase(algorithm)) {
             return new KEMWrapper(kem, KEM.ML_KEM_1024, provider, 1568, 1568, ML1024_X509_PREFIX);
@@ -63,7 +69,9 @@ enum JceKEM implements KEMFactory {
 
     @Override
     public boolean isSupported(String algorithm) {
-        if (KEM.ML_KEM_768.equalsIgnoreCase(algorithm) || KEM.ML_KEM_1024.equalsIgnoreCase(algorithm)) {
+        if (KEM.ML_KEM_512.equalsIgnoreCase(algorithm)
+                || KEM.ML_KEM_768.equalsIgnoreCase(algorithm)
+                || KEM.ML_KEM_1024.equalsIgnoreCase(algorithm)) {
             try {
                 return javax.crypto.KEM.getInstance(algorithm) != null;
             } catch (NoSuchAlgorithmException e) {

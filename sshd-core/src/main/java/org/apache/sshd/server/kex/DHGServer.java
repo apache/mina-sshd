@@ -29,6 +29,7 @@ import org.apache.sshd.common.digest.Digest;
 import org.apache.sshd.common.kex.AbstractDH;
 import org.apache.sshd.common.kex.CurveSizeIndicator;
 import org.apache.sshd.common.kex.DHFactory;
+import org.apache.sshd.common.kex.KEMOnlyDH;
 import org.apache.sshd.common.kex.KexProposalOption;
 import org.apache.sshd.common.kex.KeyExchange;
 import org.apache.sshd.common.kex.KeyExchangeFactory;
@@ -86,7 +87,9 @@ public class DHGServer extends AbstractDHServerKeyExchange {
         dh = factory.create();
         hash = dh.getHash();
         hash.init();
-        setF(dh.getE());
+        if (!(dh instanceof KEMOnlyDH)) {
+            setF(dh.getE());
+        }
     }
 
     @Override
@@ -117,6 +120,12 @@ public class DHGServer extends AbstractDHServerKeyExchange {
                         throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
                                 "Wrong E length (should be " + expectedLength + " bytes): " + e.length);
                     }
+                } else if (dh instanceof KEMOnlyDH) {
+                    int expectedLength = kemServer.getPublicKeyLength();
+                    if (e.length != expectedLength) {
+                        throw new SshException(SshConstants.SSH2_DISCONNECT_KEY_EXCHANGE_FAILED,
+                                "Wrong E length (should be " + expectedLength + " bytes): " + e.length);
+                    }
                 } else {
                     int minLength = kemServer.getPublicKeyLength();
                     if (e.length <= minLength) {
@@ -125,16 +134,24 @@ public class DHGServer extends AbstractDHServerKeyExchange {
                     }
                 }
                 dh.setF(kemServer.init(e));
-                byte[] dhK = dh.getK();
-                Digest keyHash = dh.getHash();
-                keyHash.init();
-                keyHash.update(kemServer.getSecret());
-                keyHash.update(dhK);
-                k = keyHash.digest();
+                if (dh instanceof KEMOnlyDH) {
+                    k = kemServer.getSecret();
+                    // https://datatracker.ietf.org/doc/html/draft-harrison-sshm-mlkem-02 states "K_PQ is encoded as
+                    // mpint [RFC4251]". We treat is as a byte array, and apparently so does oqs-openssh.
+                } else {
+                    byte[] dhK = dh.getK();
+                    Digest keyHash = dh.getHash();
+                    keyHash.init();
+                    keyHash.update(kemServer.getSecret());
+                    keyHash.update(dhK);
+                    k = keyHash.digest();
+                }
                 byte[] newF = kemServer.getEncapsulation();
-                int l = newF.length;
-                newF = Arrays.copyOf(newF, l + dh.getE().length);
-                System.arraycopy(dh.getE(), 0, newF, l, dh.getE().length);
+                if (!(dh instanceof KEMOnlyDH)) {
+                    int l = newF.length;
+                    newF = Arrays.copyOf(newF, l + dh.getE().length);
+                    System.arraycopy(dh.getE(), 0, newF, l, dh.getE().length);
+                }
                 setF(newF);
             } catch (IllegalArgumentException ex) {
                 log.error("Key encapsulation error", ex);

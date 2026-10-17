@@ -304,8 +304,8 @@ public enum BuiltinDHFactories implements DHFactory {
         }
     },
     /**
-     * @see <a href= "https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04">PQ/T Hybrid Key
-     *      Exchange in SSH</a>
+     * @see <a href= "https://datatracker.ietf.org/doc/rfc10042/">RFC 10042: Post-Quantum/Traditional Hybrid Key
+     *      Exchange with the Module-Lattice-Based Key-Encapsulation Mechanism for Use in SSH</a>
      */
     mlkem768x25519(Constants.MLKEM768_25519_SHA256) {
         @Override
@@ -334,8 +334,8 @@ public enum BuiltinDHFactories implements DHFactory {
         }
     },
     /**
-     * @see <a href= "https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04">PQ/T Hybrid Key
-     *      Exchange in SSH</a>
+     * @see <a href= "https://datatracker.ietf.org/doc/rfc10042/">RFC 10042: Post-Quantum/Traditional Hybrid Key
+     *      Exchange with the Module-Lattice-Based Key-Encapsulation Mechanism for Use in SSH</a>
      */
     mlkem768nistp256(Constants.MLKEM768_NISTP256_SHA256) {
         @Override
@@ -359,8 +359,8 @@ public enum BuiltinDHFactories implements DHFactory {
         }
     },
     /**
-     * @see <a href= "https://datatracker.ietf.org/doc/html/draft-kampanakis-curdle-ssh-pq-ke-04">PQ/T Hybrid Key
-     *      Exchange in SSH</a>
+     * @see <a href= "https://datatracker.ietf.org/doc/rfc10042/">RFC 10042: Post-Quantum/Traditional Hybrid Key
+     *      Exchange with the Module-Lattice-Based Key-Encapsulation Mechanism for Use in SSH</a>
      */
     mlkem1024nistp384(Constants.MLKEM1024_NISTP384_SHA384) {
         @Override
@@ -382,6 +382,63 @@ public enum BuiltinDHFactories implements DHFactory {
         public boolean isSupported() {
             return ECCurves.nistp384.isSupported() && BuiltinKEM.mlkem1024.isSupported();
         }
+    },
+    /**
+     * @see <a href= "https://datatracker.ietf.org/doc/draft-harrison-sshm-mlkem/">Module-Lattice Key Exchange in
+     *      SSH</a>
+     */
+    mlkem512(Constants.MLKEM512_SHA256) {
+        @Override
+        public KEMOnlyDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new KEMOnlyDH(BuiltinKEM.mlkem512, BuiltinDigests.sha256);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return BuiltinDigests.sha256.isSupported() && BuiltinKEM.mlkem512.isSupported();
+        }
+
+    },
+    /**
+     * @see <a href= "https://datatracker.ietf.org/doc/draft-harrison-sshm-mlkem/">Module-Lattice Key Exchange in
+     *      SSH</a>
+     */
+    mlkem768(Constants.MLKEM768_SHA256) {
+        @Override
+        public KEMOnlyDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new KEMOnlyDH(BuiltinKEM.mlkem768, BuiltinDigests.sha256);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return BuiltinDigests.sha256.isSupported() && BuiltinKEM.mlkem768.isSupported();
+        }
+
+    },
+    /**
+     * @see <a href= "https://datatracker.ietf.org/doc/draft-harrison-sshm-mlkem/">Module-Lattice Key Exchange in
+     *      SSH</a>
+     */
+    mlkem1024(Constants.MLKEM1024_SHA384) {
+        @Override
+        public KEMOnlyDH create(Object... params) throws Exception {
+            if (!GenericUtils.isEmpty(params)) {
+                throw new IllegalArgumentException("No accepted parameters for " + getName());
+            }
+            return new KEMOnlyDH(BuiltinKEM.mlkem1024, BuiltinDigests.sha384);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return BuiltinDigests.sha384.isSupported() && BuiltinKEM.mlkem1024.isSupported();
+        }
+
     },
     /**
      * @see <a href=
@@ -605,8 +662,11 @@ public enum BuiltinDHFactories implements DHFactory {
         public static final String CURVE25519_SHA256 = "curve25519-sha256";
         public static final String CURVE25519_SHA256_LIBSSH = CURVE25519_SHA256 + "@libssh.org";
         public static final String CURVE448_SHA512 = "curve448-sha512";
+        public static final String MLKEM512_SHA256 = "mlkem512-sha256";
+        public static final String MLKEM768_SHA256 = "mlkem768-sha256";
         public static final String MLKEM768_25519_SHA256 = "mlkem768x25519-sha256";
         public static final String MLKEM768_NISTP256_SHA256 = "mlkem768nistp256-sha256";
+        public static final String MLKEM1024_SHA384 = "mlkem1024-sha384";
         public static final String MLKEM1024_NISTP384_SHA384 = "mlkem1024nistp384-sha384";
         public static final String SNTRUP761_25519_SHA512 = "sntrup761x25519-sha512";
         public static final String SNTRUP761_25519_SHA512_OPENSSH = SNTRUP761_25519_SHA512 + "@openssh.com";

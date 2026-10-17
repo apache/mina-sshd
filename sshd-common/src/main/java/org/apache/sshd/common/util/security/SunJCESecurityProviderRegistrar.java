@@ -62,7 +62,7 @@ public class SunJCESecurityProviderRegistrar extends AbstractSecurityProviderReg
         defaultProperties.put(baseName + ".Mac", "HmacSha1,HmacSha224,HmacSha256,HmacSha384,HmacSha512");
         if (isSupported()) {
             if (haveKEM(getSecurityProvider())) {
-                String kems = KEM.ML_KEM_1024 + ',' + KEM.ML_KEM_768;
+                String kems = KEM.ML_KEM_1024 + ',' + KEM.ML_KEM_768 + ',' + KEM.ML_KEM_512;
                 defaultProperties.put(baseName + ".KEM", kems);
                 defaultProperties.put(baseName + ".KeyPairGenerator", kems);
                 defaultProperties.put(baseName + ".KeyFactory", kems);
