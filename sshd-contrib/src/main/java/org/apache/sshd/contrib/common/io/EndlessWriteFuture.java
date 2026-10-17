@@ -21,8 +21,8 @@ package org.apache.sshd.contrib.common.io;
 
 import java.io.IOException;
 
-import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.CancelFuture;
+import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.future.SshFutureListener;
 import org.apache.sshd.common.io.IoWriteFuture;
 
