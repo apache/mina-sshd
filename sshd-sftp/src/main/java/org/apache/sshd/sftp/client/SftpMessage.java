@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.Duration;
 import java.util.Objects;
 
+import org.apache.sshd.common.future.CancelOption;
 import org.apache.sshd.common.io.IoWriteFuture;
 
 /**
@@ -82,6 +83,6 @@ public class SftpMessage {
      * @throws IOException if the message could not be sent, or waiting is interrupted.
      */
     public void waitUntilSent() throws IOException {
-        getFuture().verify(getTimeout());
+        getFuture().verify(getTimeout(), CancelOption.CANCEL_ON_TIMEOUT);
     }
 }

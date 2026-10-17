@@ -18,11 +18,13 @@
  */
 package org.apache.sshd.common.io;
 
+import org.apache.sshd.common.future.Cancellable;
 import org.apache.sshd.common.future.HasException;
 import org.apache.sshd.common.future.SshFuture;
 import org.apache.sshd.common.future.VerifiableFuture;
 
-public interface IoWriteFuture extends HasException, SshFuture<IoWriteFuture>, VerifiableFuture<IoWriteFuture> {
+public interface IoWriteFuture
+        extends HasException, Cancellable, SshFuture<IoWriteFuture>, VerifiableFuture<IoWriteFuture> {
     /**
      * @return <tt>true</tt> if the write operation is finished successfully.
      */

@@ -37,6 +37,7 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
  * Tests the behaviour of {@link ChannelAsyncOutputStream} regarding the chunking of the data to sent.
@@ -104,6 +105,31 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
     void chunkingIfRemoteWindowSmallerThanPacketSize() throws IOException {
         ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
         checkChangeOfRemoteWindowSizeOnBufferWrite(channelAsyncOutputStream, 30000, 32000, 50000, 0);
+    }
+
+    @Test
+    void canceledWriteCancelsPacketWrite() throws IOException {
+        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(40000, 32000, PropertyResolver.EMPTY);
+
+        IoWriteFuture write = channelAsyncOutputStream.writeBuffer(createBuffer(100));
+        write.cancel();
+        assertTrue(write.isCanceled(), "Write cancellation should be reported");
+
+        Mockito.verify(ioWriteFuture).cancel();
+    }
+
+    @Test
+    void canceledWriteWaitingForWindowIsNotResumed() throws IOException {
+        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(0, 32000, PropertyResolver.EMPTY);
+
+        IoWriteFuture write = channelAsyncOutputStream.writeBuffer(createBuffer(100));
+        write.cancel();
+        remoteWindow.expand(32000);
+        channelAsyncOutputStream.onWindowExpanded();
+
+        Mockito.verify(channelStreamWriter, Mockito.never()).writeData(ArgumentMatchers.any());
     }
 
     private void checkChangeOfRemoteWindowSizeOnBufferWrite(
