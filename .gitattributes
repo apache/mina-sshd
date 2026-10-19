@@ -23,6 +23,7 @@
 *.bat           text eol=crlf
 *.vbs           text eol=crlf
 mvnw            text eol=lf
+sshd_config     text eol=lf
 mvnw.cmd        text eol=crlf
 
 # These files are binary and should be left untouched
