@@ -26,6 +26,8 @@ on:
       - '*.md'
       - '.github/ISSUE_TEMPLATE/**'
       - '*.txt'
+      - 'docker/**'
+      - '.github/workflows/oqs-openssh-image.yml'
 
 jobs:
   build:
