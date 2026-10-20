@@ -26,12 +26,16 @@ import java.security.Provider;
 import java.security.PublicKey;
 import java.security.Security;
 import java.security.Signature;
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.ExceptionUtils;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.security.AbstractSecurityProviderRegistrar;
 import org.apache.sshd.common.util.security.KEM;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityEntityFactory;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
@@ -49,6 +53,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     private final AtomicReference<Boolean> supportHolder = new AtomicReference<>(null);
     private final AtomicReference<String> allSupportHolder = new AtomicReference<>();
     private final AtomicReference<Boolean> edDSASupportHolder = new AtomicReference<>(null);
+    private final Map<String, Boolean> mlDSAServiceSupportHolder = new ConcurrentHashMap<>();
 
     private String providerClass;
     private String providerName;
@@ -106,6 +111,32 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
     public boolean isSecurityEntitySupported(Class<?> entityType, String name) {
         if (!isSupported()) {
             return false;
+        }
+
+        if (SecurityUtils.ML_DSA.equalsIgnoreCase(name) || MLDSAParameterSets.fromJceName(name) != null) {
+            String probeKey = entityType.getName() + ":" + name.toUpperCase(Locale.ROOT);
+            boolean available = mlDSAServiceSupportHolder.computeIfAbsent(probeKey, k -> {
+                try {
+                    Provider provider = getSecurityProvider();
+                    if (provider == null) {
+                        return Boolean.FALSE;
+                    }
+                    if (KeyFactory.class.isAssignableFrom(entityType)) {
+                        KeyFactory.getInstance(name, provider);
+                    } else if (KeyPairGenerator.class.isAssignableFrom(entityType)) {
+                        KeyPairGenerator.getInstance(name, provider);
+                    } else {
+                        return Boolean.FALSE;
+                    }
+                    return Boolean.TRUE;
+                } catch (GeneralSecurityException | RuntimeException e) {
+                    return Boolean.FALSE;
+                }
+            }).booleanValue();
+            if (!available) {
+                return false;
+            }
+            return super.isSecurityEntitySupported(entityType, name);
         }
 
         boolean supported = true;
