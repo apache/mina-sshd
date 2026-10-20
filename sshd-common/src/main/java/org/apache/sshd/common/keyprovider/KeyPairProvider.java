@@ -33,6 +33,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 
 /**
  * Provider for key pairs. This provider is used on the server side to provide the host key, or on the client side to
@@ -56,6 +57,21 @@ public interface KeyPairProvider extends KeyIdentityProvider {
      * SSH identifier for ED25519 elliptic curve keys
      */
     String SSH_ED25519 = "ssh-ed25519";
+
+    /**
+     * SSH identifier for ML-DSA-44 keys
+     */
+    String SSH_MLDSA_44 = MLDSAParameterSets.ML_DSA_44.getSshName();
+
+    /**
+     * SSH identifier for ML-DSA-65 keys
+     */
+    String SSH_MLDSA_65 = MLDSAParameterSets.ML_DSA_65.getSshName();
+
+    /**
+     * SSH identifier for ML-DSA-87 keys
+     */
+    String SSH_MLDSA_87 = MLDSAParameterSets.ML_DSA_87.getSshName();
 
     /**
      * SSH identifier for EC keys in NIST curve P-256
