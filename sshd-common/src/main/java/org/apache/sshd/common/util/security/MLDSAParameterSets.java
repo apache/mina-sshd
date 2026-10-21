@@ -30,11 +30,11 @@ import java.util.Locale;
  */
 public enum MLDSAParameterSets {
     /** ML-DSA-44 parameters. */
-    ML_DSA_44("ML-DSA-44", "ssh-mldsa-44", 1312, 17),
+    ML_DSA_44("ML-DSA-44", "ssh-mldsa-44", 1312, 2420, 17),
     /** ML-DSA-65 parameters. */
-    ML_DSA_65("ML-DSA-65", "ssh-mldsa-65", 1952, 18),
+    ML_DSA_65("ML-DSA-65", "ssh-mldsa-65", 1952, 3309, 18),
     /** ML-DSA-87 parameters. */
-    ML_DSA_87("ML-DSA-87", "ssh-mldsa-87", 2592, 19);
+    ML_DSA_87("ML-DSA-87", "ssh-mldsa-87", 2592, 4627, 19);
 
     /** Maximum raw public key size in bytes. */
     public static final int MAX_PUBLIC_KEY_SIZE = 2592;
@@ -45,12 +45,14 @@ public enum MLDSAParameterSets {
     private final String jceName;
     private final String sshName;
     private final int publicKeySize;
+    private final int signatureSize;
     private final int oid;
 
-    MLDSAParameterSets(String jceName, String sshName, int publicKeySize, int oid) {
+    MLDSAParameterSets(String jceName, String sshName, int publicKeySize, int signatureSize, int oid) {
         this.jceName = jceName;
         this.sshName = sshName;
         this.publicKeySize = publicKeySize;
+        this.signatureSize = signatureSize;
         this.oid = oid;
     }
 
@@ -73,6 +75,13 @@ public enum MLDSAParameterSets {
      */
     public int getPublicKeySize() {
         return publicKeySize;
+    }
+
+    /**
+     * @return the raw signature size in bytes
+     */
+    public int getSignatureSize() {
+        return signatureSize;
     }
 
     /**

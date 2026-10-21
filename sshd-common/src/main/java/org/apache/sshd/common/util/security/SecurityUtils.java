@@ -188,6 +188,7 @@ public final class SecurityUtils {
 
     private static final AtomicReference<Boolean> EDDSA_SUPPORT_PRESENT = new AtomicReference<>();
     private static final Map<String, Boolean> MLDSA_SUPPORT_PRESENT = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> MLDSA_SIGNATURE_SUPPORT_PRESENT = new ConcurrentHashMap<>();
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -608,6 +609,27 @@ public final class SecurityUtils {
             try {
                 getKeyFactory(name);
                 getKeyPairGenerator(name);
+                return Boolean.TRUE;
+            } catch (GeneralSecurityException e) {
+                return Boolean.FALSE;
+            }
+        });
+    }
+
+    /**
+     * Checks whether the key services and a {@link Signature} are available for an ML-DSA parameter set.
+     *
+     * @param  algorithm The JCA name of an ML-DSA parameter set
+     * @return           {@code false} for an unknown name or unavailable services
+     */
+    public static boolean isMLDSASignatureSupported(String algorithm) {
+        MLDSAParameterSets variant = MLDSAParameterSets.fromJceName(algorithm);
+        if (variant == null || !isMLDSASupported(algorithm)) {
+            return false;
+        }
+        return MLDSA_SIGNATURE_SUPPORT_PRESENT.computeIfAbsent(variant.getJceName(), name -> {
+            try {
+                getSignature(name);
                 return Boolean.TRUE;
             } catch (GeneralSecurityException e) {
                 return Boolean.FALSE;

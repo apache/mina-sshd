@@ -41,6 +41,7 @@ import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.MapEntryUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 
 /**
@@ -239,6 +240,8 @@ public interface SignatureFactory extends BuiltinFactory<Signature> {
         } else if (SecurityUtils.EDDSA.equalsIgnoreCase(pubKey.getAlgorithm())
                 || SecurityUtils.ED25519.equalsIgnoreCase(pubKey.getAlgorithm())) {
             factory = BuiltinSignatures.ed25519;
+        } else if (MLDSAParameterSets.fromSshName(KeyUtils.getKeyType(pubKey)) != null) {
+            factory = BuiltinSignatures.fromFactoryName(KeyUtils.getKeyType(pubKey));
         }
 
         if (GenericUtils.isEmpty(algo) || (factory == null)) {
