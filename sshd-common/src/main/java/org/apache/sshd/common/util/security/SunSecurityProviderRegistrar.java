@@ -23,6 +23,7 @@ import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.Provider;
 import java.security.Security;
+import java.security.Signature;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringJoiner;
@@ -30,7 +31,7 @@ import java.util.StringJoiner;
 import org.apache.sshd.common.util.GenericUtils;
 
 /**
- * Prefers the JDK SUN provider for ML-DSA key factories and key pair generators. The
+ * Prefers the JDK SUN provider for ML-DSA key factories, key pair generators and signatures. The
  * {@code org.apache.sshd.security.provider.SunWrapper.enabled=false} property disables this registrar.
  *
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -48,6 +49,7 @@ public class SunSecurityProviderRegistrar extends AbstractSecurityProviderRegist
             Provider provider = getSecurityProvider();
             StringJoiner factories = new StringJoiner(",");
             StringJoiner generators = new StringJoiner(",");
+            StringJoiner signatures = new StringJoiner(",");
             for (MLDSAParameterSets variant : MLDSAParameterSets.values()) {
                 String algorithm = variant.getJceName();
                 try {
@@ -62,10 +64,17 @@ public class SunSecurityProviderRegistrar extends AbstractSecurityProviderRegist
                 } catch (NoSuchAlgorithmException e) {
                     // This parameter set is unavailable on this JDK.
                 }
+                try {
+                    Signature.getInstance(algorithm, provider);
+                    signatures.add(algorithm);
+                } catch (NoSuchAlgorithmException e) {
+                    // This parameter set is unavailable on this JDK.
+                }
             }
             String baseName = getBasePropertyName();
             defaultProperties.put(baseName + ".KeyFactory", factories.toString());
             defaultProperties.put(baseName + ".KeyPairGenerator", generators.toString());
+            defaultProperties.put(baseName + ".Signature", signatures.toString());
         }
     }
 

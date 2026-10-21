@@ -33,6 +33,7 @@ import org.apache.sshd.common.NamedFactory;
 import org.apache.sshd.common.OptionalFeature;
 import org.apache.sshd.common.RuntimeSshException;
 import org.apache.sshd.common.cipher.ECCurves;
+import org.apache.sshd.common.config.keys.KeyUtils;
 import org.apache.sshd.common.config.keys.PublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.DSSPublicKeyEntryDecoder;
 import org.apache.sshd.common.config.keys.impl.ECDSAPublicKeyEntryDecoder;
@@ -42,6 +43,7 @@ import org.apache.sshd.common.keyprovider.KeySizeIndicator;
 import org.apache.sshd.common.keyprovider.KeyTypeIndicator;
 import org.apache.sshd.common.session.SessionContext;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 import org.apache.sshd.server.SshServer;
@@ -53,6 +55,7 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
 
 /**
@@ -96,6 +99,12 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
         }
         addTests(list, KeyPairProvider.SSH_ED25519, BuiltinSignatures.ed25519, ED25519_SIZES,
                 SecurityUtils.isEDDSACurveSupported() ? Ed25519PublicKeyDecoder.INSTANCE : null);
+        for (MLDSAParameterSets params : MLDSAParameterSets.values()) {
+            BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(params.getSshName());
+            addTests(list, params.getSshName(), factory,
+                    Collections.singletonList(params.getPublicKeySize() * Byte.SIZE),
+                    factory.isSupported() ? KeyUtils.getPublicKeyEntryDecoder(params.getSshName()) : null);
+        }
         return Collections.unmodifiableList(list);
     }
 
@@ -110,6 +119,14 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
     @BeforeAll
     static void setupClientAndServer() throws Exception {
         sshd = CoreTestSupportUtils.setupTestFullSupportServer(SignatureFactoriesTest.class);
+        List<NamedFactory<Signature>> serverSignatures = new ArrayList<>(sshd.getSignatureFactories());
+        for (MLDSAParameterSets params : MLDSAParameterSets.values()) {
+            BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(params.getSshName());
+            if (factory.isSupported() && serverSignatures.stream().noneMatch(f -> factory.getName().equals(f.getName()))) {
+                serverSignatures.add(factory);
+            }
+        }
+        sshd.setSignatureFactories(serverSignatures);
         sshd.start();
         port = sshd.getPort();
 
@@ -190,6 +207,8 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
     protected void testKeyPairProvider(
             KeyPairProvider provider, List<NamedFactory<Signature>> signatures)
             throws Exception {
+        KeyPairProvider prevProvider = sshd.getKeyPairProvider();
+        List<NamedFactory<Signature>> prevSignatures = client.getSignatureFactories();
         sshd.setKeyPairProvider(provider);
         client.setSignatureFactories(signatures);
         try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
@@ -197,6 +216,31 @@ class SignatureFactoriesTest extends BaseTestSupport implements KeyTypeIndicator
             s.addPasswordIdentity(getCurrentTestName());
             // allow a rather long timeout since generating some keys may take some time
             s.auth().verify(AUTH_TIMEOUT.multipliedBy(3));
+        } finally {
+            sshd.setKeyPairProvider(prevProvider);
+            client.setSignatureFactories(prevSignatures);
+        }
+    }
+
+    @ParameterizedTest(name = "mldsa={0}")
+    @EnumSource(MLDSAParameterSets.class)
+    void mldsaUserPublicKeyAuth(MLDSAParameterSets params) throws Exception {
+        BuiltinSignatures factory = BuiltinSignatures.fromFactoryName(params.getSshName());
+        Assumptions.assumeTrue(factory.isSupported());
+        KeyPair hostKey = SecurityUtils.getKeyPairGenerator(params.getJceName()).generateKeyPair();
+        KeyPair userKey = SecurityUtils.getKeyPairGenerator(params.getJceName()).generateKeyPair();
+        KeyPairProvider prevProvider = sshd.getKeyPairProvider();
+        List<NamedFactory<Signature>> prevSignatures = client.getSignatureFactories();
+        sshd.setKeyPairProvider(KeyPairProvider.wrap(hostKey));
+        client.setSignatureFactories(Collections.singletonList(factory));
+        try (ClientSession s = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            s.addPublicKeyIdentity(userKey);
+            s.auth().verify(AUTH_TIMEOUT);
+            assertTrue(s.isAuthenticated());
+        } finally {
+            sshd.setKeyPairProvider(prevProvider);
+            client.setSignatureFactories(prevSignatures);
         }
     }
 }

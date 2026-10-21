@@ -44,7 +44,6 @@ import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.SunSecurityProviderRegistrar;
-import org.apache.sshd.common.util.security.bouncycastle.BouncyCastleSecurityProviderRegistrar;
 import org.apache.sshd.util.test.JUnitTestSupport;
 import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.Tag;
@@ -217,18 +216,18 @@ class MLDSATest extends JUnitTestSupport {
 
     @ParameterizedTest
     @EnumSource(MLDSAParameterSets.class)
-    void providerServicesAndSignatureScope(MLDSAParameterSets params) throws Exception {
+    void providerServices(MLDSAParameterSets params) throws Exception {
         assumeSupported(params);
         KeyFactory factory = SecurityUtils.getKeyFactory(params.getJceName());
         KeyPairGenerator generator = SecurityUtils.getKeyPairGenerator(params.getJceName());
+        Signature signature = SecurityUtils.getSignature(params.getJceName());
         String expectedProvider = System.getProperty("mldsa.test.provider");
         if (expectedProvider != null) {
             assertEquals(expectedProvider, factory.getProvider().getName());
             assertEquals(expectedProvider, generator.getProvider().getName());
+            assertEquals(expectedProvider, signature.getProvider().getName());
         }
-        assertFalse(new SunSecurityProviderRegistrar().isSecurityEntitySupported(Signature.class, params.getJceName()));
-        assertFalse(new BouncyCastleSecurityProviderRegistrar()
-                .isSecurityEntitySupported(Signature.class, params.getJceName()));
+        assertTrue(SecurityUtils.isMLDSASignatureSupported(params.getJceName()));
     }
 
     @Test

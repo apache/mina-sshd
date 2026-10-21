@@ -113,8 +113,11 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
             return false;
         }
 
-        if (SecurityUtils.ML_DSA.equalsIgnoreCase(name) || MLDSAParameterSets.fromJceName(name) != null) {
-            String probeKey = entityType.getName() + ":" + name.toUpperCase(Locale.ROOT);
+        MLDSAParameterSets variant = name == null ? null : MLDSAParameterSets.fromJceName(name);
+        if (SecurityUtils.ML_DSA.equalsIgnoreCase(name) || variant != null) {
+            // Use the canonical JCA name for the probe and for the support check
+            final String jceName = variant != null ? variant.getJceName() : SecurityUtils.ML_DSA;
+            String probeKey = entityType.getName() + ":" + jceName.toUpperCase(Locale.ROOT);
             boolean available = mlDSAServiceSupportHolder.computeIfAbsent(probeKey, k -> {
                 try {
                     Provider provider = getSecurityProvider();
@@ -122,9 +125,11 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
                         return Boolean.FALSE;
                     }
                     if (KeyFactory.class.isAssignableFrom(entityType)) {
-                        KeyFactory.getInstance(name, provider);
+                        KeyFactory.getInstance(jceName, provider);
                     } else if (KeyPairGenerator.class.isAssignableFrom(entityType)) {
-                        KeyPairGenerator.getInstance(name, provider);
+                        KeyPairGenerator.getInstance(jceName, provider);
+                    } else if (Signature.class.isAssignableFrom(entityType)) {
+                        Signature.getInstance(jceName, provider);
                     } else {
                         return Boolean.FALSE;
                     }
@@ -136,7 +141,7 @@ public class BouncyCastleSecurityProviderRegistrar extends AbstractSecurityProvi
             if (!available) {
                 return false;
             }
-            return super.isSecurityEntitySupported(entityType, name);
+            return super.isSecurityEntitySupported(entityType, jceName);
         }
 
         boolean supported = true;
