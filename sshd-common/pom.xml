@@ -140,6 +140,8 @@
                             <systemPropertyVariables>
                                 <org.apache.sshd.security.provider.SunECWrapper.enabled>false</org.apache.sshd.security.provider.SunECWrapper.enabled>
                                 <org.apache.sshd.security.provider.EdDSA.enabled>false</org.apache.sshd.security.provider.EdDSA.enabled>
+                                <org.apache.sshd.security.provider.SunWrapper.enabled>false</org.apache.sshd.security.provider.SunWrapper.enabled>
+                                <mldsa.test.provider>BC</mldsa.test.provider>
                             </systemPropertyVariables>
                         </configuration>
                     </execution>
