@@ -46,6 +46,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
@@ -110,6 +111,11 @@ public final class SecurityUtils {
     public static final String ED25519 = "Ed25519";
 
     /**
+     * Generic JCA algorithm name for ML-DSA keys.
+     */
+    public static final String ML_DSA = "ML-DSA";
+
+    /**
      * System property used to configure the value for the minimum supported Diffie-Hellman Group Exchange key size. If
      * not set, then an internal auto-discovery mechanism is employed. If set to negative value then Diffie-Hellman
      * Group Exchange is disabled. If set to a negative value then Diffie-Hellman Group Exchange is disabled
@@ -140,6 +146,7 @@ public final class SecurityUtils {
     public static final String SECURITY_PROVIDER_REGISTRARS = "org.apache.sshd.security.registrars";
     public static final List<String> DEFAULT_SECURITY_PROVIDER_REGISTRARS = Collections.unmodifiableList(
             Arrays.asList(
+                    "org.apache.sshd.common.util.security.SunSecurityProviderRegistrar",
                     "org.apache.sshd.common.util.security.SunJCESecurityProviderRegistrar",
                     "org.apache.sshd.common.util.security.SunECSecurityProviderRegistrar",
                     "org.apache.sshd.common.util.security.eddsa.EdDSASecurityProviderRegistrar",
@@ -180,6 +187,8 @@ public final class SecurityUtils {
     private static final AtomicReference<Boolean> FIPS_MODE = new AtomicReference<>();
 
     private static final AtomicReference<Boolean> EDDSA_SUPPORT_PRESENT = new AtomicReference<>();
+    private static final Map<String, Boolean> MLDSA_SUPPORT_PRESENT = new ConcurrentHashMap<>();
+    private static final Map<String, Boolean> MLDSA_SIGNATURE_SUPPORT_PRESENT = new ConcurrentHashMap<>();
 
     private SecurityUtils() {
         throw new UnsupportedOperationException("No instance");
@@ -187,6 +196,8 @@ public final class SecurityUtils {
 
     private static Map<String, Supplier<SecurityProviderRegistrar>> buildRegistrarsMap() {
         Map<String, Supplier<SecurityProviderRegistrar>> result = new HashMap<>();
+        result.put("org.apache.sshd.common.util.security.SunSecurityProviderRegistrar",
+                SunSecurityProviderRegistrar::new);
         result.put("org.apache.sshd.common.util.security.SunJCESecurityProviderRegistrar",
                 SunJCESecurityProviderRegistrar::new);
         result.put("org.apache.sshd.common.util.security.SunECSecurityProviderRegistrar", //
@@ -578,6 +589,52 @@ public final class SecurityUtils {
         } else {
             return JceRandomFactory.INSTANCE;
         }
+    }
+
+    ///////////////////////////// ML-DSA key support ///////////////////////////////
+
+    /**
+     * Checks whether a key factory and key pair generator are available for an ML-DSA parameter set.
+     *
+     * @param  algorithm The JCA name of an ML-DSA parameter set
+     * @return           {@code false} for an unknown name or unavailable key services
+     */
+    public static boolean isMLDSASupported(String algorithm) {
+        MLDSAParameterSets variant = MLDSAParameterSets.fromJceName(algorithm);
+        if (variant == null) {
+            return false;
+        }
+        register();
+        return MLDSA_SUPPORT_PRESENT.computeIfAbsent(variant.getJceName(), name -> {
+            try {
+                getKeyFactory(name);
+                getKeyPairGenerator(name);
+                return Boolean.TRUE;
+            } catch (GeneralSecurityException e) {
+                return Boolean.FALSE;
+            }
+        });
+    }
+
+    /**
+     * Checks whether the key services and a {@link Signature} are available for an ML-DSA parameter set.
+     *
+     * @param  algorithm The JCA name of an ML-DSA parameter set
+     * @return           {@code false} for an unknown name or unavailable services
+     */
+    public static boolean isMLDSASignatureSupported(String algorithm) {
+        MLDSAParameterSets variant = MLDSAParameterSets.fromJceName(algorithm);
+        if (variant == null || !isMLDSASupported(algorithm)) {
+            return false;
+        }
+        return MLDSA_SIGNATURE_SUPPORT_PRESENT.computeIfAbsent(variant.getJceName(), name -> {
+            try {
+                getSignature(name);
+                return Boolean.TRUE;
+            } catch (GeneralSecurityException e) {
+                return Boolean.FALSE;
+            }
+        });
     }
 
     ///////////////////////////// ED25519 support ///////////////////////////////

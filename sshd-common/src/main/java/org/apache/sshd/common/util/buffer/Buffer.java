@@ -71,8 +71,10 @@ import org.apache.sshd.common.util.NumberUtils;
 import org.apache.sshd.common.util.Readable;
 import org.apache.sshd.common.util.buffer.keys.BufferPublicKeyParser;
 import org.apache.sshd.common.util.logging.SimplifiedLog;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAUtils;
+import org.apache.sshd.common.util.security.mldsa.MLDSAUtils;
 
 /**
  * Provides an abstract message buffer for encoding SSH messages
@@ -1045,6 +1047,12 @@ public abstract class Buffer implements Readable {
             putBytes(ecPoint);
         } else if (KeyPairProvider.SSH_ED25519.equals(KeyUtils.getKeyType(key))) {
             putBytes(EdDSAUtils.getBytes(key));
+        } else if (MLDSAParameterSets.fromSshName(KeyUtils.getKeyType(key)) != null) {
+            try {
+                putBytes(MLDSAUtils.getRawBytes(key));
+            } catch (InvalidKeySpecException e) {
+                throw (BufferException) new BufferException("Invalid ML-DSA public key").initCause(e);
+            }
         } else if (key instanceof SecurityKeyPublicKey) {
             putRawPublicKeyBytes(((SecurityKeyPublicKey<?>) key).getDelegatePublicKey());
             putString(((SecurityKeyPublicKey<?>) key).getAppName());

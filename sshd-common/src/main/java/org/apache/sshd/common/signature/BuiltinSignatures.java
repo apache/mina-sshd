@@ -43,8 +43,10 @@ import org.apache.sshd.common.config.keys.impl.SkED25519PublicKeyEntryDecoder;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.ValidateUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.SignatureEd25519;
+import org.apache.sshd.common.util.security.mldsa.SignatureMLDSA;
 
 /**
  * Provides easy access to the currently implemented signatures
@@ -226,6 +228,39 @@ public enum BuiltinSignatures implements SignatureFactory {
         @Override
         public boolean isSupported() {
             return SecurityUtils.isEDDSACurveSupported();
+        }
+    },
+    mldsa44(KeyPairProvider.SSH_MLDSA_44) {
+        @Override
+        public Signature create() {
+            return new SignatureMLDSA(MLDSAParameterSets.ML_DSA_44);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isMLDSASignatureSupported(MLDSAParameterSets.ML_DSA_44.getJceName());
+        }
+    },
+    mldsa65(KeyPairProvider.SSH_MLDSA_65) {
+        @Override
+        public Signature create() {
+            return new SignatureMLDSA(MLDSAParameterSets.ML_DSA_65);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isMLDSASignatureSupported(MLDSAParameterSets.ML_DSA_65.getJceName());
+        }
+    },
+    mldsa87(KeyPairProvider.SSH_MLDSA_87) {
+        @Override
+        public Signature create() {
+            return new SignatureMLDSA(MLDSAParameterSets.ML_DSA_87);
+        }
+
+        @Override
+        public boolean isSupported() {
+            return SecurityUtils.isMLDSASignatureSupported(MLDSAParameterSets.ML_DSA_87.getJceName());
         }
     };
 

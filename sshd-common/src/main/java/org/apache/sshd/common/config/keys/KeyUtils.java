@@ -83,9 +83,12 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAKeyTypeDetector;
+import org.apache.sshd.common.util.security.mldsa.MLDSAPublicKeyDecoder;
+import org.apache.sshd.common.util.security.mldsa.MLDSAUtils;
 
 /**
  * Utility class for keys
@@ -167,6 +170,10 @@ public final class KeyUtils {
 
     static {
 
+        // Registered unconditionally; decoding fails with a GeneralSecurityException if no provider is available
+        for (MLDSAParameterSets params : MLDSAParameterSets.values()) {
+            registerPublicKeyEntryDecoder(new MLDSAPublicKeyDecoder(params));
+        }
         registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
@@ -742,7 +749,11 @@ public final class KeyUtils {
             return KeyPairProvider.SSH_ED25519;
         }
 
-        return null;
+        try {
+            return MLDSAUtils.getParameters(key).getSshName();
+        } catch (InvalidKeySpecException e) {
+            return null;
+        }
     }
 
     /**
@@ -812,7 +823,11 @@ public final class KeyUtils {
             return 256;
         }
 
-        return -1;
+        try {
+            return MLDSAUtils.getParameters(key).getPublicKeySize() * Byte.SIZE;
+        } catch (InvalidKeySpecException e) {
+            return -1;
+        }
     }
 
     /**
