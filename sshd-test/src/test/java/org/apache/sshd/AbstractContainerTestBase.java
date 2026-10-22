@@ -39,6 +39,12 @@ public abstract class AbstractContainerTestBase extends BaseTestSupport {
     // (SHA256) does not exist: not found
     //
     // Try to prevent that by deliberately including a layer that contains a random value.
+    /**
+     * The OQS-OpenSSH test image built from {@code docker/oqs-openssh}. Update the digest when the image is rebuilt.
+     */
+    protected static final String OQS_OPENSSH_IMAGE
+            = "ghcr.io/etnt/mina-sshd-oqs-openssh@sha256:702c734e663283577e08b6f4f18910acb0b6cbf0a6fa36f9dd6a603124896a9b";
+
     private static final String DISCRIMINATOR = "tmp" + Instant.now().toEpochMilli();
 
     protected AbstractContainerTestBase() {
