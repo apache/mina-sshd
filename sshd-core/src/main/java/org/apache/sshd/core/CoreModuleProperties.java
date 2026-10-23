@@ -293,14 +293,14 @@ public final class CoreModuleProperties {
     public static final Property<Duration> BUFFERED_IO_OUTPUT_MAX_PENDING_WRITE_WAIT
             = Property.duration("buffered-io-output-max-pending-write-wait", Duration.ofSeconds(30L));
 
-    public static final long DEFAULT_MAX_PACKET_SIZE = 0x8000L;
+    public static final long DEFAULT_MAX_PACKET_SIZE = SshConstants.SSH_REQUIRED_PAYLOAD_PACKET_LENGTH_SUPPORT;
     /**
      * Key used to retrieve the value of the maximum packet size in the configuration properties map.
      */
     public static final Property<Long> MAX_PACKET_SIZE
             = Property.long_("packet-size", DEFAULT_MAX_PACKET_SIZE);
 
-    public static final long DEFAULT_LIMIT_PACKET_SIZE = Integer.MAX_VALUE / 4L;
+    public static final long DEFAULT_LIMIT_PACKET_SIZE = 8 * DEFAULT_MAX_PACKET_SIZE;
     /**
      * A safety value that is designed to avoid an attack that uses large channel packet sizes
      */
