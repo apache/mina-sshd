@@ -120,6 +120,23 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
     }
 
     @Test
+    void canceledWriteDuringPacketSubmissionCancelsPacketWrite() throws IOException {
+        ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(40000, 32000, PropertyResolver.EMPTY);
+        Mockito.doAnswer(invocation -> {
+            channelAsyncOutputStream.lastWrite.get().cancel();
+            return ioWriteFuture;
+        })
+                .when(channelStreamWriter)
+                .writeData(ArgumentMatchers.any());
+
+        IoWriteFuture write = channelAsyncOutputStream.writeBuffer(createBuffer(100));
+
+        assertTrue(write.isCanceled(), "Write cancellation should be reported");
+        Mockito.verify(ioWriteFuture).cancel();
+    }
+
+    @Test
     void canceledWriteWaitingForWindowIsNotResumed() throws IOException {
         ChannelAsyncOutputStream channelAsyncOutputStream = new ChannelAsyncOutputStream(channel, (byte) 0);
         remoteWindow.init(0, 32000, PropertyResolver.EMPTY);

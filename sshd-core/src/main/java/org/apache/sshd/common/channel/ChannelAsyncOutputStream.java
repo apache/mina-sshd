@@ -376,14 +376,16 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
             f.setValue(e);
             return null;
         }
+        boolean canceled;
         synchronized (writeState) {
-            if (future.isCanceled()) {
+            canceled = future.isCanceled();
+            if (canceled) {
                 writeState.writeInProgress = false;
-                return null;
+            } else {
+                writeState.packetWrite = writeFuture;
             }
-            writeState.packetWrite = writeFuture;
         }
-        if (future.isCanceled()) {
+        if (canceled) {
             writeFuture.cancel();
             return null;
         }
