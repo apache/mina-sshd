@@ -35,6 +35,7 @@
 
 ## Bug Fixes
 
+* [GH-935](https://github.com/apache/mina-sshd/issues/935) `SttySupport`: use `Locale.ROOT` when matching pty mode names, so that `stty -a` output is parsed correctly under Turkish and other locales with non-ASCII case mappings
 
 ## New Features
 

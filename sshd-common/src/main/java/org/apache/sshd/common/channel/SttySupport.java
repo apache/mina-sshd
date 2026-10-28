@@ -24,6 +24,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
 import java.util.EnumMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.StringTokenizer;
 import java.util.concurrent.atomic.AtomicLong;
@@ -62,7 +63,7 @@ public final class SttySupport {
                 continue;
             }
 
-            String str = mode.name().toLowerCase();
+            String str = mode.name().toLowerCase(Locale.ROOT);
             // Are we looking for a character?
             if (str.charAt(0) == 'v') {
                 str = str.substring(1);

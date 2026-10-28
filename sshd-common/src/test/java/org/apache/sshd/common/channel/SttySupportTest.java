@@ -18,12 +18,14 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.sshd.common.util.ValidateUtils;
@@ -54,17 +56,40 @@ public class SttySupportTest extends JUnitTestSupport {
     @ParameterizedTest(name = "{0}")
     public void parseSttyOutput(String resourceName) throws Exception {
         initSttySupportTest(resourceName);
-        String stty;
+        Map<PtyMode, Integer> modes = SttySupport.parsePtyModes(readSttyOutput(resourceName));
+        System.err.println(modes);
+    }
+
+    @MethodSource("parameters")
+    @ParameterizedTest(name = "{0}")
+    public void parseSttyOutputIndependentOfDefaultLocale(String resourceName) throws Exception {
+        initSttySupportTest(resourceName);
+        String stty = readSttyOutput(resourceName);
+        Map<PtyMode, Integer> expected = SttySupport.parsePtyModes(stty);
+
+        Map<PtyMode, Integer> turkish;
+        Locale previous = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try {
+            turkish = SttySupport.parsePtyModes(stty);
+        } finally {
+            Locale.setDefault(previous);
+        }
+
+        assertEquals(expected, turkish, "Modes parsed under tr-TR locale");
+        assertTrue(turkish.containsKey(PtyMode.ISIG), "ISIG missing under tr-TR locale");
+        assertTrue(turkish.containsKey(PtyMode.ICANON), "ICANON missing under tr-TR locale");
+        assertTrue(turkish.containsKey(PtyMode.VINTR), "VINTR missing under tr-TR locale");
+    }
+
+    private String readSttyOutput(String resourceName) throws IOException {
         try (InputStream s = ValidateUtils.checkNotNull(
                 getClass().getResourceAsStream(resourceName), "Missing %s", resourceName);
              Reader r = new InputStreamReader(s, StandardCharsets.UTF_8)) {
             char[] buf = new char[8192];
             int len = r.read(buf);
-            stty = new String(buf, 0, len);
+            return new String(buf, 0, len);
         }
-
-        Map<PtyMode, Integer> modes = SttySupport.parsePtyModes(stty);
-        System.err.println(modes);
     }
 
     @Override
