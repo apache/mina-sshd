@@ -298,7 +298,7 @@ public abstract class AbstractSession extends SessionHelper {
     }
 
     public void removeKexListener(KexListener listener) {
-        sshTransport.addKexListener(listener);
+        sshTransport.removeKexListener(listener);
     }
 
     protected void initializeKeyExchangePhase() throws Exception {

@@ -53,6 +53,7 @@ import org.apache.sshd.common.io.DefaultIoWriteFuture;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.session.ConnectionService;
 import org.apache.sshd.common.session.Session;
+import org.apache.sshd.common.session.filters.kex.KexListener;
 import org.apache.sshd.common.session.helpers.AbstractSession;
 import org.apache.sshd.common.util.EventListenerUtils;
 import org.apache.sshd.common.util.ExceptionUtils;
@@ -130,6 +131,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
     private AtomicReference<IoWriteFuture> eofFuture = new AtomicReference<>();
 
     private PacketValidator packetValidator = DEFAULT_PACKET_VALIDATOR;
+
+    private volatile KexListener kexListener;
 
     /**
      * A {@link Map} of sent requests - key = request name, value = timestamp when request was sent.
@@ -398,7 +401,7 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
 
         signalChannelInitialized();
         configureWindow();
-        ((AbstractSession) session).addKexListener(kexStarted -> {
+        kexListener = kexStarted -> {
             try {
                 localWindow.preventAdjustments(kexStarted);
             } catch (IOException e) {
@@ -423,7 +426,8 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
             } else if (log.isDebugEnabled()) {
                 log.debug("{} {} KEX ends: channel closed", getSession(), AbstractChannel.this);
             }
-        });
+        };
+        ((AbstractSession) session).addKexListener(kexListener);
         initialized.set(true);
     }
 
@@ -706,6 +710,12 @@ public abstract class AbstractChannel extends AbstractInnerCloseable implements 
         } finally {
             // clear the listeners since we are closing the channel (quicker GC)
             this.channelListeners.clear();
+        }
+
+        KexListener listener = kexListener;
+        if (listener != null) {
+            kexListener = null;
+            ((AbstractSession) sessionInstance).removeKexListener(listener);
         }
 
         IOException err = IoUtils.closeQuietly(getLocalWindow(), getRemoteWindow());

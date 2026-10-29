@@ -62,6 +62,7 @@ Merges 2.20.1 into the 3.0.0 stream, bringing in two bug fixes; one a regression
 
 ## Bug Fixes
 
+* [GH-937](https://github.com/apache/mina-sshd/issues/937) Remove a channel's `KexListener` when the channel closes
 
 ## Major Code Re-factoring
 

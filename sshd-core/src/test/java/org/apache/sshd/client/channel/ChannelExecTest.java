@@ -21,8 +21,10 @@ package org.apache.sshd.client.channel;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 
 import org.apache.sshd.client.SshClient;
@@ -156,6 +158,33 @@ class ChannelExecTest extends BaseTestSupport {
             String expected = getCurrentTestName();
             String actual = session.executeRemoteCommand(expected + '\n');
             assertEquals(expected, actual, "Mismatched reply");
+        }
+    }
+
+    // see GH-937
+    @Test
+    void closedChannelIsNotRetainedBySession() throws Exception {
+        try (ClientSession session = client.connect(getCurrentTestName(), TEST_LOCALHOST, port)
+                .verify(CONNECT_TIMEOUT).getSession()) {
+            session.addPasswordIdentity(getCurrentTestName());
+            session.auth().verify(AUTH_TIMEOUT);
+
+            WeakReference<ChannelExec> channelRef = executeAndClose(session, getCurrentTestName());
+
+            for (int attempt = 0; channelRef.get() != null && attempt < 50; attempt++) {
+                System.gc();
+                Thread.sleep(100L);
+            }
+
+            assertNull(channelRef.get(), "Closed channel is still reachable from its open session");
+        }
+    }
+
+    private static WeakReference<ChannelExec> executeAndClose(ClientSession session, String command) throws IOException {
+        try (ChannelExec channel = session.createExecChannel(command + "\n")) {
+            channel.open().verify(OPEN_TIMEOUT);
+            channel.waitFor(EnumSet.of(ClientChannelEvent.CLOSED), CLOSE_TIMEOUT);
+            return new WeakReference<>(channel);
         }
     }
 }
