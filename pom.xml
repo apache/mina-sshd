@@ -86,7 +86,7 @@
         <java.sdk.version>8</java.sdk.version>
         <javac.release>${java.sdk.version}</javac.release>
         <maven.compiler.release>${java.sdk.version}</maven.compiler.release>
-        <ant.version>1.10.15</ant.version>
+        <ant.version>1.10.18</ant.version>
         <build-helper-maven-plugin.version>3.6.1</build-helper-maven-plugin.version>
 
         <required.java.version>[${java.sdk.version},)</required.java.version>
@@ -109,12 +109,12 @@
             <!-- mockito 5.0 requires Java 11. -->
         <mockito.version>4.11.0</mockito.version>
         <testcontainers.version>2.0.4</testcontainers.version>
-        <grpc.version>1.79.0</grpc.version> <!-- Used only in tests -->
+        <grpc.version>1.85.1</grpc.version> <!-- Used only in tests -->
 
         <maven.archiver.version>3.6.6</maven.archiver.version>
         <plexus.archiver.version>4.11.0</plexus.archiver.version>
         <!-- See https://pmd.github.io/ for available latest version -->
-        <pmd.version>7.22.0</pmd.version>
+        <pmd.version>7.29.0</pmd.version>
         <japicmp.version>0.23.1</japicmp.version>
         <sshd.tests.timeout.factor>1.0</sshd.tests.timeout.factor>
         <sshd.tests.rerun.count>2</sshd.tests.rerun.count>
@@ -536,7 +536,7 @@
             <dependency>
                 <groupId>com.github.mwiede</groupId>
                 <artifactId>jsch</artifactId>
-                <version>2.28.3</version>
+                <version>2.28.8</version>
             </dependency>
 
             <dependency>

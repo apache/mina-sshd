@@ -18,12 +18,12 @@
  */
 package org.apache.sshd.common.channel;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import org.apache.sshd.common.util.ValidateUtils;
@@ -32,7 +32,7 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestMethodOrder;
 import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 /**
  * @author <a href="mailto:dev@mina.apache.org">Apache MINA SSHD Project</a>
@@ -41,23 +41,41 @@ import org.junit.jupiter.params.provider.MethodSource;
 @Tag("NoIoTestCase")
 class SttySupportTest extends JUnitTestSupport {
 
-    static List<String> parameters() {
-        return Arrays.asList("stty-output-1.txt", "stty-output-2.txt");
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = { "stty-output-1.txt", "stty-output-2.txt" })
+    void parseSttyOutput(String resourceName) throws Exception {
+        Map<PtyMode, Integer> modes = SttySupport.parsePtyModes(readSttyOutput(resourceName));
+        System.err.println(modes);
     }
 
-    @MethodSource("parameters")
     @ParameterizedTest(name = "{0}")
-    void parseSttyOutput(String resourceName) throws Exception {
-        String stty;
+    @ValueSource(strings = { "stty-output-1.txt", "stty-output-2.txt" })
+    void parseSttyOutputIndependentOfDefaultLocale(String resourceName) throws Exception {
+        String stty = readSttyOutput(resourceName);
+        Map<PtyMode, Integer> expected = SttySupport.parsePtyModes(stty);
+
+        Map<PtyMode, Integer> turkish;
+        Locale previous = Locale.getDefault();
+        Locale.setDefault(Locale.forLanguageTag("tr-TR"));
+        try {
+            turkish = SttySupport.parsePtyModes(stty);
+        } finally {
+            Locale.setDefault(previous);
+        }
+
+        assertEquals(expected, turkish, "Modes parsed under tr-TR locale");
+        assertTrue(turkish.containsKey(PtyMode.ISIG), "ISIG missing under tr-TR locale");
+        assertTrue(turkish.containsKey(PtyMode.ICANON), "ICANON missing under tr-TR locale");
+        assertTrue(turkish.containsKey(PtyMode.VINTR), "VINTR missing under tr-TR locale");
+    }
+
+    private String readSttyOutput(String resourceName) throws IOException {
         try (InputStream s = ValidateUtils.checkNotNull(
                 getClass().getResourceAsStream(resourceName), "Missing %s", resourceName);
              Reader r = new InputStreamReader(s, StandardCharsets.UTF_8)) {
             char[] buf = new char[8192];
             int len = r.read(buf);
-            stty = new String(buf, 0, len);
+            return new String(buf, 0, len);
         }
-
-        Map<PtyMode, Integer> modes = SttySupport.parsePtyModes(stty);
-        System.err.println(modes);
     }
 }

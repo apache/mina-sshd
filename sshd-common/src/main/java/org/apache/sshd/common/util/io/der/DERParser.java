@@ -25,11 +25,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.StreamCorruptedException;
 import java.math.BigInteger;
-import java.util.Arrays;
 
 import org.apache.sshd.common.util.GenericUtils;
 import org.apache.sshd.common.util.NumberUtils;
-import org.apache.sshd.common.util.buffer.BufferUtils;
 
 /**
  * A bare minimum DER parser - just enough to be able to decode signatures and private keys
@@ -39,11 +37,12 @@ import org.apache.sshd.common.util.buffer.BufferUtils;
 public class DERParser extends FilterInputStream {
     /**
      * Maximum size of data allowed by {@link #readLength()} - it is a bit arbitrary since one can encode 32-bit length
-     * data, but it is good enough for the keys
+     * data, but it is good enough for the keys.
+     * <p>
+     * Some cryptosystems may have large keys (McEliece: > 1MB) or large signatures. While such large keys are not used
+     * in SSH yet, let's make this value large enough.
      */
-    public static final int MAX_DER_VALUE_LENGTH = 2 * Short.MAX_VALUE;
-
-    private final byte[] lenBytes = new byte[Integer.BYTES];
+    public static final int MAX_DER_VALUE_LENGTH = 1 << 21; // 2 MB
 
     public DERParser(byte... bytes) {
         this(bytes, 0, NumberUtils.length(bytes));
@@ -80,40 +79,42 @@ public class DERParser extends FilterInputStream {
      * @throws IOException If invalid format found
      */
     public int readLength() throws IOException {
-        int i = read();
-        if (i == -1) {
+        int uByte = read();
+        if (uByte < 0) {
             throw new StreamCorruptedException("Invalid DER: length missing");
         }
 
         // A single byte short length
-        if ((i & ~0x7F) == 0) {
-            return i;
+        if (uByte <= 127) {
+            return uByte;
         }
 
-        int num = i & 0x7F;
-        // TODO We can't handle length longer than 4 bytes
-        if ((i >= 0xFF) || (num > lenBytes.length)) {
-            throw new StreamCorruptedException("Invalid DER: length field too big: " + i);
+        int num = uByte & 0x7F;
+        if (num == 0) {
+            throw new StreamCorruptedException("Invalid DER: length must have at least 1 byte");
         }
-
-        // place the read bytes last so that the 1st ones are zeroes as big endian
-        Arrays.fill(lenBytes, (byte) 0);
-        int n = read(lenBytes, 4 - num, num);
-        if (n < num) {
-            throw new StreamCorruptedException("Invalid DER: length data too short: expected=" + num + ", actual=" + n);
+        if (num > Integer.BYTES) {
+            throw new StreamCorruptedException("Invalid DER: length too large; must be <= " + Integer.BYTES + ": " + num);
         }
-
-        long len = BufferUtils.getUInt(lenBytes);
-        if (len < 0x7FL) { // according to standard: "the shortest possible length encoding must be used"
-            throw new StreamCorruptedException("Invalid DER: length not in shortest form: " + len);
+        long len = 0;
+        for (int i = 0; i < num; i++) {
+            uByte = read();
+            if (uByte < 0) {
+                throw new StreamCorruptedException("Invalid DER: length data too short: expected=" + num + ", actual=" + i);
+            } else if (uByte == 0 && len == 0) {
+                throw new StreamCorruptedException("Invalid DER: length not in shortest form");
+            }
+            len = (len << 8) + uByte;
         }
-
+        if (len <= 127) {
+            throw new StreamCorruptedException("Invalid DER: length not in shortest form");
+        }
         if (len > MAX_DER_VALUE_LENGTH) {
             throw new StreamCorruptedException(
                     "Invalid DER: data length too big: " + len + " (max=" + MAX_DER_VALUE_LENGTH + ")");
         }
 
-        // we know the cast is safe since it is less than MAX_DER_VALUE_LENGTH which is ~64K
+        // We know the cast is safe since it is <= MAX_DER_VALUE_LENGTH.
         return (int) len;
     }
 

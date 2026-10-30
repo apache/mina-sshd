@@ -151,3 +151,34 @@ In order to support customized user code for this feature, the `ReservedSessionM
 implement any kind of user-defined heartbeat. *Note:* if the user configured such a mechanism, then the
 `sendReservedHeartbeat` method **must** be implemented since the default throws `UnsupportedOperationException`
 which will cause the session to be terminated the 1st time the method is invoked.
+
+## Hardening a server
+
+Apache MINA SSHD as is provides all the usual server-side functionality, but it does _not_ provide privilege separation, and it
+does _not_ run SSH sessions in separate processes. As shipped, all SSH sessions run in the same Java process. If `sshd-sftp` is used,
+SFTP sessions also run in the same process (in a channel in an SSH session).
+
+This may make hardening a server for production use a bit challenging. At the very least, you should implements security controls
+to control resource consumption:
+
+* Implement some limit on the number of concurrently open SSH sessions that the server accepts, for instance by setting `CoreModuleProperties.MAX_CONCURRENT_SESSIONS` on the `SshServer`.
+* Implement a limit on the number of concurrently open channels within an SSH session, for instance by setting `CoreModuleProperties.MAX_CONCURRENT_CHANNELS` on the `SshServer` (same setting for all sessions) or on individual `ServerSession`s.
+* Limit the number of open file handles in an SFTP session, for instance by setting `SftpModuleProperties.MAX_OPEN_HANDLES_PER_SESSION`.
+
+By default all three properties are set to enforce no limits. Applications using the library should set these security controls as
+appropriate, or implement their own mechanisms.
+
+Also set `CoreModuleProperties.SERVER_IDENTIFICATION` to some string compliant with [RFC 4253](https://www.rfc-editor.org/info/rfc4253/#section-4.2).
+
+Never run a server under the OS `root` account. Run any exposed server under an OS user with reduced privileges.
+
+Pay attention to what kind of shells your server allows to be opened. See the caveat about `ShellFactory` above. Perhaps the server
+doesn't need to provide a shell at all? For many use cases, supporting a restricted set of commands to be executed remotely is fully
+sufficient.
+
+If the server uses `sshd-sftp` or `sshd-scp`, be extra careful about file system accesses. Both SCP and SFTP allow clients to read
+and write on the file system. In the standard configuration a virtual filesystem is used that restricts access to a particular directory.
+A production server should ensure that different users get different directories. Since all file system accesses will be made with the OS user running the Java process you cannot rely on OS-level file access permissions to separate SFTP user directories.
+
+Bear in mind that Apache MINA SSHD is not a replacement for established SSH servers like OpenSSH. The server implementation is mainly
+targeted at providing embedded SSH server functionality within Java applications.
