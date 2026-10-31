@@ -174,10 +174,6 @@ public abstract class AbstractSession extends SessionHelper {
     // synchronized on kexState.
     protected DefaultKeyExchangeFuture kexInitializedFuture;
 
-    // The kexPreparedFuture is fulfilled once the kex KeyExchange object is initialized. Access is synchronized on
-    // kexState.
-    protected DefaultKeyExchangeFuture kexPreparedFuture;
-
     /*
      * SSH packets encoding / decoding support
      */
@@ -778,42 +774,16 @@ public abstract class AbstractSession extends SessionHelper {
     protected void handleKexMessage(int cmd, Buffer buffer) throws Exception {
         validateKexState(cmd, KexState.RUN);
 
-        // Run kex.next() only once the KeyExchange kex is initialized!
-        DefaultKeyExchangeFuture prepared;
-        synchronized (kexState) {
-            prepared = kexPreparedFuture;
-        }
-        if (prepared == null) {
-            doKexNext(cmd, buffer);
-        } else {
-            Buffer copied = new ByteArrayBuffer(buffer.available(), false);
-            copied.putBuffer(buffer, false);
-
-            prepared.addListener(f -> {
-                Throwable t = f.getException();
-                if (t != null) {
-                    exceptionCaught(t);
-                } else {
-                    try {
-                        doKexNext(cmd, copied);
-                    } catch (Exception e) {
-                        exceptionCaught(e);
-                    }
-                }
-            });
-        }
-    }
-
-    private void doKexNext(int cmd, Buffer buffer) throws Exception {
+        boolean debugEnabled = log.isDebugEnabled();
         if (kex.next(cmd, buffer)) {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] KEX processing complete after cmd={}",
                         this, kex.getName(), cmd);
             }
             checkKeys();
             sendNewKeys();
         } else {
-            if (log.isDebugEnabled()) {
+            if (debugEnabled) {
                 log.debug("handleKexMessage({})[{}] more KEX packets expected after cmd={}",
                         this, kex.getName(), cmd);
             }
@@ -931,39 +901,49 @@ public abstract class AbstractSession extends SessionHelper {
             return KexStart.ONGOING;
         });
 
-        switch (starting) {
-            case PEER:
-                sendKexInit();
-                break;
-            case BOTH:
-                // We are in the process of sending our own KEX_INIT. Do the negotiation once that's done.
-                //
-                // See https://issues.apache.org/jira/browse/SSHD-1197
-                break;
-            default:
-                throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
+        if (starting == KexStart.ONGOING) {
+            throw new IllegalStateException("Received SSH_MSG_KEXINIT while key exchange is running");
         }
-        // Note: we should not wait here; it might block (in particular with the MINA transport back-end).
-        DefaultKeyExchangeFuture initFuture;
-        synchronized (kexState) {
-            initFuture = kexInitializedFuture;
-            if (initFuture == null) {
-                initFuture = new DefaultKeyExchangeFuture(toString(), null);
-                kexInitializedFuture = initFuture;
-                kexPreparedFuture = new DefaultKeyExchangeFuture(toString(), null);
-            }
-        }
-        initFuture.addListener(f -> {
-            if (f.isDone()) {
-                try {
-                    performKexNegotiation();
-                } catch (Exception e) {
-                    exceptionCaught(e);
+        if (starting == KexStart.PEER) {
+            sendKexInit();
+            performKexNegotiation();
+        } else {
+            // starting == KexStart.BOTH: we are in the process of sending our own KEX_INIT. Do the negotiation once
+            // that's done. See https://issues.apache.org/jira/browse/SSHD-1197
+            //
+            // However, performKexNegotiation _must_ run before the next message is read from the input. So suspend
+            // reading
+            // until it's done. We must not wait synchronously here as it would block the I/O thread.
+            DefaultKeyExchangeFuture initFuture;
+            synchronized (kexState) {
+                initFuture = kexInitializedFuture;
+                if (initFuture == null) {
+                    initFuture = new DefaultKeyExchangeFuture(toString(), null);
+                    kexInitializedFuture = initFuture;
                 }
-            } else {
-                exceptionCaught(f.getException());
             }
-        });
+            if (initFuture.isDone()) {
+                performKexNegotiation();
+            } else {
+                IoSession io = getIoSession();
+                io.suspendRead();
+                initFuture.addListener(f -> {
+                    Throwable t = f.getException();
+                    if (t != null) {
+                        io.resumeRead();
+                        exceptionCaught(t);
+                    } else {
+                        try {
+                            performKexNegotiation();
+                            io.resumeRead();
+                        } catch (Exception e) {
+                            io.resumeRead();
+                            exceptionCaught(e);
+                        }
+                    }
+                });
+            }
+        }
     }
 
     protected void performKexNegotiation() throws Exception {
@@ -986,12 +966,9 @@ public abstract class AbstractSession extends SessionHelper {
         kex = kexFactory.createKeyExchange(this);
         kex.init(v_s, v_c, i_s, i_c);
 
-        DefaultKeyExchangeFuture prepared = null;
         synchronized (kexState) {
             kexInitializedFuture = null;
-            prepared = kexPreparedFuture;
         }
-        prepared.setValue(Boolean.TRUE);
         signalSessionEvent(SessionListener.Event.KexCompleted);
     }
 
@@ -1010,7 +987,6 @@ public abstract class AbstractSession extends SessionHelper {
 
         synchronized (kexState) {
             kexInitializedFuture = null;
-            kexPreparedFuture = null;
         }
 
         initialKexDone = true;
@@ -1052,16 +1028,11 @@ public abstract class AbstractSession extends SessionHelper {
     @Override
     protected void preClose() {
         DefaultKeyExchangeFuture initFuture;
-        DefaultKeyExchangeFuture preparedFuture;
         synchronized (kexState) {
             initFuture = kexInitializedFuture;
-            preparedFuture = kexPreparedFuture;
         }
         if (initFuture != null) {
             initFuture.setValue(new SshException("Session closing while KEX in progress"));
-        }
-        if (preparedFuture != null) {
-            preparedFuture.setValue(new SshException("Session closing while KEX in progress"));
         }
         DefaultKeyExchangeFuture kexFuture = kexFutureHolder.get();
         if (kexFuture != null) {
@@ -2778,7 +2749,6 @@ public abstract class AbstractSession extends SessionHelper {
             if (initFuture == null) {
                 initFuture = new DefaultKeyExchangeFuture(toString(), null);
                 kexInitializedFuture = initFuture;
-                kexPreparedFuture = new DefaultKeyExchangeFuture(toString(), null);
             }
             try {
                 seed = sendKexInit(proposal);
