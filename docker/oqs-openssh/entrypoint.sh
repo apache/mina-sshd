@@ -35,6 +35,8 @@ if [ -n "${TEST_PASSWORD:-}" ]; then
             ;;
     esac
     printf 'test:%s\n' "$TEST_PASSWORD" | chpasswd
-    set -- -o PasswordAuthentication=yes "$@"
+    exec /opt/ssh/sbin/sshd -D -e -o PasswordAuthentication=yes "$@"
+else
+    exec /opt/ssh/sbin/sshd -D -e "$@"
 fi
-exec /opt/ssh/sbin/sshd -D -e "$@"
+
