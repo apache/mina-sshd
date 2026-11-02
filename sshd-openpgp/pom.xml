@@ -54,7 +54,7 @@
         <dependency>
             <groupId>org.c02e.jpgpj</groupId>
             <artifactId>jpgpj</artifactId>
-            <version>1.3</version>
+            <version>2.1.0</version>
             <exclusions>
                 <!-- Replaced by the jdk18on equivalent -->
                 <exclusion>
