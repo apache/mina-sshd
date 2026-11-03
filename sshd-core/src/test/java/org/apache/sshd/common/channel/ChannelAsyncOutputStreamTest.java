@@ -19,11 +19,15 @@
 package org.apache.sshd.common.channel;
 
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.channel.throttle.ChannelStreamWriter;
 import org.apache.sshd.common.io.IoWriteFuture;
+import org.apache.sshd.common.io.WritePendingException;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
@@ -33,10 +37,16 @@ import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -147,6 +157,125 @@ public class ChannelAsyncOutputStreamTest extends BaseTestSupport {
         channelAsyncOutputStream.onWindowExpanded();
 
         Mockito.verify(channelStreamWriter, Mockito.never()).writeData(ArgumentMatchers.any());
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 100, 40000 })
+    void canceledPacketListenerDoesNotClearFollowingWrite(int length) throws IOException {
+        ChannelAsyncOutputStream stream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(40000, 32000, PropertyResolver.EMPTY);
+        IoWriteFutureImpl firstPacket = new IoWriteFutureImpl("first", createBuffer(100));
+        IoWriteFutureImpl secondPacket = new IoWriteFutureImpl("second", createBuffer(100));
+        AtomicReference<IoWriteFuture> followingWrite = new AtomicReference<>();
+        firstPacket.addListener(f -> {
+            if (f.isCanceled()) {
+                try {
+                    followingWrite.set(stream.writeBuffer(createBuffer(100)));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        });
+        Mockito.when(channelStreamWriter.writeData(ArgumentMatchers.any())).thenReturn(firstPacket, secondPacket);
+
+        IoWriteFuture firstWrite = stream.writeBuffer(createBuffer(length));
+        firstWrite.cancel();
+
+        assertTrue(firstWrite.isCanceled());
+        assertNotNull(followingWrite.get());
+        assertFalse(followingWrite.get().isDone());
+        assertThrows(WritePendingException.class, () -> stream.writeBuffer(createBuffer(100)));
+        secondPacket.setValue(Boolean.TRUE);
+        assertTrue(followingWrite.get().isWritten());
+        assertTrue(stream.writeBuffer(createBuffer(100)).isWritten());
+    }
+
+    @Test
+    void packetCancellationDoesNotClearWriteStartedByCancellationListener() throws IOException {
+        ChannelAsyncOutputStream stream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(40000, 32000, PropertyResolver.EMPTY);
+        IoWriteFutureImpl firstPacket = new IoWriteFutureImpl("first", createBuffer(100));
+        IoWriteFutureImpl secondPacket = new IoWriteFutureImpl("second", createBuffer(100));
+        Mockito.when(channelStreamWriter.writeData(ArgumentMatchers.any())).thenReturn(firstPacket, secondPacket);
+        AtomicReference<IoWriteFuture> followingWrite = new AtomicReference<>();
+        IoWriteFuture firstWrite = stream.writeBuffer(createBuffer(100));
+        firstWrite.addListener(f -> {
+            if (f.isCanceled()) {
+                try {
+                    followingWrite.set(stream.writeBuffer(createBuffer(100)));
+                } catch (IOException e) {
+                    throw new UncheckedIOException(e);
+                }
+            }
+        });
+
+        firstPacket.cancel();
+
+        assertTrue(firstWrite.isCanceled());
+        assertNotNull(followingWrite.get());
+        assertFalse(followingWrite.get().isDone());
+        assertThrows(WritePendingException.class, () -> stream.writeBuffer(createBuffer(100)));
+        secondPacket.setValue(Boolean.TRUE);
+        assertTrue(followingWrite.get().isWritten());
+    }
+
+    @ParameterizedTest
+    @ValueSource(booleans = { true, false })
+    void completionListenerCanStartFollowingWrite(boolean success) throws IOException {
+        ChannelAsyncOutputStream stream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(40000, 32000, PropertyResolver.EMPTY);
+        IoWriteFutureImpl firstPacket = new IoWriteFutureImpl("first", createBuffer(100));
+        IoWriteFutureImpl secondPacket = new IoWriteFutureImpl("second", createBuffer(100));
+        Mockito.when(channelStreamWriter.writeData(ArgumentMatchers.any())).thenReturn(firstPacket, secondPacket);
+        AtomicInteger notifications = new AtomicInteger();
+        AtomicReference<IoWriteFuture> followingWrite = new AtomicReference<>();
+        IoWriteFuture firstWrite = stream.writeBuffer(createBuffer(100));
+        firstWrite.addListener(f -> {
+            notifications.incrementAndGet();
+            try {
+                followingWrite.set(stream.writeBuffer(createBuffer(100)));
+            } catch (IOException e) {
+                throw new UncheckedIOException(e);
+            }
+        });
+        IOException failure = new IOException("packet write failed");
+
+        firstPacket.setValue(success ? Boolean.TRUE : failure);
+
+        assertTrue(firstWrite.isDone());
+        assertEquals(success, firstWrite.isWritten());
+        if (!success) {
+            assertSame(failure, firstWrite.getException());
+        }
+        assertEquals(1, notifications.get());
+        assertNotNull(followingWrite.get());
+        assertFalse(followingWrite.get().isDone());
+        assertThrows(WritePendingException.class, () -> stream.writeBuffer(createBuffer(100)));
+        secondPacket.setValue(Boolean.TRUE);
+        assertTrue(followingWrite.get().isWritten());
+        assertTrue(stream.writeBuffer(createBuffer(100)).isWritten());
+        assertEquals(1, notifications.get());
+    }
+
+    @Test
+    void cancelingCompletedWriteDoesNotAffectFollowingWrite() throws IOException {
+        ChannelAsyncOutputStream stream = new ChannelAsyncOutputStream(channel, (byte) 0);
+        remoteWindow.init(40000, 32000, PropertyResolver.EMPTY);
+        IoWriteFutureImpl firstPacket = new IoWriteFutureImpl("first", createBuffer(100));
+        IoWriteFutureImpl secondPacket = new IoWriteFutureImpl("second", createBuffer(100));
+        Mockito.when(channelStreamWriter.writeData(ArgumentMatchers.any())).thenReturn(firstPacket, secondPacket);
+
+        IoWriteFuture firstWrite = stream.writeBuffer(createBuffer(100));
+        firstPacket.setValue(Boolean.TRUE);
+        IoWriteFuture followingWrite = stream.writeBuffer(createBuffer(100));
+        firstWrite.cancel();
+
+        assertTrue(firstWrite.isWritten());
+        assertFalse(firstWrite.isCanceled());
+        assertFalse(followingWrite.isDone());
+        assertThrows(WritePendingException.class, () -> stream.writeBuffer(createBuffer(100)));
+        secondPacket.setValue(Boolean.TRUE);
+        assertTrue(followingWrite.isWritten());
     }
 
     private void checkChangeOfRemoteWindowSizeOnBufferWrite(

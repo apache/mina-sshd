@@ -397,9 +397,10 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
 
     protected void onWritten(IoWriteFutureImpl future, int total, int length, IoWriteFuture f) {
         synchronized (writeState) {
-            if (writeState.packetWrite == f) {
-                writeState.packetWrite = null;
+            if (writeState.packetWrite != f) {
+                return;
             }
+            writeState.packetWrite = null;
         }
         if (f.isWritten()) {
             if (total > length) {
@@ -425,11 +426,11 @@ public class ChannelAsyncOutputStream extends AbstractCloseable implements IoOut
                 future.setValue(Boolean.TRUE);
             }
         } else if (f.isCanceled()) {
-            future.cancel();
             synchronized (writeState) {
                 writeState.pendingWrite = null;
                 writeState.writeInProgress = false;
             }
+            future.cancel();
         } else {
             Throwable reason = f.getException();
             debug("onWritten({}) failed ({}) to complete write of {} out of {}: {}",
