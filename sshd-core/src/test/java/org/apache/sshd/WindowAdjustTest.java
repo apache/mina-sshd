@@ -278,7 +278,7 @@ public class WindowAdjustTest extends BaseTestSupport {
 
     /**
      * Wrapper for asyncIn stream that catches Pending exception and queues the pending messages for later retry (send
-     * after previous messages were fully transfered)
+     * after previous messages were fully transferred)
      */
     private static class AsyncInPendingWrapper extends AbstractLoggingBean {
         private IoOutputStream asyncIn;

@@ -353,7 +353,7 @@ public class PortForwardingLoadTest extends BaseTestSupport {
             session.disconnect();
         }
 
-        assertEquals(0, errors.get(), "Some errors occured");
+        assertEquals(0, errors.get(), "Some errors occurred");
     }
 
     private static void assertPayloadEquals(String message, byte[] expectedBytes, byte[] actualBytes) {
