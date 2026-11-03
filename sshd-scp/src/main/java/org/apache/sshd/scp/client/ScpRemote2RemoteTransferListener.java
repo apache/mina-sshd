@@ -56,7 +56,7 @@ public interface ScpRemote2RemoteTransferListener {
      * @param  destination The destination path
      * @param  timestamp   The {@link ScpTimestampCommandDetails timestamp} of the file - may be {@code null}
      * @param  details     The {@link ScpReceiveFileCommandDetails details} of the attempted file transfer
-     * @param  xferSize    Number of successfully transfered bytes - zero if <tt>thrown</tt> not {@code null}
+     * @param  xferSize    Number of successfully transferred bytes - zero if <tt>thrown</tt> not {@code null}
      * @param  thrown      Error thrown during transfer attempt - {@code null} if successful
      * @throws IOException If failed to handle the callback
      */

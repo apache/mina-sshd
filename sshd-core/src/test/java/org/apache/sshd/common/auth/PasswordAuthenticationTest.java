@@ -414,7 +414,7 @@ public class PasswordAuthenticationTest extends AuthenticationTestSupport {
             @Override
             public void signalAuthenticationSuccess(ClientSession session, String service, String password)
                     throws Exception {
-                assertEquals(goodPassword, password, "Mismatched succesful password");
+                assertEquals(goodPassword, password, "Mismatched successful password");
             }
 
             @Override
