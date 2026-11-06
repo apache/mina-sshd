@@ -30,6 +30,7 @@ import java.security.GeneralSecurityException;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.MessageDigest;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.DSAKey;
@@ -83,9 +84,12 @@ import org.apache.sshd.common.util.ValidateUtils;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.common.util.io.IoUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
 import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.common.util.security.eddsa.generic.Ed25519PublicKeyDecoder;
 import org.apache.sshd.common.util.security.eddsa.generic.EdDSAKeyTypeDetector;
+import org.apache.sshd.common.util.security.mldsa.MLDSAPublicKeyDecoder;
+import org.apache.sshd.common.util.security.mldsa.MLDSAUtils;
 
 /**
  * Utility class for keys
@@ -167,6 +171,10 @@ public final class KeyUtils {
 
     static {
 
+        // Registered unconditionally; decoding fails with a GeneralSecurityException if no provider is available
+        for (MLDSAParameterSets params : MLDSAParameterSets.values()) {
+            registerPublicKeyEntryDecoder(new MLDSAPublicKeyDecoder(params));
+        }
         registerPublicKeyEntryDecoder(OpenSSHCertificateDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(RSAPublicKeyDecoder.INSTANCE);
         registerPublicKeyEntryDecoder(DSSPublicKeyEntryDecoder.INSTANCE);
@@ -742,7 +750,11 @@ public final class KeyUtils {
             return KeyPairProvider.SSH_ED25519;
         }
 
-        return null;
+        try {
+            return MLDSAUtils.getParameters(key).getSshName();
+        } catch (InvalidKeySpecException e) {
+            return null;
+        }
     }
 
     /**
@@ -812,7 +824,11 @@ public final class KeyUtils {
             return 256;
         }
 
-        return -1;
+        try {
+            return MLDSAUtils.getParameters(key).getPublicKeySize() * Byte.SIZE;
+        } catch (InvalidKeySpecException e) {
+            return -1;
+        }
     }
 
     /**
@@ -902,8 +918,26 @@ public final class KeyUtils {
             return compareECKeys(ECPrivateKey.class.cast(k1), ECPrivateKey.class.cast(k2));
         } else if (isEd25519(k1) && isEd25519(k2)) {
             return SecurityUtils.compareEDDSAPrivateKeys(k1, k2);
+        } else if ((k1 != null) && (k2 != null)) {
+            return compareMLDSAKeys(k1, k2);
         }
         return false; // either key is null or not of same class
+    }
+
+    private static boolean compareMLDSAKeys(PrivateKey k1, PrivateKey k2) {
+        if (k1 == k2) {
+            return true;
+        }
+        try {
+            if (MLDSAUtils.getParameters(k1) != MLDSAUtils.getParameters(k2)) {
+                return false;
+            }
+        } catch (InvalidKeySpecException e) {
+            return false;
+        }
+        byte[] e1 = k1.getEncoded();
+        byte[] e2 = k2.getEncoded();
+        return (e1 != null) && (e2 != null) && MessageDigest.isEqual(e1, e2);
     }
 
     public static boolean compareRSAKeys(RSAPublicKey k1, RSAPublicKey k2) {
