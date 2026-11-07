@@ -22,7 +22,9 @@ package org.apache.sshd.common.io.nio2;
 import java.io.Flushable;
 import java.net.Socket;
 import java.net.SocketOption;
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousSocketChannel;
+import java.nio.channels.CompletionHandler;
 import java.util.AbstractMap.SimpleImmutableEntry;
 import java.util.Collection;
 import java.util.HashMap;
@@ -31,11 +33,16 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.Property;
+import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.PropertyResolverUtils;
+import org.apache.sshd.common.io.IoHandler;
 import org.apache.sshd.common.io.IoSession;
+import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.buffer.ByteArrayBuffer;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.SshServer;
 import org.apache.sshd.server.session.ServerSessionImpl;
@@ -44,7 +51,10 @@ import org.apache.sshd.util.test.BaseTestSupport;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestMethodOrder;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 /**
@@ -135,5 +145,39 @@ public class Nio2ServiceTest extends BaseTestSupport {
                 }
             }
         }
+    }
+
+    @Test
+    void canceledQueuedWriteIsNotStartedAfterTheCurrentWriteCompletes() throws Exception {
+        Nio2Service service = Mockito.mock(Nio2Service.class);
+        IoHandler handler = Mockito.mock(IoHandler.class);
+        AsynchronousSocketChannel socket = Mockito.mock(AsynchronousSocketChannel.class);
+        AtomicReference<ByteBuffer> buffer = new AtomicReference<>();
+        AtomicReference<CompletionHandler<Integer, Object>> completion = new AtomicReference<>();
+        Mockito.doAnswer(invocation -> {
+            buffer.set(invocation.getArgument(0));
+            completion.set(invocation.getArgument(4));
+            return null;
+        })
+                .when(socket)
+                .write(ArgumentMatchers.any(ByteBuffer.class), ArgumentMatchers.anyLong(),
+                        ArgumentMatchers.any(TimeUnit.class), ArgumentMatchers.isNull(),
+                        ArgumentMatchers.any(CompletionHandler.class));
+
+        Nio2Session session = new Nio2Session(service, PropertyResolver.EMPTY, handler, socket, null);
+        IoWriteFuture current = session.writeBuffer(new ByteArrayBuffer(new byte[] { 1 }));
+        IoWriteFuture queued = session.writeBuffer(new ByteArrayBuffer(new byte[] { 2 }));
+        queued.cancel();
+
+        buffer.get().position(buffer.get().limit());
+        completion.get().completed(1, null);
+
+        assertTrue(current.isWritten(), "The current write should complete");
+        assertTrue(queued.isCanceled(), "The canceled queued write should remain canceled");
+        Mockito.verify(socket, Mockito.times(1))
+                .write(ArgumentMatchers.any(ByteBuffer.class), ArgumentMatchers.anyLong(),
+                        ArgumentMatchers.any(TimeUnit.class), ArgumentMatchers.isNull(),
+                        ArgumentMatchers.any(CompletionHandler.class));
+        assertEquals(1, buffer.get().position(), "Only the current write should reach the socket");
     }
 }
