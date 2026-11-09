@@ -26,6 +26,9 @@ import java.util.Map;
 import org.apache.sshd.common.PropertyResolver;
 import org.apache.sshd.common.filter.DefaultFilterChain;
 import org.apache.sshd.common.filter.FilterChain;
+import org.apache.sshd.common.filter.InputHandler;
+import org.apache.sshd.common.filter.IoFilter;
+import org.apache.sshd.common.filter.OutputHandler;
 import org.apache.sshd.common.io.IoWriteFuture;
 import org.apache.sshd.common.util.buffer.Buffer;
 import org.apache.sshd.core.CoreModuleProperties;
@@ -184,5 +187,74 @@ class IdentFilterTest extends FilterTestSupport {
         assertEquals(2, inputs.buffers.size());
         assertEquals(" second", str(inputs.buffers.get(0)));
         assertEquals("third", str(inputs.buffers.get(1)));
+    }
+
+    @Test
+    void concurrentSendDuringKexInitDoesNotOvertake() throws Exception {
+        FilterChain customChain = new DefaultFilterChain();
+        OutgoingSink sink = new OutgoingSink();
+        sink.autoFulfill = false;
+
+        IoFilter interceptor = new IoFilter() {
+            @Override
+            public InputHandler in() {
+                return owner()::passOn;
+            }
+
+            @Override
+            public OutputHandler out() {
+                return (cmd, buf) -> {
+                    if ("kex-init".equals(str(buf))) {
+                        try {
+                            customChain.getLast().out().send(0, buf("kex-first"));
+                        } catch (Exception e) {
+                            throw new RuntimeException(e);
+                        }
+                    }
+                    return owner().send(cmd, buf);
+                };
+            }
+        };
+
+        IdentFilter ident = new IdentFilter();
+        ident.setIdentHandler(new SshIdentHandler() {
+            @Override
+            public boolean isServer() {
+                return false;
+            }
+
+            @Override
+            public List<String> readIdentification(Buffer buffer) {
+                return Collections.emptyList();
+            }
+
+            @Override
+            public List<String> provideIdentification() {
+                return Collections.singletonList("SSH-2.0-test");
+            }
+        });
+
+        IncomingSink sinkIn = new IncomingSink();
+
+        customChain.addLast(sink);
+        customChain.addLast(interceptor);
+        customChain.addLast(ident);
+        customChain.addLast(sinkIn);
+
+        // Send kex-init which queues behind ident
+        IoWriteFuture kexInitFuture = customChain.getLast().out().send(0, buf("kex-init"));
+        assertFalse(kexInitFuture.isDone());
+
+        assertEquals(1, sink.outputs.size());
+        assertEquals("SSH-2.0-test\r\n", str(sink.outputs.get(0).data));
+
+        // Fulfill ident write
+        sink.autoFulfill = true;
+        sink.outputs.get(0).setValue(Boolean.TRUE);
+
+        assertEquals(3, sink.outputs.size());
+        assertEquals("SSH-2.0-test\r\n", str(sink.outputs.get(0).data));
+        assertEquals("kex-init", str(sink.outputs.get(1).data));
+        assertEquals("kex-first", str(sink.outputs.get(2).data));
     }
 }

@@ -204,7 +204,6 @@ public class IdentFilter extends IoFilter {
             DefaultIoWriteFuture result = new DefaultIoWriteFuture("Ident", null);
             lastWrite.compareAndSet(queue, result);
             queue.addListener(f -> {
-                lastWrite.compareAndSet(result, null);
                 if (f.isWritten()) {
                     try {
                         owner().send(cmd, message).addListener(msgSent -> {
@@ -219,6 +218,7 @@ public class IdentFilter extends IoFilter {
                     LOG.error("sendAfterIdent({}) {}", properties, t);
                     result.setValue(t);
                 }
+                lastWrite.compareAndSet(result, null);
             });
             return result;
         }
