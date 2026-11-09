@@ -92,7 +92,7 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
 
         INIT {
             @Override
-            public void handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
+            public Buffer handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
                 connector.versionCheck(data.getByte());
                 SocksAuthenticationMethod authMethod = connector.getAuthMethod(data.getByte());
                 switch (authMethod) {
@@ -108,35 +108,22 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
                     default:
                         throw new IOException("Cannot authenticate at SOCKS proxy " + connector.proxyAddress);
                 }
+                return null;
             }
         },
 
         AUTHENTICATING {
             @Override
-            public void handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
+            public Buffer handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
                 connector.authStep(data);
+                return null;
             }
         },
 
         CONNECTING {
             @Override
-            public void handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
-                // Special case: when GSS-API authentication completes, the
-                // client moves into CONNECTING as soon as the GSS context is
-                // established and sends the connect request. This is per RFC
-                // 1961. But for the server, RFC 1961 says it _should_ send an
-                // empty token even if none generated when its server side
-                // context is established. That means we may actually get an
-                // empty token here. That message is 4 bytes long (and has
-                // content 0x01, 0x01, 0x00, 0x00). We simply skip this message
-                // if we get it here. If the server for whatever reason sends
-                // back a "GSS failed" message (it shouldn't, at this point)
-                // it will be two bytes 0x01 0xFF, which will fail the version
-                // check.
-                if (data.available() != 4) {
-                    connector.versionCheck(data.getByte());
-                    connector.establishConnection(data);
-                }
+            public Buffer handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
+                return connector.receiveConnectReply(data);
             }
         },
 
@@ -144,7 +131,7 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
 
         FAILED;
 
-        public void handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
+        public Buffer handleMessage(Socks5ProxyConnector connector, Buffer data) throws Exception {
             throw new IOException(MessageFormat.format("Unexpected reply from SOCKS proxy {0}: {1}", connector.proxyAddress,
                     BufferUtils.toHex(data.array())));
         }
@@ -157,6 +144,13 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
     private GSSContext context;
 
     private byte[] authenticationProposals;
+
+    // Part of the connect reply received so far, while it is incomplete
+    private Buffer pendingReply;
+
+    // True while an empty GSS-API token may still precede the connect reply
+    // (only after GSS-API authentication, RFC 1961)
+    private boolean emptyGssTokenPossible;
 
     /**
      * Creates a new {@link Socks5ProxyConnector}. The connector supports anonymous connections as well as
@@ -259,6 +253,7 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
 
     private void doGssApiAuth() throws Exception {
         authenticator = new SocksGssApiAuthentication();
+        emptyGssTokenPossible = true;
         startAuth();
     }
 
@@ -295,7 +290,95 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
         }
     }
 
-    private void establishConnection(Buffer data) throws IOException {
+    // Accumulates the connect reply until it is complete, then hands only the
+    // data following it (typically the server's SSH identification) to the
+    // SSH session.
+    //
+    // Package-visible for a unit test
+    Buffer receiveConnectReply(Buffer data) throws Exception {
+        Buffer reply = data;
+        if (pendingReply != null) {
+            pendingReply.putBuffer(data);
+            reply = pendingReply;
+        }
+        if (emptyGssTokenPossible && reply.available() > 0) {
+            int pos = reply.rpos();
+            if (reply.rawByte(pos) == 1) {
+                if (reply.available() < 4) {
+                    keepReply(reply);
+                    return null;
+                }
+                // Special case: when GSS-API authentication completes, the
+                // client moves into CONNECTING as soon as the GSS context is
+                // established and sends the connect request. This is per RFC
+                // 1961. But for the server, RFC 1961 says it _should_ send an
+                // empty token even if none generated when its server side
+                // context is established. That means we may actually get an
+                // empty token here. That message is 4 bytes long (and has
+                // content 0x01, 0x01, 0x00, 0x00). We simply skip this message
+                // if we get it here. If the server for whatever reason sends
+                // back a "GSS failed" message (it shouldn't, at this point)
+                // it will be two bytes 0x01 0xFF, which will fail the version
+                // check.
+                if (reply.rawByte(pos + 1) == 1 && reply.rawByte(pos + 2) == 0 && reply.rawByte(pos + 3) == 0) {
+                    reply.rpos(pos + 4);
+                }
+            }
+            emptyGssTokenPossible = false;
+        }
+        if (reply.available() == 0) {
+            pendingReply = null;
+            return null;
+        }
+        versionCheck(reply.rawByte(reply.rpos()));
+        if (reply.available() >= 2 && reply.rawByte(reply.rpos() + 1) != Socks5.REPLY_SUCCESS) {
+            // Fail at once; don't wait for the rest of a failure reply
+            pendingReply = null;
+            reply.getByte();
+            establishConnection(reply);
+            return null;
+        }
+        int length = getReplyLength(reply);
+        if (length < 0 || reply.available() < length) {
+            keepReply(reply);
+            return null;
+        }
+        pendingReply = null;
+        reply.getByte();
+        return establishConnection(reply);
+    }
+
+    private void keepReply(Buffer reply) {
+        if (pendingReply == null) {
+            pendingReply = new ByteArrayBuffer(reply.available() + 64, false);
+            pendingReply.putBuffer(reply);
+        }
+    }
+
+    // Length of the whole connect reply, or -1 if not enough of it has been received yet to tell
+    private int getReplyLength(Buffer reply) throws IOException {
+        if (reply.available() < 4) {
+            return -1;
+        }
+        int pos = reply.rpos();
+        byte type = reply.rawByte(pos + 3);
+        switch (type) {
+            case Socks5.ADDRESS_IPV4:
+                return 4 + 4 + 2;
+            case Socks5.ADDRESS_IPV6:
+                return 4 + 16 + 2;
+            case Socks5.ADDRESS_FQDN:
+                if (reply.available() < 5) {
+                    return -1;
+                }
+                return 4 + 1 + (reply.rawByte(pos + 4) & 0xFF) + 2;
+            default:
+                throw new IOException(
+                        "Unexpected address type" + (type & 0xFF) + " in SOCKS connect reply from " + proxyAddress);
+        }
+    }
+
+    private Buffer establishConnection(Buffer data) throws IOException {
         byte reply = data.getByte();
         switch (reply) {
             case Socks5.REPLY_SUCCESS:
@@ -325,7 +408,7 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
                 }
                 state = ProtocolState.CONNECTED;
                 done = true;
-                return;
+                return data;
             case Socks5.REPLY_FAILURE:
                 throw new IOException("Tunneling failed for proxy " + proxyAddress);
             case Socks5.REPLY_FORBIDDEN:
@@ -380,8 +463,7 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
             // Dispatch according to protocol state
             ByteArrayBuffer data = new ByteArrayBuffer(buffer.available(), false);
             data.putBuffer(buffer);
-            state.handleMessage(this, data);
-            return data;
+            return state.handleMessage(this, data);
         } catch (Exception e) {
             state = ProtocolState.FAILED;
             if (authenticator != null) {
@@ -395,7 +477,7 @@ public class Socks5ProxyConnector extends AbstractProxyConnector {
 
     private void versionCheck(byte version) throws IOException {
         if (version != Socks5.VERSION) {
-            throw new IOException("Unexpected SOCK version " + (version & 0xFF));
+            throw new IOException("Unexpected SOCKS version " + (version & 0xFF));
         }
     }
 
