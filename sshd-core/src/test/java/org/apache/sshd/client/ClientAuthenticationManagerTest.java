@@ -53,7 +53,10 @@ import org.apache.sshd.common.random.SingletonRandomFactory;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
 import org.apache.sshd.common.util.GenericUtils;
+import org.apache.sshd.common.util.security.MLDSAParameterSets;
+import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.util.test.BaseTestSupport;
+import org.junit.jupiter.api.Assumptions;
 import org.junit.jupiter.api.MethodOrderer.MethodName;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -246,6 +249,18 @@ class ClientAuthenticationManagerTest extends BaseTestSupport {
 
         setter.invoke(session, new Object[] { null });
         assertSame(clientProvider, getter.invoke(session), baseName + ": mismatched nullified session provider");
+    }
+
+    @Test
+    void removeEquivalentMLDSAPublicKeyIdentity() throws Exception {
+        String algorithm = MLDSAParameterSets.ML_DSA_65.getJceName();
+        Assumptions.assumeTrue(SecurityUtils.isMLDSASupported(algorithm), "ML-DSA not supported");
+        KeyPair kp = SecurityUtils.getKeyPairGenerator(algorithm).generateKeyPair();
+        try (SshClient client = setupTestClient()) {
+            client.addPublicKeyIdentity(kp);
+            assertSame(kp, client.removePublicKeyIdentity(new KeyPair(kp.getPublic(), kp.getPrivate())));
+            assertNull(client.removePublicKeyIdentity(kp), "Pubkey identity not removed");
+        }
     }
 
     private <M extends ClientAuthenticationManager> M testClientAuthenticationManager(M manager) {
