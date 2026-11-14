@@ -493,6 +493,9 @@ public class KeyExchangeMessageHandler {
                             if (pending == null) {
                                 break;
                             }
+                            if (pending.isCanceled()) {
+                                continue;
+                            }
                             IoWriteFuture written;
                             try {
                                 if (log.isTraceEnabled()) {
