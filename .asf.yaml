@@ -9,13 +9,26 @@ github:
     - apache
   features:
     issues: true
-  dependabot_alerts:  true
+  dependabot_alerts: true
   dependabot_updates: true
   ghp_branch: gh-pages
   ghp_path: /
 
+  rulesets:
+    - name: "Default Branch Protection"
+      type: branch
+      branches:
+        includes:
+          - "~DEFAULT_BRANCH"
+          - "release/*"
+          - "rel/*"
+        excludes: []
+      bypass_teams:
+        - root
+      restrict_deletion: true
+      restrict_force_push: true
 notifications:
-  commits:      commits@mina.apache.org
-  issues:       dev@mina.apache.org
+  commits: commits@mina.apache.org
+  issues: dev@mina.apache.org
   pullrequests: dev@mina.apache.org
   jira_options: link
