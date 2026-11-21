@@ -1579,7 +1579,7 @@ public abstract class AbstractSftpSubsystemHelper
     }
 
     protected void doRemoveDirectory(int id, String path) throws IOException {
-        Path p = resolveFile(path);
+        Path p = resolveDirectory(path);
         if (log.isDebugEnabled()) {
             log.debug("doRemoveDirectory({})[id={}] SSH_FXP_RMDIR (path={})[{}]", getServerSession(), id, path, p);
         }
@@ -1643,7 +1643,7 @@ public abstract class AbstractSftpSubsystemHelper
     protected void doMakeDirectory(
             int id, String path, Map<String, ?> attrs)
             throws IOException {
-        Path resolvedPath = resolveFile(path);
+        Path resolvedPath = resolveDirectory(path);
         ServerSession session = getServerSession();
         if (log.isDebugEnabled()) {
             log.debug("doMakeDirectory({})[id={}] SSH_FXP_MKDIR (path={}[{}], attrs={})",
@@ -3100,5 +3100,14 @@ public abstract class AbstractSftpSubsystemHelper
             log.trace("resolveFile({}) {} => {}", getServerSession(), remotePath, localPath);
         }
         return localPath;
+    }
+
+    private Path resolveDirectory(String remotePath) throws IOException {
+        // Keep explicit dot components; only MKDIR and RMDIR ignore trailing slashes.
+        int length = remotePath.length();
+        while ((length > 1) && (remotePath.charAt(length - 1) == '/')) {
+            length--;
+        }
+        return resolveFile(remotePath.substring(0, length));
     }
 }
