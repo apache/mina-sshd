@@ -51,6 +51,20 @@ public interface SftpEventListener extends SshdEventListener {
     }
 
     /**
+     * Called on the request-processing thread after the request has been handled, including when
+     * {@link #received(ServerSession, int, int)} or request processing fails. This can be used to release per-request
+     * resources established by {@code received}. A response may already have been sent.
+     *
+     * @param  session     The session through which the request was received
+     * @param  type        The request type
+     * @param  id          The request identifier
+     * @throws IOException if cleanup fails. The failure is logged and does not change the response.
+     */
+    default void completed(ServerSession session, int type, int id) throws IOException {
+        // empty
+    }
+
+    /**
      * Called when a SFTP extension request {@link SftpConstants#SSH_FXP_EXTENDED} has been received before it is
      * processed.
      *

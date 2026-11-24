@@ -23,8 +23,11 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.apache.sshd.common.util.io.IoUtils;
 import org.apache.sshd.server.session.ServerSession;
@@ -41,6 +44,52 @@ class SftpClientTest extends AbstractSftpClientTestSupport {
 
     SftpClientTest() {
         super();
+    }
+
+    @Test
+    void requestCompletionCleansUpOnSuccessAndFailure() throws Exception {
+        SftpSubsystemFactory factory = (SftpSubsystemFactory) sshd.getSubsystemFactories().get(0);
+        ThreadLocal<Integer> currentRequest = new ThreadLocal<>();
+        AtomicInteger completed = new AtomicInteger();
+        AtomicReference<Throwable> failure = new AtomicReference<>();
+        CountDownLatch finished = new CountDownLatch(3);
+        SftpEventListener listener = new SftpEventListener() {
+            @Override
+            public void received(ServerSession session, int type, int id) throws IOException {
+                if (type == SftpConstants.SSH_FXP_STAT || type == SftpConstants.SSH_FXP_LSTAT) {
+                    currentRequest.set(id);
+                    if (completed.get() == 2) {
+                        throw new IOException("rejected request");
+                    }
+                }
+            }
+
+            @Override
+            public void completed(ServerSession session, int type, int id) {
+                if (type == SftpConstants.SSH_FXP_STAT || type == SftpConstants.SSH_FXP_LSTAT) {
+                    try {
+                        if (!Integer.valueOf(id).equals(currentRequest.get())) {
+                            failure.set(new AssertionError("Completion ran without the request's thread-local state"));
+                        }
+                    } finally {
+                        currentRequest.remove();
+                        completed.incrementAndGet();
+                        finished.countDown();
+                    }
+                }
+            }
+        };
+        factory.addSftpEventListener(listener);
+        try (SftpClient sftp = createSingleSessionClient()) {
+            sftp.stat(".");
+            assertThrows(IOException.class, () -> sftp.stat("file-that-does-not-exist-for-request-completion"));
+            assertThrows(IOException.class, () -> sftp.stat("."));
+            assertTrue(finished.await(10, TimeUnit.SECONDS), "Completion callbacks did not run");
+            assertNull(failure.get(), "Thread-local request context mismatch");
+            assertEquals(3, completed.get());
+        } finally {
+            factory.removeSftpEventListener(listener);
+        }
     }
 
     @Test
