@@ -19,6 +19,7 @@
 package org.apache.sshd.sftp.client;
 
 import java.nio.file.Files;
+import java.nio.file.LinkOption;
 import java.nio.file.Path;
 
 import org.apache.sshd.common.file.virtualfs.VirtualFileSystemFactory;
@@ -37,7 +38,7 @@ class SftpDirectoryTest extends AbstractSftpClientTestSupport {
     @BeforeEach
     void setUp() throws Exception {
         root = detectTargetFolder().resolve(getClass().getSimpleName()).resolve(getCurrentTestName());
-        CommonTestSupportUtils.deleteRecursive(root);
+        CommonTestSupportUtils.deleteRecursive(root, LinkOption.NOFOLLOW_LINKS);
         Files.createDirectories(root);
         sshd.setFileSystemFactory(new VirtualFileSystemFactory(root));
     }
