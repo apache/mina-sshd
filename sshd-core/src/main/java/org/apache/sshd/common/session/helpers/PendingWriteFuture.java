@@ -46,14 +46,11 @@ public class PendingWriteFuture extends AbstractIoWriteFuture implements SshFutu
         setValue(Boolean.TRUE);
     }
 
-    public void setException(Throwable cause) {
-        Objects.requireNonNull(cause, "No cause specified");
-        setValue(cause);
-    }
-
     @Override
     public void operationComplete(IoWriteFuture future) {
-        if (future.isWritten()) {
+        if (future.isCanceled()) {
+            cancel();
+        } else if (future.isWritten()) {
             setWritten();
         } else {
             setException(future.getException());

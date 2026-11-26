@@ -19,7 +19,6 @@
 package org.apache.sshd.common.io.nio2;
 
 import java.nio.ByteBuffer;
-import java.util.Objects;
 
 import org.apache.sshd.common.io.AbstractIoWriteFuture;
 
@@ -42,7 +41,4 @@ public class Nio2DefaultIoWriteFuture extends AbstractIoWriteFuture {
         setValue(Boolean.TRUE);
     }
 
-    public void setException(Throwable exception) {
-        setValue(Objects.requireNonNull(exception, "No exception specified"));
-    }
 }

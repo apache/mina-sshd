@@ -168,9 +168,6 @@ public class MinaSession extends AbstractInnerCloseable implements IoSession {
             setValue(Boolean.TRUE);
         }
 
-        public void setException(Throwable exception) {
-            setValue(Objects.requireNonNull(exception, "No exception specified"));
-        }
     }
 
     @Override
